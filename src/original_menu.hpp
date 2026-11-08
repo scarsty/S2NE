@@ -32,11 +32,45 @@ public:
     int hit(float x,float y) const {return x>=266 && x<=386 && y>=283 && y<433?int(y-283)/30:-1;}
     bool mouse(float x,float y,bool click){int row=hit(x,y);if(row<0)return false;bool same=row==selected;selected=row;activated=-1;return click&&same;}
     unsigned activate(){activated=selected;return targets.at(selected);}
-    void draw_text(std::vector<uint8_t>& image, unsigned id, int x, int y, unsigned color) const {
+    std::vector<uint8_t> text_bytes(unsigned id) const {
         if(id>=count)throw std::runtime_error("Invalid original string ID");
         size_t text=strings+2+count*8+dword(strings+2+id*8);
         std::vector<uint8_t> bytes;while(bin.at(text))bytes.push_back(bin.at(text++));
-        draw_big5(image,bytes,x,y,color);
+        return bytes;
+    }
+    void draw_text(std::vector<uint8_t>& image, unsigned id, int x, int y, unsigned color) const {
+        draw_big5(image,text_bytes(id),x,y,color);
+    }
+    // sub_422402: BIN 12 contains 16x16 Big5 glyphs; BIN 15 contains 8x15 ASCII.
+    void draw_small(std::vector<uint8_t>& image,const std::vector<uint8_t>& text,int x,int y,unsigned color)const {
+        for(size_t p=0;p<text.size();){
+            unsigned lead=text.at(p++);if(!lead||lead=='\n')break;
+            unsigned width=8,height=15;size_t bits=entry(15)+std::max(30u,lead)*15;
+            if(lead>128){
+                unsigned trail=text.at(p++),base=0,first=0;
+                if(lead==0xC6&&trail>=0xA1){base=0x8001;first=lead;trail-=0xA1;}
+                else {
+                    if(lead>=0xA1&&lead<=0xA3){base=0x8400;first=0xA1;}
+                    else if(lead>=0xA4&&lead<=0xC6){base=0x8800;first=0xA4;}
+                    else if(lead>=0xC7&&lead<=0xC8){base=0x805F;first=0xC7;}
+                    else if(lead>=0xC9&&lead<=0xF9){base=0x9D19;first=0xC9;}
+                    else throw std::runtime_error("Invalid small-font Big5 lead");
+                    if(!((trail>=0x40&&trail<=0x7E)||(trail>=0xA1&&trail<=0xFE)))throw std::runtime_error("Invalid small-font Big5 trail");
+                    trail-=trail<=0x7E?0x40:0x62;
+                }
+                unsigned glyph=word(index+(base+(lead-first)*157+trail-0x8000)*2);
+                if(!glyph)throw std::runtime_error("Missing small-font glyph");
+                bits=entry(12)+(glyph-1)*32;width=height=16;
+            }
+            for(unsigned gy=0;gy<height;++gy)for(unsigned gx=0;gx<width;++gx){
+                if(!(bin.at(bits+gy*(width/8)+gx/8)&(128>>(gx%8))))continue;
+                int dx=x+int(gx),dy=y+int(gy);if(dx<0||dx>=640||dy<0||dy>=480)continue;
+                size_t dst=(size_t(dy)*640+dx)*4;
+                for(unsigned c=0;c<3;++c)image.at(dst+c)=uint8_t(std::min(255u,unsigned(pal.at(color*3+c))*255/63));
+                image.at(dst+3)=255;
+            }
+            x+=int(width);
+        }
     }
     void draw_big5(std::vector<uint8_t>& image, const std::vector<uint8_t>& text,
                    int x, int y, unsigned color) const {

@@ -21,6 +21,9 @@ private:
     std::vector<Point> sealed_cells_;
     std::array<int,12> config_{};
     unsigned turn_=1;
+    bool hostile_side_=false;
+    std::vector<uint8_t> effect_palette_;
+    std::array<std::vector<uint8_t>,3> movement_effects_;
     bool original_rules_=false;
     std::mt19937 random_{std::random_device{}()};
     int selected_=-1;
@@ -31,7 +34,7 @@ public:
     // surviving entries into the original 32-pixel command strip.
     static constexpr std::array<uint32_t,6> command_masks{
         0x80000000u, 0x40000000u, 0x20000000u,
-        0x10000000u, 0x01000000u, 0x00080000u};
+        0x10000000u, 0x01000000u, 0x08000000u};
 private:
     State state_=State::idle;
     int command_=0,target_=-1;
@@ -73,6 +76,15 @@ public:
         }
         size_t movement=archive(6),length=dword(pal,808+8*(23+5)+4)-13;
         result.movement_.assign(dat.begin()+movement,dat.begin()+movement+length);
+        // sub_4262EC loads ICONSO from DAT item 5; sub_4785E6 uses
+        // one-based IDs 35/36/37, each an uncompressed indexed 64x32 tile.
+        size_t effects=archive(5);
+        for(unsigned i=0;i<3;++i){
+            size_t p=effects+dword(dat,effects+2+(34+i)*8);
+            if(word(dat,p)!=63||word(dat,p+2)!=31)throw std::runtime_error("Invalid original movement effect");
+            result.movement_effects_[i].assign(dat.begin()+p+4,dat.begin()+p+4+2048);
+        }
+        result.effect_palette_.assign(pal.begin(),pal.begin()+768);
         OriginalEvents events(root,1);result.config_=events.battle_config;result.original_rules_=true;
         return result;
     }
@@ -101,10 +113,8 @@ public:
         if (selected_<0 || size_t(selected_)>=units.size()) return 0;
         const auto& u=units.at(selected_);
         if (!u.present(turn_) || !u.controllable()) return 0;
-        uint32_t mask=command_masks[5]; // sub_43AE24 always retains finish.
-        if (!moved_ && u.action_points>=config_[6]) {
-            for(size_t i=0;i<units.size();++i)if(can_attack(units,selected_,i)){mask|=command_masks[0];break;}
-        }
+        uint32_t mask=command_masks[5];
+        if (!acted_ && u.action_points>=config_[6]) mask|=command_masks[0];
         if (!moved_ && !distances_.empty()) {
             for(int cost:distances_)if(cost!=std::numeric_limits<int>::max()&&cost>0){mask|=command_masks[1];break;}
         }
@@ -153,7 +163,7 @@ public:
     }
     Point command_origin(const std::vector<OriginalEvents::Unit>& units,int cx,int cy)const{
         if(selected_<0)return {-1,-1};auto c=screen_center({units[selected_].x,units[selected_].y},cx,cy);
-        int count=state_==State::attack_menu?1:6;
+        int count=state_==State::attack_menu?1:std::max(1,command_count(units));
         return {std::clamp(c.x-count*16,8,639-count*32),std::clamp(c.y+16,0,330)};
     }
     void build_routes(const std::vector<OriginalEvents::Unit>& units){
@@ -272,6 +282,11 @@ public:
     }
     void seed(unsigned value){random_.seed(value);}
     unsigned turn()const{return turn_;}
+    bool hostile_side()const{return hostile_side_;}
+    void begin_hostile_side(std::vector<OriginalEvents::Unit>& units){
+        reset_side(units,false);hostile_side_=true;
+        selected_=-1;state_=State::idle;path_.clear();target_=-1;
+    }
     void reset_side(std::vector<OriginalEvents::Unit>& units,bool hostile){
         for(auto& u:units)if(u.present(turn_)&&u.hostile()==hostile){
             int carry=u.base_action_points>config_[5]?config_[5]:u.action_points;
@@ -281,7 +296,7 @@ public:
     }
     // Basic contact response only; the original scored movement/skill AI is not substituted.
     void end_turn(std::vector<OriginalEvents::Unit>& units){
-        reset_side(units,false);
+        if(!hostile_side_)begin_hostile_side(units);
         unsigned responses=0;
         for(size_t a=0;a<units.size();++a){
             if(!units[a].hostile()||!units[a].present(turn_))continue;
@@ -289,7 +304,7 @@ public:
                 if(strike(units,a,b))++responses;break;
             }
         }
-        reset_side(units,true);++turn_;selected_=-1;state_=State::idle;path_.clear();target_=-1;
+        reset_side(units,true);++turn_;hostile_side_=false;selected_=-1;state_=State::idle;path_.clear();target_=-1;
         message_="Turn "+std::to_string(turn_)+"; enemy contact attacks "+std::to_string(responses)+"; Enter: finish side";
     }
     bool attack(std::vector<OriginalEvents::Unit>& units,size_t a,size_t b){
@@ -327,25 +342,21 @@ public:
         return false;
     }
     void draw_selection(std::vector<uint8_t>& image,const std::vector<OriginalEvents::Unit>& units,int cx,int cy)const{
-        if(selected_<0||size_t(selected_)>=units.size())return;
-        auto pixel=[&](int x,int y,unsigned r,unsigned g,unsigned b,unsigned a=255){
-            if(x<0||y<0||x>=640||y>=480)return;size_t p=(size_t(y)*640+x)*4;
-            image[p]=uint8_t((image[p]*(255-a)+r*a)/255);image[p+1]=uint8_t((image[p+1]*(255-a)+g*a)/255);image[p+2]=uint8_t((image[p+2]*(255-a)+b*a)/255);
-        };
-        auto diamond=[&](Point point,unsigned r,unsigned g,unsigned b,unsigned a){
-            auto c=screen_center(point,cx,cy);
-            for(int x=-31;x<=31;++x){int y=15-std::abs(x)/2;for(int sign:{-1,1})pixel(c.x+x,c.y+sign*y,r,g,b,a);}
-        };
-        // The original movement renderer marks the reachable set, then the
-        // current route and cursor cell. Keep these as thin overlays so terrain
-        // and elevated sprites remain visible underneath (sub_452069/452B64).
-        if(state_==State::movement){
-            for(size_t i=0;i<distances_.size();++i)if(previous_[i]>=0)
-                diamond({int(i%width_),int(i/width_)},0,120,200,128);
-            for(auto p:path_)diamond(p,255,255,255,220);
+        if(selected_<0||size_t(selected_)>=units.size()||state_!=State::movement)return;
+        // sub_4785E6: original indexed ICONSO tiles, not invented route outlines.
+        // The current subset has only ordinary reachable cells (record +12h = 0).
+        const auto& tile=movement_effects_[0];
+        if(tile.empty())return;
+        for(size_t i=0;i<distances_.size();++i){
+            if(previous_[i]<0)continue;
+            auto c=screen_center({int(i%width_),int(i/width_)},cx,cy);
+            for(int y=0;y<32;++y)for(int x=0;x<64;++x){
+                unsigned color=tile[size_t(y)*64+x];int dx=c.x-32+x,dy=c.y-16+y;
+                if(!color||dx<0||dy<0||dx>=640||dy>=480)continue;
+                size_t dst=(size_t(dy)*640+dx)*4;
+                for(unsigned k=0;k<3;++k)image[dst+k]=uint8_t(unsigned(effect_palette_[color*3+k])*255/63);
+            }
         }
-        diamond({units[selected_].x,units[selected_].y},255,255,0,230);
-        if(state_==State::attack_target&&target_>=0)diamond({units[target_].x,units[target_].y},255,40,40,230);
     }
 };
 }

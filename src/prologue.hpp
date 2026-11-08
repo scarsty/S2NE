@@ -13,11 +13,14 @@ class Prologue {
     std::optional<Battle> battle_;
     enum class Phase { dialogue, choice, branch, flag_dialogue, briefing, battle_intro, objectives, battle };
     unsigned intro_elapsed_=0;
+    bool first_banner_=true;
+    // sub_438719 waits one centisecond per step and exits on the settled frame.
+    static constexpr unsigned banner_duration_=80;
     struct Banner { int y=0,turn_x=0,number_x=620,strip=1;bool done=false; };
     static Banner banner(unsigned frame){
         Banner b;
         while(frame--&&!b.done){
-            bool y_done=b.y>=150,x_done=b.turn_x>=230;
+            bool y_done=b.y==159,x_done=b.turn_x==249;
             if(y_done&&x_done){b.done=true;break;}
             b.y=std::min(159,b.y<100?b.y+24:b.y<140?b.y+16:b.y<150?b.y+8:159);
             b.turn_x=std::min(249,b.turn_x<200?b.turn_x+40:b.turn_x<230?b.turn_x+28:249);
@@ -56,7 +59,7 @@ class Prologue {
             if(!n||n>w-x)throw std::runtime_error("Invalid dialogue sprite run at "+std::to_string(p-1)+" width="+std::to_string(w)+" x="+std::to_string(x)+" run="+std::to_string(n));
             unsigned repeat=0;if(!(code&128))repeat=cel_.at(p++);
             while(n--){unsigned c=(code&128)?cel_.at(p++):repeat;int dx=left+int(x++),dy=top+int(y);
-                if(dx<0||dx>=640||dy<0||dy>=480)continue;
+                if(!c||dx<0||dx>=640||dy<0||dy>=480)continue;
                 size_t dst=(size_t(dy)*640+dx)*4;
                 for(unsigned k=0;k<3;++k)image.at(dst+k)=uint8_t(unsigned(pal_.at(c*3+k))*255/63);
                 image.at(dst+3)=255;
@@ -112,7 +115,13 @@ public:
     void tick(unsigned milliseconds){
         if(!battle_intro())return;
         intro_elapsed_+=milliseconds;
-        if(banner(intro_elapsed_/10).done)phase_=Phase::objectives;
+        if(intro_elapsed_<banner_duration_)return;
+        // 40D7D4: side 0 -> first-turn objectives -> player; side 1 -> AI;
+        // increment the round only after AI, then show the next side-0 banner.
+        if(battle_->hostile_side()){
+            battle_->end_turn(events.units);intro_elapsed_=0;
+        }else if(first_banner_){first_banner_=false;phase_=Phase::objectives;}
+        else phase_=Phase::battle;
     }
     int selection()const{return selection_;}
     void move(int delta){if(choosing())selection_=std::clamp(selection_+delta,0,int(events.line_count(event_))-2);else if(in_battle())map_.pan(0,delta*16);}
@@ -121,13 +130,14 @@ public:
         if(in_battle()){battle_->mouse(events.units,x,y,click,map_.camera_x,map_.camera_y);return;}
         if(choosing()&&x>=149&&y>=209&&y<261){int row=int(y-209)/26;if(row!=selection_)selection_=row;else if(click)advance();}
     }
-    void cancel_battle_selection(){if(battle_)battle_->cancel(events.units);}
-    void battle_confirm(){if(battle_)battle_->activate(events.units);}
-    void battle_cycle(int delta){if(battle_)battle_->cycle_command(delta);}
-    void battle_cycle_target(){if(battle_)battle_->cycle_target(events.units);}
+    void cancel_battle_selection(){if(in_battle())battle_->cancel(events.units);}
+    void battle_confirm(){if(in_battle())battle_->activate(events.units);}
+    void battle_cycle(int delta){if(in_battle())battle_->cycle_command(delta);}
+    void battle_cycle_target(){if(in_battle())battle_->cycle_target(events.units);}
     Battle::State battle_state()const{return battle_?battle_->state():Battle::State::idle;}
     Battle::Point battle_command_origin()const{return battle_->command_origin(events.units,map_.camera_x,map_.camera_y);}
-    void end_battle_turn(){if(battle_)battle_->end_turn(events.units);}
+    void end_battle_turn(){if(in_battle()){battle_->begin_hostile_side(events.units);phase_=Phase::battle_intro;intro_elapsed_=0;}}
+    bool hostile_banner()const{return battle_intro()&&battle_->hostile_side();}
     std::string battle_status()const{return battle_?battle_->message():std::string{};}
     int battle_selected()const{return battle_?battle_->selected():-1;}
     unsigned battle_turn()const{return battle_?battle_->turn():0;}
@@ -164,12 +174,13 @@ public:
     std::vector<uint8_t> draw(const OriginalMenu& font)const {
         auto image=map_.draw();
         if(battle_intro()||showing_objectives()){
-            std::vector<OriginalEvents::Unit> visible;for(const auto& unit:events.units)if(unit.present())visible.push_back(unit);map_.draw_units(image,visible);
+            std::vector<OriginalEvents::Unit> visible;for(const auto& unit:events.units)if(unit.present(battle_->turn()))visible.push_back(unit);map_.draw_units(image,visible,battle_->turn());
             if(battle_intro()){
                 auto b=banner(intro_elapsed_/10);
-                sprite(image,sprite_offset(2,150-142),false,208,b.y);
+                sprite(image,sprite_offset(2,(battle_->hostile_side()?149:150)-142),false,208,b.y);
                 font.draw_big5(image,{'T','U','R','N'},b.turn_x,250,33);
-                font.draw_big5(image,{'1'},b.number_x,250,33);
+                auto turn=std::to_string(battle_->turn());
+                font.draw_big5(image,std::vector<uint8_t>(turn.begin(),turn.end()),b.number_x,250,33);
                 sprite(image,sprite_offset(2,152-142),false,b.strip-320,234);
                 sprite(image,sprite_offset(2,153-142),false,639-b.strip,234);
             }else{
@@ -188,14 +199,22 @@ public:
         }
         if(in_battle()){
             std::vector<OriginalEvents::Unit> visible;
-            for(const auto& unit:events.units)if(unit.present())visible.push_back(unit);
-            map_.draw_units(image,visible);
+            for(const auto& unit:events.units)if(unit.present(battle_->turn()))visible.push_back(unit);
             battle_->draw_selection(image,events.units,map_.camera_x,map_.camera_y);
+            map_.draw_units(image,visible,battle_->turn());
             if(battle_->state()==Battle::State::command||battle_->state()==Battle::State::attack_menu){
                 auto origin=battle_command_origin();bool submenu=battle_->state()==Battle::State::attack_menu;
-                for(int i=0;i<(submenu?1:6);++i){unsigned id=submenu?168:Battle::command_icons[i];
-                    // 0x4262EC joins 142 DAT icons to CEL menu sprites; 0x43AA52 uses 32px slots.
-                    sprite(image,sprite_offset(2,id-142+(submenu||i==battle_->command_index()?1:0)),false,origin.x+i*32,origin.y);
+                if(submenu){
+                    sprite(image,sprite_offset(2,168-142+1),false,origin.x,origin.y);
+                }else{
+                    int slot=0;
+                    for(int command=0;command<6;++command)if(battle_->command_available(events.units,command)){
+                        unsigned id=Battle::command_icons[command];
+                        // sub_43AE24 packs enabled entries; sub_43AA52 uses
+                        // 32-pixel slots and the selected CEL variant (+1).
+                        int variant=(command==battle_->command_index())?1:0;
+                        sprite(image,sprite_offset(2,id-142+variant),false,origin.x+slot*32,origin.y);++slot;
+                    }
                 }
             }
             return image;

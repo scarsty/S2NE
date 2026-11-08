@@ -74,11 +74,11 @@ public:
         }
         camera_x=32;camera_y=16;
     }
-    void draw_units(std::vector<uint8_t>& image,const std::vector<OriginalEvents::Unit>& units)const{
+    void draw_units(std::vector<uint8_t>& image,const std::vector<OriginalEvents::Unit>& units,unsigned turn=1)const{
         size_t index=group(1),frames=group(2);unsigned count=word(prg_,index);
         auto sorted=units;std::stable_sort(sorted.begin(),sorted.end(),[](const auto& a,const auto& b){return a.y<b.y;});
         for(const auto& unit:sorted){
-            if(unit.first_turn>1||(unit.last_turn!=0&&unit.last_turn<1)||!unit.appearance||unit.appearance>count)continue;
+            if(!unit.present(turn)||!unit.appearance||unit.appearance>count)continue;
             size_t metadata=index+2+(unit.appearance-1)*8;
             unsigned first=word(prg_,metadata+2);
             size_t animation=index+2+count*8+(unit.appearance-1)*200;
@@ -95,7 +95,10 @@ public:
             }
             if(decoded.size()!=size_t(w)*h)throw std::runtime_error("Truncated original unit sprite");
             int left=unit.x*64+(unit.y&1)*32+32-int(w/2)-camera_x;
-            int top=unit.y*16+32-int(h)-camera_y;
+            size_t map=item(6,map_id-1),cell=map+28+(size_t(unit.y)*width+unit.x)*5;
+            int elevation=prg_.at(cell);
+            // sub_42B1D2 anchors the foot at tile bottom minus (height-1)*16.
+            int top=unit.y*16+32-int(h)-camera_y-std::max(0,elevation-1)*16;
             for(unsigned y=0;y<h;++y)for(unsigned x=0;x<w;++x){unsigned c=decoded.at(size_t(y)*w+x);int dx=left+int(x),dy=top+int(y);if(!c||dx<0||dy<0||dx>=640||dy>=480)continue;size_t dst=(size_t(dy)*640+dx)*4;for(unsigned k=0;k<3;++k)image.at(dst+k)=uint8_t(unsigned(pal_.at(c*3+k))*255/63);}
         }
     }

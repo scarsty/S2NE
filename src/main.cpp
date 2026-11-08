@@ -89,12 +89,16 @@ int main(int argc, char** argv) {
         unsigned smokePhase = 0;
         bool battleClickPending=false;
         unsigned battleSmokeStartTurn=0;
+        unsigned hostileBannerFrames=0,playerBannerFrames=0,battleSmokeRounds=0;
         s2ne::Battle::Point battleSmokeDestination{};
         size_t battleSmokeUnit=0;
         uint64_t lastUiTick=SDL_GetTicks();
         while (running) {
             uint64_t nowUi=SDL_GetTicks();
-            if(prologue&&prologue->battle_intro()){prologue->tick(unsigned(nowUi-lastUiTick));showPrologue();}
+            if(prologue&&prologue->battle_intro()){
+                if(battleSmoke&&battleSmokeStartTurn){if(prologue->hostile_banner())++hostileBannerFrames;else ++playerBannerFrames;}
+                prologue->tick(unsigned(nowUi-lastUiTick));showPrologue();
+            }
             lastUiTick=nowUi;
             if (smoke && smokePhase == 0 && SDL_GetTicks() - started > 300) {
                 SDL_Event e{}; e.type = SDL_EVENT_KEY_DOWN; e.key.key = SDLK_ESCAPE; SDL_PushEvent(&e); ++smokePhase;
@@ -130,8 +134,13 @@ int main(int argc, char** argv) {
                             if(unit.x!=battleSmokeDestination.x||unit.y!=battleSmokeDestination.y)throw std::runtime_error("SDL routed movement failed");
                             SDL_Event finish{};finish.type=SDL_EVENT_KEY_DOWN;finish.key.key=SDLK_F10;SDL_PushEvent(&finish);
                         }else if(prologue->battle_state()==s2ne::Battle::State::idle){
-                            if(prologue->battle_turn()!=battleSmokeStartTurn+1)throw std::runtime_error("SDL side finish failed");
-                            std::cout<<"SDL campaign battle "<<prologue->events.stage<<": original command bar -> movement mode -> destination -> side finish verified\n";running=false;
+                            if(prologue->battle_turn()!=battleSmokeStartTurn+1||hostileBannerFrames<2||playerBannerFrames<2)throw std::runtime_error("SDL side banners missing or side finish failed");
+                            if(++battleSmokeRounds==2){
+                                std::cout<<"SDL campaign battle "<<prologue->events.stage<<": command -> movement -> two complete side-banner cycles verified\n";running=false;
+                            }else{
+                                battleSmokeStartTurn=prologue->battle_turn();hostileBannerFrames=playerBannerFrames=0;
+                                SDL_Event finish{};finish.type=SDL_EVENT_KEY_DOWN;finish.key.key=SDLK_F10;SDL_PushEvent(&finish);
+                            }
                         }else throw std::runtime_error("Unexpected SDL battle state");
                     }else{
                         auto terrain=s2ne::Battle::load(root,prologue->events.map_id);bool found=false;
