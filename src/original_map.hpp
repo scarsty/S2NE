@@ -1,6 +1,9 @@
 #pragma once
+#include <optional>
+#include "original_disc.hpp"
 #include "original_events.hpp"
 #include "original_palette.hpp"
+#include "original_combat_visual.hpp"
 #include <algorithm>
 #include <map>
 #include <utility>
@@ -10,6 +13,28 @@ class OriginalMap {
     std::vector<uint8_t> prg_,pal_,pixels_;
     struct Image { unsigned w,h; std::vector<uint8_t> pixels; std::vector<uint8_t> literal; };
     mutable std::map<size_t,Image> cache_;
+    struct UnitBitmap { unsigned w{},h{};size_t frame{};int x{},y{},left{},top{};uint8_t state{};unsigned status{};std::vector<uint8_t> ad,b1;bool alternate=true; };
+    mutable std::map<unsigned,UnitBitmap> unit_bitmaps_;
+    original_combat::Disappearance disappearance_;
+    mutable std::vector<std::vector<uint8_t>> disappearance_frames_;
+    mutable uint64_t reaction_draws_{};
+    mutable unsigned last_reaction_target_{};
+    mutable bool last_reaction_left_{};
+    mutable std::vector<uint8_t> last_reaction_;
+    mutable std::vector<uint8_t> reaction_foot_mask_;
+    mutable std::array<uint8_t,256> reaction_shadow_{};
+    static void overlay_bitmap(UnitBitmap& destination,const UnitBitmap& source,bool background){
+        const auto& pixels=background?source.b1:source.ad;
+        if(pixels.size()!=size_t(source.w)*source.h)return;
+        for(unsigned y=0;y<source.h;++y)for(unsigned x=0;x<source.w;++x){
+            int dx=source.left-destination.left+int(x),dy=source.top-destination.top+int(y);
+            if(dx<0||dy<0||dx>=int(destination.w)||dy>=int(destination.h))continue;
+            auto c=pixels[size_t(y)*source.w+x];
+            if(background||c)destination.b1[size_t(dy)*destination.w+unsigned(dx)]=c;
+        }
+    }
+    std::filesystem::path root_;
+    OriginalDisc disc_=OriginalDisc::one;
     bool checker_mask_=false;
     std::array<uint8_t,80> event_flags_{};
     std::vector<std::array<unsigned,4>> dynamic_object_chains_;
@@ -39,10 +64,10 @@ class OriginalMap {
         image.pixels.assign(prg_.begin()+offset+4,prg_.begin()+offset+4+size_t(image.w)*image.h);
         return cache_.emplace(offset,std::move(image)).first->second;
     }
-    void mask_unit_ground(std::vector<uint8_t>& pixels,unsigned w,unsigned h,int x,int y,int elevation,bool checker=false)const{
+    void mask_unit_ground(std::vector<uint8_t>& pixels,unsigned w,unsigned h,int x,int y,int elevation,bool checker=false,int displacement=0)const{
         // 42AFBA -> 42F027 -> 42F2A7; 423D76 clears covered sprite pixels.
         const size_t cells=item(6,map_id-1)+28;
-        const int left=x*64+(y&1)*32+32-int(w/2),top=y*16+32-int(h);
+        const int left=x*64+(y&1)*32+32-int(w/2)+displacement,top=y*16+32-int(h);
         auto clear=[&](const Image& tile,int dx,int dy,bool object=false){
             const int x0=std::max(0,dx),y0=std::max(0,dy);
             const int x1=std::min(int(w),dx+int(tile.w)),y1=std::min(int(h),dy+int(tile.h));
@@ -71,7 +96,12 @@ class OriginalMap {
         for(int ring=1;ring<=12;++ring){
             int row=y+ring*2;
             cell(x,row,ring);cell(x-((row-1)&1),row-1,ring);cell(x+(((row-1)&1)?0:1),row-1,ring);
-            if(w/2>32&&ring!=12){cell(x-1,row,ring);cell(x+1,row,ring);}
+            if((w/2>32||displacement)&&ring!=12){
+                cell(x-1,row,ring);cell(x+1,row,ring);
+                // 42F1F3/42F24D extends the nearer row toward displaced frames.
+                if(displacement<0)cell(x-1-((row-1)&1),row-1,ring);
+                else if(displacement>0)cell(x+(((row-1)&1)?1:2),row-1,ring);
+            }
         }
         if(word(prg_,cells+(size_t(y)*width+x)*5+1)<=4)return;
         // 42F4D7 uses scenery bounds and its attribute depth, not row sorting.
@@ -151,7 +181,22 @@ public:
     }
     unsigned width{},height{},map_id{};
     int camera_x{},camera_y{};
-    explicit OriginalMap(const std::filesystem::path& root){
+    // Explicit indexed B1 contract: callers must supply 4483CB's reconstructed
+    // background, including 4485DB/448773 roster overlays, never a framebuffer.
+    std::vector<uint8_t> compose_reaction(unsigned w,unsigned h,std::span<const uint8_t> current,std::span<const uint8_t> background,bool left)const{
+        if(reaction_foot_mask_.empty()){
+        auto dat=OriginalDiscResources(root_).dat_entry(disc_,5);
+        size_t base=0;
+        size_t entry=base+2+21*8,offset=base+dword(dat,entry);
+        if(dword(dat,entry+4)!=2052||word(dat,offset)!=63||word(dat,offset+2)!=31||offset+2052>dat.size())throw std::runtime_error("Invalid original reaction foot mask");
+        reaction_foot_mask_.assign(dat.begin()+offset+4,dat.begin()+offset+2052);
+        OriginalPalette palette(pal_);
+        for(unsigned i=0;i<256;++i)reaction_shadow_[i]=palette.map(5,i);
+        }
+        return original_combat::reaction_bitmap(w,h,current,background,reaction_foot_mask_,reaction_shadow_,left);
+    }
+    void set_disc(OriginalDisc disc){if(disc_!=disc){disc_=disc;reaction_foot_mask_.clear();}}
+    explicit OriginalMap(const std::filesystem::path& root,OriginalDisc disc=OriginalDisc::one):root_(root),disc_(disc){
         auto read=[](const auto& path){std::ifstream f(path,std::ios::binary);if(!f)throw std::runtime_error("Missing original map archive");return std::vector<uint8_t>(std::istreambuf_iterator<char>(f),{});};
         prg_=read(root/"SUPERSP.PRG");pal_=read(root/"SUPERSP.PAL");
         pal_.at(0)=pal_.at(1)=pal_.at(2)=0; // 425FE5 initializes the runtime global palette.
@@ -163,6 +208,7 @@ public:
         for(unsigned i=0;i<word(prg_,attributes+4);++i)scenery_attributes_.push_back(word(prg_,scenery+i*2));
     }
     void load(unsigned id){
+        unit_bitmaps_.clear();last_reaction_.clear();reaction_draws_=0;
         map_id=id;composing_static_=true;cleared_object_cells_.clear();dynamic_objects_.clear();removed_dynamic_cells_.clear();size_t m=item(6,id-1);
         width=word(prg_,m);height=word(prg_,m+2);
         if(width<10||height<15||width>256||height>256||word(prg_,m+4)!=width*height*2)throw std::runtime_error("Invalid original staggered map geometry");
@@ -341,32 +387,158 @@ public:
         size_t p=frames+dword(prg_,frames+2+(first+frame-1)*7);
         return word(prg_,p+2)+1;
     }
-    void draw_units(std::vector<uint8_t>& image,const std::vector<OriginalEvents::Unit>& units,unsigned turn=1,uint64_t elapsed_ms=0)const{
+    std::vector<uint8_t> expected_reaction_bitmap(unsigned id,bool left)const{
+        const auto& bitmap=unit_bitmaps_.at(id);
+        return compose_reaction(bitmap.w,bitmap.h,bitmap.ad,bitmap.b1,left);
+    }
+    const std::vector<uint8_t>& unit_background_bitmap(unsigned id)const{return unit_bitmaps_.at(id).b1;}
+    const std::vector<uint8_t>& unit_source_bitmap(unsigned id)const{return unit_bitmaps_.at(id).ad;}
+    std::array<int,4> unit_bitmap_bounds(unsigned id)const{const auto& b=unit_bitmaps_.at(id);return {b.left,b.top,int(b.w),int(b.h)};}
+    bool begin_disappearance(const std::vector<OriginalEvents::Unit>& roster,unsigned target,unsigned turn=1,uint64_t elapsed=0){
+        if(disappearance_.active())return false;
+        auto role=std::find_if(roster.begin(),roster.end(),[&](const auto& u){return u.id==target&&!u.hostile();});
+        if(role==roster.end())role=std::find_if(roster.begin(),roster.end(),[&](const auto& u){return u.id==target;});
+        if(role==roster.end()||!role->present(turn)||!(role->status_flags&0x80)||(role->status_flags&0x20)||!role->appearance||role->appearance>word(prg_,group(1)))return false;
+        // Initialize full indexed AD/B1; do not capture an RGBA framebuffer.
+        auto scratch=draw();draw_units(scratch,roster,turn,elapsed);
+        auto& bitmap=unit_bitmaps_.at(target);
+        auto background=bitmap.b1;
+        for(const auto& other:roster){
+            if(other.id==target||!other.present(turn)||(other.status_flags&0x20)||!(other.status_flags&0x80)||other.action_state==1||other.action_state==3||other.action_state==5)continue;
+            auto found=unit_bitmaps_.find(other.id);if(found==unit_bitmaps_.end())continue;
+            const auto& source=found->second;
+            if(std::abs(source.x-bitmap.x)>2||source.y>=bitmap.y||source.y<bitmap.y-24)continue;
+            overlay_bitmap(bitmap,source,false);
+        }
+        auto masked=bitmap.ad;
+        int elevation=prg_.at(item(6,map_id-1)+28+(size_t(role->y)*width+role->x)*5);
+        const int displacement=int(int8_t(prg_.at(bitmap.frame+6)));
+        // 442452 -> 448984 adds the original indexed foot shadow before masking.
+        if(!(role->status_flags&8)&&bitmap.h>=32){
+            if(reaction_foot_mask_.empty())(void)compose_reaction(bitmap.w,bitmap.h,bitmap.ad,bitmap.b1,true);
+            int base=int((bitmap.h-32)*bitmap.w+bitmap.w/2)-32-displacement;
+            int back=int((bitmap.h-32)*bitmap.w+bitmap.w/2)-32;
+            for(int y=0;y<32;++y)for(int x=0;x<64;++x){int p=base+y*int(bitmap.w)+x,q=back+y*int(bitmap.w)+x;
+                if(p>=0&&q>=0&&p<int(masked.size())&&q<int(bitmap.b1.size())&&reaction_foot_mask_[size_t(y)*64+x]&&!masked[size_t(p)])masked[size_t(p)]=reaction_shadow_[bitmap.b1[size_t(q)]];
+            }
+        }
+        mask_unit_ground(masked,bitmap.w,bitmap.h,role->x,role->y,elevation,checker_mask_,displacement);
+        // 44689B/4468DF mode1 -> 423D76: nearer sprites erase scratch,
+        // rather than blending those occluders into the disappearing role.
+        for(const auto& other:roster){
+            if(!other.present(turn)||(other.status_flags&0x20)||!(other.status_flags&0x80)||other.action_state==1||other.action_state==3||other.action_state==5)continue;
+            auto found=unit_bitmaps_.find(other.id);if(found==unit_bitmaps_.end())continue;
+            const auto& source=found->second;
+            int minimum=bitmap.x-2-(displacement<0),maximum=bitmap.x+2+(displacement>0);
+            if(source.x<minimum||source.x>maximum||source.y<=bitmap.y||source.y>bitmap.y+24)continue;
+            for(unsigned y=0;y<source.h;++y)for(unsigned x=0;x<source.w;++x){
+                int dx=source.left-bitmap.left-displacement+int(x),dy=source.top-bitmap.top+int(y);
+                if(dx>=0&&dy>=0&&dx<int(bitmap.w)&&dy<int(bitmap.h)&&source.ad[size_t(y)*source.w+x])masked[size_t(dy)*bitmap.w+unsigned(dx)]=0;
+            }
+        }
+        disappearance_.begin(target,masked,bitmap.b1);
+        bitmap.b1=std::move(background);
+        OriginalPalette palette(pal_);disappearance_frames_.clear();
+        auto copy=disappearance_;
+        for(unsigned frame=0;frame<5;++frame){copy.frame=frame;disappearance_frames_.push_back(copy.pixels([&](unsigned a,unsigned b,int weight){return palette.blend_index(a,b,weight);}));}
+        return true;
+    }
+    void tick_disappearance(unsigned ms){disappearance_.tick(ms);}
+    bool disappearance_active()const{return disappearance_.active();}
+    bool disappearance_finished()const{return disappearance_.finished();}
+    unsigned disappearance_frame()const{return disappearance_.frame;}
+    const std::vector<uint8_t>& disappearance_pixels()const{return disappearance_frames_.at(std::min(disappearance_.frame,4u));}
+    unsigned last_reaction_target()const{return last_reaction_target_;}
+    bool last_reaction_left()const{return last_reaction_left_;}
+    uint64_t reaction_draws()const{return reaction_draws_;}
+    const std::vector<uint8_t>& last_reaction_bitmap()const{return last_reaction_;}
+    // Full roster order is required for 4485DB's persistent B1 overlays.
+    void draw_units(std::vector<uint8_t>& image,const std::vector<OriginalEvents::Unit>& units,unsigned turn=1,uint64_t elapsed_ms=0,std::optional<unsigned> silhouette=std::nullopt,std::optional<unsigned> reaction=std::nullopt,unsigned background_mode=0)const{
         size_t index=group(1),frames=group(2);unsigned count=word(prg_,index);
-        auto sorted=units;std::stable_sort(sorted.begin(),sorted.end(),[](const auto& a,const auto& b){return a.y<b.y;});
-        for(const auto& unit:sorted){
+        struct Presented {OriginalEvents::Unit unit;unsigned w,h;int left,top;std::vector<uint8_t> pixels;};
+        std::vector<Presented> presented;
+        std::vector<unsigned> changed;
+        for(const auto& unit:units){
             if(!unit.present(turn)||(unit.status_flags&0x20)||!(unit.status_flags&0x80)||!unit.appearance||unit.appearance>count)continue;
             size_t metadata=index+2+(unit.appearance-1)*8;
             unsigned first=word(prg_,metadata+2);
             unsigned frame=idle_frame(unit.appearance,unit.movement_pose?uint64_t(unit.movement_frame)*190:elapsed_ms,unit.direction,unit.animation_action);
             size_t table=frames+2+(first+frame-1)*7;
+            if(disappearance_.active()&&unit.id==disappearance_.target)table=unit_bitmaps_.at(unit.id).frame;
             size_t p=frames+dword(prg_,table);unsigned length=word(prg_,table+4);
             unsigned w=word(prg_,p)+1,h=word(prg_,p+2)+1;
-            if(w>512||h>512||length<4)throw std::runtime_error("Invalid original unit sprite");
+            if(w>512||h>512||length<4||p>prg_.size()||length>prg_.size()-p)throw std::runtime_error("Invalid original unit sprite");
             std::vector<uint8_t> decoded;decoded.reserve(size_t(w)*h);size_t end=p+length;p+=4;
-            while(p<end&&decoded.size()<size_t(w)*h){unsigned code=prg_.at(p++),n=code&127;
+            // 424F70 consumes the entire entry; signed -128 is an empty literal.
+            while(p<end){unsigned code=prg_.at(p++),n=code?code&127:1;
+                if(n>size_t(w)*h-decoded.size())throw std::runtime_error("Invalid original unit run");
                 if(!code){decoded.push_back(0);continue;}
-                if(!n)throw std::runtime_error("Invalid original unit run");
+                unsigned source=(code&128)?n:1;
+                if(source>end-p)throw std::runtime_error("Truncated original unit run");
                 if(code&128){while(n--)decoded.push_back(prg_.at(p++));}else{unsigned c=prg_.at(p++);decoded.insert(decoded.end(),n,uint8_t(c));}
             }
             if(decoded.size()!=size_t(w)*h)throw std::runtime_error("Truncated original unit sprite");
-            int left=unit.x*64+(unit.y&1)*32+32-int(w/2)-camera_x;
+            auto& bitmap=unit_bitmaps_[unit.id];
+            if(!silhouette){
+                if(bitmap.w!=w||bitmap.h!=h||bitmap.frame!=table||bitmap.x!=unit.x||bitmap.y!=unit.y||bitmap.state!=unit.action_state||bitmap.status!=unit.status_flags||background_mode!=0)changed.push_back(unit.id);
+                bool resize=bitmap.w!=w||bitmap.h!=h;
+                bitmap.w=w;bitmap.h=h;bitmap.frame=table;bitmap.x=unit.x;bitmap.y=unit.y;bitmap.state=unit.action_state;bitmap.status=unit.status_flags;bitmap.ad=decoded;
+                bitmap.left=unit.x*64+(unit.y&1)*32+32-int(w/2);
+                size_t cell=item(6,map_id-1)+28+(size_t(unit.y)*width+unit.x)*5;
+                bitmap.top=unit.y*16+32-int(h)-(int(prg_.at(cell))-1)*16;
+                if(resize)bitmap.b1.assign(size_t(w)*h,0);
+            }
+            if(silhouette){if(*silhouette>255)throw std::runtime_error("Invalid silhouette palette");for(auto& color:decoded)if(color&&color!=32)color=uint8_t(*silhouette);}
+            // 4409A4 stores table+6 at runtime+ACh; 4462B6 sign-extends it.
+            int displacement=int(int8_t(prg_.at(table+6)));
+            int left=unit.x*64+(unit.y&1)*32+32-int(w/2)+displacement-camera_x;
             size_t map=item(6,map_id-1),cell=map+28+(size_t(unit.y)*width+unit.x)*5;
             int elevation=prg_.at(cell);
-            mask_unit_ground(decoded,w,h,unit.x,unit.y,elevation,checker_mask_);
+            mask_unit_ground(decoded,w,h,unit.x,unit.y,elevation,checker_mask_,displacement);
             // sub_42B1D2 anchors the foot at tile bottom minus (height-1)*16.
             int top=unit.y*16+32-int(h)-camera_y-std::max(0,elevation-1)*16;
-            for(unsigned y=0;y<h;++y)for(unsigned x=0;x<w;++x){unsigned c=decoded.at(size_t(y)*w+x);int dx=left+int(x),dy=top+int(y);if(!c||dx<0||dy<0||dx>=640||dy>=480)continue;size_t dst=(size_t(dy)*640+dx)*4;for(unsigned k=0;k<3;++k)image.at(dst+k)=uint8_t(unsigned(pal_.at(c*3+k))*255/63);}
+            presented.push_back({unit,w,h,left,top,std::move(decoded)});
+        }
+        if(!silhouette){
+            // 4483CB mode0: crop the indexed world, then copy OTHER B1
+            // buffers (including transparent bytes) in original roster order.
+            for(auto id:changed){auto& target=unit_bitmaps_.at(id);
+                for(unsigned y=0;y<target.h;++y)for(unsigned x=0;x<target.w;++x){
+                    int sx=target.left+int(x),sy=target.top+int(y);
+                    target.b1[size_t(y)*target.w+x]=sx>=0&&sy>=0&&sx<int(width*64)&&sy<int(height*32)?pixels_.at(size_t(sy)*width*64+unsigned(sx)):0;
+                }
+                if(background_mode==1)continue;
+                for(const auto& other:units){
+                    if(!other.present(turn)||(other.status_flags&0x20)||!(other.status_flags&0x80)||other.action_state==1||other.action_state==3||other.action_state==5)continue;
+                    auto found=unit_bitmaps_.find(other.id);if(found==unit_bitmaps_.end())continue;
+                    const auto& source=found->second;
+                    if((source.x==target.x&&source.y==target.y)||std::abs(source.x-target.x)>2||std::abs(source.y-target.y)>24)continue;
+                    overlay_bitmap(target,source,true);
+                }
+                if(background_mode==2)for(const auto& other:units){
+                    if(!other.present(turn)||(other.status_flags&0x20)||!(other.status_flags&0x80)||other.action_state==1||other.action_state==3||other.action_state==5)continue;
+                    auto found=unit_bitmaps_.find(other.id);if(found==unit_bitmaps_.end())continue;
+                    const auto& source=found->second;
+                    if((source.x==target.x&&source.y==target.y)||std::abs(source.x-target.x)>2||source.y>=target.y||source.y<target.y-24)continue;
+                    overlay_bitmap(target,source,false);
+                }
+            }
+        }
+        std::stable_sort(presented.begin(),presented.end(),[](const auto& a,const auto& b){return a.unit.y<b.unit.y;});
+        for(auto& pose:presented){
+            if(disappearance_.active()&&pose.unit.id==disappearance_.target&&!silhouette){
+                pose.pixels=disappearance_frames_.at(disappearance_.frame);
+            }
+            if(reaction&&pose.unit.id==*reaction&&!silhouette){
+                auto& bitmap=unit_bitmaps_.at(*reaction);
+                pose.pixels=compose_reaction(bitmap.w,bitmap.h,bitmap.ad,bitmap.b1,bitmap.alternate);
+                last_reaction_target_=*reaction;last_reaction_left_=bitmap.alternate;
+                bitmap.alternate=!bitmap.alternate;last_reaction_=pose.pixels;++reaction_draws_;
+                int displacement=pose.left-(pose.unit.x*64+(pose.unit.y&1)*32+32-int(pose.w/2)-camera_x);
+                pose.w=128;pose.left=pose.unit.x*64+(pose.unit.y&1)*32+32-64+displacement-camera_x;
+                mask_unit_ground(pose.pixels,pose.w,pose.h,pose.unit.x,pose.unit.y,int(prg_.at(item(6,map_id-1)+28+(size_t(pose.unit.y)*width+pose.unit.x)*5)),checker_mask_,displacement);
+            }else if(!reaction&&!silhouette)unit_bitmaps_.at(pose.unit.id).alternate=true;
+            for(unsigned y=0;y<pose.h;++y)for(unsigned x=0;x<pose.w;++x){unsigned c=pose.pixels.at(size_t(y)*pose.w+x);int dx=pose.left+int(x),dy=pose.top+int(y);if(!c||dx<0||dy<0||dx>=640||dy>=480)continue;size_t dst=(size_t(dy)*640+dx)*4;for(unsigned k=0;k<3;++k)image.at(dst+k)=uint8_t(unsigned(pal_.at(c*3+k))*255/63);}
         }
     }
     void pan(int dx,int dy){camera_x=std::clamp(camera_x+dx,32,std::max(32,int(width*64)-21*32));camera_y=std::clamp(camera_y+dy,16,std::max(16,int(height*32)-480));}

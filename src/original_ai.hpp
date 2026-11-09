@@ -56,6 +56,7 @@ struct Candidate {
     std::size_t target{}; // opaque caller token; no assumption about unit ID/index
     int destination_record{}; // zero=current position, otherwise original record index+1
     MeleePreview preview{};
+    int action_index{-1}; // Original action-definition token retained by executable controller.
 };
 struct Selection { Score score{}; std::optional<Candidate> candidate; };
 // Call in original action-definition order, current position then ordered routes.
@@ -192,7 +193,7 @@ struct MovementTarget {
     unsigned status33{};
     int kind_class{}; // signed kind-table byte +11h
     int combat_value{}; // sub_45CFBB with both selector arguments zero
-    bool same_side{}; // sub_441020(list,unit)==1
+    bool same_side{}; // Legacy field name: sub_441020 == 1 means HIDDEN, not same allegiance.
 };
 // sub_4394ED / 43948D. Caller passes list order, not sorted targets.
 inline const MovementTarget* original_target(std::span<const MovementTarget> units,Position origin,int mode,int minimum_value=0){
@@ -206,6 +207,55 @@ inline const MovementTarget* original_target(std::span<const MovementTarget> uni
         if(!best||d<distance){best=&unit;distance=d;if(d==1)break;}
     }
     return best;
+}
+// 4775F5 returns maximum parent-chain length, NOT AP or geometric radius.
+inline int maximum_route_depth(const OrderedRoutes& routes){
+    int maximum=0;
+    for(size_t i=1;i<routes.order.size();++i){
+        int index=routes.order[i],depth=0;
+        if(!routes.records.at(index).route.marker)continue;
+        while(index>0){index=routes.records.at(index).parent;++depth;}
+        maximum=std::max(maximum,depth);
+    }
+    return maximum;
+}
+// 40CAFE visits rings 1..reach+1, with a strict combat-value comparison.
+// Lookup is 446E53(mode 1), so the adapter must apply visibility first.
+template<class Lookup>
+bool nearby_threat(Position origin,int reach,int own_value,Lookup lookup){
+    if(reach<=0)return false;
+    Position top=origin;
+    for(int radius=1;radius<=reach+1;++radius){
+        top.x-=(top.y&1)?0:1;--top.y;
+        auto threat=[&](Position p){auto value=lookup(p);return value&&*value>own_value/3;};
+        for(int x=top.x;x<=top.x+radius;++x)
+            if(threat({x,top.y})||threat({x,top.y+2*radius}))return true;
+        for(int y=top.y+2;y<=top.y+2*radius-2;y+=2)
+            if(threat({top.x,y})||threat({top.x+radius,y}))return true;
+    }
+    return false;
+}
+// 40C956: +12C/+130 signed words, E8/EE/EF/E9 signed config bytes;
+// special is actor kind6/7 AND target's 44314E result exactly2.
+inline bool target_threat(int distance,int target12c,int target130,int config_e8,int config_ee,int config_ef,int config_e9,int range,int reach,bool special){
+    if(!config_e9)throw std::invalid_argument("Original AI movement divisor");
+    int budget=std::max(0,target12c+target130-config_e8);
+    int steps=std::max(0,(budget-(special?config_ef:config_ee))/config_e9)+(special?5:range);
+    return distance-steps-reach-2<=0;
+}
+// 40CDA1 ordinary non-hidden branch. +122 SAR16 reads WORD +124.
+inline bool urgent_40CDA1(int mode,int kind,int hp,int maximum_hp,int mp,int maximum_mp){
+    if(maximum_hp<=0)return false;
+    int threshold;
+    if(kind==6||kind==7||kind==19||kind==20){
+        if(hp>0&&maximum_hp>0&&hp*100/maximum_hp<10)return false;
+        threshold=mode==1?70:90;
+    }else if(kind==4||kind==23){
+        if(mp>0&&maximum_mp>0&&mp*100/maximum_mp<10)return false;
+        threshold=mode==1?70:80;
+    }else if(kind==3)threshold=mode==1?60:70;
+    else threshold=mode==1?45:50;
+    return hp*100/maximum_hp>=threshold;
 }
 struct MoveSelection { int destination_record{}; Position destination{}; int distance{}; };
 inline int squared_distance(Position a,Position b){
@@ -256,7 +306,7 @@ std::optional<MoveSelection> select_47769A(std::span<const RouteRecord> routes,s
     for(const auto& r:routes){
         if(!r.marker||adjacent(r.position))continue;
         int d=original_distance(target->position,r.position);
-        if(auto near=original_target(secondary,r.position,1))secondary_distance=original_distance(near->position,r.position);
+        if(auto nearest_target=original_target(secondary,r.position,1))secondary_distance=original_distance(nearest_target->position,r.position);
         bool replace=!best;
         if(best&&d<best->distance){
             replace=secondary_distance>best_secondary||initial>best->distance||secondary_distance>10;
@@ -295,6 +345,8 @@ Behavior40D171 dispatch_40D171(int mode,int16_t runtime124,int16_t runtimeB7,CDA
     return Behavior40D171::approach;
 }
 // 40AED5 entry, including its non-generic special-goal and kind branches.
+// 4288A6 ->44367C initializes allied army +DA=0, hostile army +DA=1.
+// Do not derive this from the active round/banner or a target's allegiance.
 enum class Default40AED5 { finish, special_40D351, goal_43939D, controller_40D171 };
 inline Default40AED5 dispatch_40AED5(unsigned status34,unsigned status38,int runtime_kind8,int difficulty,int global4F7CD0,int side_da){
     bool restricted=(difficulty==1&&global4F7CD0==0&&side_da==1)||(status38&2)!=0;

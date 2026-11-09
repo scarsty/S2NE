@@ -6,6 +6,7 @@
 
 namespace s2ne {
 class OriginalSaveBridge {
+    friend class OriginalInitialization;
     using Raw=OriginalSave::UnitRecord;
     static uint32_t get(std::span<const uint8_t> b,size_t p,unsigned n=2){
         uint32_t v=0;for(unsigned i=0;i<n;++i)v|=uint32_t(b[p+i])<<(8*i);return v;
@@ -22,18 +23,22 @@ class OriginalSaveBridge {
             unsupported("Original saved group exceeds runtime capacity");
     }
     static void decode_unit(const Raw& r,OriginalEvents::Unit& u){
+        u.persistent_role6=signed_word(r,6);for(size_t i=0;i<u.relationships.size();++i)u.relationships[i]=int(int8_t(r[0x142+i]));
         u.id=get(r,2);u.appearance=get(r,4);u.x=int(int32_t(get(r,0x23,4)));u.y=int(int32_t(get(r,0x27,4)));
         u.name.clear();for(size_t p=0x10;p<0x23&&r[p];++p)u.name.push_back(r[p]);
-        u.direction=r[0x2B]&3;u.animation_action=r[0x2B]>>2;u.action_state=r[0x2D];u.allegiance_tag=r[0x2E];
-        u.first_turn=signed_word(r,0xA);u.last_turn=signed_word(r,0xC);
-        u.status_flags=r[0x33];u.status34=r[0x34];u.status3c=r[0x3C];
+        u.direction=r[0x2B]&3;u.animation_action=r[0x2B]>>2;u.action_state=r[0x2D];u.allegiance_tag=r[0x2E];u.runtime_role_selector=r[0x2F];
+        // Saved records already belong to the live army; source arrival selectors
+        // are not serialized at +A/+C (those are separate original role words).
+        u.first_turn=1;u.last_turn=0;
+        u.set_flags30(get(r,0x30,4));u.status34=r[0x34];u.status3c=r[0x3C];
         u.level=signed_word(r,0xB5);u.max_hp=signed_word(r,0xB7);u.max_mp=signed_word(r,0xB9);
         u.max_st=signed_word(r,0xBB);u.max_sp=signed_word(r,0xBD);u.base_action_points=signed_word(r,0xBF);
         u.strikeback=signed_word(r,0xC1);u.attack_limit=signed_word(r,0xC3);u.defense_limit=signed_word(r,0xC5);
-        u.fencing=signed_word(r,0xC7);u.tactics=signed_word(r,0x138);u.experience=get(r,0x113);
+        u.fencing=signed_word(r,0xC7);u.base_tactics=signed_word(r,0xC9);u.tactics=signed_word(r,0x138);
+        u.experience_threshold=get(r,0x111);u.experience=get(r,0x113);
         u.abilities=get(r,0x115,4);u.kind_attribute=r[0x123];
         u.hp=signed_word(r,0x124);u.mp=signed_word(r,0x126);u.st=signed_word(r,0x128);u.sp=signed_word(r,0x12A);
-        u.action_points=u.max_action_points=signed_word(r,0x12E);u.carry_points=signed_word(r,0x130);
+        u.max_action_points=signed_word(r,0x12C);u.action_points=signed_word(r,0x12E);u.carry_points=signed_word(r,0x130);
         u.attack=signed_word(r,0x134);u.defense=signed_word(r,0x136);
         for(size_t i=0;i<6;++i){u.equipment[i]=get(r,0xCB+2*i);u.weapon_proficiency[i]=get(r,0xD7+2*i);}
         for(size_t i=0;i<11;++i){u.learned[i]=get(r,0xFB+2*i);u.learned_proficiency[i]=get(r,0xE3+2*i);}
@@ -50,12 +55,15 @@ class OriginalSaveBridge {
         std::vector<uint8_t> old;for(size_t p=0x10;p<0x23&&r[p];++p)old.push_back(r[p]);
         if(old!=u.name){std::copy(u.name.begin(),u.name.end(),r.begin()+0x10);r[0x10+u.name.size()]=0;}
         put(r,0x23,uint32_t(u.x),4);put(r,0x27,uint32_t(u.y),4);r[0x2B]=uint8_t(u.direction|(u.animation_action<<2));
-        r[0x2D]=u.action_state;r[0x2E]=uint8_t(u.allegiance_tag);r[0x33]=uint8_t(u.status_flags);r[0x34]=u.status34;r[0x3C]=u.status3c;
-        w(0xA,u.first_turn);w(0xC,u.last_turn);
+        r[0x2D]=u.action_state;r[0x2E]=uint8_t(u.allegiance_tag);put(r,0x30,u.flags30(),4);r[0x34]=u.status34;r[0x3C]=u.status3c;
+        if(u.runtime_role_selector>255)unsupported("Original role selector exceeds BYTE");r[0x2F]=uint8_t(u.runtime_role_selector);
+        w(6,u.persistent_role6);
+        for(size_t i=0;i<u.relationships.size();++i){if(u.relationships[i]< -128||u.relationships[i]>127)unsupported("Original relationship exceeds signed BYTE");r[0x142+i]=uint8_t(u.relationships[i]);}
+        // +A/+C preserve original source20/22 role words, not arrival51/52.
         w(0xB5,u.level);w(0xB7,u.max_hp);w(0xB9,u.max_mp);w(0xBB,u.max_st);w(0xBD,u.max_sp);
         w(0xBF,u.base_action_points);w(0xC1,u.strikeback);w(0xC3,u.attack_limit);w(0xC5,u.defense_limit);
-        w(0xC7,u.fencing);w(0x138,u.tactics);uw(0x113,u.experience);put(r,0x115,u.abilities,4);r[0x123]=uint8_t(u.kind_attribute);
-        w(0x124,u.hp);w(0x126,u.mp);w(0x128,u.st);w(0x12A,u.sp);w(0x12E,u.action_points);
+        w(0xC7,u.fencing);w(0xC9,u.base_tactics);w(0x138,u.tactics);uw(0x111,u.experience_threshold);uw(0x113,u.experience);put(r,0x115,u.abilities,4);r[0x123]=uint8_t(u.kind_attribute);
+        w(0x124,u.hp);w(0x126,u.mp);w(0x128,u.st);w(0x12A,u.sp);w(0x12C,u.max_action_points);w(0x12E,u.action_points);
         w(0x130,u.carry_points);w(0x134,u.attack);w(0x136,u.defense);
         for(size_t i=0;i<6;++i){uw(0xCB+2*i,u.equipment[i]);uw(0xD7+2*i,u.weapon_proficiency[i]);}
         for(size_t i=0;i<11;++i){uw(0xFB+2*i,u.learned[i]);uw(0xE3+2*i,u.learned_proficiency[i]);}
@@ -80,7 +88,20 @@ public:
             events.restore_unit_resources(u);events.units.push_back(std::move(u));
         }
         events.restore_event_states(raw.event_states);events.flags=raw.flags_4f7d10;
+        events.campaign_currencies=std::array<int32_t,2>{int32_t(get(raw.stage_4fb478,0,4)),int32_t(get(raw.stage_4fb478,4,4))};
         return {std::move(events),get(raw.globals_4f7cd0,12,4),restored_camera,raw};
+    }
+    static OriginalSave::State capture_promotion(const OriginalEvents& events,unsigned turn,std::pair<int,int> camera,
+            const OriginalSave::State& baseline,size_t selected,unsigned source_kind,
+            std::span<const uint8_t> inventory,uint8_t army_metadata){
+        validate(baseline);
+        if(selected>=baseline.groups[0].units.size()||selected>=events.units.size())unsupported("Promotion requires original allied unit identity");
+        const auto& old=baseline.groups[0].units[selected];const auto& unit=events.units[selected];
+        if(get(old,2)!=unit.id||get(old,4)!=source_kind||unit.appearance==source_kind||unit.hostile())unsupported("Stale original promotion identity");
+        if(inventory.size()!=baseline.groups[0].inventory.size())unsupported("Promotion requires complete original inventory");
+        auto staged=baseline;put(staged.groups[0].units[selected],4,unit.appearance);
+        staged.groups[0].inventory.assign(inventory.begin(),inventory.end());staged.groups[0].metadata[4]=army_metadata;
+        return capture(events,turn,camera,&staged);
     }
     static OriginalSave::State capture(const OriginalEvents& events,unsigned turn,std::pair<int,int> camera,
                                       const OriginalSave::State* baseline=nullptr){
@@ -99,6 +120,7 @@ public:
             patch_unit(record,u);
         }
         if(index!=events.units.size())unsupported("Native unit set no longer matches raw save");
+        if(events.campaign_currencies)for(size_t i=0;i<2;++i)put(result.stage_4fb478,i*4,uint32_t((*events.campaign_currencies)[i]),4);
         result.flags_4f7d10=events.flags;result.event_states=events.save_event_states();
         if(result.event_states.size()!=baseline->event_states.size())unsupported("Stage event set changed");
         put(result.globals_4f7cd0,12,turn,4);return result;

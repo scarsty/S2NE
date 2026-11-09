@@ -50,7 +50,7 @@ private:
             if(!n||n>w-x)throw std::runtime_error("Invalid battlefield menu sprite run");
             if(op&&!(op&128))value=cel_.at(p++);
             while(n--){unsigned c=op&128?cel_.at(p++):value;int dx=left+int(x++),dy=top+int(y);
-                if((transparent&&!c)||dx<0||dx>=640||dy<0||dy>=480)continue;
+                if((transparent&&!(op&128)&&!c)||dx<0||dx>=640||dy<0||dy>=480)continue;
                 size_t q=(size_t(dy)*640+dx)*4;
                 for(unsigned k=0;k<3;++k)image.at(q+k)=uint8_t(unsigned(pal_.at(c*3+k))*255/63);
                 image.at(q+3)=255;
@@ -78,7 +78,7 @@ private:
     }
     void draw_page(std::vector<uint8_t>& image,Page page,int selection)const {
         if(page==Page::root){
-            sprite(image,194,left_,top_,false);
+            sprite(image,194,left_,top_,true);
             if(context_.byte_4f6f4d==2)sprite(image,196,left_+145,top_+293,true);
             for(int row=0;row<(context_.byte_4f6f4d==2?6:5);++row){
                 auto bytes=font_.text_bytes(root_ids[row]);
@@ -86,7 +86,7 @@ private:
             }
         }else{
             OriginalPalette(pal_).transform(image,0,480,6);
-            sprite(image,page==Page::overview?201:200,submenu_left(),submenu_top(),false);
+            sprite(image,page==Page::overview?201:200,submenu_left(),submenu_top(),true);
             unsigned title=page==Page::overview?122:127;
             auto bytes=font_.text_bytes(title);
             int x=page==Page::overview?320-int(bytes.size())*6:submenu_left()+36;

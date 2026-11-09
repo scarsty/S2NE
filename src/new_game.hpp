@@ -28,10 +28,10 @@ public:
     unsigned confirmed=0;
     explicit NewGameSetup(const std::filesystem::path& root){
         auto read=[](auto p){std::ifstream f(p,std::ios::binary);if(!f)throw std::runtime_error("Missing setup resource");return std::vector<uint8_t>(std::istreambuf_iterator<char>(f),{});};
-        dat=read(root/"cd"/"windows-disc1"/"SUPERSP"/"SUPERSP.DAT");pal=read(root/"SUPERSP.PAL");
+        dat=OriginalDiscResources(root).dat_entry(OriginalDisc::one,7);pal=read(root/"SUPERSP.PAL");
         // 425FE5 forces the global transparent/black entry to zero.
         pal.at(0)=pal.at(1)=pal.at(2)=0;
-        group=dword(pal,808+8*(5+18+6))-14;
+        group=0;
         backdrop_=load_title(root,20,false);
     }
     void move(int d){difficulty=std::clamp(difficulty+d,0,4);}

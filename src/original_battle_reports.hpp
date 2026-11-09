@@ -19,6 +19,7 @@ private:
     std::vector<uint8_t> stage_name_,victory_,defeat_;
     unsigned stage_=0;
     Page page_;
+    bool close_to_battle_=false;
     int first_=0,row_=0,code_=0,mini_w_=0,mini_h_=0;
     std::optional<std::pair<int,int>> locate_;
     unsigned detail_address_=0;
@@ -31,11 +32,11 @@ private:
         if(x<0||x>=640||y<0||y>=480)return;size_t p=(size_t(y)*640+x)*4;
         for(unsigned k=0;k<3;++k)image.at(p+k)=uint8_t(unsigned(pal_.at(c*3+k))*255/63);image.at(p+3)=255;
     }
-    void sprite(std::vector<uint8_t>& image,unsigned id,int left,int top,bool transparent=false)const {
+    void sprite(std::vector<uint8_t>& image,unsigned id,int left,int top,bool transparent=true)const {
         size_t g=dword(pal_,816)-57,p=g+dword(cel_,g+2+(id-142)*8);unsigned w=word(cel_,p)+1,h=word(cel_,p+2)+1;p+=4;
         for(unsigned y=0;y<h;++y)for(unsigned x=0;x<w;){unsigned op=cel_.at(p++),n=op?op&127:1,c=0;
             if(!n||n>w-x)throw std::runtime_error("Invalid battle report sprite");if(op&&!(op&128))c=cel_.at(p++);
-            while(n--){unsigned ink=op&128?cel_.at(p++):c;if(!transparent||ink)pixel(image,left+int(x),top+int(y),ink);++x;}}
+            while(n--){unsigned ink=op&128?cel_.at(p++):c;if(!transparent||(op&128)||ink)pixel(image,left+int(x),top+int(y),ink);++x;}}
     }
     void large(std::vector<uint8_t>& image,const std::vector<uint8_t>& text,int x,int y,unsigned color)const{font_.draw_original_large(image,text,x,y,color);}
     void small(std::vector<uint8_t>& image,const std::vector<uint8_t>& text,int x,int y,unsigned color)const{font_.draw_small(image,text,x,y,color,true);}
@@ -85,7 +86,8 @@ public:
     std::optional<std::pair<int,int>> location()const{return locate_;}
     const Entry& selected()const{return entries_.at(size_t(first_+row_));}
     unsigned detail_address()const{return detail_address_;}
-    void close_detail(){if(page_==Page::proficiencies){page_=Page::detail;detail_address_=0x455C7B;}else if(page_==Page::detail){page_=Page::roster;detail_address_=0;}}
+    void close_to_battle(bool enabled=true){close_to_battle_=enabled;}
+    void close_detail(){if(page_==Page::proficiencies){page_=Page::detail;detail_address_=0x455C7B;}else if(page_==Page::detail){page_=close_to_battle_?Page::closed:Page::roster;detail_address_=0;}}
     void proficiencies(){if(page_==Page::detail){page_=Page::proficiencies;detail_address_=0x456BC0;}}
     void detail(){if(page_==Page::roster){detail_address_=0x455C7B;page_=Page::detail;}}
     void locate(){if(page_==Page::roster&&!selected().locate_blocked){locate_={{selected().unit.x,selected().unit.y}};code_=1;page_=Page::closed;}}
@@ -132,7 +134,7 @@ public:
             large(image,font_.text_bytes(19),left+xs[0],top+330,40);large(image,bytes("NPC"),left+xs[1],top+330,38);large(image,font_.text_bytes(20),left+xs[2],top+330,60);
             for(int i=0;i<3;++i)large(image,bytes(std::to_string(numbers[i])),left+144+176*i,top+330,185);return image;
         }
-        sprite(image,205,0,0);for(int i=0;i<4&&first_+i<int(size());++i)roster_row(image,i,entries_[first_+i]);
+        sprite(image,205,0,0,false);for(int i=0;i<4&&first_+i<int(size());++i)roster_row(image,i,entries_[first_+i]);
         for(int y=9+row_*118;y<=118+row_*118;++y)for(int x=12;x<=104;++x)if(x==12||x==104||y==9+row_*118||y==118+row_*118)pixel(image,x,y,60);
         int thumb=31;if(first_+row_>0)thumb+=(first_+row_+1)*391/int(size());sprite(image,147,616,thumb,true);
         if(page_==Page::detail||page_==Page::proficiencies){sprite(image,206,5,363);status_.draw(font_,image,selected().unit,363,selected().enemy);}

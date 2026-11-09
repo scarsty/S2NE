@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <span>
 #include <stdexcept>
 #include <vector>
@@ -34,15 +35,19 @@ class OriginalEvents {
 public:
     struct Line { int speaker; std::vector<uint8_t> name, text; };
     unsigned stage{}, first_stage{}, alternate_stage{};
+    std::optional<std::array<int32_t,2>> campaign_currencies;
     struct Unit {
         unsigned id, appearance; int x,y; std::vector<uint8_t> name; int first_turn{},last_turn{};
         int hp{},max_hp{},mp{},st{},sp{},strikeback{},attack{},defense{},fencing{},tactics{},behavior{};
         int action_points{},base_action_points{},carry_points{},movement_type{};
+        int base_tactics{}; // Signed runtime +C9h; tactics is the distinct current +138h.
+        unsigned experience_threshold{}; // WORD runtime +111h, KINDSP record +0Eh.
+        uint32_t runtime_flags30{}; // DWORD +30h; high byte overlaps status_flags (+33h).
         unsigned direction{},animation_action{};
         uint8_t action_state{}; // Original runtime +2Dh: 0 idle, 1 selected, 2 finished, 3 moving, 4 moved.
         bool movement_pose{};
         unsigned movement_frame{};
-        int level{1}, max_mp{}, max_st{}, max_sp{}, max_action_points{}, attack_limit{}, defense_limit{};
+        int level{1}, max_mp{}, max_st{}, max_sp{}, max_action_points{}, attack_limit{}, defense_limit{}; // max_action_points is runtime +12Ch, not current +12Eh.
         unsigned portrait{}, status_flags{0x80}, experience{};
         std::vector<uint8_t> profession;
         std::array<unsigned,6> equipment{};
@@ -55,7 +60,12 @@ public:
         uint32_t abilities{}; // runtime +115h; +116h = bits 8..15, +118h = bits 24..31
         uint8_t status34{},status3c{}; // runtime state, not fields in the 101-byte stage record
         unsigned kind_attribute{}, allegiance_tag{};
+        unsigned runtime_role_selector{};
+        int persistent_role6{};
+        std::array<int,40> relationships{};
         // sub_4274B5 partitions stage units at the first behavior 2/3/8; behavior 1 is allied AI.
+        uint32_t flags30()const{return (runtime_flags30&0x00FFFFFFu)|((status_flags&255u)<<24);}
+        void set_flags30(uint32_t value){runtime_flags30=value;status_flags=value>>24;}
         bool hostile()const{return behavior==2||behavior==3||behavior==8||behavior==9||behavior==10;}
         bool controllable()const{return behavior==0;}
         bool npc_class()const{return behavior!=0&&behavior!=5&&behavior!=6&&behavior!=7;}
@@ -67,6 +77,18 @@ public:
     std::vector<uint8_t> briefing,stage_name,victory_objective,defeat_objective;
     std::array<int,12> battle_config{};
     unsigned learned_ability_count{},first_ability_count{},second_ability_count{};
+    int victory_relationship_increment()const{return int(int8_t(bin_.at(combat_config_+0xFB)));}
+    struct DeploymentSlot { int x{},y{};unsigned direction{}; };
+    std::vector<DeploymentSlot> deployment_slots()const{
+        size_t h=entry(1)+2+(stage-1)*30,data=entry(1)+dword(h),characters=data+dword(h+26);
+        std::vector<DeploymentSlot> result;
+        for(unsigned i=0;i<bin_.at(h+8);++i){size_t p=characters+i*101;
+            int behavior=int(int8_t(bin_.at(p+49)));if(behavior==2||behavior==3||behavior==8)break;
+            if(int(int8_t(bin_.at(p+51)))==1&&behavior==0)
+                result.push_back({int(int16_t(word(p+23))),int(int16_t(word(p+25))),bin_.at(p+50)});
+        }
+        return result;
+    }
     bool has_learned_ability(const Unit& unit,unsigned mode=3,bool suppress_first=false,bool suppress_second=false)const{
         if(!unit.hostile()){
             if(suppress_first){if(mode==1)return false;if(mode==3)mode=2;}
@@ -128,11 +150,11 @@ public:
             put(0xB7,unit.max_hp);put(0x124,unit.hp);put(0xB9,unit.max_mp);put(0x126,unit.mp);
             put(0xBB,unit.max_st);put(0x128,unit.st);put(0xC3,unit.attack_limit);put(0x134,unit.attack);
             put(0xC5,unit.defense_limit);put(0x136,unit.defense);put(0xC7,unit.fencing);
-            put(0xC9,unit.tactics);put(0x138,unit.tactics);
+            put(0xC9,unit.base_tactics);put(0x138,unit.tactics);
             original_combat::adjust_runtime_stats(runtime,percentage);
             unit.max_hp=get(0xB7);unit.hp=get(0x124);unit.max_mp=get(0xB9);unit.mp=get(0x126);
             unit.max_st=get(0xBB);unit.st=get(0x128);unit.attack_limit=get(0xC3);unit.attack=get(0x134);
-            unit.defense_limit=get(0xC5);unit.defense=get(0x136);unit.fencing=get(0xC7);unit.tactics=get(0x138);
+            unit.defense_limit=get(0xC5);unit.defense=get(0x136);unit.fencing=get(0xC7);unit.base_tactics=get(0xC9);unit.tactics=get(0x138);
         }
     }
     int combat_value(const Unit& unit,int mode=0)const{
@@ -324,9 +346,10 @@ public:
             unit.hp=unit.max_hp=stat(27);unit.mp=unit.max_mp=stat(29);
             unit.st=unit.max_st=stat(31);unit.sp=unit.max_sp=stat(33);
             unit.strikeback=stat(35);unit.attack=unit.attack_limit=stat(37);
-            unit.defense=unit.defense_limit=stat(39);unit.fencing=stat(41);unit.tactics=stat(43);
+            unit.defense=unit.defense_limit=stat(39);unit.fencing=stat(41);unit.base_tactics=unit.tactics=stat(43);
             unit.level=stat(18);if(!unit.level)unit.level=1;
             unit.allegiance_tag=bin_.at(p+15)&15;
+            unit.persistent_role6=int(int8_t(bin_.at(p+21)));
             for(unsigned j=0;j<4;++j)unit.initial_status[j]=word(p+55+j*2);
             for(unsigned j=0;j<11;++j)unit.learned[j]=word(p+79+j*2);
             // 463914 locates the 37-byte ability records after the two-byte group directory.
@@ -344,6 +367,7 @@ public:
             unit.abilities=dword(p+75);
             auto kw=[&](size_t q){return unsigned(kinds_.at(q))|(unsigned(kinds_.at(q+1))<<8);};
             size_t kind=kw(18)+(size_t(kw(20))<<16)+(unit.appearance-1)*37;
+            unit.experience_threshold=kw(kind+14);
             unit.movement_type=int(int8_t(kinds_.at(kind+18)));
             unit.kind_attribute=stat(45)!=0?bin_.at(p+45):kinds_.at(kind+26);
             unit.base_action_points=stat(47)>0?stat(47):int(int8_t(kinds_.at(kind+21)));
@@ -388,6 +412,7 @@ public:
                 unit.equipment_stat_deltas[3]=wrap(unit.equipment_stat_deltas[3]+delta);
             }
             unit.behavior=int(int8_t(bin_.at(p+49)));
+            unit.runtime_role_selector=unit.behavior==3||unit.behavior==9?1u:unit.behavior==8||unit.behavior==10?2u:0u;
             // 4274B5 partitions contexts at the first behavior 2/3/8, not at hostile().
             enemy_context=enemy_context||unit.behavior==2||unit.behavior==3||unit.behavior==8;
             if(bin_.at(header+21)!=3&&(enemy_context||unit.npc_class())){
@@ -402,6 +427,7 @@ public:
             }
             if(unit.behavior==4)unit.status_flags|=0x40;
             if(unit.behavior==7)unit.status_flags&=~0x40u;
+            unit.runtime_flags30=unit.flags30();
             unit.direction=bin_.at(p+50)&3;unit.animation_action=bin_.at(p+50)>>2;
             unit.first_turn=int(int8_t(bin_.at(p+51)));unit.last_turn=int(int8_t(bin_.at(p+52)));
             for(size_t j=p+2;j<p+16&&bin_.at(j);++j)unit.name.push_back(bin_.at(j));
@@ -445,6 +471,12 @@ public:
             throw std::runtime_error("Invalid original saved event byte");
         for(size_t i=0;i<states.size();++i)bin_.at(record(i))=uint8_t(states[i]);
     }
+    int event_word(size_t event,unsigned offset)const{
+        if(offset!=1&&offset!=3&&offset!=5&&offset!=7&&offset!=9)throw std::runtime_error("Invalid original event operand");
+        return int(int16_t(word(record(event)+offset)));
+    }
+    void clear_stage_flags(){std::fill_n(flags.begin(),40,uint8_t(0));}
+    unsigned completion_flag(size_t event)const{return bin_.at(record(event)+11);}
     unsigned type(size_t event) const { return bin_.at(record(event)); }
     unsigned turn(size_t event) const { return word(record(event)+3); }
     unsigned flag(size_t event) const { return word(record(event)+3); }

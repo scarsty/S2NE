@@ -1,4 +1,5 @@
 #pragma once
+#include "original_disc.hpp"
 #include <array>
 #include <cstdint>
 #include <fstream>
@@ -28,15 +29,10 @@ public:
     }
     static Flic from_disc(const std::filesystem::path& root, unsigned id) {
         if(id!=21 && id!=22) throw std::runtime_error("Invalid opening resource ID");
-        auto pal=read(root/"SUPERSP.PAL");
-        auto dat=read(root/"cd"/"windows-disc1"/"SUPERSP"/"SUPERSP.DAT");
+        auto bytes=OriginalDiscResources(root).dat_entry(OriginalDisc::one,id);
         auto get16=[](const auto& b,size_t p){return unsigned(b.at(p))|(unsigned(b.at(p+1))<<8);};
         auto get32=[&](const auto& b,size_t p){return get16(b,p)|(get16(b,p+2)<<16);};
-        unsigned index=id-1;
-        size_t table=808+8*(5+18+index);
-        size_t offset=get32(pal,table)-8-index, size=get32(pal,table+4)-8-index;
-        if(offset>dat.size() || size>dat.size()-offset || size<128) throw std::runtime_error("Invalid opening archive entry");
-        std::vector<uint8_t> bytes(dat.begin()+offset,dat.begin()+offset+size);
+        if(bytes.size()<128) throw std::runtime_error("Invalid opening archive entry");
         auto put16=[&](size_t p,unsigned value){bytes.at(p)=uint8_t(value);bytes.at(p+1)=uint8_t(value>>8);};
         auto put32=[&](size_t p,unsigned value){put16(p,value);put16(p+2,value>>16);};
         unsigned a=get32(bytes,0),b=get32(bytes,80);put32(0,b);put32(80,a);

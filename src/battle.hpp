@@ -1,6 +1,11 @@
 #pragma once
 #include "original_combat.hpp"
+#include "original_disc.hpp"
+#include "original_combat_visual.hpp"
+#include "original_random.hpp"
 #include "original_events.hpp"
+#include "original_ai.hpp"
+#include <memory>
 #include <algorithm>
 #include <cmath>
 #include <ctime>
@@ -8,6 +13,7 @@
 #include <string>
 #include <queue>
 #include <limits>
+#include <functional>
 
 namespace s2ne {
 // Original terrain/action-point arithmetic with basic contact melee; scored AI and abilities remain pending.
@@ -46,11 +52,35 @@ private:
     unsigned movement_interval_=80;
     int moving_unit_=-1;
     bool movement_animation_enabled_=false;
+    bool attack_animation_=false;
+    original_combat::Feedback combat_feedback_;
+    std::optional<OriginalEvents::Unit> reaction_pose_;
+    std::function<void(std::vector<OriginalEvents::Unit>&,size_t,size_t)> death_settlement_;
+public:
+    struct PhysicalSettlement { size_t actor{},target{};unsigned actor_id{},target_id{};int hp_lost{},raw_xp{};bool killed{}; };
+private:
+    std::function<void(std::vector<OriginalEvents::Unit>&,const PhysicalSettlement&)> physical_settlement_;
+    std::shared_ptr<OriginalEvents> hostile_resources_;
+    std::vector<int> ai_kind_classes_;
+    std::vector<std::array<std::vector<uint8_t>,30>> action_sequences_;
+    std::array<int,0x110> ai_config_{};
+    size_t hostile_cursor_=0;
+    int hostile_actor_=-1,hostile_target_=-1,hostile_attack_slot_=-1;
+    unsigned hostile_wait_=0;
+    bool hostile_actions_active_=false;
+    bool controller_hostile_=true;
+    bool automatic_actions_completed_=false;
+    std::vector<Point> hostile_path_;
+    size_t hostile_path_cursor_=0;
     bool original_rules_=false;
     bool mask_surfaces_=false;
     original_combat::Random random_{1};
     std::optional<uint32_t> random_seconds_;
     int selected_=-1;
+public:
+    struct PhysicalDiagnostic { size_t actor{},target{};int legacy_chance{},original_chance{},accuracy_bonus{},height{},mode{}; };
+    std::optional<PhysicalDiagnostic> last_physical_diagnostic_;
+    const std::optional<PhysicalDiagnostic>& physical_diagnostic()const{return last_physical_diagnostic_;}
 public:
     enum class State { idle, command, movement, attack_menu, attack_target, finish_confirm };
     static constexpr std::array<unsigned,6> command_icons{158,160,162,164,188,166};
@@ -65,7 +95,14 @@ public:
         0x00400000u,0x00200000u,0x00100000u,0x00080000u};
 private:
     State state_=State::idle;
-    int command_=0,target_=-1;
+    int command_=0,target_=-1,attack_index_=0,requested_command_=-1;
+    std::function<bool(const OriginalEvents::Unit&,int)> command_request_available_;
+public:
+    int requested_command()const{return requested_command_;}
+    void clear_requested_command(){requested_command_=-1;}
+    // Modal owners supply their proven complete skill/promotion eligibility.
+    void set_command_request_availability(std::function<bool(const OriginalEvents::Unit&,int)> available){command_request_available_=std::move(available);}
+private:
     bool moved_=false,acted_=false;
     OriginalEvents::Unit before_move_{};
     std::vector<int> distances_,previous_;
@@ -82,7 +119,7 @@ public:
         if(!w||!h||cells_.size()!=size_t(w)*h)throw std::runtime_error("Invalid battle terrain");
         random_.initialize_with_clock([]{return uint32_t(std::time(nullptr));});
     }
-    static Battle load(const std::filesystem::path& root,unsigned map){
+    static Battle load(const std::filesystem::path& root,unsigned map,OriginalDisc disc=OriginalDisc::one){
         auto read=[](const auto& path){std::ifstream f(path,std::ios::binary);if(!f)throw std::runtime_error("Missing battle terrain archive");return std::vector<uint8_t>(std::istreambuf_iterator<char>(f),{});};
         auto prg=read(root/"SUPERSP.PRG"),pal=read(root/"SUPERSP.PAL");
         size_t group=dword(pal,808+8*(64+6-1))-10-(6-1);
@@ -93,12 +130,20 @@ public:
         std::vector<Cell> cells;
         for(size_t i=0;i<size_t(w)*h;++i){size_t p=m+28+i*5;cells.push_back({int(prg.at(p)),int(word(prg,p+1)),int(word(prg,p+3))});}
         Battle result(w,h,std::move(cells));
+        size_t sequences=dword(pal,808+8*64)-10;unsigned appearances=word(prg,sequences);
+        result.action_sequences_.resize(appearances);
+        for(unsigned appearance=0;appearance<appearances;++appearance){
+            size_t cursor=sequences+2+appearances*8+appearance*200,end=cursor+200;
+            for(auto& sequence:result.action_sequences_[appearance]){
+                while(cursor<end&&prg.at(cursor))sequence.push_back(prg.at(cursor++));
+                if(cursor>=end)break;
+                ++cursor;
+            }
+        }
         size_t special=m+28+size_t(w)*h*5+word(prg,m+12)*10;
         for(unsigned i=0;i<word(prg,m+14);++i){size_t p=special+i*6;if(word(prg,p+4)&0x8000)result.sealed_cells_.push_back({int(int16_t(word(prg,p))),int(int16_t(word(prg,p+2)))});}
-        auto dat_path=root/"cd"/"windows-disc1"/"SUPERSP"/"SUPERSP.DAT";
-        if(!std::filesystem::exists(dat_path))dat_path=root/"cd"/"disc1"/"SUPERSP"/"SUPERSP.DAT";
-        auto dat=read(dat_path);
-        auto archive=[&](unsigned id){return size_t(dword(pal,808+8*(23+id-1))-8-(id-1));};
+        OriginalDiscResources disc_resources(root);
+        auto dat=disc_resources.dat_entry(disc,5);
         size_t attr_group=dword(pal,808+8*(64+7-1))-16,attributes=attr_group+6;
         for(unsigned layer=0;layer<3;++layer){
             unsigned count=word(prg,attr_group+layer*2);
@@ -106,11 +151,10 @@ public:
             if(layer<2)for(unsigned i=0;i<count;++i)dest.push_back(word(prg,attributes+i*2));
             attributes+=count*2;
         }
-        size_t movement=archive(6),length=dword(pal,808+8*(23+5)+4)-13;
-        result.movement_.assign(dat.begin()+movement,dat.begin()+movement+length);
+        result.movement_=disc_resources.dat_entry(disc,6);
         // sub_4262EC loads ICONSO from DAT item 5; sub_4785E6 uses
         // pointer slots 35/36/37 = DAT entries 36/37/38 (slot 0 is entry 1).
-        size_t effects=archive(5);
+        size_t effects=0;
         for(unsigned i=0;i<3;++i){
             size_t p=effects+dword(dat,effects+2+(35+i)*8);
             if(word(dat,p)!=63||word(dat,p+2)!=31)throw std::runtime_error("Invalid original movement effect");
@@ -136,6 +180,13 @@ public:
         result.effect_palette_.assign(pal.begin(),pal.begin()+768);
         result.effect_palette_[0]=result.effect_palette_[1]=result.effect_palette_[2]=0;
         OriginalEvents events(root,1);result.config_=events.battle_config;result.original_rules_=true;
+        result.hostile_resources_=std::make_shared<OriginalEvents>(events);
+        auto bin=read(root/"SUPERSP.BIN"),kinds=read(root/"KINDSP.BIN");
+        size_t config=dword(pal,848+8*9)-11-9;
+        config+=2+4*word(bin,config);config+=2+word(bin,config);config+=2;
+        for(size_t i=0;i<result.ai_config_.size();++i)result.ai_config_[i]=int(int8_t(bin.at(config+i)));
+        size_t kind_table=dword(kinds,18);
+        for(unsigned i=0;i<word(kinds,22);++i)result.ai_kind_classes_.push_back(int(int8_t(kinds.at(kind_table+size_t(i)*37+17))));
         return result;
     }
     bool valid(Point p)const{return p.x>=0&&p.y>=0&&p.y<int(height_)&&p.x<int(width_)-(p.y&1);}
@@ -301,7 +352,7 @@ public:
             unit.action_points=int(int16_t(unit.action_points-config_[8]));
             unit.carry_points=std::min(unit.carry_points,unit.action_points);
         }
-        unit.status34|=0x80;unit.action_state=2;
+        idle_pose(unit);unit.status34|=0x80;unit.action_state=2;
         selected_=-1;state_=State::idle;path_.clear();target_=-1;message_="Unit action finished";
     }
     void restore_turn(unsigned value){if(!value)throw std::runtime_error("Invalid saved battle turn");turn_=value;hostile_side_=false;selected_=-1;state_=State::idle;}
@@ -317,7 +368,7 @@ public:
         if (selected_<0 || size_t(selected_)>=units.size()) return 0;
         const auto& u=units.at(selected_);
         if (!u.present(turn_) || !u.controllable()) return 0;
-        uint32_t mask=command_masks[5];
+        uint32_t mask=command_masks[5]|(original_rules_?command_masks[3]:0);
         if ((!acted_||original_rules_) && u.action_points>=(original_rules_?attack_menu_cost(u):attack_cost(u))) mask|=command_masks[0];
         const auto context=size_t(selected_)<movement_contexts_.size()?movement_contexts_[selected_]:MovementContext{};
         bool move_budget=!original_rules_||u.max_action_points>=config_[0]+config_[context.movement_class?1:4];
@@ -325,9 +376,8 @@ public:
             if(original_rules_)mask|=command_masks[1];
             else for(int cost:distances_)if(cost!=std::numeric_limits<int>::max()&&cost>0){mask|=command_masks[1];break;}
         }
-        // The original sets these only after class/status/equipment checks;
-        // fail closed until those records are decoded rather than enabling a
-        // replacement action.
+        if(command_request_available_)for(int index:{2,4})
+            if(command_request_available_(u,index))mask|=command_masks[size_t(index)];
         return mask;
     }
     void refresh_command_availability(const std::vector<OriginalEvents::Unit>& units){available_mask_=command_availability(units);}
@@ -365,29 +415,106 @@ public:
         for(size_t i=0;i<movement_categories_.size()&&i<categories.size();++i)
             movement_categories_[i]=categories[i]<=2?categories[i]:0;
     }
+    const original_combat::Feedback& combat_feedback()const{return combat_feedback_;}
+    bool combat_feedback_active()const{return combat_feedback_.active();}
+    template<class ScreenPosition,class Silhouette,class Text>
+    void render_combat_feedback(const std::vector<OriginalEvents::Unit>& units,ScreenPosition screen_position,Silhouette silhouette,Text text)const{
+        const auto& f=combat_feedback_;if(!f.active()||f.target>=units.size())return;
+        const auto& unit=units[f.target];auto position=screen_position(unit);
+        if(f.silhouette())silhouette(unit,position,f.silhouette_palette());
+        if(f.text_visible())text(f.text(),position.x+f.text_x(),position.y+f.text_y(),f.text_foreground(),f.text_background());
+    }
+    void set_death_settlement(std::function<void(std::vector<OriginalEvents::Unit>&,size_t,size_t)> callback){death_settlement_=std::move(callback);}
+    void set_physical_settlement(std::function<void(std::vector<OriginalEvents::Unit>&,const PhysicalSettlement&)> callback){physical_settlement_=std::move(callback);}
+private:
+    void settle_physical(std::vector<OriginalEvents::Unit>& units,size_t a,size_t b,int lost){
+        if(!units[b].hp){units[b].status34|=0x80;if(death_settlement_)death_settlement_(units,a,b);}
+        if(!physical_settlement_)return;
+        // 43CAD4 -> 409454 -> 4094C4, followed by 458B03. Skill469101
+        // is a different chain. The kill-equipment459227 supplement is external.
+        int xp=1;
+        if(hostile_resources_&&(lost||(units[b].status_flags&0x20))){
+            auto target_snapshot=units[b];target_snapshot.hp+=lost; // 43EBCA saves HP in runtime132 before subtraction.
+            int actor=hostile_resources_->combat_value(units[a]),target=hostile_resources_->combat_value(target_snapshot);
+            if(actor>0&&actor+target>0&&ai_config_[0xE1]){
+                xp=std::max(1,(lost*target*ai_config_[0xE5]/(actor+target))/ai_config_[0xE1]);
+                if(!units[b].hp)xp+=ai_config_[0xE2]*target/actor+3;
+            }else return; // No invented divisor or missing context fallback.
+        }
+        physical_settlement_(units,{a,b,units[a].id,units[b].id,lost,xp,!units[b].hp});
+    }
+public:
+    void tick_combat_feedback(std::vector<OriginalEvents::Unit>& units,unsigned milliseconds){
+        auto& feedback=combat_feedback_;
+        if(!feedback.active())return;
+        if(feedback.phase==original_combat::Feedback::Phase::windup){
+            if(animating_movement())return;
+            feedback.phase=original_combat::Feedback::Phase::flash;feedback.elapsed=0;return;
+        }
+        feedback.elapsed+=std::min(milliseconds,1000u);
+        if(feedback.phase==original_combat::Feedback::Phase::flash){
+            if(feedback.elapsed<20)return;
+            feedback.phase=original_combat::Feedback::Phase::numbers;feedback.elapsed=0;
+            units.at(feedback.target).hp-=feedback.consume();return;
+        }
+        // Original polling resets the timestamp after every presented frame.
+        if(feedback.elapsed<feedback.interval())return;
+        feedback.elapsed=0;++feedback.step;
+        if((feedback.miss&&feedback.step>=7)||(!feedback.miss&&feedback.step>=8&&!feedback.remaining)){
+            size_t a=feedback.attacker,b=feedback.target;
+            feedback.phase=original_combat::Feedback::Phase::idle;
+            settle_physical(units,a,b,feedback.damage);
+            return;
+        }
+        units.at(feedback.target).hp-=feedback.consume();
+    }
     void enable_movement_animation(){movement_animation_enabled_=true;}
     bool animating_movement()const{return moving_unit_>=0;}
+    bool attack_animation_active()const{return attack_animation_&&animating_movement();}
     void tick_movement(unsigned milliseconds){
         if(!animating_movement())return;
-        movement_elapsed_+=std::min(milliseconds,movement_interval_);
-        if(movement_elapsed_>=movement_poses_.size()*movement_interval_){moving_unit_=-1;movement_poses_.clear();movement_elapsed_=0;}
+        // 452167 resets its clock after each presented pose. Discard frame
+        // overruns instead of carrying them into (or skipping) the next pose.
+        unsigned frame=movement_elapsed_/movement_interval_;
+        unsigned elapsed=movement_elapsed_%movement_interval_+std::min(milliseconds,movement_interval_);
+        if(elapsed>=movement_interval_){
+            ++frame;
+            if(frame>=movement_poses_.size()){moving_unit_=-1;movement_poses_.clear();movement_elapsed_=0;attack_animation_=false;return;}
+            movement_elapsed_=frame*movement_interval_;
+        }else movement_elapsed_=frame*movement_interval_+elapsed;
     }
     std::vector<OriginalEvents::Unit> render_units(const std::vector<OriginalEvents::Unit>& units)const{
         auto result=units;
         if(animating_movement()&&size_t(moving_unit_)<result.size())result[moving_unit_]=movement_poses_.at(movement_elapsed_/movement_interval_);
+        // 43C43E only advances a successful target on the final two attack
+        // frames (440618(cursor+2)==0), preserving its existing action/direction.
+        if(reaction_pose_&&attack_animation_active()&&combat_feedback_.target<result.size()){
+            size_t frame=movement_elapsed_/movement_interval_,count=movement_poses_.size();
+            if(frame+2>=count){auto& pose=result[combat_feedback_.target];pose=*reaction_pose_;
+                unsigned advances=unsigned(frame-(count>2?count-2:0)+1);
+                unsigned sequence=pose.animation_action*4+(pose.direction&3);
+                if(pose.appearance&&pose.appearance<=action_sequences_.size()&&sequence<30){
+                    const auto& frames=action_sequences_[pose.appearance-1][sequence];
+                    if(!frames.empty()){pose.movement_pose=true;pose.movement_frame=(pose.movement_frame+advances)%unsigned(frames.size());}
+                }
+            }
+        }
+        // Presentation-only presence keeps a lethal target visible until its HP
+        // number sequence and settlement callback complete; gameplay stays dead.
+        if(combat_feedback_active()&&combat_feedback_.target<result.size())result[combat_feedback_.target].hp=std::max(1,result[combat_feedback_.target].hp);
         return result;
     }
     void cancel(){
-        if(animating_movement())return;
+        if(animating_movement()||combat_feedback_active())return;
         path_.clear();target_=-1;
         if(state_==State::movement||state_==State::attack_menu||state_==State::attack_target){state_=State::command;message_="Command cancelled; select another command";return;}
         selected_=-1;state_=State::idle;message_="Select a unit to open its original command bar";
     }
     void cancel(std::vector<OriginalEvents::Unit>& units){
-        if(animating_movement())return;
+        if(animating_movement()||combat_feedback_active())return;
         // 0x439E6D restores the saved position/AP when leaving a moved, uncommitted action.
         if(state_==State::command&&moved_&&!acted_&&selected_>=0){units.at(selected_)=before_move_;moved_=false;build_routes(units);prepare_commands(units);message_="Movement undone";return;}
-        if(state_==State::command&&selected_>=0){units.at(selected_).action_state=0;units.at(selected_).animation_action=before_move_.animation_action;units.at(selected_).movement_frame=before_move_.movement_frame;}
+        if(state_==State::command&&selected_>=0){units.at(selected_).action_state=0;idle_pose(units.at(selected_));}
         cancel();
     }
     static Point surface_center(Point p,Cell c){auto q=center(p);q.y-=std::max(0,c.elevation-1)*16;return q;}
@@ -441,7 +568,7 @@ public:
     }
     Point command_origin(const std::vector<OriginalEvents::Unit>& units,int cx,int cy)const{
         if(selected_<0)return {-1,-1};auto c=screen_center({units[selected_].x,units[selected_].y},cx,cy);
-        int count=state_==State::attack_menu?1:std::max(1,command_count(units));
+        int count=state_==State::attack_menu?std::max(1,attack_count(units)):std::max(1,command_count(units));
         const auto context=size_t(selected_)<movement_contexts_.size()?movement_contexts_[selected_]:MovementContext{};
         int y=c.y+16;
         if(context.movement_class>=3&&context.movement_class<=5)y-=64;
@@ -483,11 +610,51 @@ public:
         if((unit.status34&2)&&!(unit.abilities&0x8000))cost+=config_[11];
         return cost;
     }
-    bool can_attack(const std::vector<OriginalEvents::Unit>& units,size_t a,size_t b)const{
-        if(a>=units.size()||b>=units.size()||a==b)return false;const auto& u=units[a];const auto& v=units[b];
+    static int executable_attack_slot(const OriginalEvents::ActionRecord& action){
+        int type=action.fields[0];return type==5?1:type>=1&&type<=7?0:-1;
+    }
+    std::optional<OriginalEvents::ActionRecord> executable_action(const std::vector<OriginalEvents::Unit>& units,size_t a,size_t b,int slot=-1)const{
+        if(!hostile_resources_||a>=units.size()||b>=units.size()||a==b)return std::nullopt;
+        const auto& u=units[a];const auto& v=units[b];
+        if(!u.present(turn_)||!v.present(turn_)||u.hostile()==v.hostile()||(original_rules_&&u.action_points<attack_cost(u)))return std::nullopt;
+        std::vector<OriginalEvents::Unit> own;
+        for(const auto& unit:units)if(unit.present(turn_)&&unit.hostile()==u.hostile())own.push_back(unit);
+        std::array<std::optional<OriginalEvents::ActionRecord>,2> chosen;
+        std::array<bool,2> reaches{};
+        for(const auto& action:hostile_resources_->action_records(u)){
+            int action_slot=executable_attack_slot(action);
+            if(action_slot<0||(slot>=0&&slot!=action_slot))continue;
+            // Preserve the existing bounded contact executor. Type5 uses its
+            // decoded original range, including minimum and shape/height gates.
+            if(action_slot==0&&(!adjacent({u.x,u.y},{v.x,v.y})||cell({u.x,u.y}).elevation!=cell({v.x,v.y}).elevation))continue;
+            bool target_reachable=!action_targets(*hostile_resources_,u,action,std::span<const OriginalEvents::Unit>(&v,1),own,0).empty();
+            bool any_target=target_reachable;
+            if(!any_target)for(const auto& candidate:units){
+                if(!candidate.present(turn_)||candidate.hostile()==u.hostile())continue;
+                if(!action_targets(*hostile_resources_,u,action,std::span<const OriginalEvents::Unit>(&candidate,1),own,0).empty()){any_target=true;break;}
+            }
+            if(any_target){chosen[action_slot]=action;reaches[action_slot]=target_reachable;}
+        }
+        for(int index=0;index<2;++index)if(reaches[index])return chosen[index];
+        return std::nullopt;
+    }
+    bool can_attack(const std::vector<OriginalEvents::Unit>& units,size_t a,size_t b,int slot=-1)const{
+        if(hostile_resources_)return executable_action(units,a,b,slot).has_value();
+        if(slot>0||a>=units.size()||b>=units.size()||a==b)return false;const auto& u=units[a];const auto& v=units[b];
         return u.present(turn_)&&v.present(turn_)&&u.hostile()!=v.hostile()&&adjacent({u.x,u.y},{v.x,v.y})&&cell({u.x,u.y}).elevation==cell({v.x,v.y}).elevation&&(!original_rules_||u.action_points>=attack_cost(u));
     }
+    bool attack_command_available(const std::vector<OriginalEvents::Unit>& units,int index)const{
+        if(index<0||index>1||selected_<0)return false;
+        for(size_t i=0;i<units.size();++i)if(can_attack(units,size_t(selected_),i,index))return true;
+        return false;
+    }
+    int attack_index()const{return attack_index_;}
+    int attack_count(const std::vector<OriginalEvents::Unit>& units)const{return int(attack_command_available(units,0))+int(attack_command_available(units,1));}
+    int attack_from_slot(const std::vector<OriginalEvents::Unit>& units,int slot)const{
+        if(slot<0)return -1;for(int index=0;index<2;++index)if(attack_command_available(units,index)&&slot--==0)return index;return -1;
+    }
     void cycle_command(int delta){
+        if(state_==State::attack_menu){if(attack_menu_mask_==3)attack_index_=(attack_index_+1)%2;return;}
         if(state_!=State::command)return;
         // The original strip contains only entries whose availability bit is
         // set; keyboard cycling therefore skips disabled commands.
@@ -498,41 +665,43 @@ public:
         return (command_masks[size_t(index)]&available_mask_)!=0;
     }
 private:
-    uint32_t available_mask_{};
+    uint32_t available_mask_{};unsigned attack_menu_mask_{};
 public:
     void cycle_target(const std::vector<OriginalEvents::Unit>& units){
         if(state_!=State::attack_target||units.empty())return;
-        for(size_t offset=1;offset<=units.size();++offset){size_t next=(size_t(std::max(target_,0))+offset)%units.size();if(can_attack(units,selected_,next)){target_=int(next);return;}}
+        for(size_t offset=1;offset<=units.size();++offset){size_t next=(size_t(std::max(target_,0))+offset)%units.size();if(can_attack(units,selected_,next,attack_index_)){target_=int(next);return;}}
     }
     bool activate(std::vector<OriginalEvents::Unit>& units){
-        if(animating_movement())return false;
+        if(animating_movement()||combat_feedback_active())return false;
         if(selected_<0)return false;
-        if(state_==State::attack_menu){state_=State::attack_target;target_=-1;
-            for(size_t i=0;i<units.size();++i)if(can_attack(units,selected_,i)){target_=int(i);break;}
-            if(target_<0){state_=State::command;message_="No supported ordinary melee target";return false;}
+        if(state_==State::attack_menu){if(!attack_command_available(units,attack_index_))return false;state_=State::attack_target;target_=-1;
+            for(size_t i=0;i<units.size();++i)if(can_attack(units,selected_,i,attack_index_)){target_=int(i);break;}
+            if(target_<0){state_=State::command;message_="No supported original action target";return false;}
             message_="Select target; Enter/Space or left click confirms; Esc cancels";return true;}
-        if(state_==State::attack_target){if(target_<0||!attack(units,selected_,target_))return false;acted_=true;state_=State::command;target_=-1;return true;}
+        if(state_==State::attack_target){if(target_<0||!attack(units,selected_,target_,attack_index_))return false;acted_=true;state_=State::command;target_=-1;return true;}
         if(state_!=State::command)return false;
         prepare_commands(units);
         if(!command_available_for_cycle(command_)){message_="Command disabled by original availability flags";return false;}
-        if(command_==0){state_=State::attack_menu;message_="Attack submenu: ordinary equal-height melee only";return true;}
+        if(command_==0){attack_menu_mask_=unsigned(attack_command_available(units,0))|(unsigned(attack_command_available(units,1))<<1);attack_index_=attack_from_slot(units,0);state_=State::attack_menu;message_="Original contact/ranged action submenu";return true;}
         if(command_==1){if(moved_){message_="Movement already used; cancel to undo before committing";return false;}state_=State::movement;build_routes(units);message_="Choose a reachable destination; hover previews route, left click moves";return true;}
         if(command_==5){state_=State::finish_confirm;return true;}
+        if(command_==2||command_==3||command_==4){requested_command_=command_;return true;}
         message_="Original command not implemented; no action performed";return false;
     }
     void hover(const std::vector<OriginalEvents::Unit>& units,Point p){
         hovered_cell_=p;
         hovered_=valid(p)&&occupant(units,p)>=0?p:Point{-1,-1};
         if(state_==State::movement)preview(p);
-        if(state_==State::attack_target){int hit=occupant(units,p);if(hit>=0&&can_attack(units,selected_,hit))target_=hit;}
+        if(state_==State::attack_target){int hit=occupant(units,p);if(hit>=0&&can_attack(units,selected_,hit,attack_index_))target_=hit;}
     }
     bool mouse(std::vector<OriginalEvents::Unit>& units,float x,float y,bool pressed,int cx,int cy){
         mouse_position_={int(x),int(y)};
-        if(animating_movement())return false;
+        if(animating_movement()||combat_feedback_active())return false;
         if(state_==State::command||state_==State::attack_menu){
-            prepare_commands(units);auto o=command_origin(units,cx,cy);int count=state_==State::attack_menu?1:command_count(units);
+            prepare_commands(units);auto o=command_origin(units,cx,cy);int count=state_==State::attack_menu?attack_count(units):command_count(units);
             if(x>=o.x&&x<o.x+count*32&&y>=o.y&&y<o.y+32){
                 if(state_==State::command){int slot=int(x-o.x)/32;int command=command_from_slot(units,slot);if(command<0)return false;command_=command;}
+                else{int action=attack_from_slot(units,int(x-o.x)/32);if(action<0)return false;attack_index_=action;}
                 return pressed?activate(units):false;
             }
             return false;
@@ -590,8 +759,242 @@ public:
         return original_combat::ordinary_damage(attack,defense,divisor,minimum_roll);
     }
     void seed(unsigned value){random_seconds_=value;random_=original_combat::Random(1);random_.initialize(value);}
+    // Callback must stage its own domain mutations; false/throw leaves the
+    // combat stream untouched. Permutation initialization is never repeated.
+    bool mutate_random(const std::function<bool(OriginalRandom&,uint32_t)>& transaction){
+        OriginalRandom staged({random_.seed_state(),random_.draw_count()});
+        if(!transaction(staged,random_seconds()))return false;
+        auto state=staged.state();random_.restore_stream(state.seed,state.calls);return true;
+    }
     unsigned turn()const{return turn_;}
     bool hostile_side()const{return hostile_side_;}
+    bool hostile_actions_active()const{return hostile_actions_active_;}
+    int moving_unit()const{return moving_unit_;}
+    int moving_actor()const{return moving_unit_;}
+    void set_hostile_resources(const OriginalEvents& resources){hostile_resources_=std::make_shared<OriginalEvents>(resources);}
+    struct AiPlanDiagnostic {unsigned actor_id{};int behavior{},appearance_kind{},dispatch{};bool unsupported_goal{},unsupported_special{},no_attack_candidate{};int movement_mode{},route_count{},destination_record{};bool unsupported_health{};unsigned target_id{};int target_value{};bool target_hidden{};};
+    std::optional<AiPlanDiagnostic> ai_plan_diagnostic_;
+    const std::optional<AiPlanDiagnostic>& ai_plan_diagnostic()const{return ai_plan_diagnostic_;}
+    bool npc_controller_=false;
+    bool automatic_actions_completed()const{return automatic_actions_completed_;}
+    void begin_npc_actions(std::vector<OriginalEvents::Unit>&){
+        if(hostile_side_||hostile_actions_active_)return;
+        begin_controller_actions(false);npc_controller_=true;
+        selected_=-1;state_=State::idle;path_.clear();target_=-1;
+    }
+    bool tick_npc_actions(std::vector<OriginalEvents::Unit>& units,unsigned milliseconds){return tick_hostile_actions(units,milliseconds);}
+    void begin_automatic_actions(std::vector<OriginalEvents::Unit>& units){
+        if(hostile_side_||hostile_actions_active_)return;
+        begin_controller_actions(false);
+        selected_=-1;state_=State::idle;path_.clear();target_=-1;
+    }
+    bool tick_automatic_actions(std::vector<OriginalEvents::Unit>& units,unsigned milliseconds){
+        if(controller_hostile_)return automatic_actions_completed_;
+        return tick_hostile_actions(units,milliseconds);
+    }
+    void begin_hostile_actions(std::vector<OriginalEvents::Unit>& units){
+        if(!hostile_side_)begin_hostile_side(units);
+        begin_controller_actions(true);
+    }
+private:
+    void begin_controller_actions(bool hostile){
+        controller_hostile_=hostile;npc_controller_=false;automatic_actions_completed_=false;
+        hostile_actions_active_=true;hostile_cursor_=0;hostile_actor_=-1;
+        hostile_path_.clear();hostile_path_cursor_=0;hostile_wait_=0;
+    }
+    static void idle_pose(OriginalEvents::Unit& unit){
+        unit.animation_action=0;unit.movement_frame=0;unit.movement_pose=false;
+    }
+public:
+    // Incremental executor: one route edge is committed per visible pose interval.
+    // Returns true only after the last actor has finished and side AP is reset.
+    bool tick_hostile_actions(std::vector<OriginalEvents::Unit>& units,unsigned milliseconds){
+        if(!hostile_actions_active_)return true;
+        if(animating_movement()){tick_movement(milliseconds);return false;}
+        if(combat_feedback_active()){tick_combat_feedback(units,milliseconds);return false;}
+        if(hostile_wait_){hostile_wait_-=std::min(hostile_wait_,milliseconds);return false;}
+        if(hostile_actor_>=0){
+            auto& actor=units.at(hostile_actor_);
+            if(actor.present(turn_)&&hostile_path_cursor_<hostile_path_.size()){
+                Point next=hostile_path_[hostile_path_cursor_++];
+                if(!advance_hostile(units,size_t(hostile_actor_),next))hostile_path_cursor_=hostile_path_.size();
+                return false;
+            }
+            if(actor.present(turn_)){
+                int victim=hostile_target_>=0&&can_attack(units,size_t(hostile_actor_),size_t(hostile_target_),hostile_attack_slot_)?hostile_target_:hostile_contact_target(units,size_t(hostile_actor_));
+                if(victim>=0&&strike(units,size_t(hostile_actor_),size_t(victim),hostile_attack_slot_)){
+                    hostile_wait_=160;
+                    // 40AA7A returns to action selection while AP permits.
+                    // Retain the actor until visible strike/feedback has drained.
+                    hostile_path_.clear();hostile_path_cursor_=0;hostile_target_=-1;hostile_attack_slot_=-1;
+                    return false;
+                }
+            }
+            if(original_rules_&&actor.action_points>=config_[8]){
+                actor.action_points=int(int16_t(actor.action_points-config_[8]));
+                actor.carry_points=std::min(actor.carry_points,actor.action_points);
+            }
+            idle_pose(actor);actor.action_state=2;actor.status34|=0x80;
+            hostile_actor_=-1;selected_=-1;return false;
+        }
+        while(hostile_cursor_<units.size()){
+            size_t index=hostile_cursor_++;
+            bool eligible=controller_hostile_?units[index].hostile():npc_controller_?!units[index].hostile()&&units[index].behavior==1:units[index].controllable();
+            if(!eligible||!units[index].present(turn_)||units[index].action_state!=0)continue;
+            hostile_actor_=int(index);selected_=int(index);auto& actor=units[index];actor.action_state=1;actor.animation_action=1;
+            hostile_path_.clear();hostile_path_cursor_=0;hostile_target_=-1;hostile_attack_slot_=-1;
+            if(hostile_contact_target(units,index)<0)plan_hostile(units,index);
+            return false;
+        }
+        if(controller_hostile_){reset_side(units,true);++turn_;}
+        else automatic_actions_completed_=true;
+        hostile_side_=false;hostile_actions_active_=false;
+        selected_=-1;state_=State::idle;path_.clear();target_=-1;
+        message_="Turn "+std::to_string(turn_)+(controller_hostile_?"; enemy actions completed":"; automatic player actions completed");return true;
+    }
+    bool tick_hostile(const OriginalEvents& resources,std::vector<OriginalEvents::Unit>& units,unsigned milliseconds){
+        if(!hostile_actions_active_){set_hostile_resources(resources);begin_hostile_actions(units);}
+        return tick_hostile_actions(units,milliseconds);
+    }
+private:
+    int hostile_contact_target(const std::vector<OriginalEvents::Unit>& units,size_t actor)const{
+        if(!hostile_resources_)return -1;
+        std::vector<OriginalEvents::Unit> own,opponents;std::vector<size_t> tokens;
+        for(size_t i=0;i<units.size();++i)if(units[i].present(turn_)){
+            if(units[i].hostile()==units[actor].hostile())own.push_back(units[i]);
+            else{opponents.push_back(units[i]);tokens.push_back(i);}
+        }
+        for(const auto& action:hostile_resources_->action_records(units[actor])){
+            if(action.fields[0]<1||action.fields[0]>7)continue;
+            for(const auto& target:action_targets(*hostile_resources_,units[actor],action,opponents,own,0))
+                if(can_attack(units,actor,tokens[target.unit_index]))return int(tokens[target.unit_index]);
+        }
+        return -1;
+    }
+    bool advance_hostile(std::vector<OriginalEvents::Unit>& units,size_t index,Point to){
+        auto& actor=units[index];int cost=step_cost(actor,{actor.x,actor.y},to);
+        if(cost<0||occupant(units,to)>=0||(original_rules_&&cost>actor.action_points-config_[0]))return false;
+        auto saved=actor;
+        if(original_rules_){actor.action_points-=cost;actor.max_action_points=actor.action_points;actor.carry_points=std::min(actor.carry_points,actor.action_points);}
+        actor.direction=facing({actor.x,actor.y},to,actor.direction);actor.x=to.x;actor.y=to.y;
+        actor.movement_frame=saved.direction==actor.direction?saved.movement_frame+1:0;
+        actor.action_state=3;actor.status34|=1;actor.movement_pose=false;
+        auto pose=actor;pose.movement_pose=true;movement_poses_={pose};moving_unit_=int(index);movement_elapsed_=0;movement_interval_=80;
+        return true;
+    }
+    void plan_hostile(const std::vector<OriginalEvents::Unit>& units,size_t index){
+        if(!hostile_resources_)return;
+        const auto& actor=units[index];using namespace original_ai;
+        Position origin{actor.x,actor.y};
+        auto occupied_unit=[&](Position p){return occupant(units,{p.x,p.y})>=0;};
+        auto routes=build_ordered_routes(origin,[&](Position from,Position to)->std::optional<int>{
+            int cost=step_cost(actor,{from.x,from.y},{to.x,to.y});
+            if(cost<0||occupied_unit(to))return std::nullopt;return cost;
+        },[&](Position p){return occupied_unit(p)?0:1;},[&]{return int(int16_t(actor.action_points-config_[0]));},
+        [&](int remaining){return movement_category(remaining,1,config_[7],attack_cost(actor));});
+        std::vector<OriginalEvents::Unit> observers;
+        for(const auto& u:units)if(u.present(turn_)&&u.hostile()==actor.hostile())observers.push_back(u);
+        std::vector<MovementTarget> targets;
+        for(size_t i=0;i<units.size();++i){const auto& u=units[i];
+            if(u.hostile()==actor.hostile()||!u.present(turn_))continue;
+            int kind=u.appearance&&u.appearance<=ai_kind_classes_.size()?ai_kind_classes_[u.appearance-1]:0;
+            targets.push_back({i,{u.x,u.y},u.appearance!=0,u.status_flags,kind,hostile_resources_->combat_value(u),!target_visible(u,observers,0)});
+        }
+        auto lookup=[&](Position p)->std::optional<int>{for(const auto& t:targets)
+            if(t.position==p&&!t.same_side&&(t.status33&0x80)&&(!(t.status33&0x20)||(t.status33&2)))return t.combat_value;return std::nullopt;};
+        // Ordinary action definitions are scanned at origin, then in the
+        // original ordered route table; no distance-sorted attack substitute.
+        Selection attack_selection;
+        auto scan=[&](Position position,int record){
+            auto moved_actor=actor;moved_actor.x=position.x;moved_actor.y=position.y;
+            // 40B0BA installs candidate runtime23/27 before visibility scans.
+            auto moved_observers=observers;
+            for(size_t observer=0;observer<moved_observers.size();++observer)if(moved_observers[observer].id==actor.id&&moved_observers[observer].x==actor.x&&moved_observers[observer].y==actor.y){moved_observers[observer]=moved_actor;break;}
+            std::vector<OriginalEvents::Unit> opponents;std::vector<size_t> tokens;
+            for(const auto& t:targets){opponents.push_back(units[t.token]);tokens.push_back(t.token);}
+            for(const auto& action:hostile_resources_->action_records(actor)){
+                if(action.fields[0]<1||action.fields[0]>7)continue;
+                std::vector<Candidate> candidates;
+                for(const auto& target:action_targets(*hostile_resources_,moved_actor,action,opponents,moved_observers,0)){
+                    const auto& defender=opponents[target.unit_index];
+                    if(action.fields[0]!=5&&(!adjacent({position.x,position.y},{defender.x,defender.y})||cell({position.x,position.y}).elevation!=cell({defender.x,defender.y}).elevation))continue;
+                    original_combat::PhysicalPreviewInput in{};in.attack=actor.attack;in.defense=defender.defense;
+                    if(action.fields[0]==5){in.height_difference=cell({position.x,position.y}).elevation-cell({defender.x,defender.y}).elevation;in.player_side=!actor.hostile();in.difficulty_bonus=ai_config_[0xF3+std::min(5u,hostile_resources_->difficulty)];}
+                    in.mode_bonus=int(attack_mode({position.x,position.y},{defender.x,defender.y},defender.direction));
+                    in.mode_bonus=in.mode_bonus==3?6:in.mode_bonus==2?3:0;
+                    in.modifiers.class_matchup=hostile_resources_->class_matchup(actor,defender);
+                    in.modifiers.action_coefficient=action.fields[11];
+                    in.modifiers.combat_value=hostile_resources_->combat_value(actor);
+                    in.modifiers.defender_116=uint8_t(defender.abilities>>8);in.modifiers.defender_3c=defender.status3c;
+                    in.modifiers.defender_equipment_13=hostile_resources_->equipment_special(defender,0x13);
+                    in.multiplier=original_combat::preview_multiplier(ai_config_[2],ai_config_[3]);
+                    int damage=original_combat::physical_preview(in);
+                    original_combat::HitChanceInput hit{};
+                    hit.preview=true;hit.attacker_tactics=actor.tactics;hit.defender_evasion=defender.strikeback;
+                    hit.height_difference=cell({position.x,position.y}).elevation-cell({defender.x,defender.y}).elevation;
+                    hit.attack_mode=int(attack_mode({position.x,position.y},{defender.x,defender.y},defender.direction));
+                    hit.context_bonus=int(actor.weapon_proficiency[3]);
+                    hit.random_multiplier=original_combat::preview_multiplier(ai_config_[2],ai_config_[3]);
+                    hit.player_side=!actor.hostile();hit.difficulty_bonus=ai_config_[0xF3+std::min(5u,hostile_resources_->difficulty)];
+                    hit.modifiers.action_type=21;hit.modifiers.action_bonus=hostile_resources_->action_accuracy_bonus(actor,action);
+                    hit.modifiers.defender_115=uint8_t(defender.abilities);hit.modifiers.defender_3c=defender.status3c;
+                    hit.modifiers.defender_equipment_16=hostile_resources_->equipment_special(defender,0x16);
+                    int chance=original_combat::hit_chance(hit);
+                    MeleePreview preview{};preview.attack_value=damage;preview.attack_damage=damage;preview.attack_chance=chance;
+                    preview.target_hp=defender.hp;preview.attacker_hp=actor.hp;preview.target_kind=int(defender.id);
+                    candidates.push_back({tokens[target.unit_index],record,preview,int(action.index)});
+                }
+                unsigned difficulty=std::min(5u,hostile_resources_->difficulty);
+                if(scan_melee_position(candidates,{uint8_t(ai_config_[0x100+difficulty]),uint8_t(ai_config_[0x105+difficulty])},attack_selection))return true;
+            }
+            return false;
+        };
+        bool stop=scan(origin,0);
+        for(const auto& record:routes.candidates()){
+            if(stop)break;
+            if(melee_route_candidate(record.marker,record.category,(actor.status34&1)!=0))stop=scan(record.position,record.index+1);
+        }
+        if(attack_selection.candidate){
+            hostile_target_=int(attack_selection.candidate->target);
+            for(const auto& action:hostile_resources_->action_records(actor))if(int(action.index)==attack_selection.candidate->action_index)hostile_attack_slot_=executable_attack_slot(action);
+            int node=attack_selection.candidate->destination_record-1;
+            for(;node>0;node=routes.records.at(node).parent){auto p=routes.records.at(node).route.position;hostile_path_.push_back({p.x,p.y});}
+            std::reverse(hostile_path_.begin(),hostile_path_.end());return;
+        }
+        int reach=maximum_route_depth(routes),own_value=hostile_resources_->combat_value(actor);
+        bool nearby=nearby_threat(origin,reach,own_value,lookup),ranged=false;
+        int kind=actor.appearance&&actor.appearance<=ai_kind_classes_.size()?ai_kind_classes_[actor.appearance-1]:0;
+        if(!nearby)if(auto target=original_target(targets,origin,3)){
+            const auto& u=units[target->token];
+            ranged=target_threat(original_ai::original_distance(origin,target->position),u.base_action_points,u.carry_points,config_[0],config_[6],config_[7],config_[1],hostile_resources_->maximum_action_range(u),reach,false);
+        }
+        int mode=movement_mode(nearby,ranged);
+        // The shipped ordinary hostile records use runtime kind2; kind6/7
+        // require their separate 40D351 controller and are not approximated.
+        auto dispatch=dispatch_40AED5(actor.status34,0,actor.behavior,int(hostile_resources_->difficulty),0,controller_hostile_?1:0);
+        ai_plan_diagnostic_=AiPlanDiagnostic{actor.id,actor.behavior,kind,int(dispatch),dispatch==Default40AED5::goal_43939D,dispatch==Default40AED5::special_40D351,true};
+        ai_plan_diagnostic_->movement_mode=mode;ai_plan_diagnostic_->route_count=int(routes.order.size());
+        if(dispatch!=Default40AED5::controller_40D171)return;
+        auto behavior=dispatch_40D171(mode,int16_t(actor.hp),int16_t(actor.max_hp),
+            [&](int m){return urgent_40CDA1(m,kind,actor.hp,actor.max_hp,actor.mp,actor.max_mp)?1:0;},
+            [&](int){return actor.max_hp<=0?1:0;});
+        // Low-health CFE3 component weighting is not represented: fail closed.
+        if(mode!=3&&!urgent_40CDA1(mode,kind,actor.hp,actor.max_hp,actor.mp,actor.max_mp)){ai_plan_diagnostic_->unsupported_health=true;return;}
+        auto records=routes.candidates();
+        auto blocked_terrain=[&](Position p){
+            if(actor.movement_type>=6&&actor.movement_type<=10)return false;
+            auto tile=cell({p.x,p.y});if(tile.ground<=4||ground_attributes_.empty())return false;
+            unsigned category=ground_attributes_.at(tile.ground-1)>>8;return category==1||category==2;
+        };
+        auto adjacent_opponent=[&](Position p){return original_adjacent(p,[&](Position q){return lookup(q)?1:0;});};
+        if(!targets.empty()){ai_plan_diagnostic_->target_id=units[targets.front().token].id;ai_plan_diagnostic_->target_value=targets.front().combat_value;ai_plan_diagnostic_->target_hidden=targets.front().same_side;}
+        auto destination=select_40D25A(records,targets,origin,behavior==Behavior40D171::approach_urgent,config_[5],config_[8],blocked_terrain,adjacent_opponent);
+        if(!destination)return;
+        ai_plan_diagnostic_->destination_record=destination->destination_record;
+        for(int node=destination->destination_record-1;node>0;node=routes.records.at(node).parent){auto p=routes.records.at(node).route.position;hostile_path_.push_back({p.x,p.y});}
+        std::reverse(hostile_path_.begin(),hostile_path_.end());
+    }
+public:
     void begin_hostile_side(std::vector<OriginalEvents::Unit>& units){
         for(auto& unit:units)if(unit.controllable()&&unit.present(turn_))unit.action_state=2;
         reset_side(units,false);hostile_side_=true;
@@ -604,7 +1007,7 @@ public:
             u.carry_points=carry;u.action_points=u.max_action_points=u.base_action_points+carry;u.status34=0;u.action_state=0;
         }
     }
-    // Basic contact response only; the original scored movement/skill AI is not substituted.
+    // Legacy contact-only test interface; production uses tick_hostile_actions.
     void end_turn(std::vector<OriginalEvents::Unit>& units){
         if(!hostile_side_)begin_hostile_side(units);
         unsigned responses=0;
@@ -618,34 +1021,110 @@ public:
         reset_side(units,true);++turn_;hostile_side_=false;selected_=-1;state_=State::idle;path_.clear();target_=-1;
         message_="Turn "+std::to_string(turn_)+"; enemy contact attacks "+std::to_string(responses)+"; Enter: finish side";
     }
-    bool attack(std::vector<OriginalEvents::Unit>& units,size_t a,size_t b){
-        if(a>=units.size()||!units[a].controllable())return false;
-        return strike(units,a,b);
+    void present_attack(const std::vector<OriginalEvents::Unit>& units,size_t index,const OriginalEvents::ActionRecord* chosen=nullptr){
+        if(!movement_animation_enabled_||!hostile_resources_)return;
+        const auto& actor=units[index];
+        if(!actor.appearance||actor.appearance>action_sequences_.size())return;
+        std::vector<OriginalEvents::Unit> own;
+        for(const auto& unit:units)if(unit.present(turn_)&&unit.hostile()==actor.hostile())own.push_back(unit);
+        for(const auto& action:hostile_resources_->action_records(actor)){
+            if(executable_attack_slot(action)<0||(chosen&&chosen->index!=action.index))continue;
+            bool supported=chosen!=nullptr;
+            for(size_t target=0;target<units.size();++target)if(can_attack(units,index,target)){
+                if(!action_targets(*hostile_resources_,actor,action,std::span<const OriginalEvents::Unit>(&units[target],1),own,0).empty()){supported=true;break;}
+            }
+            if(!supported)continue;
+            unsigned pose_action=uint8_t(action.fields[10]),sequence=pose_action*4+(actor.direction&3);
+            if(sequence>=30)return;
+            const auto& frames=action_sequences_[actor.appearance-1][sequence];
+            if(frames.empty())return;
+            movement_poses_.clear();
+            for(size_t frame=0;frame<frames.size();++frame){auto pose=actor;pose.animation_action=pose_action;pose.movement_pose=true;pose.movement_frame=unsigned(frame);movement_poses_.push_back(pose);}
+            moving_unit_=int(index);movement_elapsed_=0;movement_interval_=120;attack_animation_=true;return;
+        }
     }
-    bool strike(std::vector<OriginalEvents::Unit>& units,size_t a,size_t b){
-        if(a>=units.size()||b>=units.size()||a==b)return false;
+    bool attack(std::vector<OriginalEvents::Unit>& units,size_t a,size_t b,int slot=-1){
+        if(a>=units.size()||!units[a].controllable()||!can_attack(units,a,b,slot)||animating_movement())return false;
+        return strike(units,a,b,slot);
+    }
+    void physical_feedback(std::vector<OriginalEvents::Unit>& units,size_t a,size_t b,int damage,bool miss=false){
+        reaction_pose_.reset();
+        if(movement_animation_enabled_){
+            combat_feedback_.begin(a,b,units[b].hp,damage,miss,attack_animation_active());
+            if(!miss&&damage>0&&attack_animation_active())reaction_pose_=units[b];
+            return;
+        }
+        int lost=std::min(units[b].hp,damage);units[b].hp-=lost;
+        settle_physical(units,a,b,lost);
+    }
+    bool strike(std::vector<OriginalEvents::Unit>& units,size_t a,size_t b,int slot=-1){
+        if(a>=units.size()||b>=units.size()||a==b||combat_feedback_active())return false;
         auto& attacker=units[a];auto& defender=units[b];
-        if(!attacker.present(turn_)||!defender.present(turn_)||attacker.hostile()==defender.hostile()||!adjacent({attacker.x,attacker.y},{defender.x,defender.y})||cell({attacker.x,attacker.y}).elevation!=cell({defender.x,defender.y}).elevation)return false;
+        if(!can_attack(units,a,b,slot))return false;
+        auto action=executable_action(units,a,b,slot);
+        if(original_rules_&&attacker.action_points<attack_cost(attacker))return false;
         attacker.direction=facing({attacker.x,attacker.y},{defender.x,defender.y},attacker.direction);
+        present_attack(units,a,action?&*action:nullptr);
         if(original_rules_){
             int cost=attack_cost(attacker);if(attacker.action_points<cost)return false;
             attacker.action_points=int(int16_t(attacker.action_points-cost));attacker.max_action_points=attacker.action_points;
             attacker.carry_points=std::min(attacker.carry_points,attacker.action_points);attacker.status34|=2;
         }
         int attack_style=attack_mode({attacker.x,attacker.y},{defender.x,defender.y},defender.direction);
+        if(original_rules_&&action){
+            using namespace original_combat;
+            const auto& resources=*hostile_resources_;
+            auto attacking_terrain=terrain_effect(resources,attacker,{attacker.x,attacker.y});
+            auto defending_terrain=terrain_effect(resources,defender,{defender.x,defender.y});
+            int height=cell({attacker.x,attacker.y}).elevation-cell({defender.x,defender.y}).elevation;
+            // 408D4C reads [runtime136] SAR16 == current tactics138;
+            // 408DD0 subtracts [runtime0BF] SAR16 == evasion0C1.
+            HitChanceInput hit{};hit.attacker_tactics=attacker.tactics;hit.defender_evasion=defender.strikeback;
+            hit.height_difference=height;hit.attack_mode=attack_style;hit.context_bonus=int(attacker.weapon_proficiency[3]);
+            hit.attacker_condition=attacker.max_hp?lost_health_percent(attacker.max_hp,attacker.hp):0;
+            hit.condition_roll=hit.attacker_condition>70?percent():0;
+            // 408CB7 adjusts both tactics words before the forward hit draw.
+            if(defender.max_hp&&lost_health_percent(defender.max_hp,defender.hp)>70)percent();
+            hit.random_multiplier=ai_config_[2]+roll(ai_config_[3]+3);hit.player_side=!attacker.hostile();
+            hit.difficulty_bonus=ai_config_[0xF3+std::min(5u,resources.difficulty)];
+            hit.modifiers.action_type=21; // action_accuracy_bonus has already applied weapon accuracy.
+            hit.modifiers.action_bonus=resources.action_accuracy_bonus(attacker,*action);
+            hit.modifiers.defender_115=uint8_t(defender.abilities);hit.modifiers.defender_3c=defender.status3c;
+            hit.modifiers.defender_equipment_16=resources.equipment_special(defender,0x16);
+            last_physical_diagnostic_=PhysicalDiagnostic{a,b,std::clamp(attacker.tactics-defender.strikeback+(attack_style==3?5:attack_style==2?3:0),1,100)*12/10,hit_chance(hit),hit.modifiers.action_bonus,height,attack_style};
+            if(!hit_succeeds(hit,percent())){physical_feedback(units,a,b,0,true);message_="Original physical action: miss";return true;}
+            PhysicalDamageInput damage{};damage.attack=attacker.attack;damage.defense=defender.defense;
+            damage.height_difference=height;damage.attack_mode=attack_style;damage.context_bonus=hit.context_bonus;
+            damage.attacker_terrain_bonus=int(int8_t(attacking_terrain.bytes[1]));
+            damage.defender_terrain_bonus=int(int8_t(defending_terrain.bytes[2]));
+            int chance=percent(),decimal=roll(10);damage.divisor=damage_divisor(chance,decimal);
+            damage.random_multiplier=ai_config_[0]+roll(ai_config_[1]+3);
+            damage.player_side=!attacker.hostile();damage.difficulty_bonus=hit.difficulty_bonus;
+            damage.attacker_3c=attacker.status3c;damage.attacker_118=uint8_t(attacker.abilities>>24);
+            damage.defender_kind=uint8_t(defender.kind_attribute);
+            damage.modifiers.action_coefficient=action->fields[11];
+            damage.modifiers.class_matchup=resources.class_matchup(attacker,defender);
+            damage.modifiers.combat_value=resources.combat_value(attacker);
+            damage.modifiers.defender_116=uint8_t(defender.abilities>>8);damage.modifiers.defender_3c=defender.status3c;
+            damage.modifiers.defender_equipment_13=resources.equipment_special(defender,0x13);
+            // The minimum-damage draw only occurs after all modifiers.
+            damage.minimum_roll=99;int dealt=physical_damage(damage);
+            if(dealt<3){damage.minimum_roll=percent();dealt=physical_damage(damage);}
+            physical_feedback(units,a,b,dealt);
+            message_="Original physical action: -"+std::to_string(dealt)+" HP; target HP "+std::to_string(defender.hp);return true;
+        }
         int hit=std::clamp(attacker.tactics-defender.strikeback+(attack_style==3?5:attack_style==2?3:0),1,100)*12/10;
-        if(percent()>hit){message_="Ordinary melee: miss";return true;}
+        if(percent()>hit){physical_feedback(units,a,b,0,true);message_="Ordinary melee: miss";return true;}
         int chance=percent(),jitter=roll(10);
         int divisor=original_combat::damage_divisor(chance,jitter);
         int minimum_roll=(attacker.attack-defender.defense)*100/divisor<3?percent():0;
         int damage=ordinary_damage(attacker.attack+(attack_style==3?10:attack_style==2?5:0),defender.defense,divisor,minimum_roll);
-        defender.hp=std::max(0,defender.hp-damage);
-        if(defender.hp==0)defender.status34|=0x80;
+        physical_feedback(units,a,b,damage);
         message_="Ordinary melee: -"+std::to_string(damage)+" HP; target HP "+std::to_string(defender.hp);
         return true;
     }
     bool click(std::vector<OriginalEvents::Unit>& units,Point p){
-        if(animating_movement())return false;
+        if(animating_movement()||combat_feedback_active())return false;
         if(!valid(p))return false;int hit=occupant(units,p);
         if(state_==State::idle){
             if(hit<0||!units[hit].controllable()||units[hit].action_state==2)return false;
@@ -680,7 +1159,7 @@ public:
             if(movement_animation_enabled_&&!movement_poses_.empty()){moving_unit_=selected_;movement_elapsed_=0;}
             moved_=true;state_=State::command;path_.clear();message_="Moved; choose attack or finish, or cancel to undo";return true;
         }
-        if(state_==State::attack_target&&hit>=0&&can_attack(units,selected_,hit)){target_=hit;return activate(units);}
+        if(state_==State::attack_target&&hit>=0&&can_attack(units,selected_,hit,attack_index_)){target_=hit;return activate(units);}
         return false;
     }
     bool has_movement_mouse()const{return state_==State::movement&&mouse_position_.x>=0&&!movement_mouse_[0].empty();}
@@ -700,6 +1179,16 @@ public:
             for(unsigned k=0;k<3;++k)image.at(p+k)=uint8_t(unsigned(effect_palette_[c*3+k])*255/63);
         }
         return true;
+    }
+    void draw_finish_directions(std::vector<uint8_t>& image,int left,int top)const{
+        if(image.size()<640*480*4||effect_palette_.size()<768)return;
+        const auto& pixels=selection_frames_[1];
+        for(size_t i=0;i<pixels.size();++i){
+            unsigned color=pixels[i];int x=left+int(i%64),y=top+int(i/64);
+            if(!color||x<0||x>=640||y<0||y>=480)continue;
+            size_t destination=(size_t(y)*640+x)*4;
+            for(unsigned channel=0;channel<3;++channel)image[destination+channel]=uint8_t(unsigned(effect_palette_[color*3+channel])*255/63);
+        }
     }
     void draw_selection(std::vector<uint8_t>& image,const std::vector<OriginalEvents::Unit>& units,int cx,int cy,int layer=-1)const{
         if(image.size()<640*480*4||effect_palette_.size()<768)return;

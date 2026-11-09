@@ -39,6 +39,13 @@ class OriginalPalette {
         return nodes_.at(size_t(best)).color;
     }
 public:
+    uint8_t blend_index(unsigned from,unsigned to,int amount)const{
+        if(from>255||to>255)throw std::invalid_argument("Original palette blend index");
+        if(amount<=0)return uint8_t(from);
+        if(amount>=100)return uint8_t(to);
+        int rgb[3];for(unsigned k=0;k<3;++k)rgb[k]=(int(palette_[from*3+k])*(100-amount)+int(palette_[to*3+k])*amount)/100;
+        return uint8_t(nearest(rgb[0],rgb[1],rgb[2]));
+    }
     explicit OriginalPalette(const std::vector<uint8_t>& palette):palette_(palette){
         if(palette.size()<768)throw std::runtime_error("Missing original palette");
         // sub_46340F / sub_462ECB: center-nearest entry first, descending then ascending insertion.

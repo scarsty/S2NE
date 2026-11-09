@@ -1,4 +1,5 @@
 #pragma once
+#include "original_disc.hpp"
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -13,12 +14,10 @@ inline constexpr uint8_t opening_palette_channel(uint8_t dac,unsigned fade=60) {
 inline std::vector<uint8_t> load_title(const std::filesystem::path& root,unsigned resource=19,bool display_palette=true) {
     auto read=[](const auto& path){std::ifstream f(path,std::ios::binary);if(!f)throw std::runtime_error("Missing title resource");return std::vector<uint8_t>(std::istreambuf_iterator<char>(f),{});};
     auto pal=read(root/"SUPERSP.PAL");
-    auto dat=read(root/"cd"/"windows-disc1"/"SUPERSP"/"SUPERSP.DAT");
-    auto word=[](const auto& b,size_t p){return unsigned(b.at(p))|(unsigned(b.at(p+1))<<8);};
-    auto dword=[&](const auto& b,size_t p){return word(b,p)|(word(b,p+2)<<16);};
     if(resource!=19&&resource!=20)throw std::runtime_error("Unsupported title resource");
-    const size_t entry=808+8*(5+18+resource-1);
-    size_t offset=dword(pal,entry)-(resource+7), size=dword(pal,entry+4)-(resource+7);
+    auto dat=OriginalDiscResources(root).dat_entry(OriginalDisc::one,resource);
+    auto word=[](const auto& b,size_t p){return unsigned(b.at(p))|(unsigned(b.at(p+1))<<8);};
+    size_t offset=0,size=dat.size();
     if(offset>dat.size()||size>dat.size()-offset||size<897)throw std::runtime_error("Invalid title entry");
     if(dat.at(offset)!=10 || dat.at(offset+2)!=1 || dat.at(offset+3)!=8 || dat.at(offset+65)!=1 || word(dat,offset+8)!=639 || word(dat,offset+10)!=479)throw std::runtime_error("Unsupported title PCX");
     unsigned stride=word(dat,offset+66);

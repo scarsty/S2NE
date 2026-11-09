@@ -30,6 +30,8 @@ public:
     }
     int percent(uint32_t seconds){before_draw(seconds);return table_[raw()%100];}
     unsigned draw_count()const{return draws_;}
+    uint32_t seed_state()const{return state_;}
+    void restore_stream(uint32_t seed,unsigned calls){state_=seed;draws_=calls;}
     const std::array<uint8_t,100>& table()const{return table_;}
 private:
     void before_draw(uint32_t seconds){if(++draws_>=200){seed(seconds);draws_=0;}}
