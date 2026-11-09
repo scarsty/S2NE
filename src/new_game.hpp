@@ -1,8 +1,9 @@
 #pragma once
 #include "original_menu.hpp"
+#include "title_image.hpp"
 namespace s2ne {
 class NewGameSetup {
-    std::vector<uint8_t> dat,pal;
+    std::vector<uint8_t> dat,pal,backdrop_;
     size_t group{};
     static unsigned word(const auto& b,size_t p){return b.at(p)|(unsigned(b.at(p+1))<<8);}
     static unsigned dword(const auto& b,size_t p){return word(b,p)|(word(b,p+2)<<16);}
@@ -17,7 +18,8 @@ class NewGameSetup {
             unsigned repeat=0;if(!(code&128)){if(p>=end)throw std::runtime_error("Truncated setup repeat");repeat=dat.at(p++);}
             while(n--){if((code&128)&&p>=end)throw std::runtime_error("Truncated setup literal");unsigned color=(code&128)?dat.at(p++):repeat;
                 int dx=left+x++,dy=top+y;if(dx<0||dx>=640||dy<0||dy>=480)continue;size_t dst=(size_t(dy)*640+dx)*4;
-                if(!color)continue;
+                // Only zero repeat runs are transparent; literal runs copy palette index zero.
+                if(!(code&128)&&!color)continue;
                 for(unsigned c=0;c<3;++c)image.at(dst+c)=uint8_t(std::min(255u,unsigned(pal.at(color*3+c))*255/63));image.at(dst+3)=255;}
         }}
     }
@@ -27,7 +29,10 @@ public:
     explicit NewGameSetup(const std::filesystem::path& root){
         auto read=[](auto p){std::ifstream f(p,std::ios::binary);if(!f)throw std::runtime_error("Missing setup resource");return std::vector<uint8_t>(std::istreambuf_iterator<char>(f),{});};
         dat=read(root/"cd"/"windows-disc1"/"SUPERSP"/"SUPERSP.DAT");pal=read(root/"SUPERSP.PAL");
+        // 425FE5 forces the global transparent/black entry to zero.
+        pal.at(0)=pal.at(1)=pal.at(2)=0;
         group=dword(pal,808+8*(5+18+6))-14;
+        backdrop_=load_title(root,20,false);
     }
     void move(int d){difficulty=std::clamp(difficulty+d,0,4);}
     bool mouse(float x,float y,bool left_click){
@@ -39,22 +44,24 @@ public:
     }
     void confirm(){confirmed=unsigned(difficulty+1);}
     std::vector<uint8_t> draw(const std::vector<uint8_t>& background,const OriginalMenu& font)const {
-        // Keep setup independent of title pixels; original backdrop initialization needs runtime comparison.
-        auto image=std::vector<uint8_t>(640*480*4,0);
-        for(size_t p=0;p<image.size();p+=4){for(unsigned c=0;c<3;++c)image[p+c]=uint8_t(unsigned(pal.at(c))*255/63);image[p+3]=255;}
+        // 0x40E31E restores DAT 20, not the bright DAT 19 used by the title menu.
+        auto image=backdrop_;
         sprite(image,4,173,223);
         for(int x: {9,169,329,489})sprite(image,3,x,453);
-        font.draw_text(image,215,295,237,115);
-        font.draw_text(image,221,319,410,107);
-        for(unsigned i=0;i<5;++i)font.draw_text(image,216+i,280,267+int(i)*28,i==unsigned(difficulty)?60:52);
+        font.draw_original_large(image,font.text_bytes(215),295,237,115);
+        font.draw_original_large(image,font.text_bytes(221),319,410,107);
+        for(unsigned i=0;i<5;++i){
+            bool selected=i==unsigned(difficulty);
+            font.draw_original_large(image,font.text_bytes(216+i),280,267+int(i)*28,selected?60:52,selected?std::optional<unsigned>(108):std::nullopt);
+        }
         // sub_40E53C, loc_40E691 / loc_40E796; original small-font footer.
         static constexpr std::array<const char*,5> rate{"5%","25%","50%","80%","100%"};
         static constexpr std::array<const char*,5> modifier{"-20%","-10%","0%","+10%","+20%"};
         static constexpr std::array<const char*,5> reward{"300%","200%","100%","100%","100%"};
-        for(unsigned i=0;i<4;++i)font.draw_small(image,font.text_bytes(222+i),18+int(i)*160,457,113);
-        auto ascii=[&](const char* text,int x){std::vector<uint8_t> bytes;while(*text)bytes.push_back(uint8_t(*text++));font.draw_small(image,bytes,x,457,113);};
+        for(unsigned i=0;i<4;++i)font.draw_small(image,font.text_bytes(222+i),18+int(i)*160,457,113,true);
+        auto ascii=[&](const char* text,int x){std::vector<uint8_t> bytes;while(*text)bytes.push_back(uint8_t(*text++));font.draw_small(image,bytes,x,457,113,true);};
         ascii(rate.at(difficulty),110);
-        font.draw_small(image,font.text_bytes(difficulty==0?229:230),270,457,113);
+        font.draw_small(image,font.text_bytes(difficulty==0?229:230),270,457,113,true);
         ascii(modifier.at(difficulty),430);ascii(reward.at(difficulty),590);
         // sub_475970 fills the original 18x25 selection swatch, not a substitute cursor.
         for(int y=266+difficulty*28;y<=290+difficulty*28;++y)for(int x=249;x<=266;++x){
@@ -62,6 +69,10 @@ public:
             for(unsigned c=0;c<3;++c)image[p+c]=uint8_t(unsigned(pal.at(60*3+c))*255/63);
             image[p+3]=255;
         }
+        // 40E8C3..40E8F2 presents the whole indexed frame with byte_503DB8.
+        // Undo the font/sprite renderer's 6-bit expansion before applying that DAC.
+        for(size_t p=0;p<image.size();p+=4)for(unsigned c=0;c<3;++c)
+            image[p+c]=opening_palette_channel(uint8_t((unsigned(image[p+c])*63+254)/255));
         return image;
     }
 };
