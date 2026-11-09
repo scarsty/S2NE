@@ -387,6 +387,7 @@ public:
         size_t p=frames+dword(prg_,frames+2+(first+frame-1)*7);
         return word(prg_,p+2)+1;
     }
+    // Renderer identities are indices in the full roster, never resource/story Unit::id values.
     std::vector<uint8_t> expected_reaction_bitmap(unsigned id,bool left)const{
         const auto& bitmap=unit_bitmaps_.at(id);
         return compose_reaction(bitmap.w,bitmap.h,bitmap.ad,bitmap.b1,left);
@@ -396,16 +397,15 @@ public:
     std::array<int,4> unit_bitmap_bounds(unsigned id)const{const auto& b=unit_bitmaps_.at(id);return {b.left,b.top,int(b.w),int(b.h)};}
     bool begin_disappearance(const std::vector<OriginalEvents::Unit>& roster,unsigned target,unsigned turn=1,uint64_t elapsed=0){
         if(disappearance_.active())return false;
-        auto role=std::find_if(roster.begin(),roster.end(),[&](const auto& u){return u.id==target&&!u.hostile();});
-        if(role==roster.end())role=std::find_if(roster.begin(),roster.end(),[&](const auto& u){return u.id==target;});
+        auto role=target<roster.size()?roster.begin()+target:roster.end();
         if(role==roster.end()||!role->present(turn)||!(role->status_flags&0x80)||(role->status_flags&0x20)||!role->appearance||role->appearance>word(prg_,group(1)))return false;
         // Initialize full indexed AD/B1; do not capture an RGBA framebuffer.
         auto scratch=draw();draw_units(scratch,roster,turn,elapsed);
         auto& bitmap=unit_bitmaps_.at(target);
         auto background=bitmap.b1;
         for(const auto& other:roster){
-            if(other.id==target||!other.present(turn)||(other.status_flags&0x20)||!(other.status_flags&0x80)||other.action_state==1||other.action_state==3||other.action_state==5)continue;
-            auto found=unit_bitmaps_.find(other.id);if(found==unit_bitmaps_.end())continue;
+            if(unsigned(&other-roster.data())==target||!other.present(turn)||(other.status_flags&0x20)||!(other.status_flags&0x80)||other.action_state==1||other.action_state==3||other.action_state==5)continue;
+            auto found=unit_bitmaps_.find(unsigned(&other-roster.data()));if(found==unit_bitmaps_.end())continue;
             const auto& source=found->second;
             if(std::abs(source.x-bitmap.x)>2||source.y>=bitmap.y||source.y<bitmap.y-24)continue;
             overlay_bitmap(bitmap,source,false);
@@ -427,7 +427,7 @@ public:
         // rather than blending those occluders into the disappearing role.
         for(const auto& other:roster){
             if(!other.present(turn)||(other.status_flags&0x20)||!(other.status_flags&0x80)||other.action_state==1||other.action_state==3||other.action_state==5)continue;
-            auto found=unit_bitmaps_.find(other.id);if(found==unit_bitmaps_.end())continue;
+            auto found=unit_bitmaps_.find(unsigned(&other-roster.data()));if(found==unit_bitmaps_.end())continue;
             const auto& source=found->second;
             int minimum=bitmap.x-2-(displacement<0),maximum=bitmap.x+2+(displacement>0);
             if(source.x<minimum||source.x>maximum||source.y<=bitmap.y||source.y>bitmap.y+24)continue;
@@ -453,18 +453,20 @@ public:
     uint64_t reaction_draws()const{return reaction_draws_;}
     const std::vector<uint8_t>& last_reaction_bitmap()const{return last_reaction_;}
     // Full roster order is required for 4485DB's persistent B1 overlays.
-    void draw_units(std::vector<uint8_t>& image,const std::vector<OriginalEvents::Unit>& units,unsigned turn=1,uint64_t elapsed_ms=0,std::optional<unsigned> silhouette=std::nullopt,std::optional<unsigned> reaction=std::nullopt,unsigned background_mode=0)const{
+    void draw_units(std::vector<uint8_t>& image,const std::vector<OriginalEvents::Unit>& units,unsigned turn=1,uint64_t elapsed_ms=0,std::optional<unsigned> silhouette=std::nullopt,std::optional<unsigned> reaction=std::nullopt,unsigned background_mode=0,std::optional<unsigned> only_instance=std::nullopt)const{
         size_t index=group(1),frames=group(2);unsigned count=word(prg_,index);
-        struct Presented {OriginalEvents::Unit unit;unsigned w,h;int left,top;std::vector<uint8_t> pixels;};
+        struct Presented {unsigned instance;OriginalEvents::Unit unit;unsigned w,h;int left,top;std::vector<uint8_t> pixels;};
         std::vector<Presented> presented;
         std::vector<unsigned> changed;
         for(const auto& unit:units){
+            unsigned instance=unsigned(&unit-units.data());
+            if(only_instance&&instance!=*only_instance)continue;
             if(!unit.present(turn)||(unit.status_flags&0x20)||!(unit.status_flags&0x80)||!unit.appearance||unit.appearance>count)continue;
             size_t metadata=index+2+(unit.appearance-1)*8;
             unsigned first=word(prg_,metadata+2);
             unsigned frame=idle_frame(unit.appearance,unit.movement_pose?uint64_t(unit.movement_frame)*190:elapsed_ms,unit.direction,unit.animation_action);
             size_t table=frames+2+(first+frame-1)*7;
-            if(disappearance_.active()&&unit.id==disappearance_.target)table=unit_bitmaps_.at(unit.id).frame;
+            if(disappearance_.active()&&instance==disappearance_.target)table=unit_bitmaps_.at(instance).frame;
             size_t p=frames+dword(prg_,table);unsigned length=word(prg_,table+4);
             unsigned w=word(prg_,p)+1,h=word(prg_,p+2)+1;
             if(w>512||h>512||length<4||p>prg_.size()||length>prg_.size()-p)throw std::runtime_error("Invalid original unit sprite");
@@ -478,9 +480,9 @@ public:
                 if(code&128){while(n--)decoded.push_back(prg_.at(p++));}else{unsigned c=prg_.at(p++);decoded.insert(decoded.end(),n,uint8_t(c));}
             }
             if(decoded.size()!=size_t(w)*h)throw std::runtime_error("Truncated original unit sprite");
-            auto& bitmap=unit_bitmaps_[unit.id];
+            auto& bitmap=unit_bitmaps_[instance];
             if(!silhouette){
-                if(bitmap.w!=w||bitmap.h!=h||bitmap.frame!=table||bitmap.x!=unit.x||bitmap.y!=unit.y||bitmap.state!=unit.action_state||bitmap.status!=unit.status_flags||background_mode!=0)changed.push_back(unit.id);
+                if(bitmap.w!=w||bitmap.h!=h||bitmap.frame!=table||bitmap.x!=unit.x||bitmap.y!=unit.y||bitmap.state!=unit.action_state||bitmap.status!=unit.status_flags||background_mode!=0)changed.push_back(instance);
                 bool resize=bitmap.w!=w||bitmap.h!=h;
                 bitmap.w=w;bitmap.h=h;bitmap.frame=table;bitmap.x=unit.x;bitmap.y=unit.y;bitmap.state=unit.action_state;bitmap.status=unit.status_flags;bitmap.ad=decoded;
                 bitmap.left=unit.x*64+(unit.y&1)*32+32-int(w/2);
@@ -497,7 +499,7 @@ public:
             mask_unit_ground(decoded,w,h,unit.x,unit.y,elevation,checker_mask_,displacement);
             // sub_42B1D2 anchors the foot at tile bottom minus (height-1)*16.
             int top=unit.y*16+32-int(h)-camera_y-std::max(0,elevation-1)*16;
-            presented.push_back({unit,w,h,left,top,std::move(decoded)});
+            presented.push_back({instance,unit,w,h,left,top,std::move(decoded)});
         }
         if(!silhouette){
             // 4483CB mode0: crop the indexed world, then copy OTHER B1
@@ -510,14 +512,14 @@ public:
                 if(background_mode==1)continue;
                 for(const auto& other:units){
                     if(!other.present(turn)||(other.status_flags&0x20)||!(other.status_flags&0x80)||other.action_state==1||other.action_state==3||other.action_state==5)continue;
-                    auto found=unit_bitmaps_.find(other.id);if(found==unit_bitmaps_.end())continue;
+                    auto found=unit_bitmaps_.find(unsigned(&other-units.data()));if(found==unit_bitmaps_.end())continue;
                     const auto& source=found->second;
                     if((source.x==target.x&&source.y==target.y)||std::abs(source.x-target.x)>2||std::abs(source.y-target.y)>24)continue;
                     overlay_bitmap(target,source,true);
                 }
                 if(background_mode==2)for(const auto& other:units){
                     if(!other.present(turn)||(other.status_flags&0x20)||!(other.status_flags&0x80)||other.action_state==1||other.action_state==3||other.action_state==5)continue;
-                    auto found=unit_bitmaps_.find(other.id);if(found==unit_bitmaps_.end())continue;
+                    auto found=unit_bitmaps_.find(unsigned(&other-units.data()));if(found==unit_bitmaps_.end())continue;
                     const auto& source=found->second;
                     if((source.x==target.x&&source.y==target.y)||std::abs(source.x-target.x)>2||source.y>=target.y||source.y<target.y-24)continue;
                     overlay_bitmap(target,source,false);
@@ -526,10 +528,10 @@ public:
         }
         std::stable_sort(presented.begin(),presented.end(),[](const auto& a,const auto& b){return a.unit.y<b.unit.y;});
         for(auto& pose:presented){
-            if(disappearance_.active()&&pose.unit.id==disappearance_.target&&!silhouette){
+            if(disappearance_.active()&&pose.instance==disappearance_.target&&!silhouette){
                 pose.pixels=disappearance_frames_.at(disappearance_.frame);
             }
-            if(reaction&&pose.unit.id==*reaction&&!silhouette){
+            if(reaction&&pose.instance==*reaction&&!silhouette){
                 auto& bitmap=unit_bitmaps_.at(*reaction);
                 pose.pixels=compose_reaction(bitmap.w,bitmap.h,bitmap.ad,bitmap.b1,bitmap.alternate);
                 last_reaction_target_=*reaction;last_reaction_left_=bitmap.alternate;
@@ -537,7 +539,7 @@ public:
                 int displacement=pose.left-(pose.unit.x*64+(pose.unit.y&1)*32+32-int(pose.w/2)-camera_x);
                 pose.w=128;pose.left=pose.unit.x*64+(pose.unit.y&1)*32+32-64+displacement-camera_x;
                 mask_unit_ground(pose.pixels,pose.w,pose.h,pose.unit.x,pose.unit.y,int(prg_.at(item(6,map_id-1)+28+(size_t(pose.unit.y)*width+pose.unit.x)*5)),checker_mask_,displacement);
-            }else if(!reaction&&!silhouette)unit_bitmaps_.at(pose.unit.id).alternate=true;
+            }else if(!reaction&&!silhouette)unit_bitmaps_.at(pose.instance).alternate=true;
             for(unsigned y=0;y<pose.h;++y)for(unsigned x=0;x<pose.w;++x){unsigned c=pose.pixels.at(size_t(y)*pose.w+x);int dx=pose.left+int(x),dy=pose.top+int(y);if(!c||dx<0||dy<0||dx>=640||dy>=480)continue;size_t dst=(size_t(dy)*640+dx)*4;for(unsigned k=0;k<3;++k)image.at(dst+k)=uint8_t(unsigned(pal_.at(c*3+k))*255/63);}
         }
     }

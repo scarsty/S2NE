@@ -1,5 +1,6 @@
 #pragma once
 #include "original_events.hpp"
+#include "original_script_predicates.hpp"
 #include "original_menu.hpp"
 #include <functional>
 #include <optional>
@@ -8,6 +9,7 @@ namespace s2ne {
 // Original 438381: dispatch pending events before calling evaluate(), and never
 // evaluate while movement, dialogue, combat feedback or death settlement is active.
 class OriginalCampaign {
+    std::filesystem::path root_;
     std::vector<uint8_t> bin_, pal_, cel_, items_, prg_;
     OriginalMenu font_;
     static std::vector<uint8_t> read(const std::filesystem::path& p) {
@@ -62,7 +64,7 @@ public:
         std::vector<size_t> survivor_indices;
     };
     explicit OriginalCampaign(const std::filesystem::path& root)
-        :bin_(read(root/"SUPERSP.BIN")),pal_(read(root/"SUPERSP.PAL")),cel_(read(root/"SUPERSP.CEL")),items_(read(root/"ITEMSP.BIN")),prg_(read(root/"SUPERSP.PRG")),font_(root){}
+        :root_(root),bin_(read(root/"SUPERSP.BIN")),pal_(read(root/"SUPERSP.PAL")),cel_(read(root/"SUPERSP.CEL")),items_(read(root/"ITEMSP.BIN")),prg_(read(root/"SUPERSP.PRG")),font_(root){}
     Stage stage(unsigned id)const{
         size_t h=header(id),data=table()+dword(bin_,h),end=data+dword(bin_,h+4);
         if(end>bin_.size()||end<data)throw std::runtime_error("Truncated campaign stage");
@@ -107,6 +109,24 @@ public:
         if(group.end==events.event_count())throw std::runtime_error("Original grouped animation terminator missing");
         return group;
     }
+    struct StoryMovementRole {unsigned id{};int x{},y{};size_t event{};};
+    struct StoryMovementGroup {size_t begin{},end{};bool hostile{};unsigned camera{};std::vector<StoryMovementRole> roles;};
+    static StoryMovementGroup story_movement_group(const OriginalEvents& events,size_t event){
+        int condition=events.condition(event),flag=events.event_word(event,3),capacity=events.event_word(event,5);
+        if(events.type(event)!=16||(condition!=0&&condition!=4)||capacity<=0)throw std::runtime_error("Invalid original grouped movement header");
+        StoryMovementGroup group{event,events.event_count(),condition==4,unsigned(events.event_word(event,7)),{}};
+        for(size_t i=event+1;i<events.event_count();++i){
+            if(events.type(i)!=16||events.event_word(i,3)!=flag)continue;
+            if(events.condition(i)==condition+3){group.end=i;break;}
+            if(events.condition(i)==condition+2)throw std::runtime_error("Original grouped movement role-relative operand requires461808");
+            if(events.condition(i)!=condition+1)continue;
+            int id=events.event_word(i,5);if(id<=0)continue;
+            if(group.roles.size()>=size_t(capacity))throw std::runtime_error("Original grouped movement capacity exceeded");
+            group.roles.push_back({unsigned(id),events.event_word(i,7),events.event_word(i,9),i});
+        }
+        if(group.end==events.event_count())throw std::runtime_error("Original grouped movement terminator missing");
+        return group;
+    }
     static unsigned completed_story_route(const OriginalEvents& source,const OriginalEvents& completed,unsigned header_next=0){
         if(source.stage!=completed.stage||source.event_count()!=completed.event_count())throw std::runtime_error("Mismatched original story event state");
         unsigned target=0;
@@ -120,10 +140,19 @@ public:
         }
         if(!target&&header_next){
             bool exhausted=true;
-            for(size_t i=0;i<source.event_count();++i)if(source.type(i)&&completed.type(i)){exhausted=false;break;}
+            for(size_t i=0;i<source.event_count();++i)if(source.type(i)&&completed.type(i)){
+                // 41B9A3 scans false predicates without consuming their records.
+                if(auto predicate=original_role_predicate(completed,i);predicate&&!*predicate)continue;
+                exhausted=false;break;
+            }
             if(exhausted)target=header_next;
         }
         return target;
+    }
+    unsigned selected_route(const OriginalEvents& completed)const{
+        OriginalEvents source(root_,completed.difficulty);source.load_stage(completed.stage);
+        unsigned route=completed_story_route(source,completed);
+        return route?route:stage(completed.stage).next;
     }
     unsigned animation_sequence_length(unsigned appearance,unsigned sequence)const{
         size_t index=dword(pal_,808+8*64)-10;unsigned count=word(prg_,index);
@@ -257,3 +286,4 @@ public:
     }
 };
 }
+

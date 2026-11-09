@@ -31,6 +31,7 @@ class OriginalSaveBridge {
         // are not serialized at +A/+C (those are separate original role words).
         u.first_turn=1;u.last_turn=0;
         u.set_flags30(get(r,0x30,4));u.status34=r[0x34];u.status3c=r[0x3C];
+        if(get(r,0x38,4)&0x400u){u.action_status_runtime.emplace();std::copy_n(r.begin(),0x13A,u.action_status_runtime->begin());}
         u.level=signed_word(r,0xB5);u.max_hp=signed_word(r,0xB7);u.max_mp=signed_word(r,0xB9);
         u.max_st=signed_word(r,0xBB);u.max_sp=signed_word(r,0xBD);u.base_action_points=signed_word(r,0xBF);
         u.strikeback=signed_word(r,0xC1);u.attack_limit=signed_word(r,0xC3);u.defense_limit=signed_word(r,0xC5);
@@ -55,6 +56,7 @@ class OriginalSaveBridge {
         std::vector<uint8_t> old;for(size_t p=0x10;p<0x23&&r[p];++p)old.push_back(r[p]);
         if(old!=u.name){std::copy(u.name.begin(),u.name.end(),r.begin()+0x10);r[0x10+u.name.size()]=0;}
         put(r,0x23,uint32_t(u.x),4);put(r,0x27,uint32_t(u.y),4);r[0x2B]=uint8_t(u.direction|(u.animation_action<<2));
+        if(u.action_status_runtime)std::copy(u.action_status_runtime->begin()+0x38,u.action_status_runtime->begin()+0xA0,r.begin()+0x38);
         r[0x2D]=u.action_state;r[0x2E]=uint8_t(u.allegiance_tag);put(r,0x30,u.flags30(),4);r[0x34]=u.status34;r[0x3C]=u.status3c;
         if(u.runtime_role_selector>255)unsupported("Original role selector exceeds BYTE");r[0x2F]=uint8_t(u.runtime_role_selector);
         w(6,u.persistent_role6);

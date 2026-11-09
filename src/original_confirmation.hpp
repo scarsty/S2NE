@@ -34,7 +34,7 @@ public:
         if(row<0)return;selection_=row;if(left_click)confirm();
     }
     void draw(std::vector<uint8_t>& image,const OriginalMenu& font)const{
-        // sub_43183B: pointer 4F7374 = merged 197; selected swatch and pressed variants.
+        // 431997 calls 475970 with fill=0: outline the embedded O/X artwork.
         size_t group=dword(pal_,816)-57,p=group+dword(cel_,group+2+(197-142)*8);
         int width=int(word(cel_,p))+1,height=int(word(cel_,p+2))+1-10;
         OriginalPalette effects(pal_);
@@ -46,7 +46,9 @@ public:
         int text_x=x_+88-int(text_.size())*(text_.size()>14?4:6);
         if(text_.size()>14)font.draw_small(image,text_,text_x,y_+8,42,true);
         else font.draw_original_large(image,text_,text_x,y_+8,42);
-        for(int y=y_+5;y<=y_+33;++y)for(int x=x_+169+selection_*31;x<=x_+196+selection_*31;++x){
+        const int left=x_+169+selection_*31,right=left+27,top=y_+5,bottom=y_+33;
+        for(int y=top;y<=bottom;++y)for(int x=left;x<=right;++x){
+            if(x!=left&&x!=right&&y!=top&&y!=bottom)continue;
             if(x<0||x>=640||y<0||y>=480)continue;size_t p=(size_t(y)*640+x)*4;for(unsigned k=0;k<3;++k)image[p+k]=uint8_t(unsigned(pal_[60*3+k])*255/63);image[p+3]=255;
         }
         if(result_)sprite(image,*result_?198:199,x_+(*result_?169:200),y_+5);

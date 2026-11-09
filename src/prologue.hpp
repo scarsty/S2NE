@@ -5,17 +5,21 @@
 #include "battle.hpp"
 #include "original_palette.hpp"
 #include "original_unit_status.hpp"
+#include "original_battle_captions.hpp"
 #include "original_confirmation.hpp"
+#include "original_ui_timing.hpp"
 #include "original_progression.hpp"
 #include "original_campaign.hpp"
+#include "original_script_predicates.hpp"
 #include "original_interbattle.hpp"
+#include "original_scripted_movement.hpp"
 #include <deque>
 #include <map>
 #include <optional>
 
 namespace s2ne {
 class Prologue {
-    std::vector<uint8_t> cel_,pal_;
+    std::vector<uint8_t> cel_,pal_,caption_items_;
     mutable std::optional<OriginalPalette> palette_effects_;
     OriginalUnitStatus unit_status_;
     OriginalMap map_;
@@ -33,9 +37,9 @@ class Prologue {
             if(!applied&&!units[result.actor].hostile())throw std::runtime_error("Original combat progression rejected");
         });
     }
-    mutable std::optional<OriginalConfirmation> finish_confirmation_;
-    mutable std::optional<unsigned> finish_direction_;
-    enum class Phase { dialogue, choice, branch, flag_dialogue, briefing, battle_intro, objectives, battle, hostile_actions, automatic_actions, npc_actions, story_animation, story_disappearance, story_wait, story_ready, campaign_dialogue, campaign_rewards, campaign_defeat, interbattle, campaign_blocked };
+    std::optional<OriginalConfirmation> finish_confirmation_;
+    std::optional<unsigned> finish_direction_;
+    enum class Phase { dialogue, choice, branch, flag_dialogue, briefing, battle_intro, objectives, battle, hostile_actions, automatic_actions, npc_actions, story_animation, story_movement, story_disappearance, story_wait, story_ready, campaign_dialogue, campaign_rewards, campaign_defeat, interbattle, campaign_blocked };
     std::optional<OriginalCampaign> campaign_;
     std::optional<OriginalInterbattle> interbattle_;
     std::deque<size_t> script_queue_;
@@ -57,6 +61,8 @@ private:
     std::function<OriginalInterbattle::Result(OriginalInterbattle::Request)> interbattle_adapter_;
     bool campaign_settled_{};
     unsigned intro_elapsed_=0;
+    bool presentation_driven_=false;
+    OriginalBannerPresentation banner_presentation_;
     unsigned animation_elapsed_=0;
     std::optional<std::pair<int,int>> dialogue_camera_target_;
     std::pair<int,int> dialogue_camera_subject_{};
@@ -90,6 +96,13 @@ private:
     size_t story_wait_event_{};
     bool story_turning_{};
     std::optional<size_t> story_animation_event_;
+    Phase story_movement_return_{Phase::story_ready};
+    std::optional<original_scripted_movement::Group> story_group_;
+    std::vector<size_t> story_group_units_;
+    std::vector<size_t> story_hidden_units_;
+    std::optional<original_scripted_movement::Track> story_movement_;
+    size_t story_movement_event_{},story_movement_unit_{};
+    bool story_movement_follow_{};
     size_t story_disappearance_event_{},story_disappearance_unit_{};
     unsigned story_disappearance_slot_{};
     void next_story_disappearance(){
@@ -98,7 +111,7 @@ private:
             auto role=std::find_if(events.units.begin(),events.units.end(),[&](const auto& u){return int(u.id)==id&&!u.hostile();});
             if(role==events.units.end())role=std::find_if(events.units.begin(),events.units.end(),[&](const auto& u){return int(u.id)==id;});
             if(role==events.units.end())continue;
-            if(!map_.begin_disappearance(events.units,unsigned(id),1,animation_elapsed_)){
+            if(!map_.begin_disappearance(events.units,unsigned(role-events.units.begin()),1,animation_elapsed_)){
                 campaign_blocker_="Original455048 disappearance unavailable for role "+std::to_string(id);phase_=Phase::campaign_blocked;return;
             }
             story_disappearance_unit_=size_t(role-events.units.begin());map_.center(role->x,role->y);phase_=Phase::story_disappearance;return;
@@ -126,11 +139,46 @@ private:
         story_poses_=std::move(poses);story_pose_elapsed_=0;story_turning_=turning;phase_=Phase::story_animation;return true;
     }
     bool campaign_choice_{};
+    std::optional<Phase> scripted_battle_return_;
     Phase campaign_choice_return_{Phase::battle};
     bool story_stage()const{return events.stage!=140&&OriginalCampaign(root_).stage(events.stage).mode==3;}
-    void dispatch_story(){
+    void dispatch_story(bool starting_battle_script=false){
+        if(scripted_battle_return_&&!starting_battle_script){phase_=*scripted_battle_return_;scripted_battle_return_.reset();dispatch_campaign();return;}
         for(size_t i=0;i<events.event_count();++i){int flag=events.event_word(i,3);if(!events.type(i)||flag<1||flag>80||!events.flags[size_t(flag-1)])continue;
+            if(auto predicate=original_role_predicate(events,i)){
+                if(!*predicate)continue;
+                event_=i;line_=0;if(events.line_count(i)){phase_=Phase::flag_dialogue;prepare();return;}
+                events.complete(i);dispatch_story();return;
+            }
             if(events.type(i)==15&&(events.condition(i)==0||events.condition(i)==3)){begin_story_animation(i);return;}
+            if(events.type(i)==16&&(events.condition(i)==0||events.condition(i)==4)){
+                auto decoded=OriginalCampaign::story_movement_group(events,i);
+                std::vector<std::pair<size_t,Battle::Point>> roles;
+                for(const auto& item:decoded.roles){auto role=std::find_if(events.units.begin(),events.units.end(),[&](const auto& u){return u.id==item.id&&u.hostile()==decoded.hostile;});
+                    if(role!=events.units.end())roles.push_back({size_t(role-events.units.begin()),{item.x,item.y}});
+                }
+                original_scripted_movement::Group group;
+                if(!group.begin(*battle_,events,roles,decoded.camera)){campaign_blocker_="Original461808 parallel movement unavailable";phase_=Phase::campaign_blocked;return;}
+                story_group_units_.clear();for(auto item:roles)story_group_units_.push_back(item.first);
+                if((decoded.camera==1||decoded.camera==3)&&!roles.empty()){const auto& role=events.units[roles.front().first];map_.center(role.x,role.y);}
+                for(size_t member=i;member<=decoded.end;++member)if(events.type(member)==16&&events.event_word(member,3)==events.event_word(i,3))events.complete(member);
+                story_movement_return_=story_stage()?Phase::story_ready:phase_;
+                group.apply(events.units);story_group_=std::move(group);phase_=Phase::story_movement;return;
+            }
+            if(events.type(i)==7&&(events.condition(i)==0||events.condition(i)==1)){
+                auto role=std::find_if(events.units.begin(),events.units.end(),[&](const auto& u){return int(u.id)==events.event_word(i,5)&&!u.hostile();});
+                if(role==events.units.end())role=std::find_if(events.units.begin(),events.units.end(),[&](const auto& u){return int(u.id)==events.event_word(i,5);});
+                original_scripted_movement::Track track;
+                if(role==events.units.end()||!track.begin(*battle_,*role,{events.event_word(i,7),events.event_word(i,9)},events.movement_class(*role))){
+                    campaign_blocker_="Original45E107 scripted movement unavailable at event "+std::to_string(i);phase_=Phase::campaign_blocked;return;
+                }
+                story_movement_event_=i;story_movement_unit_=size_t(role-events.units.begin());story_movement_follow_=events.condition(i)==1;
+                track.apply(*role);if(story_movement_follow_)map_.center(role->x,role->y);
+                story_movement_=std::move(track);phase_=Phase::story_movement;return;
+            }
+            if(scripted_battle_return_&&events.type(i)==6&&events.condition(i)==0){
+                phase_=*scripted_battle_return_;scripted_battle_return_.reset();dispatch_campaign();return;
+            }
             if(events.type(i)==6&&events.condition(i)==1){
                 story_disappearance_event_=i;story_disappearance_slot_=0;next_story_disappearance();return;
             }
@@ -148,7 +196,12 @@ private:
             if(events.type(i)==12&&(events.condition(i)==16||events.condition(i)==10)){
                 auto role=std::find_if(events.units.begin(),events.units.end(),[&](const auto& u){return int(u.id)==events.event_word(i,5);});
                 if(role==events.units.end()){campaign_blocker_="Original story missing role for461110 event "+std::to_string(i);phase_=Phase::campaign_blocked;return;}
-                if(!OriginalCampaign::living(*role)){campaign_blocker_="Original story inactive role mutation requires461110 exact completion";phase_=Phase::campaign_blocked;return;}
+                // 461149 returns success for condition>=10 on dead/inactive roles,
+                // before mutation. 41BA1E still presents lines, then 41BA56 consumes it.
+                if(!OriginalCampaign::living(*role)){
+                    event_=i;line_=0;if(events.line_count(i)){phase_=Phase::flag_dialogue;prepare();return;}
+                    events.complete(i);dispatch_story();return;
+                }
                 if(events.condition(i)==16){
                     role->direction=unsigned(events.event_word(i,7))&3;role->movement_frame=0;
                     event_=i;line_=0;if(events.line_count(i)){phase_=Phase::flag_dialogue;prepare();return;}
@@ -168,6 +221,11 @@ private:
             }
             if(events.type(i)==9&&events.condition(i)==0){
                 event_=i;line_=0;if(events.line_count(i)){phase_=Phase::flag_dialogue;prepare();return;}
+                events.complete(i);dispatch_story();return;
+            }
+            if(events.type(i)==8&&events.condition(i)==0){
+                map_.center(events.event_word(i,5),events.event_word(i,7));event_=i;line_=0;
+                if(events.line_count(i)){phase_=Phase::flag_dialogue;prepare();return;}
                 events.complete(i);dispatch_story();return;
             }
             if(events.type(i)==8&&events.condition(i)==3){
@@ -195,6 +253,7 @@ private:
         for(size_t i=0;i<events.event_count();++i){int flag=events.event_word(i,3);
             if(!events.type(i)||flag<1||flag>80||!events.flags[size_t(flag-1)])continue;
             if(events.type(i)==15&&(events.condition(i)==0||events.condition(i)==3)){begin_story_animation(i);return;}
+            if(auto predicate=original_role_predicate(events,i);predicate&&!*predicate)continue;
             campaign_blocker_="Original story event "+std::to_string(i)+" opcode "+std::to_string(events.type(i))+" condition "+std::to_string(events.condition(i))+" requires native executor";
             if(events.type(i)==15&&(events.condition(i)==0||events.condition(i)==3)){
                 const auto group=OriginalCampaign::story_animation_group(events,i);
@@ -310,7 +369,7 @@ private:
         for(unsigned y=0;y<map_.height*2;++y)for(unsigned x=0;x<map_.width-(y&1);++x)
             if(!map_.object_at(int(x),int(y)))battle_->clear_runtime_object({int(x),int(y)});
         if(auto request=OriginalCampaign::save_request(OriginalCampaign::SavePoint::before_battle,0,1))autosave_requests_.push_back(*request);
-        phase_=Phase::battle_intro;intro_elapsed_=0;
+        phase_=Phase::battle_intro;intro_elapsed_=0;banner_presentation_.reset();
     }
     void prepare_briefing(){
         briefing_page_.clear();
@@ -323,12 +382,40 @@ private:
         if(!events.line_count(event_)){events.complete(event_);return start_campaign_script();}
         phase_=Phase::campaign_dialogue;prepare();return true;
     }
+    bool prepare_campaign_transaction_pose(){
+        if(!battle_||battle_->animating_movement()||battle_->combat_feedback_active())return false;
+        // Script callbacks capture raw state before the controller's next idle-pose tick.
+        for(auto& unit:events.units){unit.animation_action=0;unit.movement_frame=0;unit.movement_pose=false;}
+        return true;
+    }
     bool dispatch_original_flag_operations(){
         for(size_t i=0;i<events.event_count();++i){unsigned type=events.type(i);if(type!=6&&type!=7&&type!=8&&type!=11&&type!=12&&type!=14)continue;
             int flag=events.event_word(i,3);if(flag<1||flag>80||!events.flags[size_t(flag-1)])continue;
             int condition=events.event_word(i,1),subject=events.event_word(i,5);
+            if(auto predicate=original_role_predicate(events,i)){
+                if(!*predicate)continue;
+                if(events.line_count(i)){script_queue_.push_back(i);return start_campaign_script();}
+                events.complete(i);return dispatch_original_flag_operations();
+            }
             auto found=std::find_if(events.units.begin(),events.units.end(),[&](const auto& u){return int(u.id)==subject&&OriginalCampaign::living(u);});
-            if(type==6&&condition==0){
+            if(type==12&&(condition==22||condition==1)){
+                if(!prepare_campaign_transaction_pose())return false;
+                if(!campaign_scripted_roles_adapter_){campaign_blocker_="Original461110 control transaction unavailable";phase_=Phase::campaign_blocked;return true;}
+                auto transaction=campaign_scripted_roles_adapter_(events,i);
+                if(!transaction||transaction->events.stage!=events.stage){campaign_blocker_="Original461110 control transaction rejected";phase_=Phase::campaign_blocked;return true;}
+                auto prepared=*battle_;prepared.set_hostile_resources(transaction->events);
+                if(transaction->commit)transaction->commit();
+                using std::swap;swap(events,transaction->events);swap(*battle_,prepared);
+            }else if(type==12&&condition==0){
+                if(!prepare_campaign_transaction_pose())return false;
+                if(!campaign_scripted_roles_adapter_){campaign_blocker_="Original461215 role reset transaction unavailable";phase_=Phase::campaign_blocked;return true;}
+                auto transaction=campaign_scripted_roles_adapter_(events,i);
+                if(!transaction||transaction->events.stage!=events.stage){campaign_blocker_="Original461215 role reset transaction rejected";phase_=Phase::campaign_blocked;return true;}
+                auto prepared=*battle_;prepared.set_hostile_resources(transaction->events);
+                if(transaction->commit)transaction->commit();
+                using std::swap;swap(events,transaction->events);swap(*battle_,prepared);
+            }else if(type==6&&condition==0){
+                if(!prepare_campaign_transaction_pose())return false;
                 if(!campaign_scripted_roles_adapter_){campaign_blocker_="Original opcode6 source-role transaction unavailable 42012F";phase_=Phase::campaign_blocked;return true;}
                 auto transaction=campaign_scripted_roles_adapter_(events,i);
                 if(!transaction||transaction->events.stage!=events.stage){campaign_blocker_="Original opcode6 source-role transaction rejected";phase_=Phase::campaign_blocked;return true;}
@@ -373,6 +460,7 @@ private:
     bool dispatch_campaign(){
         if(!battle_||battle_->animating_movement()||battle_->combat_feedback_active())return false;
         if(campaign_arrival_adapter_&&arrivals_turn_!=battle_->turn()){
+            if(!prepare_campaign_transaction_pose())return false;
             auto transaction=campaign_arrival_adapter_(events,battle_->turn());
             if(!transaction){campaign_blocker_="Original arrival transaction unavailable";phase_=Phase::campaign_blocked;return true;}
             if(transaction->events.stage!=events.stage)throw std::runtime_error("Arrival changed campaign stage");
@@ -387,10 +475,25 @@ private:
         }
         for(size_t i=0;i<events.event_count();++i)if(events.turn_trigger(i,battle_->turn())){script_queue_.push_back(i);}
         if(!script_queue_.empty())return start_campaign_script();
+        for(size_t i=0;i<events.event_count();++i){int flag=events.event_word(i,3);
+            if(events.type(i)==16&&(events.condition(i)==0||events.condition(i)==4)&&flag>=1&&flag<=80&&events.flags[size_t(flag-1)]){dispatch_story();return true;}
+        }
+        battle_->settle_object_flags(events);
+        if(dispatch_original_flag_operations())return true;
+        for(size_t i=0;i<events.event_count();++i){int flag=events.event_word(i,3);
+            if(flag<1||flag>80||!events.flags[size_t(flag-1)])continue;
+            bool visible_script=(events.type(i)==12&&(events.condition(i)==10||events.condition(i)==16||events.condition(i)==1))||
+                (events.type(i)==8&&events.condition(i)==7);
+            if(!visible_script)continue;
+            scripted_battle_return_=phase_;
+            // Enter the shared original executor; its completion returns here.
+            dispatch_story(true);return true;
+        }
+
         for(size_t i=0;i<events.event_count();++i){
             if(events.type(i)!=9)continue;int flag=events.event_word(i,3),condition=events.event_word(i,1);
             if(flag<1||flag>80||!events.flags[size_t(flag-1)])continue;
-            bool ready=condition==0;std::vector<int> operands;
+            bool ready=condition==0||condition==6;std::vector<int> operands;
             if(condition==1||condition==2){ready=true;for(unsigned off:{5u,7u,9u}){int f=events.event_word(i,off);if(f>=1&&f<=80){operands.push_back(f);if(!events.flags[size_t(f-1)])ready=false;}}if(operands.empty())ready=false;}
             if(!ready)continue;
             if(condition==2)for(int f:operands)events.flags[size_t(f-1)]=0;
@@ -410,13 +513,8 @@ private:
         // The visible track is drained, but its controller may retain a last
         // movement frame. Settle presentation without scheduling another action.
         for(auto& unit:events.units){unit.animation_action=0;unit.movement_frame=0;unit.movement_pose=false;}
-        if(decision.outcome==OriginalCampaign::Outcome::victory)for(size_t i=0;i<events.event_count();++i){
-            unsigned type=events.type(i);bool supported=(type==14&&(events.condition(i)==0||events.condition(i)==1))||
-                (type==11&&(events.condition(i)==11||events.condition(i)==12));
-            if(type&&type!=1&&type!=2&&type!=3&&type!=9&&!supported){
-                campaign_blocker_="Original campaign event opcode requires dispatcher";phase_=Phase::campaign_blocked;return true;
-            }
-        }
+        // 41BC44 dispatches only type2 records matching the victory group;
+        // unselected choices and dormant flag operations remain unconsumed.
         campaign_decision_=decision;
         if(decision.outcome==OriginalCampaign::Outcome::defeat){phase_=Phase::campaign_defeat;return true;}
         for(size_t i:OriginalCampaign::victory_events(events,decision.group))script_queue_.push_back(i);
@@ -470,7 +568,7 @@ public:
     void campaign_scan(unsigned scan){if(interbattle_&&interbattle_active()){interbattle_->scan(scan);if(interbattle_adapter_)interbattle_->dispatch(interbattle_adapter_);}}
     std::optional<OriginalInterbattle::Request> interbattle_request()const{return interbattle_?interbattle_->request():std::nullopt;}
     unsigned pending_story_route()const{return phase_==Phase::story_ready?story_route_:0;}
-    unsigned campaign_next_stage()const{return pending_story_route()?pending_story_route():campaign_?campaign_->stage(events.stage).next:0;}
+    unsigned campaign_next_stage()const{return pending_story_route()?pending_story_route():campaign_?campaign_->selected_route(events):0;}
     void restore_campaign_entry(OriginalEvents restored){
         restore_battle(std::move(restored),1);phase_=Phase::briefing;briefing_offset_=0;prepare_briefing();
     }
@@ -494,6 +592,7 @@ public:
     explicit Prologue(const std::filesystem::path& root,unsigned difficulty):unit_status_(root),map_(root),root_(root),events(root,difficulty){
         auto read=[](const auto& path){std::ifstream f(path,std::ios::binary);if(!f)throw std::runtime_error("Missing dialogue graphics");return std::vector<uint8_t>(std::istreambuf_iterator<char>(f),{});};
         cel_=read(root/"SUPERSP.CEL");pal_=read(root/"SUPERSP.PAL");pal_.at(0)=pal_.at(1)=pal_.at(2)=0;
+        caption_items_=read(root/"ITEMSP.BIN");
         palette_effects_.emplace(pal_);
         // sub_4262EC builds pointers by adding each directory length to the previous pointer.
         // Its merged slots address the following CEL payload, rather than directory slot n-1.
@@ -516,6 +615,8 @@ public:
     bool computer_actions()const{return hostile_actions()||automatic_actions()||npc_actions();}
     const original_combat::Feedback* combat_feedback()const{return battle_?&battle_->combat_feedback():nullptr;}
     bool battle_intro()const{return phase_==Phase::battle_intro;}
+    void enable_presentation_timing(){presentation_driven_=true;}
+    void frame_presented(){if(battle_intro())banner_presentation_.presented();}
     bool showing_objectives()const{return phase_==Phase::objectives;}
     void set_small_font(bool enabled){if(small_font_!=enabled){small_font_=enabled;if(phase_==Phase::dialogue||phase_==Phase::choice||phase_==Phase::branch||phase_==Phase::flag_dialogue)prepare();}}
     void enable_text_animation(unsigned delay){
@@ -528,6 +629,22 @@ public:
     void tick(unsigned milliseconds){
         map_.set_event_flags(events.flags);
         animation_elapsed_+=milliseconds;
+        if(phase_==Phase::story_movement){
+            if(story_group_){
+                story_group_->tick(*battle_,milliseconds);story_group_->apply(events.units);
+                if(story_group_->active())return;
+                if(!story_group_->draw_completed())for(size_t unit:story_group_units_)story_hidden_units_.push_back(unit);
+                story_group_.reset();story_group_units_.clear();
+                if(story_movement_return_==Phase::story_ready)dispatch_story();
+                else{phase_=story_movement_return_;dispatch_campaign();}return;
+            }
+            story_movement_->tick(*battle_,milliseconds);auto& role=events.units.at(story_movement_unit_);story_movement_->apply(role);
+            if(story_movement_follow_)map_.center(role.x,role.y);
+            if(story_movement_->active())return;
+            story_movement_.reset();event_=story_movement_event_;line_=0;
+            if(events.line_count(event_)){phase_=Phase::flag_dialogue;prepare();return;}
+            events.complete(event_);dispatch_story();return;
+        }
         if(phase_==Phase::story_disappearance){
             map_.tick_disappearance(milliseconds);
             if(!map_.disappearance_finished())return;
@@ -580,9 +697,9 @@ public:
             if(done){
                 if(automatic){phase_=Phase::battle;end_battle_turn();}
                 else if(npc_actions()){
-                    battle_->begin_hostile_side(events.units);phase_=Phase::battle_intro;intro_elapsed_=0;
+                    battle_->begin_hostile_side(events.units);phase_=Phase::battle_intro;intro_elapsed_=0;banner_presentation_.reset();
                 }
-                else{phase_=Phase::battle_intro;intro_elapsed_=0;}
+                else{phase_=Phase::battle_intro;intro_elapsed_=0;banner_presentation_.reset();}
             }
             return;
         }
@@ -599,9 +716,13 @@ public:
             }
         }
         if(!battle_intro())return;
-        // Do not skip poses when a map redraw takes longer than one original tick.
-        intro_elapsed_+=std::min(milliseconds,banner_pose_duration_);
-        if(intro_elapsed_<banner_duration_)return;
+        if(presentation_driven_){
+            if(!banner_presentation_.tick(milliseconds))return;
+        }else{
+            // Headless simulations retain their explicit logical clock.
+            intro_elapsed_+=std::min(milliseconds,banner_pose_duration_);
+            if(intro_elapsed_<banner_duration_)return;
+        }
         if(!battle_->hostile_side()&&dispatch_campaign())return;
         // 40D7D4: side 0 -> first-turn objectives -> player; side 1 -> AI;
         // increment the round only after AI, then show the next side-0 banner.
@@ -610,13 +731,20 @@ public:
             battle_->set_hostile_resources(events);
             battle_->begin_hostile_actions(events.units);phase_=Phase::hostile_actions;intro_elapsed_=0;
         }else if(first_banner_){first_banner_=false;phase_=Phase::objectives;}
-        else phase_=Phase::battle;
+        else{phase_=Phase::battle;select_ordered_player(true);}
     }
     int selection()const{return selection_;}
     void move(int delta){if(dialogue_scrolling()||(in_battle()&&battle_->animating_movement()))return;if(choosing())selection_=std::clamp(selection_+delta,0,int(events.line_count(event_))-2);else if(in_battle())map_.pan(0,delta*16);}
     void pan(int dx,int dy){if(in_battle()&&!battle_->animating_movement())map_.pan(dx,dy);}
     void edge_scroll(float x,float y){
         if(in_battle()&&!battle_->animating_movement()&&(battle_->state()==Battle::State::idle||battle_->state()==Battle::State::movement||battle_->state()==Battle::State::attack_target)&&map_.edge_scroll(x,y))mouse(x,y,false);
+    }
+    void set_auto_selection(bool enabled){if(battle_)battle_->set_auto_selection(enabled);}
+    void select_ordered_player(bool restart){
+        sync_movement_contexts();
+        if(battle_->select_next_player_unit(events.units,restart)){
+            const auto& unit=events.units.at(size_t(battle_->selected()));map_.center(unit.x,unit.y);
+        }
     }
     void set_mask_surfaces(bool enabled){if(battle_)battle_->set_mask_surfaces(enabled);}
     void set_checker_mask(bool enabled){map_.set_checker_mask(enabled);}
@@ -631,9 +759,11 @@ public:
         if(dialogue_scrolling())return;
         if(in_battle()){
             if(finish_confirmation_){
+                finish_confirmation_->mouse(x,y,click);
+                if(finish_confirmation_->result()){resolve_finish();return;}
                 const auto& unit=events.units.at(size_t(battle_->selected()));auto [sx,sy]=map_.screen_position(unit.x,unit.y);
                 int left=sx-12,top=sy-12;
-                if(x>=left-4&&x<=left+96&&y>=top-4&&y<=top+60){
+                if(click&&x>=left-4&&x<=left+96&&y>=top-4&&y<=top+60){
                     if(x<=left+48&&y<=top+28)finish_facing(3);
                     else if(y<=top+28)finish_facing(2);
                     else if(x<=left+44)finish_facing(0);
@@ -643,6 +773,7 @@ public:
             }
             sync_movement_contexts();auto before=battle_->state();
             battle_->mouse(events.units,x,y,click,map_.camera_x,map_.camera_y);
+            begin_finish_confirmation();
             if(!battle_->animating_movement()&&battle_->state()==Battle::State::command&&before!=Battle::State::command&&battle_->selected()>=0){
                 const auto& unit=events.units.at(battle_->selected());map_.movement_camera(unit.x,unit.y);
             }
@@ -650,23 +781,41 @@ public:
         }
         if(choosing()&&x>=149&&y>=209&&y<261){int row=int(y-209)/26;if(row!=selection_)selection_=row;else if(click)advance();}
     }
+    void begin_finish_confirmation(){
+        if(!in_battle()||battle_->state()!=Battle::State::finish_confirm||finish_confirmation_)return;
+        const auto& unit=events.units.at(size_t(battle_->selected()));auto [sx,sy]=map_.screen_position(unit.x,unit.y);
+        size_t panel=sprite_offset(2,197-142);
+        int panel_height=int(word(cel_,panel+2)),left=320-int(word(cel_,panel))/2,top=sy+50;
+        if(top+panel_height>=479){
+            top=sy-(int(map_.unit_height(unit.appearance,unit.direction,unit.animation_action))-1)-panel_height+32;
+            auto movement_class=events.movement_class(unit);
+            if(movement_class==3||movement_class==4||movement_class==5)top-=64;
+            top=std::max(0,top);
+        }
+        // 45369A saves direction BEFORE 454159; cancel restores that baseline.
+        finish_direction_=unit.direction;
+        battle_->orient_finish_threat(events,events.units);
+        finish_confirmation_.emplace(root_,OriginalMenu(root_),6,left,top,true);
+    }
     void resolve_finish(){if(finish_confirmation_&&finish_confirmation_->result()){
         bool confirmed=*finish_confirmation_->result();
         if(!confirmed&&finish_direction_&&battle_->selected()>=0)events.units.at(size_t(battle_->selected())).direction=*finish_direction_;
         battle_->finish_action(events.units,confirmed);finish_confirmation_.reset();finish_direction_.reset();
+        if(confirmed)select_ordered_player(false);
     }}
     void finish_facing(unsigned direction){if(in_battle()&&finish_confirmation_&&battle_->selected()>=0){
         auto& unit=events.units.at(size_t(battle_->selected()));
         if(!finish_direction_)finish_direction_=unit.direction;
-        unit.direction=direction&3;unit.movement_frame=0;
+        if(unit.direction!=(direction&3)){unit.direction=direction&3;unit.movement_frame=0;}
     }}
     void cancel_battle_selection(){if(in_battle()){if(finish_confirmation_){finish_confirmation_->cancel();resolve_finish();}else battle_->cancel(events.units);}}
-    void battle_confirm(){if(in_battle()){if(finish_confirmation_){finish_confirmation_->confirm();resolve_finish();}else{sync_movement_contexts();battle_->activate(events.units);}}}
+    void battle_confirm(){if(in_battle()){if(finish_confirmation_){finish_confirmation_->confirm();resolve_finish();}else{sync_movement_contexts();battle_->activate(events.units);begin_finish_confirmation();}}}
     void battle_cycle(int delta){if(in_battle()&&!battle_->animating_movement()){if(finish_confirmation_)finish_confirmation_->toggle();else battle_->cycle_command(delta);}}
     void battle_cycle_target(){if(in_battle())battle_->cycle_target(events.units);}
     Battle::State battle_state()const{return battle_?battle_->state():Battle::State::idle;}
     std::pair<int,int> camera()const{return {map_.camera_x,map_.camera_y};}
     void restore_battle(OriginalEvents restored,unsigned turn){
+        story_movement_.reset();story_group_.reset();story_group_units_.clear();story_hidden_units_.clear();
         campaign_choice_=false;story_route_=0;arrivals_turn_=0;script_queue_.clear();campaign_decision_.reset();campaign_settled_=false;campaign_blocker_.clear();interbattle_.reset();
         events=std::move(restored);battle_.emplace(Battle::load(root_,events.map_id,disc_));battle_->enable_movement_animation();battle_->restore_turn(turn);connect_combat_progression();
         // Flag changes reload the old map; do not give it the new map's chains.
@@ -704,6 +853,7 @@ public:
             auto stage=campaign_->stage(events.stage);
             size_t count=0;while(count<events.units.size()&&events.units[count].behavior!=2&&events.units[count].behavior!=3&&events.units[count].behavior!=8)++count;
             auto settlement=OriginalCampaign::plan(stage,*campaign_decision_,std::span<const OriginalEvents::Unit>(events.units.data(),count));
+            settlement.next=campaign_->selected_route(events);
             auto staged=events;
             OriginalInterbattle staged_hub(root_,disc_);
             if(!campaign_reward_adapter_||!campaign_reward_adapter_(staged,settlement)){
@@ -713,8 +863,8 @@ public:
             interbattle_=std::move(staged_hub);phase_=Phase::interbattle;campaign_blocker_.clear();return;
         }
         if(phase_==Phase::campaign_defeat||phase_==Phase::campaign_blocked||phase_==Phase::story_ready||interbattle_active())return;
-        if(in_battle()||computer_actions()||battle_intro()||phase_==Phase::story_animation||phase_==Phase::story_disappearance||phase_==Phase::story_wait||dialogue_scrolling())return;
-        if(showing_objectives()){dialogue_camera_target_.reset();phase_=Phase::battle;finished=true;return;}
+        if(in_battle()||computer_actions()||battle_intro()||phase_==Phase::story_animation||phase_==Phase::story_movement||phase_==Phase::story_disappearance||phase_==Phase::story_wait||dialogue_scrolling())return;
+        if(showing_objectives()){dialogue_camera_target_.reset();phase_=Phase::battle;finished=true;select_ordered_player(true);return;}
         if(choosing()){
             chosen_=unsigned(selection_+1);events.choose(event_,chosen_);
             if(story_stage()){dispatch_story();return;}
@@ -741,6 +891,7 @@ public:
         if(page_+1<pages_.size()){++page_;revealed_glyphs_=0;text_elapsed_=0;return;}
         if(++line_<events.line_count(event_)){prepare();return;}
         events.complete(event_);
+        if(scripted_battle_return_&&phase_==Phase::flag_dialogue){dispatch_story();return;}
         if(story_stage()&&(phase_==Phase::dialogue||phase_==Phase::branch||phase_==Phase::flag_dialogue)){
             if(phase_==Phase::flag_dialogue&&events.condition(event_)==6){story_route_=unsigned(events.event_word(event_,5));phase_=Phase::story_ready;}
             else dispatch_story();
@@ -749,7 +900,7 @@ public:
         if(phase_==Phase::campaign_dialogue){
             phase_=script_return_;
             if(!script_queue_.empty()){auto resume=script_return_;start_campaign_script();script_return_=resume;}
-            else if(phase_==Phase::campaign_rewards)dispatch_original_flag_operations();
+            else if(phase_==Phase::campaign_rewards)dispatch_campaign();
             else dispatch_campaign();
             return;
         }
@@ -772,8 +923,12 @@ public:
     std::vector<uint8_t> draw(const OriginalMenu& font)const {
         if(interbattle_active())return interbattle_->draw();
         auto image=map_.draw();
+        auto story_units=events.units;
+        for(size_t index:story_hidden_units_)if(index<story_units.size())story_units[index].status_flags&=~0x80u;
+        if(story_group_&&!story_group_->draw_completed())for(size_t i=0;i<story_group_units_.size();++i)
+            if(!story_group_->tracks()[i].active())story_units[story_group_units_[i]].status_flags&=~0x80u;
         if(phase_==Phase::campaign_rewards){campaign_->render_rewards(image,campaign_->stage(events.stage),events.units);return image;}
-        if(phase_==Phase::story_animation||phase_==Phase::story_disappearance||phase_==Phase::story_wait){map_.draw_units(image,events.units,1,animation_elapsed_);return image;}
+        if(phase_==Phase::story_animation||phase_==Phase::story_movement||phase_==Phase::story_disappearance||phase_==Phase::story_wait){map_.draw_units(image,story_units,1,animation_elapsed_);return image;}
         if(phase_==Phase::campaign_defeat||phase_==Phase::campaign_blocked||phase_==Phase::story_ready)return image;
         if(battle_intro()||showing_objectives()){
             if(showing_objectives()){
@@ -784,7 +939,7 @@ public:
                 palette_effects_->transform(image,121,1,6);
                 palette_effects_->transform(image,122,176,5);
                 palette_effects_->transform(image,298,1,6);
-                auto b=banner(intro_elapsed_/banner_pose_duration_);
+                auto b=banner(presentation_driven_?banner_presentation_.pose():intro_elapsed_/banner_pose_duration_);
                 sprite(image,sprite_offset(2,(battle_->hostile_side()?149:150)-142),false,208,b.y);
                 font.draw_banner_ascii(image,{'T','U','R','N'},b.turn_x,250);
                 auto turn=std::to_string(battle_->turn());
@@ -829,10 +984,11 @@ public:
             const auto& feedback=battle_->combat_feedback();
             if(feedback.phase==original_combat::Feedback::Phase::windup&&!feedback.miss&&feedback.damage>0&&
                feedback.target<rendered_units.size()&&rendered_units[feedback.target].movement_pose)
-                reaction=rendered_units[feedback.target].id;
+                reaction=unsigned(feedback.target);
             map_.draw_units(image,rendered_units,battle_->turn(),animation_elapsed_,std::nullopt,reaction);
+            if(computer_actions())battle_->draw_projectile(image,map_.camera_x,map_.camera_y);
             battle_->render_combat_feedback(events.units,[&](const auto& unit){auto [x,y]=map_.screen_position(unit.x,unit.y);return Battle::Point{x,y};},
-                [&](auto unit,auto,unsigned palette){unit.hp=std::max(1,unit.hp);map_.draw_units(image,{unit},battle_->turn(),animation_elapsed_,palette);},
+                [&](auto unit,auto,unsigned palette){auto flash_units=rendered_units;unit.hp=std::max(1,unit.hp);flash_units.at(feedback.target)=unit;map_.draw_units(image,flash_units,battle_->turn(),animation_elapsed_,palette,std::nullopt,0,unsigned(feedback.target));},
                 [&](const std::string& text,int x,int y,unsigned ink,unsigned shadow){font.draw_original_large(image,std::vector<uint8_t>(text.begin(),text.end()),x,y,ink,shadow);});
             if(in_battle())battle_->draw_selection(image,rendered_units,map_.camera_x,map_.camera_y,1);
             if(in_battle()&&!battle_->animating_movement()&&(battle_->state()==Battle::State::command||battle_->state()==Battle::State::attack_menu)){
@@ -853,7 +1009,14 @@ public:
                     slot=0;
                     for(int attack=0;attack<8;++attack)if(battle_->attack_command_available(events.units,attack)){
                         unsigned id=Battle::attack_icons[attack]+(attack==battle_->attack_index()?1u:0u);
-                        sprite(image,sprite_offset(2,id-142),false,origin.x+slot*32,origin.y,true);++slot;
+                        sprite(image,sprite_offset(2,id-142),false,origin.x+slot*32,origin.y,true);
+                        if(attack==battle_->attack_index()){
+                            std::optional<OriginalEvents::ActionRecord> action;
+                            for(size_t target=0;target<events.units.size()&&!action;++target)
+                                action=battle_->executable_action(events.units,size_t(battle_->selected()),target,attack);
+                            OriginalBattleCaptions::draw(font,image,OriginalBattleCaptions::attack(font,attack,unit,action,caption_items_),origin.x+slot*32,origin.y);
+                        }
+                        ++slot;
                     }
                 }else{
                     int shadow_slot=0;
@@ -866,7 +1029,9 @@ public:
                         // sub_43AE24 packs enabled entries; sub_43AA52 uses
                         // 32-pixel slots and the selected CEL variant (+1).
                         int variant=(command==battle_->command_index())?1:0;
-                        sprite(image,sprite_offset(2,id-142+variant),false,origin.x+slot*32,origin.y,true);++slot;
+                        sprite(image,sprite_offset(2,id-142+variant),false,origin.x+slot*32,origin.y,true);
+                        if(variant)OriginalBattleCaptions::draw(font,image,OriginalBattleCaptions::command(font,command,unit.action_points<events.battle_config[8]),origin.x+slot*32,origin.y);
+                        ++slot;
                     }
                 }
             }
@@ -880,26 +1045,16 @@ public:
                     unit_status_.draw(font,image,unit,panel_y,unit.hostile());
                 }
             }
-            if(in_battle()&&battle_->state()==Battle::State::finish_confirm){
+            if(in_battle()&&battle_->state()==Battle::State::finish_confirm&&finish_confirmation_){
                 const auto& unit=events.units.at(size_t(battle_->selected()));auto [sx,sy]=map_.screen_position(unit.x,unit.y);
-                size_t panel=sprite_offset(2,197-142);
-                int panel_height=int(word(cel_,panel+2)),left=320-int(word(cel_,panel))/2;
-                int top=sy+50;
-                if(top+panel_height>=479){
-                    top=sy-(int(map_.unit_height(unit.appearance,unit.direction,unit.animation_action))-1)-panel_height+32;
-                    auto movement_class=events.movement_class(unit);
-                    if(movement_class==3||movement_class==4||movement_class==5)top-=64;
-                    top=std::max(0,top);
-                }
-                if(!finish_confirmation_){finish_direction_=unit.direction;finish_confirmation_.emplace(root_,font,6,left,top,true);}
-                battle_->draw_finish_directions(image,sx-12,sy-12);
+                battle_->draw_finish_directions(image,sx-12,sy-12,unit.direction);
                 finish_confirmation_->draw(image,font);
             }
             if(in_battle())battle_->draw_movement_mouse(image);
             palette_effects_->cycle(image,animation_elapsed_);
             return image;
         }
-        map_.draw_units(image,events.units,phase_==Phase::campaign_dialogue?battle_->turn():1,animation_elapsed_);
+        map_.draw_units(image,story_units,phase_==Phase::campaign_dialogue?battle_->turn():1,animation_elapsed_);
         if(phase_==Phase::briefing){
             std::fill(image.begin(),image.end(),0);for(size_t i=3;i<image.size();i+=4)image[i]=255;
             size_t p=0;int x=58,y=150;
@@ -953,4 +1108,8 @@ public:
     }
 };
 }
+
+
+
+
 

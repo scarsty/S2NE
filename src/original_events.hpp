@@ -59,6 +59,7 @@ public:
         unsigned special_proficiency{}; // runtime +F9h
         uint32_t abilities{}; // runtime +115h; +116h = bits 8..15, +118h = bits 24..31
         uint8_t status34{},status3c{}; // runtime state, not fields in the 101-byte stage record
+        std::optional<std::array<uint8_t,0x13A>> action_status_runtime;
         unsigned kind_attribute{}, allegiance_tag{};
         unsigned runtime_role_selector{};
         int persistent_role6{};
@@ -107,7 +108,18 @@ public:
         }
         return false;
     }
+    int action_status_kind(const Unit& unit)const{
+        size_t table=unsigned(kinds_.at(18))|(unsigned(kinds_.at(19))<<8)|(unsigned(kinds_.at(20))<<16)|(unsigned(kinds_.at(21))<<24);
+        return int(int8_t(kinds_.at(table+size_t(unit.appearance-1)*37+17)));
+    }
     struct ActionRecord { unsigned index;std::array<int,23> fields; };
+    static original_combat::ActionStatusInput action_status_input(const ActionRecord& action,original_combat::ActionStatusInput target){
+        target.effect=action.fields[17];target.chance=action.fields[18];target.duration=action.fields[19];
+        return target;
+    }
+    static original_combat::ActionStatusResult apply_action_record_status(std::span<uint8_t> runtime,const ActionRecord& action,original_combat::ActionStatusInput target){
+        return original_combat::apply_action_status(runtime,action_status_input(action,target));
+    }
     std::vector<ActionRecord> action_records(const Unit& unit)const{
         auto kw=[&](size_t p){return unsigned(kinds_.at(p))|(unsigned(kinds_.at(p+1))<<8);};
         size_t directory=kw(30)+(size_t(kw(32))<<16);unsigned count=kw(22);

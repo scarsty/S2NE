@@ -21,6 +21,7 @@
 #include "original_save_store.hpp"
 #include "original_initialization.hpp"
 #include "original_campaign_persistence.hpp"
+#include "original_smoke_exit.hpp"
 #include "original_confirmation.hpp"
 #include "original_settings.hpp"
 #include <memory>
@@ -34,13 +35,28 @@
 #include <stdexcept>
 #include <vector>
 
+static std::string campaign_name_utf8(const s2ne::OriginalCampaign::Stage& stage) {
+    if(stage.name.empty())return "（原资源未命名）";
+    const auto* text=reinterpret_cast<const char*>(stage.name.data());
+    int count=MultiByteToWideChar(950,0,text,int(stage.name.size()),nullptr,0);
+    if(!count)throw std::runtime_error("Cannot decode original campaign name");
+    std::wstring wide(size_t(count),L'\0');
+    MultiByteToWideChar(950,0,text,int(stage.name.size()),wide.data(),count);
+    int bytes=WideCharToMultiByte(CP_UTF8,0,wide.data(),count,nullptr,0,nullptr,nullptr);
+    if(!bytes)throw std::runtime_error("Cannot encode original campaign name");
+    std::string result(size_t(bytes),'\0');
+    WideCharToMultiByte(CP_UTF8,0,wide.data(),count,result.data(),bytes,nullptr,nullptr);
+    return result;
+}
+
 int main(int argc, char** argv) {
     SDL_Window* window = nullptr;
     SDL_Renderer* renderer = nullptr;
     SDL_Texture* texture = nullptr;
     try {
         bool verify = argc > 1 && std::string(argv[1]) == "--verify";
-        bool smoke = argc > 1 && std::string(argv[1]) == "--smoke";
+        bool openingRightSmoke=argc>1&&std::string(argv[1])=="--smoke-opening-right-skip";
+        bool smoke = openingRightSmoke||(argc > 1 && std::string(argv[1]) == "--smoke");
         bool newGameSmoke = argc > 1 && std::string(argv[1]) == "--smoke-new-game";
         bool battleSmoke = argc > 1 && (std::string(argv[1]) == "--smoke-battle" || std::string(argv[1]) == "--smoke-battle-alternate");
         bool alternateSmoke = battleSmoke && std::string(argv[1]) == "--smoke-battle-alternate";
@@ -51,16 +67,20 @@ int main(int argc, char** argv) {
         bool feedbackFlash=false,feedbackNumbers=false,feedbackHp=false,feedbackReaction=false;
         uint64_t checkedReactionDraws=0;
         unsigned feedbackRounds=0;
-        bool campaignContinue=argc>1&&std::string(argv[1])=="--smoke-campaign-continue";
+        bool strengthenedFlow=argc>1&&std::string(argv[1])=="--smoke-campaign-strengthened";
+        bool campaignContinue=strengthenedFlow||(argc>1&&std::string(argv[1])=="--smoke-campaign-continue");
+        if(strengthenedFlow)std::cout<<"NON-ORIGINAL strengthened flow acceptance: allied HP/attack/defense boosted; not balance or legitimate clear evidence\n";
         if(campaignContinue)std::cout.setf(std::ios::unitbuf);
         unsigned campaignCheckpoints=0,lastCampaignStage=0,observedCampaignStage=0;
         Uint64 campaignStageStarted=0;
         unsigned exitMoveTurn=0;
+        std::optional<s2ne::OriginalCampaign::Stage> smokeExitStage;
+        std::vector<std::pair<int,int>> smokeExitCells;
         bool campaignSmoke=campaignContinue||(argc>1&&(std::string(argv[1])=="--smoke-campaign"||std::string(argv[1])=="--smoke-campaign-alternate"));
         if(campaignSmoke&&std::string(argv[1])=="--smoke-campaign-alternate")alternateSmoke=true;
         bool clearSmoke=campaignSmoke||(argc>1&&std::string(argv[1])=="--smoke-clear");
         bool clearVerified=false;
-        unsigned diagnosticTurn=0;
+        unsigned diagnosticTurn=0,continuousDiagnosticTurn=0;
         autoSmoke=autoSmoke||feedbackSmoke;
         battleSmoke=battleSmoke||autoSmoke||detailSmoke||clearSmoke;
         bool loadSmoke=argc>1&&std::string(argv[1])=="--smoke-load";
@@ -149,6 +169,14 @@ int main(int argc, char** argv) {
         std::ifstream itemFile(root/"ITEMSP.BIN",std::ios::binary);
         std::vector<uint8_t> itemBytes{std::istreambuf_iterator<char>(itemFile),{}};
         const size_t saveItems=s2ne::OriginalSave::item_count(itemBytes);
+        if(campaignContinue&&argc>3){
+            auto state=s2ne::OriginalSave::load(std::filesystem::u8path(argv[3]),saveItems);
+            auto restored=s2ne::OriginalSaveBridge::restore(root,state);
+            prologue=std::make_unique<s2ne::Prologue>(root,restored.events.difficulty);
+            prologue->set_disc(discForSave(restored.raw));prologue->restore_battle(std::move(restored.events),restored.turn);
+            rawSave=std::move(restored.raw);paused=true;
+            s2ne::OriginalSaveStore::write(*isolatedSaveRoot,52,*rawSave,saveItems);
+        }
         if(promotionSmoke){
             if(argc<4)throw std::runtime_error("Promotion smoke requires resource root and earned original save path");
             auto state=s2ne::OriginalSave::load(std::filesystem::u8path(argv[3]),saveItems);
@@ -164,11 +192,13 @@ int main(int argc, char** argv) {
         auto showExitConfirmation=[&]{auto image=s2ne::load_title(root,20,false);exitConfirmation->draw(image,menu);if(!SDL_UpdateTexture(texture,nullptr,image.data(),640*4))throw std::runtime_error(SDL_GetError());};
         auto beginExitConfirmation=[&]{exitConfirmation.emplace(root,menu,51,200,403,true);showExitConfirmation();};
         bool prologueRedraw=false;
+        s2ne::Prologue* presentedPrologue=nullptr;
         auto showPrologue = [&] { prologueRedraw=true; };
         auto renderPrologue = [&] {
             prologueRedraw=false;
             if(prologue->drawing_original_mouse()||prologue->computer_actions())SDL_HideCursor();else SDL_ShowCursor();
             auto image=prologue->draw(menu);
+            if(!battleMenu&&!battleReports&&!promotionMenu&&!saveMenu&&!overwriteConfirmation)presentedPrologue=prologue.get();
             if(feedbackSmoke&&prologue->reaction_draws()>checkedReactionDraws){
                 checkedReactionDraws=prologue->reaction_draws();
                 const auto& bitmap=prologue->last_reaction_bitmap();
@@ -260,9 +290,49 @@ int main(int argc, char** argv) {
         bool autoMenuOpened=false;
         unsigned autoFriendlyFrames=0,autoEnemyFrames=0;
         uint64_t lastUiTick=SDL_GetTicks();
+        s2ne::OriginalEdgeScrollTiming edgeScrollTiming;
         while (running) {
             uint64_t nowUi=SDL_GetTicks();
+            presentedPrologue=nullptr;
+            if(prologue&&connectedCampaign!=prologue.get()){
+                prologue->enable_presentation_timing();
+                prologue->set_campaign_arrival_adapter([&](const auto& current,unsigned turn)->std::optional<s2ne::Prologue::ArrivalTransaction>{
+                    if(!rawSave)return std::nullopt;
+                    auto captured=s2ne::OriginalSaveBridge::capture(current,turn,prologue->camera(),&*rawSave);
+                    s2ne::OriginalEvents expanded(root,current.difficulty);expanded.load_stage(current.stage);
+                    auto inserted=initialization.insert_arrivals(captured,expanded,turn,initialization.placement_map(root,expanded.map_id));
+                    auto arrivals=s2ne::OriginalSaveBridge::restore(root,inserted);
+                    auto pending=std::make_shared<s2ne::OriginalSave::State>(std::move(inserted));
+                    return s2ne::Prologue::ArrivalTransaction{std::move(arrivals.events),[&,pending]()noexcept{using std::swap;swap(*rawSave,*pending);}};
+                },rawSave?prologue->battle_turn():1);
+                prologue->set_campaign_scripted_roles_adapter([&](const auto& current,unsigned eventIndex)->std::optional<s2ne::Prologue::ArrivalTransaction>{
+                    if(!rawSave)return std::nullopt;
+                    s2ne::OriginalSave::State captured;
+                    try{captured=s2ne::OriginalSaveBridge::capture(current,prologue->battle_turn(),prologue->camera(),&*rawSave);}
+                    catch(const std::exception& ex){throw std::runtime_error("Scripted role transaction stage="+std::to_string(current.stage)+" event="+std::to_string(eventIndex)+": "+ex.what());}
+                    s2ne::OriginalEvents expanded(root,current.difficulty);expanded.load_stage(current.stage);
+                    auto inserted=initialization.insert_scripted_roles(captured,expanded,eventIndex,initialization.placement_map(root,expanded.map_id));
+                    auto restored=s2ne::OriginalSaveBridge::restore(root,inserted);
+                    auto pending=std::make_shared<s2ne::OriginalSave::State>(std::move(inserted));
+                    return s2ne::Prologue::ArrivalTransaction{std::move(restored.events),[&,pending]()noexcept{using std::swap;swap(*rawSave,*pending);}};
+                });
+                prologue->set_campaign_reward_adapter([&](auto& staged,const auto& plan){
+                    if(!rawSave)return false;
+                    return prologue->battle().mutate_random([&](auto& rng,uint32_t seconds){
+                        auto result=campaignPersistence.settle(staged,plan,*rawSave,prologue->battle_turn(),rng,seconds);
+                        using std::swap;swap(staged,result.events);swap(*rawSave,result.raw);return true;
+                    });
+                });
+                prologue->set_interbattle_adapter([](auto){return s2ne::OriginalInterbattle::Result::unsupported;});
+                connectedCampaign=prologue.get();
+            }
             if(prologue){
+                if(campaignContinue&&prologue->battle_turn()!=continuousDiagnosticTurn){
+                    continuousDiagnosticTurn=prologue->battle_turn();unsigned enemies=0,allies=0;
+                    for(const auto& u:prologue->events.units)if(u.present(continuousDiagnosticTurn)&&(u.status_flags&0x80)&&!(u.status_flags&0x20)){if(u.hostile())++enemies;else if(u.controllable())++allies;}
+                    std::cout<<"Continuous turn stage="<<prologue->events.stage<<" turn="<<continuousDiagnosticTurn<<" allies="<<allies<<" enemies="<<enemies<<'\n';
+                    if(prologue->events.stage==12)for(const auto& u:prologue->events.units)if((u.status_flags&0x80)&&!(u.status_flags&0x20)&&u.hp>0)std::cout<<" live="<<u.id<<" side="<<u.behavior<<" hp="<<u.hp<<" xy="<<u.x<<","<<u.y<<" action="<<unsigned(u.action_state)<<'\n';
+                }
                 if(campaignSmoke&&alternateSmoke&&prologue->battle_turn()!=diagnosticTurn){
                     diagnosticTurn=prologue->battle_turn();
                     std::cout<<"Natalia easy auto diagnostic turn="<<diagnosticTurn<<" difficulty="<<prologue->events.difficulty<<'\n';
@@ -272,13 +342,24 @@ int main(int argc, char** argv) {
                 if(autoSmoke&&prologue->automatic_actions())++autoFriendlyFrames;
                 if(autoSmoke&&prologue->hostile_actions())++autoEnemyFrames;
                 if(prologue->battle_intro()&&battleSmoke&&battleSmokeStartTurn){if(prologue->hostile_banner())++hostileBannerFrames;else ++playerBannerFrames;}
+                prologue->set_auto_selection(settingsState.status_window==1);
                 prologue->set_mask_surfaces(settingsState.status_window==1);
                 prologue->set_checker_mask(settingsState.flag_4f7d0a==1);
-                if(!battleMenu&&!battleReports&&!promotionMenu)prologue->tick(clearSmoke?120u:feedbackSmoke?std::max(30u,unsigned(nowUi-lastUiTick)):unsigned(nowUi-lastUiTick));
-                if(!battleMenu&&!battleReports&&!promotionMenu&&!battleSmoke&&SDL_GetMouseFocus()==window){
-                    float x{},y{},rx{},ry{};SDL_GetMouseState(&x,&y);
-                    if(SDL_RenderCoordinatesFromWindow(renderer,x,y,&rx,&ry))prologue->edge_scroll(rx,ry);
+                if(strengthenedFlow){
+                    for(auto& unit:prologue->events.units){
+                        if((unit.controllable()||unit.behavior==1)&&(unit.status_flags&0x80)&&!(unit.status_flags&0x20)&&unit.hp>0){
+                            unit.max_hp=30000;unit.hp=30000;unit.attack=30000;unit.defense=30000;
+                        }
+                    }
                 }
+                if(!battleMenu&&!battleReports&&!promotionMenu)prologue->tick(clearSmoke?120u:feedbackSmoke?std::max(30u,unsigned(nowUi-lastUiTick)):unsigned(nowUi-lastUiTick));
+                float x{},y{},rx{},ry{};SDL_GetMouseState(&x,&y);
+                bool edgeActive=!battleMenu&&!battleReports&&!promotionMenu&&!saveMenu&&!overwriteConfirmation&&!exitConfirmation&&!battleSmoke&&
+                    prologue->in_battle()&&!prologue->battle().animating_movement()&&
+                    (prologue->battle_state()==s2ne::Battle::State::idle||prologue->battle_state()==s2ne::Battle::State::movement||prologue->battle_state()==s2ne::Battle::State::attack_target)&&
+                    SDL_GetMouseFocus()==window&&SDL_RenderCoordinatesFromWindow(renderer,x,y,&rx,&ry)&&
+                    rx>=0&&rx<640&&ry>=0&&ry<480&&(rx<10||rx>630||ry<10||ry>470);
+                if(edgeScrollTiming.due(nowUi,edgeActive,unsigned(std::max(0,settingsState.screen_delay))*10u))prologue->edge_scroll(rx,ry);
                 showPrologue();
                 if(feedbackSmoke)if(auto feedback=prologue->combat_feedback();feedback&&feedback->active()){
                     feedbackFlash|=feedback->silhouette();feedbackNumbers|=feedback->text_visible()&&!feedback->miss;
@@ -287,7 +368,10 @@ int main(int argc, char** argv) {
             }
             lastUiTick=nowUi;
             if (smoke && smokePhase == 0 && SDL_GetTicks() - started > 300) {
-                SDL_Event e{}; e.type = SDL_EVENT_KEY_DOWN; e.key.key = SDLK_ESCAPE; SDL_PushEvent(&e); ++smokePhase;
+                SDL_Event e{};
+                if(openingRightSmoke){e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_RIGHT;}
+                else{e.type=SDL_EVENT_KEY_DOWN;e.key.key=SDLK_ESCAPE;}
+                SDL_PushEvent(&e);++smokePhase;
             }
             if (smoke && smokePhase == 1 && SDL_GetTicks() - started > 600) {
                 SDL_Event e{}; e.type = SDL_EVENT_KEY_DOWN; e.key.key = SDLK_DOWN; SDL_PushEvent(&e);
@@ -308,7 +392,7 @@ int main(int argc, char** argv) {
                 if(prologue&&prologue->choosing()&&((alternateSmoke&&prologue->events.stage==140)||(campaignContinue&&prologue->events.stage==10))&&prologue->selection()==0)e.key.key=SDLK_DOWN;
                 if(campaignContinue&&prologue&&prologue->events.stage!=observedCampaignStage){
                     observedCampaignStage=prologue->events.stage;campaignStageStarted=SDL_GetTicks();
-                    std::cout<<"Continuous campaign pending stage="<<prologue->events.stage<<" battle="<<prologue->in_battle()<<" dialogue="<<prologue->campaign_dialogue()<<'\n';
+                    std::cout<<"Continuous campaign pending stage="<<prologue->events.stage<<" name="<<campaign_name_utf8(s2ne::OriginalCampaign(root).stage(prologue->events.stage))<<" battle="<<prologue->in_battle()<<" dialogue="<<prologue->campaign_dialogue()<<'\n';
                 }
                 if(campaignContinue&&prologue&&!prologue->campaign_blocker().empty())throw std::runtime_error("Continuous campaign blocked at stage="+std::to_string(prologue->events.stage)+": "+prologue->campaign_blocker());
                 if(campaignContinue&&prologue&&prologue->in_battle()&&prologue->events.stage!=lastCampaignStage){
@@ -318,6 +402,10 @@ int main(int argc, char** argv) {
                     if(restored.events.stage!=prologue->events.stage)throw std::runtime_error("Continuous autosave stage mismatch");
                     lastCampaignStage=prologue->events.stage;++campaignCheckpoints;
                     std::cout<<"Continuous campaign checkpoint="<<campaignCheckpoints<<" stage="<<lastCampaignStage<<" original autosave reload verified\n";
+                    auto directory=root/"S2NE"/"out"/(strengthenedFlow?"strengthened-flow-acceptance":"campaign-acceptance");std::filesystem::create_directories(directory);
+                    auto path=directory/("run-"+std::to_string(GetCurrentProcessId())+"-stage"+std::to_string(lastCampaignStage)+"-start.sav");
+                    auto bytes=s2ne::OriginalSave::encode(saved,saveItems);std::ofstream output(path,std::ios::binary);output.write(reinterpret_cast<const char*>(bytes.data()),std::streamsize(bytes.size()));
+                    if(!output)throw std::runtime_error("Cannot persist continuous campaign checkpoint");
                 }
                 if(campaignSmoke&&!campaignContinue&&prologue&&prologue->events.stage==(alternateSmoke?72u:2u)&&prologue->in_battle()){
                     if(!rawSave||!prologue->autosave_requests().empty())throw std::runtime_error("Stage2 entered before original autosaves committed");
@@ -340,8 +428,9 @@ int main(int argc, char** argv) {
                     throw std::runtime_error("Production first-battle smoke reached original defeat");
                 }else if(clearSmoke&&prologue&&prologue->in_battle()){ 
                     unsigned friendly=0,hostile=0;
-                    for(const auto& unit:prologue->events.units)if(unit.present(prologue->battle_turn())){if(unit.hostile())++hostile;else if(unit.controllable())++friendly;}
-                    if((!hostile&&!campaignContinue)||!friendly){
+                    for(const auto& unit:prologue->events.units)if(unit.present(prologue->battle_turn())&&(unit.status_flags&0x80)&&!(unit.status_flags&0x20)){if(unit.hostile())++hostile;else if(unit.controllable())++friendly;}
+                    bool livingAlliedNpc=std::any_of(prologue->events.units.begin(),prologue->events.units.end(),[&](const auto& unit){return !unit.hostile()&&unit.behavior==1&&unit.present(prologue->battle_turn())&&(unit.status_flags&0x80)&&!(unit.status_flags&0x20);});
+                    if((!hostile&&!campaignContinue)||(!friendly&&!(campaignContinue&&livingAlliedNpc))){
                         std::cout<<"SDL first battle outcome: turn="<<prologue->battle_turn()<<" friendly="<<friendly<<" hostile="<<hostile<<"\n";
                         for(const auto& unit:prologue->events.units)if(unit.controllable())std::cout<<" actor="<<unit.id<<" hp="<<unit.hp<<" level="<<unit.level<<" xp="<<unit.experience<<"\n";
                         if(!friendly)throw std::runtime_error("First battle production automatic actions lost; not a verified victory");
@@ -349,33 +438,88 @@ int main(int argc, char** argv) {
                     }
                     if(prologue->battle_turn()>100)throw std::runtime_error("First battle production automatic actions failed to clear within100 turns");
                     if(!battleSmokeStartTurn)battleSmokeStartTurn=prologue->battle_turn();
-                    if(campaignContinue&&prologue->events.stage==10&&!hostile){
+                    if(campaignContinue&&(!smokeExitStage||smokeExitStage->id!=prologue->events.stage)){
+                        smokeExitStage=s2ne::OriginalCampaign(root).stage(prologue->events.stage);
+                        smokeExitCells.clear();exitMoveTurn=0;
+                    }
+                    auto revealInput=campaignContinue&&strengthenedFlow&&prologue->battle_turn()>1?s2ne::smoke_exit::reveal_input(prologue->battle(),prologue->events):std::nullopt;
+                    bool captureInput=campaignContinue&&strengthenedFlow&&hostile==0&&s2ne::smoke_exit::capture_ready(prologue->events);
+                    if(campaignContinue&&(s2ne::smoke_exit::ready(*smokeExitStage,prologue->events,hostile)||revealInput||captureInput)){
                         auto& battle=prologue->battle();
                         if(!battle.animating_movement()&&!battle.combat_feedback_active()){
-                            auto actor=std::find_if(prologue->events.units.begin(),prologue->events.units.end(),[](const auto& u){return u.id==11&&!u.hostile()&&u.present();});
+                            auto actor=std::find_if(prologue->events.units.begin(),prologue->events.units.end(),[&](const auto& u){return u.id==(revealInput?revealInput->actor:s2ne::smoke_exit::protagonist(prologue->events))&&!u.hostile()&&u.present()&&(u.status_flags&0x80)&&!(u.status_flags&0x20);});
                             if(actor==prologue->events.units.end())throw std::runtime_error("Exit protagonist unavailable");
                             using Point=s2ne::Battle::Point;
                             Point origin{actor->x,actor->y};
+                            if(!revealInput&&!captureInput&&smokeExitCells.empty())smokeExitCells=s2ne::smoke_exit::cells(root,prologue->events);
+                            auto exits=revealInput?std::vector<std::pair<int,int>>{revealInput->destination}:smokeExitCells;
+                            if(captureInput){exits.clear();s2ne::OriginalMap original(root);original.load(prologue->events.map_id);
+                                for(unsigned y=0;y<original.height*2;++y)for(unsigned x=0;x<original.width-(y&1);++x)if(battle.object_category({int(x),int(y)})==4)exits.emplace_back(int(x),int(y));
+                            }
+                            std::cout<<"Exit input turn="<<prologue->battle_turn()<<" hero="<<origin.x<<","<<origin.y<<" ap="<<actor->action_points<<" state="<<int(prologue->battle_state())<<" selected="<<prologue->battle_selected()<<" committedTurn="<<exitMoveTurn<<'\n';
                             std::vector<Point> queue{origin};std::map<std::pair<int,int>,Point> previous;previous[{origin.x,origin.y}]=origin;
                             std::optional<Point> destination;
                             for(size_t i=0;i<queue.size()&&!destination;++i){auto p=queue[i];
-                                if((p.x==21&&(p.y==4||p.y==6))||(p.x==20&&p.y==5)){destination=p;break;}
+                                if(std::find(exits.begin(),exits.end(),std::pair{p.x,p.y})!=exits.end()&&(p==origin||battle.occupant(prologue->events.units,p)<0)){destination=p;break;}
                                 for(int dy:{-1,1})for(int dx:{0,(p.y&1)?1:-1}){Point q{p.x+dx,p.y+dy};
-                                    if(previous.contains({q.x,q.y})||battle.step_cost(*actor,p,q)<0||battle.occupant(prologue->events.units,q)>=0)continue;
+                                    if(previous.contains({q.x,q.y})||battle.step_cost(*actor,p,q)<0||!battle.player_route_passable(prologue->events.units,*actor,q))continue;
                                     previous[{q.x,q.y}]=p;queue.push_back(q);
                                 }
                             }
-                            if(!destination)throw std::runtime_error("No legal route to original stage10 exit");
+                            if(!destination){
+                                auto checkpoint=s2ne::OriginalSaveBridge::capture(prologue->events,prologue->battle_turn(),prologue->camera(),&*rawSave);
+                                auto directory=root/"S2NE"/"out"/(strengthenedFlow?"strengthened-flow-acceptance":"campaign-acceptance");
+                                std::filesystem::create_directories(directory);
+                                auto path=directory/("stage"+std::to_string(prologue->events.stage)+"-route-blocked-"+std::to_string(GetCurrentProcessId())+".sav");
+                                auto bytes=s2ne::OriginalSave::encode(checkpoint,saveItems);
+                                std::ofstream output(path,std::ios::binary);output.write(reinterpret_cast<const char*>(bytes.data()),std::streamsize(bytes.size()));
+                                if(!output)throw std::runtime_error("Cannot persist actual blocked-route checkpoint");
+                                throw std::runtime_error("No legal route to original stage"+std::to_string(prologue->events.stage)+" exit; genuine checkpoint="+path.string()+" origin="+std::to_string(origin.x)+","+std::to_string(origin.y));
+                            }
                             if(*destination!=origin){
                                 if(exitMoveTurn==prologue->battle_turn()){prologue->end_battle_turn();}
-                                else if(prologue->battle_state()==s2ne::Battle::State::idle){auto p=prologue->screen_cell(origin);prologue->pan(p.x-320,p.y-240);p=prologue->screen_cell(origin);prologue->mouse(float(p.x),float(p.y),true);}
+                                else if(prologue->battle_state()==s2ne::Battle::State::idle){
+                                    auto p=prologue->screen_cell(origin);prologue->pan(p.x-320,p.y-240);p=prologue->screen_cell(origin);
+                                    auto camera=prologue->camera();std::optional<Point> click;
+                                    for(int dy=-32;dy<=32&&!click;++dy)for(int dx=-32;dx<=32;++dx){Point pixel{p.x+dx,p.y+dy};
+                                        if(pixel.x<0||pixel.x>=640||pixel.y<0||pixel.y>=480)continue;
+                                        if(battle.pick_surface(float(pixel.x),float(pixel.y),camera.first,camera.second)==origin){click=pixel;break;}
+                                    }
+                                    if(!click)throw std::runtime_error("Exit protagonist has no verified selection pixel");
+                                    prologue->mouse(float(click->x),float(click->y),true);
+                                    if(prologue->battle_selected()!=int(actor-prologue->events.units.begin()))throw std::runtime_error("Exit click selected wrong actor");
+                                }
                                 else if(prologue->battle_state()==s2ne::Battle::State::command){
                                     for(unsigned i=0;i<6&&prologue->battle_command_index()!=1;++i)prologue->battle_cycle(1);
                                     prologue->battle_confirm();
                                 }else if(prologue->battle_state()==s2ne::Battle::State::movement){
-                                    Point next=*destination;while(previous.at({next.x,next.y})!=origin)next=previous.at({next.x,next.y});
-                                    if(!battle.can_step(prologue->events.units,size_t(actor-prologue->events.units.begin()),next))prologue->end_battle_turn();
-                                    else{auto p=prologue->screen_cell(next);prologue->pan(p.x-320,p.y-240);p=prologue->screen_cell(next);prologue->mouse(float(p.x),float(p.y),true);exitMoveTurn=prologue->battle_turn();}
+                                    std::vector<Point> path;Point cursor=*destination;
+                                    while(cursor!=origin){path.push_back(cursor);cursor=previous.at({cursor.x,cursor.y});}
+                                    std::optional<Point> reachable;
+                                    for(auto point:path)if(battle.preview(point)){reachable=point;break;}
+                                    if(!reachable)prologue->end_battle_turn();
+                                    else{
+                                        auto p=prologue->screen_cell(*reachable);prologue->pan(p.x-320,p.y-240);p=prologue->screen_cell(*reachable);
+                                        auto camera=prologue->camera();std::optional<Point> click;
+                                        for(int radius=0;radius<=64&&!click;++radius)for(int dy=-radius;dy<=radius&&!click;++dy)for(int dx=-radius;dx<=radius;++dx){
+                                            if(radius&&std::abs(dx)!=radius&&std::abs(dy)!=radius)continue;
+                                            Point pixel{p.x+dx,p.y+dy};if(pixel.x<0||pixel.x>=640||pixel.y<0||pixel.y>=480)continue;
+                                            if(battle.pick_surface(float(pixel.x),float(pixel.y),camera.first,camera.second)==*reachable){click=pixel;break;}
+                                        }
+                                        if(!click&&revealInput)for(auto point:path){
+                                            if(!battle.preview(point))continue;
+                                            auto center=prologue->screen_cell(point);prologue->pan(center.x-320,center.y-240);center=prologue->screen_cell(point);camera=prologue->camera();
+                                            for(int dy=-64;dy<=64&&!click;++dy)for(int dx=-64;dx<=64;++dx){Point pixel{center.x+dx,center.y+dy};
+                                                if(pixel.x<0||pixel.x>=640||pixel.y<0||pixel.y>=480)continue;
+                                                if(battle.pick_surface(float(pixel.x),float(pixel.y),camera.first,camera.second)==point){click=pixel;reachable=point;break;}
+                                            }
+                                            if(click)break;
+                                        }
+                                        if(!click)throw std::runtime_error("Original exit destination has no verified visible click pixel");
+                                        prologue->mouse(float(click->x),float(click->y),true);
+                                        if(!battle.animating_movement()&&Point{actor->x,actor->y}!=*reachable)throw std::runtime_error("Verified exit click did not start movement");
+                                        exitMoveTurn=prologue->battle_turn();
+                                    }
                                 }
                             }
                         }
@@ -425,16 +569,20 @@ int main(int argc, char** argv) {
                             battleSmokeStartTurn=prologue->battle_turn();
                         }else if(prologue->battle_state()==s2ne::Battle::State::movement){
                             pushClick(prologue->screen_cell(battleSmokeDestination));
-                        }else if(prologue->battle_state()==s2ne::Battle::State::command){
+                        }else if(prologue->battle_state()==s2ne::Battle::State::command&&prologue->battle_turn()==battleSmokeStartTurn){
                             const auto& unit=prologue->events.units.at(battleSmokeUnit);
                             if(unit.x!=battleSmokeDestination.x||unit.y!=battleSmokeDestination.y)throw std::runtime_error("SDL routed movement failed");
                             SDL_Event finish{};finish.type=SDL_EVENT_KEY_DOWN;finish.key.key=SDLK_F10;SDL_PushEvent(&finish);
-                        }else if(prologue->battle_state()==s2ne::Battle::State::idle){
+                        }else if(prologue->battle_state()==s2ne::Battle::State::idle||(prologue->battle_state()==s2ne::Battle::State::command&&prologue->battle_turn()>battleSmokeStartTurn)){
                             if(prologue->battle_turn()!=battleSmokeStartTurn+1||hostileBannerFrames<8||playerBannerFrames<8)throw std::runtime_error("SDL side banners missing or side finish failed");
                             if(++battleSmokeRounds==2){
                                 bool enemy_moved=false;
                                 for(size_t i=0;i<prologue->events.units.size();++i){const auto& unit=prologue->events.units[i];if(unit.hostile()&&std::pair{unit.x,unit.y}!=battleSmokeEnemyOrigins.at(i))enemy_moved=true;}
-                                if(!enemy_moved||hostileActionFrames<2)throw std::runtime_error("Enemy turn did not visibly execute movement");
+                                if(!enemy_moved||hostileActionFrames<2){
+                                    std::cerr<<"Battle smoke movement diagnostic: turn="<<prologue->battle_turn()<<" action_frames="<<hostileActionFrames<<'\n';
+                                    for(size_t i=0;i<prologue->events.units.size();++i){const auto& u=prologue->events.units[i];if(u.hostile())std::cerr<<" enemy["<<i<<"] behavior="<<u.behavior<<" hp="<<u.hp<<" origin="<<battleSmokeEnemyOrigins.at(i).first<<','<<battleSmokeEnemyOrigins.at(i).second<<" now="<<u.x<<','<<u.y<<" action="<<unsigned(u.action_state)<<'\n';}
+                                    throw std::runtime_error("Enemy turn did not visibly execute movement");
+                                }
                                 std::cout<<"SDL campaign battle "<<prologue->events.stage<<": player movement, visible enemy movement and two complete side-banner cycles verified ("<<hostileActionFrames<<" hostile frames)\n";running=false;
                             }else{
                                 battleSmokeStartTurn=prologue->battle_turn();hostileBannerFrames=playerBannerFrames=0;
@@ -451,6 +599,11 @@ int main(int argc, char** argv) {
                         if(originalMenu.page()!=s2ne::OriginalBattleMenu::Page::overview)throw std::runtime_error("Battlefield overview submenu missing");
                         originalMenu.cancel();originalMenu.cancel();
                         if(!originalMenu.return_code()||*originalMenu.return_code()!=0)throw std::runtime_error("Battlefield menu return path failed");
+                        if(settingsState.status_window==1){
+                            auto first=std::find_if(prologue->events.units.begin(),prologue->events.units.end(),[](const auto& unit){return unit.controllable()&&(unit.status_flags&0x80)&&!(unit.status_flags&0x20);});
+                            if(first==prologue->events.units.end()||prologue->battle_selected()!=int(first-prologue->events.units.begin())||prologue->battle_state()!=s2ne::Battle::State::command)throw std::runtime_error("Original opening ordered selection missing");
+                        }
+                        prologue->cancel_battle_selection();
                         prologue->pan(320,160);
                         auto before=prologue->screen_cell({0,0});
                         prologue->edge_scroll(0,0);prologue->edge_scroll(0,0);
@@ -675,6 +828,10 @@ int main(int argc, char** argv) {
                     if (menu.mouse(x,y,click)) { auto target=menu.activate(); if(menu.selected==0){showSetup();continue;} if(menu.selected==1){saveMenu.emplace(root,0,s2ne::OriginalSaveMenu::scan(root));continue;} if(menu.selected==4){beginExitConfirmation();continue;} if(menu.selected==3){beginSettings();continue;} std::cout << "Selected original menu row " << menu.selected << ", handler 0x" << std::hex << target << std::dec << " (not implemented)\n"; }
                     showMenu();
                 }
+                if(!inMenu&&!prologue&&event.type==SDL_EVENT_MOUSE_BUTTON_DOWN&&event.button.button==SDL_BUTTON_RIGHT){
+                    showMenu();
+                    continue;
+                }
                 if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat) {
                     if(inSetup){
                         if(event.key.key==SDLK_ESCAPE){inSetup=false;showMenu();}
@@ -709,35 +866,6 @@ int main(int argc, char** argv) {
                     if (!SDL_UpdateTexture(texture, nullptr, rgba.data(), 640 * 4)) throw std::runtime_error(SDL_GetError());
                     next = SDL_GetTicks() + a.delay;
                 }
-            }
-            if(prologue&&connectedCampaign!=prologue.get()){
-                prologue->set_campaign_arrival_adapter([&](const auto& current,unsigned turn)->std::optional<s2ne::Prologue::ArrivalTransaction>{
-                    if(!rawSave)return std::nullopt;
-                    auto captured=s2ne::OriginalSaveBridge::capture(current,turn,prologue->camera(),&*rawSave);
-                    s2ne::OriginalEvents expanded(root,current.difficulty);expanded.load_stage(current.stage);
-                    auto inserted=initialization.insert_arrivals(captured,expanded,turn,initialization.placement_map(root,expanded.map_id));
-                    auto arrivals=s2ne::OriginalSaveBridge::restore(root,inserted);
-                    auto pending=std::make_shared<s2ne::OriginalSave::State>(std::move(inserted));
-                    return s2ne::Prologue::ArrivalTransaction{std::move(arrivals.events),[&,pending]()noexcept{using std::swap;swap(*rawSave,*pending);}};
-                },rawSave?prologue->battle_turn():1);
-                prologue->set_campaign_scripted_roles_adapter([&](const auto& current,unsigned eventIndex)->std::optional<s2ne::Prologue::ArrivalTransaction>{
-                    if(!rawSave)return std::nullopt;
-                    auto captured=s2ne::OriginalSaveBridge::capture(current,prologue->battle_turn(),prologue->camera(),&*rawSave);
-                    s2ne::OriginalEvents expanded(root,current.difficulty);expanded.load_stage(current.stage);
-                    auto inserted=initialization.insert_scripted_roles(captured,expanded,eventIndex,initialization.placement_map(root,expanded.map_id));
-                    auto restored=s2ne::OriginalSaveBridge::restore(root,inserted);
-                    auto pending=std::make_shared<s2ne::OriginalSave::State>(std::move(inserted));
-                    return s2ne::Prologue::ArrivalTransaction{std::move(restored.events),[&,pending]()noexcept{using std::swap;swap(*rawSave,*pending);}};
-                });
-                prologue->set_campaign_reward_adapter([&](auto& staged,const auto& plan){
-                    if(!rawSave)return false;
-                    return prologue->battle().mutate_random([&](auto& rng,uint32_t seconds){
-                        auto result=campaignPersistence.settle(staged,plan,*rawSave,prologue->battle_turn(),rng,seconds);
-                        using std::swap;swap(staged,result.events);swap(*rawSave,result.raw);return true;
-                    });
-                });
-                prologue->set_interbattle_adapter([](auto){return s2ne::OriginalInterbattle::Result::unsupported;});
-                connectedCampaign=prologue.get();
             }
             if(prologue&&rawSave&&prologue->pending_story_route()){
                 auto captured=s2ne::OriginalSaveBridge::capture(prologue->events,prologue->battle_turn(),prologue->camera(),&*rawSave);
@@ -840,8 +968,9 @@ int main(int argc, char** argv) {
             SDL_RenderClear(renderer);
             SDL_RenderTexture(renderer, texture, nullptr, nullptr);
             if (!SDL_RenderPresent(renderer)) throw std::runtime_error(SDL_GetError());
-                        ++presented;
-                        SDL_Delay(10);
+            if(presentedPrologue&&presentedPrologue==prologue.get())prologue->frame_presented();
+            ++presented;
+            if(auto delay=s2ne::original_ui_frame_delay(nowUi,SDL_GetTicks()))SDL_Delay(delay);
         }
         if(promotionSmoke&&!promotionVerified)throw std::runtime_error("Earned promotion validation interrupted");
         if(clearSmoke&&!clearVerified)throw std::runtime_error("First-battle validation interrupted before original victory report");
@@ -856,3 +985,5 @@ int main(int argc, char** argv) {
         return 1;
     }
 }
+
+

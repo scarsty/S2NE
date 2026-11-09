@@ -17,7 +17,7 @@ public:
     RewardState settle(OriginalEvents events,const OriginalCampaign::Settlement& plan,
                        const OriginalSave::State& baseline,unsigned turn,OriginalRandom& random,uint32_t seconds)const{
         OriginalCampaign campaign(root_);auto source=campaign.stage(events.stage);
-        if(events.stage!=plan.stage||plan.next!=source.next)throw std::runtime_error("Campaign settlement does not match original stage route");
+        if(events.stage!=plan.stage||plan.next!=campaign.selected_route(events))throw std::runtime_error("Campaign settlement does not match original stage route");
         auto raw=OriginalSaveBridge::capture(events,turn,{32,16},&baseline);
         auto& group=raw.groups[0];
         if(group.inventory.size()!=302)throw std::runtime_error("Campaign requires complete original302-item inventory");
@@ -52,7 +52,7 @@ public:
     // in persistent roster order, NOT by matching next-stage role IDs.
     OriginalEvents deploy_next(const OriginalEvents& previous,const OriginalSave::State& raw)const{
         if(get(raw.globals_4f7cd0,8,4)!=previous.stage)throw std::runtime_error("Stale original deployment stage");
-        OriginalCampaign campaign(root_);unsigned target=campaign.stage(previous.stage).next;
+        OriginalCampaign campaign(root_);unsigned target=campaign.selected_route(previous);
         if(campaign.stage(previous.stage).mode==3){
             OriginalEvents source(root_,previous.difficulty);source.load_stage(previous.stage);
             target=OriginalCampaign::completed_story_route(source,previous,campaign.stage(previous.stage).next);
@@ -68,7 +68,8 @@ public:
         for(size_t i=0;i<raw.groups[0].units.size();++i){auto u=previous.units[i];
             if(get(raw.groups[0].units[i],2)!=u.id)throw std::runtime_error("Stale campaign role identity");
             // 44A4A9 ->45DDA6 resets current pools/temporary statuses before462224.
-            bool deployable=OriginalCampaign::living(u)&&!(u.status_flags&0x50);
+            bool removed= get(raw.groups[0].units[i],8)==1&&((u.status_flags&0x20)||!(u.status_flags&0x40));
+            bool deployable=!removed&&OriginalCampaign::living(u)&&!(u.status_flags&0x50);
             u.status_flags&=0x73;u.status34=0;u.status3c=0;u.action_state=0;
             u.hp=u.max_hp;u.mp=u.max_mp;u.st=u.max_st;u.sp=u.max_sp;
             u.max_action_points=u.action_points=std::min(u.base_action_points,110);u.carry_points=0;

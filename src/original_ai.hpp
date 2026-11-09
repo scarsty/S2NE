@@ -30,6 +30,8 @@ struct Weights {
 struct Score { int rank{}, value{}, kills{}; };
 inline int multiply(int a,int b){return std::bit_cast<int32_t>(uint32_t(a)*uint32_t(b));}
 inline int subtract(int a,int b){return std::bit_cast<int32_t>(uint32_t(a)-uint32_t(b));}
+// 4086DF multiplies preview chance (+18) by damage (+1C); no /100.
+inline int physical_preview_value(int chance,int damage,bool status_bonus=false){return multiply(chance+(status_bonus?10:0),damage);}
 // sub_40BCF3, non-area branch. A strict > test is intentional at both boundaries.
 inline std::optional<Score> score_melee(const MeleePreview& p,Weights w){
     bool priority=p.target_kind==1||p.target_kind==11||(p.target_flags2f&3)!=0;
