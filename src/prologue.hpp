@@ -5,6 +5,7 @@
 #include "battle.hpp"
 #include "original_palette.hpp"
 #include "original_unit_status.hpp"
+#include "original_confirmation.hpp"
 #include <optional>
 
 namespace s2ne {
@@ -15,6 +16,7 @@ class Prologue {
     OriginalMap map_;
     std::filesystem::path root_;
     std::optional<Battle> battle_;
+    mutable std::optional<OriginalConfirmation> finish_confirmation_;
     enum class Phase { dialogue, choice, branch, flag_dialogue, briefing, battle_intro, objectives, battle };
     unsigned intro_elapsed_=0;
     unsigned animation_elapsed_=0;
@@ -190,8 +192,10 @@ public:
             if(dialogue_visible_steps_==4||(map_.camera_x==x&&map_.camera_y==y))dialogue_camera_target_.reset();
         }
         if(in_battle()){
+            const bool was_moving=battle_->animating_movement();
             battle_->tick_movement(milliseconds);
-            if(battle_->animating_movement()){
+            if(battle_->state()==Battle::State::idle&&std::none_of(events.units.begin(),events.units.end(),[&](const auto& unit){return unit.controllable()&&unit.present(battle_->turn())&&!(unit.status_flags&0x20)&&(unit.status_flags&0x80)&&unit.action_state==0;}))end_battle_turn();
+            if(was_moving){
                 auto poses=battle_->render_units(events.units);
                 const auto& pose=poses.at(size_t(battle_->selected()));
                 map_.movement_camera(pose.x,pose.y);
@@ -211,6 +215,9 @@ public:
     int selection()const{return selection_;}
     void move(int delta){if(dialogue_scrolling()||(in_battle()&&battle_->animating_movement()))return;if(choosing())selection_=std::clamp(selection_+delta,0,int(events.line_count(event_))-2);else if(in_battle())map_.pan(0,delta*16);}
     void pan(int dx,int dy){if(in_battle()&&!battle_->animating_movement())map_.pan(dx,dy);}
+    void edge_scroll(float x,float y){
+        if(in_battle()&&!battle_->animating_movement()&&(battle_->state()==Battle::State::idle||battle_->state()==Battle::State::movement||battle_->state()==Battle::State::attack_target)&&map_.edge_scroll(x,y))mouse(x,y,false);
+    }
     void set_mask_surfaces(bool enabled){if(battle_)battle_->set_mask_surfaces(enabled);}
     void set_checker_mask(bool enabled){map_.set_checker_mask(enabled);}
     void sync_movement_contexts(){
@@ -221,6 +228,7 @@ public:
     void mouse(float x,float y,bool click){
         if(dialogue_scrolling())return;
         if(in_battle()){
+            if(finish_confirmation_){finish_confirmation_->mouse(x,y,click);resolve_finish();return;}
             sync_movement_contexts();auto before=battle_->state();
             battle_->mouse(events.units,x,y,click,map_.camera_x,map_.camera_y);
             if(!battle_->animating_movement()&&battle_->state()==Battle::State::command&&before!=Battle::State::command&&battle_->selected()>=0){
@@ -230,14 +238,25 @@ public:
         }
         if(choosing()&&x>=149&&y>=209&&y<261){int row=int(y-209)/26;if(row!=selection_)selection_=row;else if(click)advance();}
     }
-    void cancel_battle_selection(){if(in_battle())battle_->cancel(events.units);}
-    void battle_confirm(){if(in_battle()){sync_movement_contexts();battle_->activate(events.units);}}
-    void battle_cycle(int delta){if(in_battle()&&!battle_->animating_movement())battle_->cycle_command(delta);}
+    void resolve_finish(){if(finish_confirmation_&&finish_confirmation_->result()){battle_->finish_action(events.units,*finish_confirmation_->result());finish_confirmation_.reset();}}
+    void cancel_battle_selection(){if(in_battle()){if(finish_confirmation_){finish_confirmation_->cancel();resolve_finish();}else battle_->cancel(events.units);}}
+    void battle_confirm(){if(in_battle()){if(finish_confirmation_){finish_confirmation_->confirm();resolve_finish();}else{sync_movement_contexts();battle_->activate(events.units);}}}
+    void battle_cycle(int delta){if(in_battle()&&!battle_->animating_movement()){if(finish_confirmation_)finish_confirmation_->toggle();else battle_->cycle_command(delta);}}
     void battle_cycle_target(){if(in_battle())battle_->cycle_target(events.units);}
     Battle::State battle_state()const{return battle_?battle_->state():Battle::State::idle;}
+    std::pair<int,int> camera()const{return {map_.camera_x,map_.camera_y};}
+    void restore_battle(OriginalEvents restored,unsigned turn){
+        events=std::move(restored);battle_.emplace(Battle::load(root_,events.map_id));battle_->enable_movement_animation();battle_->restore_turn(turn);
+        map_.set_dynamic_object_chains(events.dynamic_object_chains);map_.set_event_flags(events.flags);map_.load(events.map_id);
+        for(unsigned y=0;y<map_.height*2;++y)for(unsigned x=0;x<map_.width-(y&1);++x)if(!map_.object_at(int(x),int(y)))battle_->clear_runtime_object({int(x),int(y)});
+        finish_confirmation_.reset();dialogue_camera_target_.reset();phase_=Phase::battle;first_banner_=false;finished=true;
+    }
+    void show_objectives(){if(in_battle())phase_=Phase::objectives;}
     bool drawing_original_mouse()const{return in_battle()&&battle_->has_movement_mouse();}
     Battle::Point battle_command_origin()const{return battle_->command_origin(events.units,map_.camera_x,map_.camera_y);}
-    void end_battle_turn(){if(in_battle()&&!battle_->animating_movement()){battle_->begin_hostile_side(events.units);phase_=Phase::battle_intro;intro_elapsed_=0;}}
+    void end_battle_turn(){if(in_battle()&&!battle_->animating_movement()){
+        battle_->begin_hostile_side(events.units);phase_=Phase::battle_intro;intro_elapsed_=0;
+    }}
     bool hostile_banner()const{return battle_intro()&&battle_->hostile_side();}
     std::string battle_status()const{return battle_?battle_->message():std::string{};}
     int battle_selected()const{return battle_?battle_->selected():-1;}
@@ -375,6 +394,13 @@ public:
                     unit_status_.draw(font,image,unit,panel_y,unit.hostile());
                 }
             }
+            if(battle_->state()==Battle::State::finish_confirm){
+                const auto& unit=events.units.at(size_t(battle_->selected()));auto [sx,sy]=map_.screen_position(unit.x,unit.y);
+                int top=sy+50;
+                if(top+36>=479)top=std::max(0,sy-int(map_.unit_height(unit.appearance,unit.direction,unit.animation_action))-4);
+                if(!finish_confirmation_)finish_confirmation_.emplace(root_,font,6,201,top,true);
+                finish_confirmation_->draw(image,font);
+            }
             battle_->draw_movement_mouse(image);
             palette_effects_->cycle(image,animation_elapsed_);
             return image;
@@ -401,7 +427,7 @@ public:
                 auto [screen_x,screen_y]=map_.screen_position(speaker->x,speaker->y);
                 bool above=screen_y>310;
                 frame_y=above?std::max(32,screen_y-326):std::min(screen_y-2,253);
-                sprite(image,sprite_offset(2,(above?238:237)-142),false,std::clamp(screen_x+(above?12:33),0,591),above?frame_y+215:frame_y-32);
+                sprite(image,sprite_offset(2,(above?237:238)-142),false,std::clamp(screen_x+(above?12:33),0,591),above?frame_y+215:frame_y-32);
             }
         }
         sprite(image,sprite_offset(2,235-142),false,6,frame_y,true);

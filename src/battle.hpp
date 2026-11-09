@@ -52,7 +52,7 @@ private:
     std::optional<uint32_t> random_seconds_;
     int selected_=-1;
 public:
-    enum class State { idle, command, movement, attack_menu, attack_target };
+    enum class State { idle, command, movement, attack_menu, attack_target, finish_confirm };
     static constexpr std::array<unsigned,6> command_icons{158,160,162,164,188,166};
     // sub_43AE24 copies these six availability masks before packing the
     // surviving entries into the original 32-pixel command strip.
@@ -293,6 +293,18 @@ public:
             for(int xx=col-1;xx<=col+1;++xx){Point p{xx,yy};if(!valid(p))continue;auto c=center(p);float d=std::abs(x-c.x)/32+std::abs(y-c.y)/16;if(d<=1&&d<distance){distance=d;best=p;}}
         }return best;
     }
+    void finish_action(std::vector<OriginalEvents::Unit>& units,bool confirmed){
+        if(state_!=State::finish_confirm||selected_<0)return;
+        if(!confirmed){state_=State::command;return;}
+        auto& unit=units.at(selected_);
+        if(original_rules_&&unit.action_points>=config_[8]){
+            unit.action_points=int(int16_t(unit.action_points-config_[8]));
+            unit.carry_points=std::min(unit.carry_points,unit.action_points);
+        }
+        unit.status34|=0x80;unit.action_state=2;
+        selected_=-1;state_=State::idle;path_.clear();target_=-1;message_="Unit action finished";
+    }
+    void restore_turn(unsigned value){if(!value)throw std::runtime_error("Invalid saved battle turn");turn_=value;hostile_side_=false;selected_=-1;state_=State::idle;}
     int selected()const{return selected_;}
     const std::string& message()const{return message_;}
     State state()const{return state_;}
@@ -375,6 +387,7 @@ public:
         if(animating_movement())return;
         // 0x439E6D restores the saved position/AP when leaving a moved, uncommitted action.
         if(state_==State::command&&moved_&&!acted_&&selected_>=0){units.at(selected_)=before_move_;moved_=false;build_routes(units);prepare_commands(units);message_="Movement undone";return;}
+        if(state_==State::command&&selected_>=0){units.at(selected_).action_state=0;units.at(selected_).animation_action=before_move_.animation_action;units.at(selected_).movement_frame=before_move_.movement_frame;}
         cancel();
     }
     static Point surface_center(Point p,Cell c){auto q=center(p);q.y-=std::max(0,c.elevation-1)*16;return q;}
@@ -504,7 +517,7 @@ public:
         if(!command_available_for_cycle(command_)){message_="Command disabled by original availability flags";return false;}
         if(command_==0){state_=State::attack_menu;message_="Attack submenu: ordinary equal-height melee only";return true;}
         if(command_==1){if(moved_){message_="Movement already used; cancel to undo before committing";return false;}state_=State::movement;build_routes(units);message_="Choose a reachable destination; hover previews route, left click moves";return true;}
-        if(command_==5){selected_=-1;state_=State::idle;path_.clear();message_="Unit action finished";return true;}
+        if(command_==5){state_=State::finish_confirm;return true;}
         message_="Original command not implemented; no action performed";return false;
     }
     void hover(const std::vector<OriginalEvents::Unit>& units,Point p){
@@ -580,14 +593,15 @@ public:
     unsigned turn()const{return turn_;}
     bool hostile_side()const{return hostile_side_;}
     void begin_hostile_side(std::vector<OriginalEvents::Unit>& units){
+        for(auto& unit:units)if(unit.controllable()&&unit.present(turn_))unit.action_state=2;
         reset_side(units,false);hostile_side_=true;
         selected_=-1;state_=State::idle;path_.clear();target_=-1;
     }
     void reset_side(std::vector<OriginalEvents::Unit>& units,bool hostile){
-        for(auto& u:units)if(u.present(turn_)&&u.hostile()==hostile){
+        for(auto& u:units)if(u.present(turn_)&&u.hostile()==hostile&&u.action_state==2){
             int carry=u.base_action_points>config_[5]?config_[5]:u.action_points;
             if(u.action_points+u.base_action_points>=110)carry=0;
-            u.carry_points=carry;u.action_points=u.max_action_points=u.base_action_points+carry;u.status34=0;
+            u.carry_points=carry;u.action_points=u.max_action_points=u.base_action_points+carry;u.status34=0;u.action_state=0;
         }
     }
     // Basic contact response only; the original scored movement/skill AI is not substituted.
@@ -599,6 +613,7 @@ public:
             for(size_t b=0;b<units.size();++b)if(units[b].present(turn_)&&!units[b].hostile()&&adjacent({units[a].x,units[a].y},{units[b].x,units[b].y})&&cell({units[a].x,units[a].y}).elevation==cell({units[b].x,units[b].y}).elevation){
                 if(strike(units,a,b))++responses;break;
             }
+            units[a].action_state=2;
         }
         reset_side(units,true);++turn_;hostile_side_=false;selected_=-1;state_=State::idle;path_.clear();target_=-1;
         message_="Turn "+std::to_string(turn_)+"; enemy contact attacks "+std::to_string(responses)+"; Enter: finish side";
@@ -633,8 +648,11 @@ public:
         if(animating_movement())return false;
         if(!valid(p))return false;int hit=occupant(units,p);
         if(state_==State::idle){
-            if(hit<0||!units[hit].controllable())return false;
+            if(hit<0||!units[hit].controllable()||units[hit].action_state==2)return false;
             selected_=hit;before_move_=units[hit];moved_=acted_=false;command_=0;state_=State::command;
+            // 439A0E -> 447E59 selects action 1 before the command/movement loop.
+            units[hit].action_state=1;
+            if(units[hit].animation_action!=1){units[hit].animation_action=1;units[hit].movement_frame=0;}
             build_routes(units);prepare_commands(units);
             message_="Original command bar: available commands only";return true;
         }

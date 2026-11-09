@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source"><UniqueIdentifier>{75939CC2-1CDA-4DDE-ADCA-05201B3A24E1}</UniqueIdentifier></Filter>
+    <Filter Include="Headers"><UniqueIdentifier>{647A98D4-B581-4601-B1EC-BD672E312ED0}</UniqueIdentifier></Filter>
+    <Filter Include="Generated"><UniqueIdentifier>{FF89F181-D5B6-405A-9531-596A3FD86718}</UniqueIdentifier></Filter>
+    <Filter Include="Tests"><UniqueIdentifier>{8B64D749-0044-437D-BD9B-35FB2405A275}</UniqueIdentifier></Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main.cpp"><Filter>Source</Filter></ClCompile>
+    <ClCompile Include="src\generated\functions.cpp"><Filter>Generated</Filter></ClCompile>
+    <ClInclude Include="src\*.hpp"><Filter>Headers</Filter></ClInclude>
+    <ClInclude Include="src\generated\functions.hpp"><Filter>Generated</Filter></ClInclude>
+    <None Include="tests\*.cpp"><Filter>Tests</Filter></None>
+  </ItemGroup>
+</Project>

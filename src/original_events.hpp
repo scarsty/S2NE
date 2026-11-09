@@ -39,6 +39,7 @@ public:
         int hp{},max_hp{},mp{},st{},sp{},strikeback{},attack{},defense{},fencing{},tactics{},behavior{};
         int action_points{},base_action_points{},carry_points{},movement_type{};
         unsigned direction{},animation_action{};
+        uint8_t action_state{}; // Original runtime +2Dh: 0 idle, 1 selected, 2 finished, 3 moving, 4 moved.
         bool movement_pose{};
         unsigned movement_frame{};
         int level{1}, max_mp{}, max_st{}, max_sp{}, max_action_points{}, attack_limit{}, defense_limit{};
@@ -423,7 +424,27 @@ public:
             throw std::runtime_error("Invalid original stage event table");
         stage = id;
     }
+    void restore_unit_resources(Unit& unit) const {
+        auto kw=[&](size_t p){return unsigned(kinds_.at(p))|(unsigned(kinds_.at(p+1))<<8);};
+        if(!unit.appearance||unit.appearance>kw(22))throw std::runtime_error("Invalid saved unit appearance");
+        size_t kind=kw(18)+(size_t(kw(20))<<16)+size_t(unit.appearance-1)*37;
+        unit.movement_type=int(int8_t(kinds_.at(kind+18)));
+        unit.profession.clear();
+        for(size_t p=kind;p<kind+13&&kinds_.at(p);++p)unit.profession.push_back(kinds_.at(p));
+        unit.portrait=unit.id>0&&unit.id<200?unit.id:kinds_.at(kind+13);
+    }
     size_t event_count() const { return word(events_); }
+    std::vector<uint16_t> save_event_states() const {
+        std::vector<uint16_t> result;
+        for(size_t i=0;i<event_count();++i)result.push_back(uint16_t(int16_t(int8_t(bin_.at(record(i))))));
+        return result;
+    }
+    void restore_event_states(std::span<const uint16_t> states) {
+        if(states.size()!=event_count())throw std::runtime_error("Original save event count does not match stage");
+        for(auto state:states)if(uint16_t(int16_t(int8_t(state&255)))!=state)
+            throw std::runtime_error("Invalid original saved event byte");
+        for(size_t i=0;i<states.size();++i)bin_.at(record(i))=uint8_t(states[i]);
+    }
     unsigned type(size_t event) const { return bin_.at(record(event)); }
     unsigned turn(size_t event) const { return word(record(event)+3); }
     unsigned flag(size_t event) const { return word(record(event)+3); }

@@ -1,3 +1,10 @@
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include "opening_audio.hpp"
@@ -6,6 +13,10 @@
 #include "original_menu.hpp"
 #include "new_game.hpp"
 #include "prologue.hpp"
+#include "original_battle_menu.hpp"
+#include "original_battle_reports.hpp"
+#include "original_save_menu.hpp"
+#include "original_save_bridge.hpp"
 #include "original_confirmation.hpp"
 #include "original_settings.hpp"
 #include <memory>
@@ -29,7 +40,8 @@ int main(int argc, char** argv) {
         bool newGameSmoke = argc > 1 && std::string(argv[1]) == "--smoke-new-game";
         bool battleSmoke = argc > 1 && (std::string(argv[1]) == "--smoke-battle" || std::string(argv[1]) == "--smoke-battle-alternate");
         bool alternateSmoke = battleSmoke && std::string(argv[1]) == "--smoke-battle-alternate";
-        bool option = verify || smoke || newGameSmoke || battleSmoke;
+        bool loadSmoke=argc>1&&std::string(argv[1])=="--smoke-load";
+        bool option = verify || smoke || newGameSmoke || battleSmoke || loadSmoke;
         auto root = argc > (option ? 2 : 1) ? std::filesystem::u8path(argv[option ? 2 : 1]) : std::filesystem::current_path();
         if (argc <= (option ? 2 : 1) && !std::filesystem::exists(root / "SUPERSP.PAL")) {
             auto candidate = std::filesystem::u8path(SDL_GetBasePath());
@@ -77,6 +89,14 @@ int main(int argc, char** argv) {
         auto showSetup = [&] { inSetup = true; auto image=setup.draw(title,menu); if(!SDL_UpdateTexture(texture,nullptr,image.data(),640*4))throw std::runtime_error(SDL_GetError()); };
         std::unique_ptr<s2ne::Prologue> prologue;
         std::optional<s2ne::OriginalSettings> settings;
+        std::optional<s2ne::OriginalBattleMenu> battleMenu;
+        std::optional<s2ne::OriginalSaveMenu> saveMenu;
+        std::optional<s2ne::OriginalBattleReports> battleReports;
+        std::optional<s2ne::OriginalSave::State> rawSave;
+        std::optional<s2ne::OriginalConfirmation> overwriteConfirmation;
+        std::ifstream itemFile(root/"ITEMSP.BIN",std::ios::binary);
+        std::vector<uint8_t> itemBytes{std::istreambuf_iterator<char>(itemFile),{}};
+        const size_t saveItems=s2ne::OriginalSave::item_count(itemBytes);
         auto settingsState=s2ne::OriginalSettings::load_state(root);
         menu.small_font=settingsState.small_font!=0;
         auto showSettings=[&]{auto image=settings->draw(s2ne::load_title(root,20,false));if(!SDL_UpdateTexture(texture,nullptr,image.data(),640*4))throw std::runtime_error(SDL_GetError());};
@@ -84,13 +104,21 @@ int main(int argc, char** argv) {
         std::optional<s2ne::OriginalConfirmation> exitConfirmation;
         auto showExitConfirmation=[&]{auto image=s2ne::load_title(root,20,false);exitConfirmation->draw(image,menu);if(!SDL_UpdateTexture(texture,nullptr,image.data(),640*4))throw std::runtime_error(SDL_GetError());};
         auto beginExitConfirmation=[&]{exitConfirmation.emplace(root,menu,51,200,403,true);showExitConfirmation();};
-        auto showPrologue = [&] {
+        bool prologueRedraw=false;
+        auto showPrologue = [&] { prologueRedraw=true; };
+        auto renderPrologue = [&] {
+            prologueRedraw=false;
             if(prologue->drawing_original_mouse())SDL_HideCursor();else SDL_ShowCursor();
             auto image=prologue->draw(menu);
+            if(battleMenu){SDL_ShowCursor();image=battleMenu->draw(image);}
+            if(battleReports)image=battleReports->draw();
+            if(saveMenu)saveMenu->draw(image,menu);
+            if(overwriteConfirmation)overwriteConfirmation->draw(image,menu);
             if(!SDL_UpdateTexture(texture,nullptr,image.data(),640*4))throw std::runtime_error(SDL_GetError());
         };
         auto startGame = [&] {
             setup.confirm();
+            rawSave.reset();
             prologue=std::make_unique<s2ne::Prologue>(root,setup.confirmed);
             prologue->set_small_font(settingsState.small_font!=0);
             prologue->enable_text_animation(unsigned(settingsState.message_delay));
@@ -114,7 +142,11 @@ int main(int argc, char** argv) {
                 if(prologue->battle_intro()&&battleSmoke&&battleSmokeStartTurn){if(prologue->hostile_banner())++hostileBannerFrames;else ++playerBannerFrames;}
                 prologue->set_mask_surfaces(settingsState.status_window==1);
                 prologue->set_checker_mask(settingsState.flag_4f7d0a==1);
-                prologue->tick(unsigned(nowUi-lastUiTick));
+                if(!battleMenu)prologue->tick(unsigned(nowUi-lastUiTick));
+                if(!battleMenu&&!battleSmoke&&SDL_GetMouseFocus()==window){
+                    float x{},y{},rx{},ry{};SDL_GetMouseState(&x,&y);
+                    if(SDL_RenderCoordinatesFromWindow(renderer,x,y,&rx,&ry))prologue->edge_scroll(rx,ry);
+                }
                 showPrologue();
             }
             lastUiTick=nowUi;
@@ -161,6 +193,21 @@ int main(int argc, char** argv) {
                             }
                         }else throw std::runtime_error("Unexpected SDL battle state");
                     }else{
+                        s2ne::OriginalBattleMenu originalMenu(root,{},settingsState);
+                        originalMenu.activate();
+                        if(originalMenu.request().action!=s2ne::OriginalBattleMenu::Action::conditions)throw std::runtime_error("Battlefield conditions menu request missing");
+                        originalMenu.complete_operation();originalMenu.move(1);originalMenu.activate();
+                        if(originalMenu.page()!=s2ne::OriginalBattleMenu::Page::overview)throw std::runtime_error("Battlefield overview submenu missing");
+                        originalMenu.cancel();originalMenu.cancel();
+                        if(!originalMenu.return_code()||*originalMenu.return_code()!=0)throw std::runtime_error("Battlefield menu return path failed");
+                        prologue->pan(320,160);
+                        auto before=prologue->screen_cell({0,0});
+                        prologue->edge_scroll(0,0);prologue->edge_scroll(0,0);
+                        auto after=prologue->screen_cell({0,0});
+                        if(after.x-before.x!=64||after.y-before.y!=64)throw std::runtime_error("Stationary edge cursor failed to keep scrolling");
+                        prologue->edge_scroll(639,479);prologue->edge_scroll(639,479);
+                        auto restored=prologue->screen_cell({0,0});
+                        if(restored.x!=before.x||restored.y!=before.y)throw std::runtime_error("Reverse edge cursor failed to restore camera");
                         auto terrain=s2ne::Battle::load(root,prologue->events.map_id);bool found=false;
                         for(size_t i=0;i<prologue->events.units.size()&&!found;++i){const auto& u=prologue->events.units[i];
                             for(int dy:{-1,1})for(int dx:{0,(u.y&1)?1:-1}){s2ne::Battle::Point to{u.x+dx,u.y+dy};
@@ -191,6 +238,9 @@ int main(int argc, char** argv) {
                 std::cout<<"SDL new game -> original stage 140 -> second dialogue line verified\n";
                 running=false;
             }
+            if(loadSmoke&&SDL_GetTicks()-started>100+smokePhase*150&&!prologue){SDL_Event e{};e.type=SDL_EVENT_KEY_DOWN;e.key.key=saveMenu?SDLK_RETURN:inMenu?(menu.selected==1?SDLK_RETURN:SDLK_DOWN):SDLK_ESCAPE;SDL_PushEvent(&e);++smokePhase;}
+            if(loadSmoke&&prologue&&presented>10){if(!prologue->in_battle()||!rawSave)throw std::runtime_error("Title save load did not restore battle");std::cout<<"Original save restored through title menu, stage "<<prologue->events.stage<<", turn "<<prologue->battle_turn()<<'\n';running=false;}
+            if(loadSmoke&&SDL_GetTicks()-started>15000)throw std::runtime_error("Original save smoke timed out: phase="+std::to_string(smokePhase)+" menu="+std::to_string(inMenu)+" row="+std::to_string(menu.selected)+" save="+std::to_string(bool(saveMenu)));
             if(newGameSmoke && SDL_GetTicks()-started>15000)throw std::runtime_error("New-game dialogue smoke timed out");
             SDL_Event event;
             while (SDL_PollEvent(&event)) {
@@ -224,12 +274,63 @@ int main(int argc, char** argv) {
                     else showExitConfirmation();
                     continue;
                 }
+                if(saveMenu&&!battleMenu){
+                    s2ne::OriginalSaveMenu::Event input;
+                    if(event.type==SDL_EVENT_KEY_DOWN&&!event.key.repeat){input.type=1;switch(event.key.key){case SDLK_ESCAPE:input.scan=1;break;case SDLK_UP:input.scan=0x48;break;case SDLK_DOWN:input.scan=0x50;break;case SDLK_LEFT:input.scan=0x4b;break;case SDLK_RIGHT:input.scan=0x4d;break;case SDLK_RETURN:input.scan=0x1c;break;case SDLK_SPACE:input.scan=0x39;break;}}
+                    else if(event.type==SDL_EVENT_MOUSE_MOTION||event.type==SDL_EVENT_MOUSE_BUTTON_DOWN){SDL_ConvertEventToRenderCoordinates(renderer,&event);bool down=event.type==SDL_EVENT_MOUSE_BUTTON_DOWN;input.type=down?0x20:8;input.x=int(down?event.button.x:event.motion.x);input.y=int(down?event.button.y:event.motion.y);input.buttons=down?(event.button.button==SDL_BUTTON_LEFT?1:event.button.button==SDL_BUTTON_RIGHT?2:0):0;}
+                    if(event.type==SDL_EVENT_KEY_DOWN&&event.key.key==SDLK_RETURN)input.ascii=13;
+                    auto result=saveMenu->event(input);
+                    if(result.action==s2ne::OriginalSaveMenu::Action::load){try{auto state=s2ne::OriginalSave::load(s2ne::OriginalSave::slot_path(root,result.slot),saveItems);auto restored=s2ne::OriginalSaveBridge::restore(root,state);auto loaded=std::make_unique<s2ne::Prologue>(root,restored.events.difficulty);loaded->restore_battle(std::move(restored.events),restored.turn);loaded->set_small_font(settingsState.small_font!=0);prologue=std::move(loaded);rawSave=std::move(restored.raw);saveMenu->complete(true);inMenu=false;inSetup=false;showPrologue();}catch(const std::exception& ex){saveMenu->complete(false);SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Original load",ex.what(),window);}}
+                    if(saveMenu->closed()){saveMenu.reset();if(!prologue)showMenu();}
+                    continue;
+                }
+                if(battleMenu){
+                    s2ne::OriginalSettings::Event input;
+                    if(event.type==SDL_EVENT_KEY_DOWN&&!event.key.repeat){input.type=1;
+                        switch(event.key.key){case SDLK_ESCAPE:input.scan=1;break;case SDLK_UP:input.scan=0x48;break;case SDLK_DOWN:input.scan=0x50;break;case SDLK_LEFT:input.scan=0x4b;break;case SDLK_RIGHT:input.scan=0x4d;break;case SDLK_RETURN:input.scan=0x1c;break;case SDLK_SPACE:input.scan=0x39;break;}}
+                    else if(event.type==SDL_EVENT_MOUSE_MOTION||event.type==SDL_EVENT_MOUSE_BUTTON_DOWN){SDL_ConvertEventToRenderCoordinates(renderer,&event);bool down=event.type==SDL_EVENT_MOUSE_BUTTON_DOWN;input.type=down?0x20:8;input.x=int(down?event.button.x:event.motion.x);input.y=int(down?event.button.y:event.motion.y);input.buttons=down?(event.button.button==SDL_BUTTON_LEFT?1:event.button.button==SDL_BUTTON_RIGHT?2:0):0;}
+                    if(saveMenu){
+                                            if(event.type==SDL_EVENT_KEY_DOWN&&event.key.key==SDLK_RETURN)input.ascii=13;
+                                            s2ne::OriginalSaveMenu::Result result;
+                        if(overwriteConfirmation){
+                            if(input.scan==1||(input.buttons&2))overwriteConfirmation->cancel();else if(input.scan==0x4b||input.scan==0x4d)overwriteConfirmation->toggle();else if(input.scan==0x1c||input.scan==0x39)overwriteConfirmation->confirm();else if(input.type==8||input.type==0x20)overwriteConfirmation->mouse(float(input.x),float(input.y),(input.buttons&1)!=0);
+                            if(auto yes=overwriteConfirmation->result()){result=saveMenu->confirm_overwrite(*yes);overwriteConfirmation.reset();}
+                        }else result=saveMenu->event({input.type,input.x,input.y,input.buttons,input.ascii,input.scan});
+                        if(result.action==s2ne::OriginalSaveMenu::Action::confirm_overwrite)overwriteConfirmation.emplace(root,menu,253,176,76+30*saveMenu->row(),true);
+                        if(result.action==s2ne::OriginalSaveMenu::Action::load||result.action==s2ne::OriginalSaveMenu::Action::save){
+                            try{
+                                auto path=s2ne::OriginalSave::slot_path(root,result.slot);
+                                if(result.action==s2ne::OriginalSaveMenu::Action::load){auto state=s2ne::OriginalSave::load(path,saveItems);auto restored=s2ne::OriginalSaveBridge::restore(root,state);prologue->restore_battle(std::move(restored.events),restored.turn);rawSave=std::move(restored.raw);}
+                                else{auto state=s2ne::OriginalSaveBridge::capture(prologue->events,prologue->battle_turn(),prologue->camera(),rawSave?&*rawSave:nullptr);auto bytes=s2ne::OriginalSave::encode(state,saveItems);std::filesystem::create_directories(path.parent_path());auto temporary=path;temporary+=L".s2ne-tmp";if(std::filesystem::exists(temporary))throw std::runtime_error("Previous pending save exists; original slot left untouched");{std::ofstream output(temporary,std::ios::binary);if(!output.write(reinterpret_cast<const char*>(bytes.data()),bytes.size())||!output.flush()){output.close();std::filesystem::remove(temporary);throw std::runtime_error("Original save write failed; original slot left untouched");}}try{if(std::filesystem::exists(path)){auto backup=path;backup+=L".s2ne-backup";if(!ReplaceFileW(path.c_str(),temporary.c_str(),backup.c_str(),0,nullptr,nullptr))throw std::runtime_error("Original save replacement failed; existing slot retained");}else if(!MoveFileExW(temporary.c_str(),path.c_str(),MOVEFILE_WRITE_THROUGH))throw std::runtime_error("Original save creation failed");}catch(...){std::error_code cleanup;std::filesystem::remove(temporary,cleanup);throw;}rawSave=std::move(state);}
+                                saveMenu->complete(true);
+                            }catch(const std::exception& ex){saveMenu->complete(false);SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Original save/load",ex.what(),window);}
+                        }
+                        if(saveMenu->closed()){int code=saveMenu->return_code();saveMenu.reset();battleMenu->complete_operation(code);}
+                    }
+                    else if(battleReports){battleReports->event(input);if(battleReports->page()==s2ne::OriginalBattleReports::Page::closed){if(auto location=battleReports->location()){auto point=prologue->screen_cell({location->first,location->second});prologue->pan(point.x-320,point.y-240);}int code=battleReports->return_code();battleReports.reset();battleMenu->complete_operation(code);}}
+                    else battleMenu->event(input);
+                    auto request=battleMenu->request();
+                    if(!battleReports&&(request.action==s2ne::OriginalBattleMenu::Action::conditions||request.action==s2ne::OriginalBattleMenu::Action::inspect_characters||request.action==s2ne::OriginalBattleMenu::Action::inspect_map)){
+                        std::vector<s2ne::OriginalBattleReports::Entry> entries;
+                        for(const auto& unit:prologue->events.units)if(unit.present(prologue->battle_turn()))entries.push_back({unit,unit.hostile(),unit.npc_class()?1:0,false});
+                        auto page=request.action==s2ne::OriginalBattleMenu::Action::conditions?s2ne::OriginalBattleReports::Page::conditions:request.action==s2ne::OriginalBattleMenu::Action::inspect_map?s2ne::OriginalBattleReports::Page::map:s2ne::OriginalBattleReports::Page::roster;
+                        s2ne::OriginalMap overview(root);overview.set_dynamic_object_chains(prologue->events.dynamic_object_chains);overview.set_event_flags(prologue->events.flags);overview.load(prologue->events.map_id);
+                        battleReports.emplace(root,page,prologue->events,std::move(entries),prologue->draw(menu),&overview,settingsState.small_font!=0);
+                    }
+                    if(!saveMenu&&(request.action==s2ne::OriginalBattleMenu::Action::load||request.action==s2ne::OriginalBattleMenu::Action::save)){saveMenu.emplace(root,request.action==s2ne::OriginalBattleMenu::Action::save?1:0,s2ne::OriginalSaveMenu::scan(root));}
+                    if(auto code=battleMenu->return_code()){settingsState=battleMenu->settings_state();prologue->set_small_font(settingsState.small_font!=0);battleMenu.reset();if(*code==3)prologue->end_battle_turn();else if(*code==6)SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,"Original auto battle","Original automatic combat controller is not restored yet. The current turn is unchanged.",window);else if(*code==11)running=false;}
+                    showPrologue();continue;
+                }
                 if(prologue){
                     if(event.type==SDL_EVENT_MOUSE_MOTION||event.type==SDL_EVENT_MOUSE_BUTTON_DOWN){
                         SDL_ConvertEventToRenderCoordinates(renderer,&event);
                         bool click=event.type==SDL_EVENT_MOUSE_BUTTON_DOWN&&event.button.button==SDL_BUTTON_LEFT;
                         float x=event.type==SDL_EVENT_MOUSE_MOTION?event.motion.x:event.button.x;
                         float y=event.type==SDL_EVENT_MOUSE_MOTION?event.motion.y:event.button.y;
+                        if(prologue->in_battle()&&event.type==SDL_EVENT_MOUSE_BUTTON_DOWN&&event.button.button==SDL_BUTTON_RIGHT&&prologue->battle_state()==s2ne::Battle::State::idle){
+                            auto slots=s2ne::OriginalSaveMenu::scan(root);s2ne::OriginalBattleMenu::Context context;context.saves_present=std::any_of(slots.begin(),slots.end(),[](const auto& slot){return slot.occupied();});
+                            battleMenu.emplace(root,context,settingsState);showPrologue();continue;
+                        }
                         if(prologue->choosing()||prologue->in_battle())prologue->mouse(x,y,click);
                         else if(click)prologue->advance();
                         else if(event.type==SDL_EVENT_MOUSE_BUTTON_DOWN&&event.button.button==SDL_BUTTON_RIGHT)prologue->reveal_text();
@@ -240,8 +341,8 @@ int main(int argc, char** argv) {
                         switch(event.key.key){
                         case SDLK_UP:prologue->move(-1);break;
                         case SDLK_DOWN:prologue->move(1);break;
-                        case SDLK_LEFT:if(prologue->in_battle()&&prologue->battle_state()==s2ne::Battle::State::command)prologue->battle_cycle(-1);else prologue->pan(-32,0);break;
-                        case SDLK_RIGHT:if(prologue->in_battle()&&prologue->battle_state()==s2ne::Battle::State::command)prologue->battle_cycle(1);else prologue->pan(32,0);break;
+                        case SDLK_LEFT:if(prologue->in_battle()&&(prologue->battle_state()==s2ne::Battle::State::command||prologue->battle_state()==s2ne::Battle::State::finish_confirm))prologue->battle_cycle(-1);else prologue->pan(-32,0);break;
+                        case SDLK_RIGHT:if(prologue->in_battle()&&(prologue->battle_state()==s2ne::Battle::State::command||prologue->battle_state()==s2ne::Battle::State::finish_confirm))prologue->battle_cycle(1);else prologue->pan(32,0);break;
                         case SDLK_ESCAPE:prologue->cancel_battle_selection();break;
                         case SDLK_RETURN:if(prologue->in_battle())prologue->battle_confirm();else prologue->advance();break;
                         case SDLK_SPACE:if(prologue->in_battle())prologue->battle_confirm();else prologue->advance();break;
@@ -269,7 +370,7 @@ int main(int argc, char** argv) {
                     bool click = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT;
                     float x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x;
                     float y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y;
-                    if (menu.mouse(x,y,click)) { auto target=menu.activate(); if(menu.selected==0){showSetup();continue;} if(menu.selected==4){beginExitConfirmation();continue;} if(menu.selected==3){beginSettings();continue;} std::cout << "Selected original menu row " << menu.selected << ", handler 0x" << std::hex << target << std::dec << " (not implemented)\n"; }
+                    if (menu.mouse(x,y,click)) { auto target=menu.activate(); if(menu.selected==0){showSetup();continue;} if(menu.selected==1){saveMenu.emplace(root,0,s2ne::OriginalSaveMenu::scan(root));continue;} if(menu.selected==4){beginExitConfirmation();continue;} if(menu.selected==3){beginSettings();continue;} std::cout << "Selected original menu row " << menu.selected << ", handler 0x" << std::hex << target << std::dec << " (not implemented)\n"; }
                     showMenu();
                 }
                 if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat) {
@@ -286,6 +387,7 @@ int main(int argc, char** argv) {
                     if (inMenu && (event.key.key == SDLK_RETURN || event.key.key == SDLK_SPACE)) {
                         auto target = menu.activate();
                         if(menu.selected==0){showSetup();continue;}
+                        if(menu.selected==1){saveMenu.emplace(root,0,s2ne::OriginalSaveMenu::scan(root));continue;}
                         if(menu.selected==4){beginExitConfirmation();continue;}
                         if(menu.selected==3){beginSettings();continue;}
                         std::cout << "Selected original menu row " << menu.selected << ", handler 0x" << std::hex << target << std::dec << " (not implemented)\n";
@@ -306,6 +408,8 @@ int main(int argc, char** argv) {
                     next = SDL_GetTicks() + a.delay;
                 }
             }
+            if(prologue&&prologueRedraw)renderPrologue();
+            else if(!prologue&&saveMenu){auto image=title;menu.draw(image);saveMenu->draw(image,menu);if(!SDL_UpdateTexture(texture,nullptr,image.data(),640*4))throw std::runtime_error(SDL_GetError());}
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
             SDL_RenderTexture(renderer, texture, nullptr, nullptr);

@@ -369,7 +369,14 @@ public:
             for(unsigned y=0;y<h;++y)for(unsigned x=0;x<w;++x){unsigned c=decoded.at(size_t(y)*w+x);int dx=left+int(x),dy=top+int(y);if(!c||dx<0||dy<0||dx>=640||dy>=480)continue;size_t dst=(size_t(dy)*640+dx)*4;for(unsigned k=0;k<3;++k)image.at(dst+k)=uint8_t(unsigned(pal_.at(c*3+k))*255/63);}
         }
     }
-    void pan(int dx,int dy){camera_x=std::clamp(camera_x+dx,0,int(width*64)-640);camera_y=std::clamp(camera_y+dy,0,int(height*32)-480);}
+    void pan(int dx,int dy){camera_x=std::clamp(camera_x+dx,32,std::max(32,int(width*64)-21*32));camera_y=std::clamp(camera_y+dy,16,std::max(16,int(height*32)-480));}
+    bool edge_scroll(float x,float y){
+        if(x<0||x>=640||y<0||y>=480)return false;
+        // 4307E8: strict ten-pixel edges; 42BACD: one half-column / two rows.
+        int before_x=camera_x,before_y=camera_y;
+        pan(x<10?-32:x>630?32:0,y<10?-32:y>470?32:0);
+        return camera_x!=before_x||camera_y!=before_y;
+    }
     void center(int x,int y){camera_x=std::clamp(x*64+(y&1)*32-320,0,int(width*64)-640);camera_y=std::clamp(y*16-240,0,int(height*32)-480);}
     std::vector<uint8_t> draw()const{
         std::vector<uint8_t> image(640*480*4);
