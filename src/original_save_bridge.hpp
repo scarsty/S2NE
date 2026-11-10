@@ -23,6 +23,7 @@ class OriginalSaveBridge {
             unsupported("Original saved group exceeds runtime capacity");
     }
     static void decode_unit(const Raw& r,OriginalEvents::Unit& u){
+        u.ending_kills=get(r,0x1F);u.ending_losses=get(r,0x21);u.ending_combat_value=signed_word(r,0x132);
         u.persistent_role6=signed_word(r,6);for(size_t i=0;i<u.relationships.size();++i)u.relationships[i]=int(int8_t(r[0x142+i]));
         u.id=get(r,2);u.appearance=get(r,4);u.x=int(int32_t(get(r,0x23,4)));u.y=int(int32_t(get(r,0x27,4)));
         u.name.clear();for(size_t p=0x10;p<0x23&&r[p];++p)u.name.push_back(r[p]);
@@ -30,7 +31,8 @@ class OriginalSaveBridge {
         // Saved records already belong to the live army; source arrival selectors
         // are not serialized at +A/+C (those are separate original role words).
         u.first_turn=1;u.last_turn=0;
-        u.set_flags30(get(r,0x30,4));u.status34=r[0x34];u.status3c=r[0x3C];
+        u.set_flags30(get(r,0x30,4));u.status34=r[0x34];u.status3c=r[0x3C];u.status3d=r[0x3D];u.status3e=r[0x3E];u.status3f=r[0x3F];
+        u.status39=r[0x39];
         if(get(r,0x38,4)&0x400u){u.action_status_runtime.emplace();std::copy_n(r.begin(),0x13A,u.action_status_runtime->begin());}
         u.level=signed_word(r,0xB5);u.max_hp=signed_word(r,0xB7);u.max_mp=signed_word(r,0xB9);
         u.max_st=signed_word(r,0xBB);u.max_sp=signed_word(r,0xBD);u.base_action_points=signed_word(r,0xBF);
@@ -57,7 +59,8 @@ class OriginalSaveBridge {
         if(old!=u.name){std::copy(u.name.begin(),u.name.end(),r.begin()+0x10);r[0x10+u.name.size()]=0;}
         put(r,0x23,uint32_t(u.x),4);put(r,0x27,uint32_t(u.y),4);r[0x2B]=uint8_t(u.direction|(u.animation_action<<2));
         if(u.action_status_runtime)std::copy(u.action_status_runtime->begin()+0x38,u.action_status_runtime->begin()+0xA0,r.begin()+0x38);
-        r[0x2D]=u.action_state;r[0x2E]=uint8_t(u.allegiance_tag);put(r,0x30,u.flags30(),4);r[0x34]=u.status34;r[0x3C]=u.status3c;
+        if(u.status39&&!u.action_status_runtime)r[0x39]=*u.status39;
+        r[0x2D]=u.action_state;r[0x2E]=uint8_t(u.allegiance_tag);put(r,0x30,u.flags30(),4);r[0x34]=u.status34;r[0x3C]=u.status3c;if(!u.action_status_runtime){r[0x3D]=u.status3d;r[0x3E]=u.status3e;r[0x3F]=u.status3f;}
         if(u.runtime_role_selector>255)unsupported("Original role selector exceeds BYTE");r[0x2F]=uint8_t(u.runtime_role_selector);
         w(6,u.persistent_role6);
         for(size_t i=0;i<u.relationships.size();++i){if(u.relationships[i]< -128||u.relationships[i]>127)unsupported("Original relationship exceeds signed BYTE");r[0x142+i]=uint8_t(u.relationships[i]);}
@@ -67,6 +70,8 @@ class OriginalSaveBridge {
         w(0xC7,u.fencing);w(0xC9,u.base_tactics);w(0x138,u.tactics);uw(0x111,u.experience_threshold);uw(0x113,u.experience);put(r,0x115,u.abilities,4);r[0x123]=uint8_t(u.kind_attribute);
         w(0x124,u.hp);w(0x126,u.mp);w(0x128,u.st);w(0x12A,u.sp);w(0x12C,u.max_action_points);w(0x12E,u.action_points);
         w(0x130,u.carry_points);w(0x134,u.attack);w(0x136,u.defense);
+        if(u.ending_combat_value)w(0x132,*u.ending_combat_value);
+        uw(0x1F,u.ending_kills);uw(0x21,u.ending_losses);
         for(size_t i=0;i<6;++i){uw(0xCB+2*i,u.equipment[i]);uw(0xD7+2*i,u.weapon_proficiency[i]);}
         for(size_t i=0;i<11;++i){uw(0xFB+2*i,u.learned[i]);uw(0xE3+2*i,u.learned_proficiency[i]);}
         uw(0xF9,u.special_proficiency);
@@ -79,6 +84,10 @@ public:
     static Restored restore(const std::filesystem::path& root,const OriginalSave::State& raw){
         validate(raw);OriginalEvents events(root,raw.globals_4f7cd0[28]);
         events.load_stage(get(raw.globals_4f7cd0,8,4));
+        unsigned chains=get(raw.value_4f705c,0,4);
+        if(chains>20)unsupported("Invalid saved dynamic object chain count");
+        events.dynamic_object_chains.resize(chains);
+        for(size_t i=0;i<chains;++i)for(size_t j=0;j<4;++j)events.dynamic_object_chains[i][j]=get(raw.words_4f6fbc,(i*4+j)*2,2);
         events.units.clear();
         for(unsigned group=0;group<2;++group)for(const auto& record:raw.groups[group].units){
             OriginalEvents::Unit u{};decode_unit(record,u);
@@ -91,6 +100,7 @@ public:
         }
         events.restore_event_states(raw.event_states);events.flags=raw.flags_4f7d10;
         events.campaign_currencies=std::array<int32_t,2>{int32_t(get(raw.stage_4fb478,0,4)),int32_t(get(raw.stage_4fb478,4,4))};
+        events.ending_statistics=std::array<int32_t,5>{int32_t(get(raw.stage_4fb478,8,4)),int32_t(int8_t(raw.globals_4f7cd0[28])),int32_t(get(raw.stage_4fb478,0,4)),int32_t(get(raw.stage_4fb478,4,4)),int32_t(get(raw.groups[0].metadata,8,4))};
         return {std::move(events),get(raw.globals_4f7cd0,12,4),restored_camera,raw};
     }
     static OriginalSave::State capture_promotion(const OriginalEvents& events,unsigned turn,std::pair<int,int> camera,
@@ -123,6 +133,10 @@ public:
         }
         if(index!=events.units.size())unsupported("Native unit set no longer matches raw save");
         if(events.campaign_currencies)for(size_t i=0;i<2;++i)put(result.stage_4fb478,i*4,uint32_t((*events.campaign_currencies)[i]),4);
+        if(events.dynamic_object_chains.size()>20)unsupported("Invalid dynamic object chain count");
+        put(result.value_4f705c,0,unsigned(events.dynamic_object_chains.size()),4);
+        for(size_t i=0;i<events.dynamic_object_chains.size();++i)for(size_t j=0;j<4;++j)
+            put(result.words_4f6fbc,(i*4+j)*2,events.dynamic_object_chains[i][j],2);
         result.flags_4f7d10=events.flags;result.event_states=events.save_event_states();
         if(result.event_states.size()!=baseline->event_states.size())unsupported("Stage event set changed");
         put(result.globals_4f7cd0,12,turn,4);return result;

@@ -11,7 +11,60 @@ inline bool controllable_protagonist(const OriginalEvents& events){
         return u.id==protagonist(events)&&u.behavior==0&&u.present()&&OriginalCampaign::living(u);
     });
 }
+inline void strengthen_mp(OriginalEvents::Unit& unit,bool enabled){
+    if(enabled&&(unit.controllable()||unit.behavior==1)&&(unit.status_flags&0x80)&&!(unit.status_flags&0x20)&&unit.hp>0){unit.max_mp=std::max(unit.max_mp,400);unit.mp=unit.max_mp;}
+}
 struct RevealInput {unsigned actor{};std::pair<int,int> destination;};
+inline std::optional<RevealInput> campaign_pad_input(const Battle& battle,const OriginalEvents& events){
+    for(const auto& actor:events.units){
+        if(actor.id!=protagonist(events)||actor.behavior!=0||!OriginalCampaign::living(actor))continue;
+        std::vector<Battle::Point> queue{{actor.x,actor.y}};std::map<std::pair<int,int>,bool> seen;seen[{actor.x,actor.y}]=true;
+        std::optional<Battle::Point> pad;
+        bool enemy_accessible=false;
+        for(size_t i=0;i<queue.size();++i){auto p=queue[i];
+            if(!pad&&battle.object_category(p)==35&&battle.occupant(events.units,p)<0)pad=p;
+            for(const auto& enemy:events.units)if(enemy.hostile()&&OriginalCampaign::living(enemy)&&battle.adjacent(p,{enemy.x,enemy.y}))enemy_accessible=true;
+            for(int dy:{-1,1})for(int dx:{0,(p.y&1)?1:-1}){Battle::Point q{p.x+dx,p.y+dy};
+                if(seen.contains({q.x,q.y})||battle.step_cost(actor,p,q)<0||!battle.player_route_passable(events.units,actor,q))continue;
+                seen[{q.x,q.y}]=true;queue.push_back(q);
+            }
+        }
+        if(!enemy_accessible&&battle.object_category({actor.x,actor.y})==35)return RevealInput{actor.id,{actor.x,actor.y}};
+        if(!enemy_accessible&&pad)return RevealInput{actor.id,{pad->x,pad->y}};
+    }
+    return std::nullopt;
+}
+inline std::optional<RevealInput> campaign_mineral_input(const Battle& battle,const OriginalEvents& events){
+    if(events.stage!=61&&events.stage!=131)return std::nullopt;
+    auto found=std::find_if(events.units.begin(),events.units.end(),[&](const auto& actor){return actor.id==protagonist(events)&&actor.controllable()&&OriginalCampaign::living(actor);});
+    if(found==events.units.end())return std::nullopt;
+    const auto& actor=*found;
+    auto boss=std::find_if(events.units.begin(),events.units.end(),[](const auto& u){return u.id==20&&u.hostile()&&OriginalCampaign::living(u);});
+    bool learned=(actor.learned[2]&0x800)!=0;
+    if(learned&&boss==events.units.end())return std::nullopt;
+    bool dispelled=learned&&std::find(boss->equipment.begin(),boss->equipment.end(),237u)==boss->equipment.end();
+    std::vector<Battle::Point> queue{{actor.x,actor.y}};std::map<std::pair<int,int>,bool> seen;seen[{actor.x,actor.y}]=true;
+    std::optional<Battle::Point> pad;
+    for(size_t i=0;i<queue.size();++i){auto p=queue[i];
+        int distance=learned?std::max(std::abs(2*(boss->x-p.x)+int(boss->y&1)-int(p.y&1)),std::abs(boss->y-p.y)):999;
+        if(learned&&distance<=(dispelled?1:4)&&(p==queue.front()||battle.occupant(events.units,p)<0))return RevealInput{actor.id,{p.x,p.y}};
+        if(!learned&&p==Battle::Point{3,65})return RevealInput{actor.id,{3,65}};
+        if(!pad&&battle.object_category(p)==35&&(p==queue.front()||battle.occupant(events.units,p)<0))pad=p;
+        for(int dy:{-1,1})for(int dx:{0,(p.y&1)?1:-1}){Battle::Point q{p.x+dx,p.y+dy};
+            if(seen.contains({q.x,q.y})||battle.step_cost(actor,p,q)<0||!battle.player_route_passable(events.units,actor,q))continue;
+            seen[{q.x,q.y}]=true;queue.push_back(q);
+        }
+    }
+    if(pad){
+        if(learned&&*pad==queue.front())for(auto p:queue)if(p!=queue.front()&&battle.object_category(p)==35&&battle.occupant(events.units,p)<0){pad=p;break;}
+        return RevealInput{actor.id,{pad->x,pad->y}};
+    }
+    if(learned){auto best=queue.front();auto distance=[&](auto p){return std::max(std::abs(2*(boss->x-p.x)+int(boss->y&1)-int(p.y&1)),std::abs(boss->y-p.y));};
+        for(auto p:queue)if((p==queue.front()||battle.occupant(events.units,p)<0)&&distance(p)<distance(best))best=p;
+        return RevealInput{actor.id,{best.x,best.y}};
+    }
+    return std::nullopt;
+}
 inline std::optional<RevealInput> reveal_input(const Battle& battle,const OriginalEvents& events){
     std::vector<OriginalEvents::Unit> observers;for(const auto& u:events.units)if(!u.hostile()&&OriginalCampaign::living(u))observers.push_back(u);
     bool visible=false;for(const auto& u:events.units)if(u.hostile()&&OriginalCampaign::living(u)&&battle.target_visible(u,observers,0))visible=true;

@@ -1,4 +1,5 @@
 #pragma once
+#include "original_ending.hpp"
 #include "original_events.hpp"
 #include "original_menu.hpp"
 #include "original_map.hpp"
@@ -13,6 +14,7 @@
 #include "original_script_predicates.hpp"
 #include "original_interbattle.hpp"
 #include "original_scripted_movement.hpp"
+#include "original_skill94_visual.hpp"
 #include <deque>
 #include <map>
 #include <optional>
@@ -23,6 +25,11 @@ class Prologue {
     mutable std::optional<OriginalPalette> palette_effects_;
     OriginalUnitStatus unit_status_;
     OriginalMap map_;
+    std::optional<OriginalSkill32Visual> skill32_visual_;
+    std::optional<OriginalSkill88Visual> skill88_visual_;
+    std::optional<OriginalSkill94Visual> skill94_visual_;
+    std::vector<uint8_t> skill32_background_;
+    unsigned skill32_target_{};
     std::filesystem::path root_;
     OriginalDisc disc_{OriginalDisc::one};
     std::optional<Battle> battle_;
@@ -138,7 +145,9 @@ private:
         }
         story_poses_=std::move(poses);story_pose_elapsed_=0;story_turning_=turning;phase_=Phase::story_animation;return true;
     }
+    std::optional<OriginalEnding> ending_;
     bool campaign_choice_{};
+    bool restored_story_pending_{};
     std::optional<Phase> scripted_battle_return_;
     Phase campaign_choice_return_{Phase::battle};
     bool story_stage()const{return events.stage!=140&&OriginalCampaign(root_).stage(events.stage).mode==3;}
@@ -161,7 +170,7 @@ private:
                 if(!group.begin(*battle_,events,roles,decoded.camera)){campaign_blocker_="Original461808 parallel movement unavailable";phase_=Phase::campaign_blocked;return;}
                 story_group_units_.clear();for(auto item:roles)story_group_units_.push_back(item.first);
                 if((decoded.camera==1||decoded.camera==3)&&!roles.empty()){const auto& role=events.units[roles.front().first];map_.center(role.x,role.y);}
-                for(size_t member=i;member<=decoded.end;++member)if(events.type(member)==16&&events.event_word(member,3)==events.event_word(i,3))events.complete(member);
+                for(size_t member=i;member<events.event_count()&&member<=decoded.end;++member)if(events.type(member)==16&&events.event_word(member,3)==events.event_word(i,3))events.complete(member);
                 story_movement_return_=story_stage()?Phase::story_ready:phase_;
                 group.apply(events.units);story_group_=std::move(group);phase_=Phase::story_movement;return;
             }
@@ -169,8 +178,12 @@ private:
                 auto role=std::find_if(events.units.begin(),events.units.end(),[&](const auto& u){return int(u.id)==events.event_word(i,5)&&!u.hostile();});
                 if(role==events.units.end())role=std::find_if(events.units.begin(),events.units.end(),[&](const auto& u){return int(u.id)==events.event_word(i,5);});
                 original_scripted_movement::Track track;
-                if(role==events.units.end()||!track.begin(*battle_,*role,{events.event_word(i,7),events.event_word(i,9)},events.movement_class(*role))){
-                    campaign_blocker_="Original45E107 scripted movement unavailable at event "+std::to_string(i);phase_=Phase::campaign_blocked;return;
+                if(role==events.units.end())continue;
+                if(!track.begin(*battle_,*role,{events.event_word(i,7),events.event_word(i,9)},events.movement_class(*role))){
+                    // 45DEE9 consumes the found role's record and returns1 even
+                    // when 45E107 cannot build a route; coordinates stay intact.
+                    event_=i;line_=0;if(events.line_count(i)){phase_=Phase::flag_dialogue;prepare();return;}
+                    events.complete(i);dispatch_story();return;
                 }
                 story_movement_event_=i;story_movement_unit_=size_t(role-events.units.begin());story_movement_follow_=events.condition(i)==1;
                 track.apply(*role);if(story_movement_follow_)map_.center(role->x,role->y);
@@ -182,10 +195,12 @@ private:
             if(events.type(i)==6&&events.condition(i)==1){
                 story_disappearance_event_=i;story_disappearance_slot_=0;next_story_disappearance();return;
             }
-            if(events.type(i)==12&&events.condition(i)==1){
-                auto role=std::find_if(events.units.begin(),events.units.end(),[&](const auto& u){return int(u.id)==events.event_word(i,5);});
-                if(role==events.units.end()){campaign_blocker_="Original story missing role for461236 event "+std::to_string(i);phase_=Phase::campaign_blocked;return;}
-                role->status_flags=(role->status_flags|0x40u)&~0x80u;
+            if(events.type(i)==12&&(events.condition(i)==19||events.condition(i)==20)){
+                if(!begin_role_removal(i))return;
+                return;
+            }
+            if(events.type(i)==12&&(events.condition(i)==22||events.condition(i)==1||events.condition(i)==27||events.condition(i)==28)){
+                if(!apply_scripted_control(i))return;
                 event_=i;line_=0;if(events.line_count(i)){phase_=Phase::flag_dialogue;prepare();return;}
                 events.complete(i);dispatch_story();return;
             }
@@ -388,8 +403,40 @@ private:
         for(auto& unit:events.units){unit.animation_action=0;unit.movement_frame=0;unit.movement_pose=false;}
         return true;
     }
+    bool role_removal_pending_{};
+    bool begin_role_removal(size_t event){
+        auto role=std::find_if(events.units.begin(),events.units.end(),[&](const auto& u){return int(u.id)==events.event_word(event,5);});
+        if(role==events.units.end()){campaign_blocker_="Original461110 removal role missing";phase_=Phase::campaign_blocked;return false;}
+        if((role->status_flags&0x20)||!(role->status_flags&0x80)){
+            events.complete(event);dispatch_story();return true;
+        }
+        if(!map_.begin_disappearance(events.units,unsigned(role-events.units.begin()),1,animation_elapsed_)){
+            campaign_blocker_="Original452DF3 disappearance unavailable";phase_=Phase::campaign_blocked;return false;
+        }
+        story_disappearance_event_=event;story_disappearance_unit_=size_t(role-events.units.begin());role_removal_pending_=true;
+        map_.center(role->x,role->y);phase_=Phase::story_disappearance;return true;
+    }
+    bool apply_scripted_control(size_t event){
+        if(!prepare_campaign_transaction_pose())return false;
+        if(!campaign_scripted_roles_adapter_){campaign_blocker_="Original461110 control transaction unavailable";phase_=Phase::campaign_blocked;return false;}
+        auto transaction=campaign_scripted_roles_adapter_(events,event);
+        if(!transaction||transaction->events.stage!=events.stage){campaign_blocker_="Original461110 control transaction rejected";phase_=Phase::campaign_blocked;return false;}
+        auto prepared=*battle_;prepared.set_hostile_resources(transaction->events);
+        if(transaction->commit)transaction->commit();
+        using std::swap;swap(events,transaction->events);swap(*battle_,prepared);
+        return true;
+    }
     bool dispatch_original_flag_operations(){
-        for(size_t i=0;i<events.event_count();++i){unsigned type=events.type(i);if(type!=6&&type!=7&&type!=8&&type!=11&&type!=12&&type!=14)continue;
+        for(size_t i=0;i<events.event_count();++i){unsigned type=events.type(i);
+            // 420A3B case1: trigger flag AND each valid operand flag. Completion
+            // is still 41C527's record+11 flag, not one of the operands.
+            if(type==9&&events.condition(i)==1){
+                bool ready=true;for(unsigned offset:{3u,5u,7u,9u}){int flag=events.event_word(i,offset);if(flag>=1&&flag<=80&&!events.flags[size_t(flag-1)])ready=false;}
+                int trigger=events.event_word(i,3);if(trigger<1||trigger>80||!ready)continue;
+                if(events.line_count(i)){script_queue_.push_back(i);return start_campaign_script();}
+                events.complete(i);return dispatch_original_flag_operations();
+            }
+            if(type!=6&&type!=7&&type!=8&&type!=11&&type!=12&&type!=14)continue;
             int flag=events.event_word(i,3);if(flag<1||flag>80||!events.flags[size_t(flag-1)])continue;
             int condition=events.event_word(i,1),subject=events.event_word(i,5);
             if(auto predicate=original_role_predicate(events,i)){
@@ -398,14 +445,10 @@ private:
                 events.complete(i);return dispatch_original_flag_operations();
             }
             auto found=std::find_if(events.units.begin(),events.units.end(),[&](const auto& u){return int(u.id)==subject&&OriginalCampaign::living(u);});
-            if(type==12&&(condition==22||condition==1)){
-                if(!prepare_campaign_transaction_pose())return false;
-                if(!campaign_scripted_roles_adapter_){campaign_blocker_="Original461110 control transaction unavailable";phase_=Phase::campaign_blocked;return true;}
-                auto transaction=campaign_scripted_roles_adapter_(events,i);
-                if(!transaction||transaction->events.stage!=events.stage){campaign_blocker_="Original461110 control transaction rejected";phase_=Phase::campaign_blocked;return true;}
-                auto prepared=*battle_;prepared.set_hostile_resources(transaction->events);
-                if(transaction->commit)transaction->commit();
-                using std::swap;swap(events,transaction->events);swap(*battle_,prepared);
+            if(type==12&&(condition==19||condition==20)){
+                scripted_battle_return_=phase_;begin_role_removal(i);return true;
+            }else if(type==12&&(condition==22||condition==1||condition==27||condition==28)){
+                if(!apply_scripted_control(i))return phase_==Phase::campaign_blocked;
             }else if(type==12&&condition==0){
                 if(!prepare_campaign_transaction_pose())return false;
                 if(!campaign_scripted_roles_adapter_){campaign_blocker_="Original461215 role reset transaction unavailable";phase_=Phase::campaign_blocked;return true;}
@@ -439,18 +482,12 @@ private:
             else if(type==8&&condition==3){map_.center(found->x,found->y);}
             else if(type==12&&condition==16){found->direction=unsigned(events.event_word(i,7))&3;}
             else if(type==7&&condition==0){
-                Battle::Point destination{events.event_word(i,7),events.event_word(i,9)};
-                Battle::Point origin{found->x,found->y};
-                std::vector<Battle::Point> search{origin};std::map<std::pair<int,int>,size_t> visited;visited[{origin.x,origin.y}]=0;
-                bool reached=origin==destination;
-                for(size_t at=0;at<search.size()&&!reached;++at){auto p=search[at];
-                    for(int dy:{-1,1})for(int dx:{0,(p.y&1)?1:-1}){Battle::Point q{p.x+dx,p.y+dy};
-                        if(visited.contains({q.x,q.y})||battle_->step_cost(*found,p,q)<0||battle_->occupant(events.units,q)>=0)continue;
-                        visited[{q.x,q.y}]=at;search.push_back(q);if(q==destination){reached=true;break;}
-                    }
+                original_scripted_movement::Track track;
+                if(track.begin(*battle_,*found,{events.event_word(i,7),events.event_word(i,9)},events.movement_class(*found))){
+                    scripted_battle_return_=phase_;story_movement_event_=i;story_movement_unit_=size_t(found-events.units.begin());story_movement_follow_=false;
+                    track.apply(*found);story_movement_=std::move(track);phase_=Phase::story_movement;return true;
                 }
-                if(!reached){campaign_blocker_="Original scripted movement destination unreachable";phase_=Phase::campaign_blocked;return true;}
-                found->x=destination.x;found->y=destination.y;found->action_state=0;found->animation_action=0;
+                // 45E0F5 returns success for the matched record after route failure.
             }else continue;
             if(events.line_count(i)){script_queue_.push_back(i);return start_campaign_script();}
             events.complete(i);return dispatch_original_flag_operations();
@@ -539,6 +576,12 @@ public:
         }
         units[target].status_flags|=0x20;
     }
+    bool ending_active()const{return ending_.has_value();}
+    bool ending_done()const{return ending_&&ending_->done();}
+    size_t ending_page()const{return ending_?ending_->page():0;}
+    size_t ending_pages()const{return ending_?ending_->pages():0;}
+    std::string ending_description()const{return ending_?ending_->phase_description():std::string{};}
+    void restore_terminal_ending(){ending_.emplace(root_,events,disc_);phase_=Phase::campaign_blocked;campaign_blocker_.clear();}
     bool campaign_modal()const{return phase_==Phase::campaign_dialogue||phase_==Phase::campaign_rewards||phase_==Phase::campaign_defeat||phase_==Phase::interbattle||phase_==Phase::campaign_blocked;}
     bool campaign_dialogue()const{return phase_==Phase::campaign_dialogue;}
     bool campaign_defeated()const{return phase_==Phase::campaign_defeat;}
@@ -570,7 +613,7 @@ public:
     unsigned pending_story_route()const{return phase_==Phase::story_ready?story_route_:0;}
     unsigned campaign_next_stage()const{return pending_story_route()?pending_story_route():campaign_?campaign_->selected_route(events):0;}
     void restore_campaign_entry(OriginalEvents restored){
-        restore_battle(std::move(restored),1);phase_=Phase::briefing;briefing_offset_=0;prepare_briefing();
+        restore_battle(std::move(restored),1);restored_story_pending_=false;phase_=Phase::briefing;briefing_offset_=0;prepare_briefing();
     }
     void restore_campaign_story(OriginalEvents restored){
         if(OriginalCampaign(root_).stage(restored.stage).mode!=3)throw std::runtime_error("Not an original story stage");
@@ -578,14 +621,14 @@ public:
     }
     void resume_campaign_story_route(OriginalEvents restored){
         if(!pending_story_route()||restored.stage!=pending_story_route())throw std::runtime_error("Original story route not authorized");
-        restore_battle(std::move(restored),1);phase_=Phase::briefing;briefing_offset_=0;prepare_briefing();
+        restore_battle(std::move(restored),1);restored_story_pending_=false;phase_=Phase::briefing;briefing_offset_=0;prepare_briefing();
         if(auto request=OriginalCampaign::save_request(OriginalCampaign::SavePoint::before_stage_story,0,1))autosave_requests_.push_back(*request);
     }
     void resume_campaign_stage(OriginalEvents restored){
         // Caller must merge persistent original role/global state before publication.
         // Reloading fresh stage units alone would silently discard level/equipment.
         if(!interbattle_active()||!interbattle_||!interbattle_->closed()||restored.stage!=campaign_next_stage())throw std::runtime_error("Campaign continuation not authorized");
-        restore_battle(std::move(restored),1);phase_=Phase::briefing;briefing_offset_=0;prepare_briefing();
+        restore_battle(std::move(restored),1);restored_story_pending_=false;phase_=Phase::briefing;briefing_offset_=0;prepare_briefing();
         if(auto request=OriginalCampaign::save_request(OriginalCampaign::SavePoint::before_stage_story,0,1))autosave_requests_.push_back(*request);
     }
     bool finished=false;
@@ -616,7 +659,20 @@ public:
     const original_combat::Feedback* combat_feedback()const{return battle_?&battle_->combat_feedback():nullptr;}
     bool battle_intro()const{return phase_==Phase::battle_intro;}
     void enable_presentation_timing(){presentation_driven_=true;}
-    void frame_presented(){if(battle_intro())banner_presentation_.presented();}
+    void frame_presented(){if(battle_intro())banner_presentation_.presented();if(skill32_visual_)skill32_visual_->presented();if(skill88_visual_)skill88_visual_->presented();if(skill94_visual_)skill94_visual_->presented();}
+    bool skill_visual_active()const{return skill32_visual_||skill88_visual_||skill94_visual_;}
+    bool begin_skill88_visual(unsigned caster){try{OriginalSkill88Visual visual(root_);auto background=map_.skill88_background(events.units,battle_->turn(),caster);skill32_background_=std::move(background);skill32_target_=caster;skill88_visual_=std::move(visual);return true;}catch(const std::exception&){return false;}}
+    int skill94_visual_frame()const{return skill94_visual_?int(skill94_visual_->frame()):-1;}
+    bool begin_skill94_visual(unsigned caster,unsigned target){try{OriginalSkill94Visual visual(root_);auto background=map_.skill32_background(events.units,battle_->turn(),caster,target,233,35);skill32_background_=std::move(background);skill32_target_=target;skill94_visual_=std::move(visual);return true;}catch(const std::exception&){return false;}}
+    bool skill32_visual_active()const{return skill32_visual_.has_value();}
+    int skill32_visual_frame()const{return skill32_visual_?int(skill32_visual_->frame()):-1;}
+    int skill88_visual_frame()const{return skill88_visual_?int(skill88_visual_->frame()):-1;}
+    bool begin_skill32_visual(unsigned caster,unsigned target){
+        if(skill32_visual_||caster>=events.units.size()||target>=events.units.size())return false;
+        try{OriginalSkill32Visual visual(root_);auto background=map_.skill32_background(events.units,battle_->turn(),caster,target);
+            skill32_background_=std::move(background);skill32_target_=target;skill32_visual_=std::move(visual);return true;
+        }catch(const std::exception&){return false;}
+    }
     bool showing_objectives()const{return phase_==Phase::objectives;}
     void set_small_font(bool enabled){if(small_font_!=enabled){small_font_=enabled;if(phase_==Phase::dialogue||phase_==Phase::choice||phase_==Phase::branch||phase_==Phase::flag_dialogue)prepare();}}
     void enable_text_animation(unsigned delay){
@@ -627,6 +683,11 @@ public:
     size_t revealed_glyphs()const{return revealed_glyphs_;}
     void reveal_text(){if(!dialogue_scrolling()&&text_revealing())revealed_glyphs_=pages_.at(page_).size();}
     void tick(unsigned milliseconds){
+        if(skill94_visual_){skill94_visual_->tick(milliseconds);if(skill94_visual_->done()){skill94_visual_.reset();skill32_background_.clear();}return;}
+        if(skill88_visual_){skill88_visual_->tick(milliseconds);if(skill88_visual_->done()){skill88_visual_.reset();skill32_background_.clear();}return;}
+        if(skill32_visual_){skill32_visual_->tick(milliseconds);if(skill32_visual_->done()){skill32_visual_.reset();skill32_background_.clear();}return;}
+        if(ending_){ending_->tick(milliseconds);return;}
+        if(restored_story_pending_){restored_story_pending_=false;dispatch_story();return;}
         map_.set_event_flags(events.flags);
         animation_elapsed_+=milliseconds;
         if(phase_==Phase::story_movement){
@@ -648,6 +709,13 @@ public:
         if(phase_==Phase::story_disappearance){
             map_.tick_disappearance(milliseconds);
             if(!map_.disappearance_finished())return;
+            if(role_removal_pending_){
+                role_removal_pending_=false;
+                if(!apply_scripted_control(story_disappearance_event_))return;
+                event_=story_disappearance_event_;line_=0;
+                if(events.line_count(event_)){phase_=Phase::flag_dialogue;prepare();return;}
+                events.complete(event_);dispatch_story();return;
+            }
             events.units.at(story_disappearance_unit_).status_flags&=~0x80u;
             next_story_disappearance();return;
         }
@@ -697,6 +765,7 @@ public:
             if(done){
                 if(automatic){phase_=Phase::battle;end_battle_turn();}
                 else if(npc_actions()){
+                    battle_->settle_teleport_pads(events.units,false);
                     battle_->begin_hostile_side(events.units);phase_=Phase::battle_intro;intro_elapsed_=0;banner_presentation_.reset();
                 }
                 else{phase_=Phase::battle_intro;intro_elapsed_=0;banner_presentation_.reset();}
@@ -815,7 +884,7 @@ public:
     Battle::State battle_state()const{return battle_?battle_->state():Battle::State::idle;}
     std::pair<int,int> camera()const{return {map_.camera_x,map_.camera_y};}
     void restore_battle(OriginalEvents restored,unsigned turn){
-        story_movement_.reset();story_group_.reset();story_group_units_.clear();story_hidden_units_.clear();
+        role_removal_pending_=false;story_movement_.reset();story_group_.reset();story_group_units_.clear();story_hidden_units_.clear();
         campaign_choice_=false;story_route_=0;arrivals_turn_=0;script_queue_.clear();campaign_decision_.reset();campaign_settled_=false;campaign_blocker_.clear();interbattle_.reset();
         events=std::move(restored);battle_.emplace(Battle::load(root_,events.map_id,disc_));battle_->enable_movement_animation();battle_->restore_turn(turn);connect_combat_progression();
         // Flag changes reload the old map; do not give it the new map's chains.
@@ -823,6 +892,7 @@ public:
         map_.set_dynamic_object_chains(events.dynamic_object_chains);map_.load(events.map_id);
         for(unsigned y=0;y<map_.height*2;++y)for(unsigned x=0;x<map_.width-(y&1);++x)if(!map_.object_at(int(x),int(y)))battle_->clear_runtime_object({int(x),int(y)});
         finish_confirmation_.reset();finish_direction_.reset();dialogue_camera_target_.reset();phase_=Phase::battle;first_banner_=false;finished=true;
+        restored_story_pending_=story_stage();
     }
     void show_objectives(){if(in_battle())phase_=Phase::objectives;}
     bool drawing_original_mouse()const{return in_battle()&&battle_->has_movement_mouse();}
@@ -842,12 +912,31 @@ public:
     int battle_command_index()const{return battle_?battle_->command_index():-1;}
     int battle_requested_command()const{return battle_?battle_->requested_command():-1;}
     void clear_battle_requested_command(){if(battle_)battle_->clear_requested_command();}
+    unsigned pickup_at_unit(size_t index,std::vector<uint8_t>& inventory,uint8_t army_metadata=0){
+        if(!battle_||index>=events.units.size()||inventory.size()!=302)return 0;
+        const auto& u=events.units[index];
+        if(!u.present(battle_->turn())||!(u.status_flags&0x80)||(u.status_flags&0x20)||u.hostile()||(u.runtime_role_selector==1&&!(army_metadata&0x20))||battle_->object_category({u.x,u.y})!=12)return 0;
+        unsigned marker=map_.dynamic_marker(u.x,u.y),chain=marker&255;
+        if(!chain||chain>events.dynamic_object_chains.size()||events.dynamic_object_chains.size()>20)return 0;
+        if(std::all_of(events.dynamic_object_chains[chain-1].begin(),events.dynamic_object_chains[chain-1].end(),[](unsigned id){return !id;}))return 0;
+        unsigned id=0;
+        battle_->mutate_random([&](auto& random,uint32_t seconds){
+            id=events.dynamic_object_chains[chain-1][random.bounded(4,[seconds]{return seconds;})];
+            return true;
+        });
+        if(!id||id>302||((marker&0x100)&&!(u.abilities&0x200000)))return 0;
+        events.dynamic_object_chains[chain-1].fill(0);
+        if(inventory[id-1]<99)++inventory[id-1];
+        map_.remove_dynamic_object(u.x,u.y);battle_->clear_runtime_object({u.x,u.y});
+        if(battle_->selected()==int(index))battle_->commit_external_action();return id;
+    }
     unsigned battle_turn()const{return battle_?battle_->turn():0;}
     Battle::Point screen_cell(Battle::Point p)const{return battle_->screen_center(p,map_.camera_x,map_.camera_y);}
     size_t line_index()const{return line_;}
     size_t page_index()const{return page_;}
     bool dialogue_scrolling()const{return dialogue_camera_target_.has_value();}
     void advance(){
+        if(ending_){ending_->advance();return;}
         if(phase_==Phase::campaign_rewards){
             if(campaign_settled_)return;
             auto stage=campaign_->stage(events.stage);
@@ -855,11 +944,18 @@ public:
             auto settlement=OriginalCampaign::plan(stage,*campaign_decision_,std::span<const OriginalEvents::Unit>(events.units.data(),count));
             settlement.next=campaign_->selected_route(events);
             auto staged=events;
-            OriginalInterbattle staged_hub(root_,disc_);
+            bool terminal=settlement.next==0;
+            std::optional<OriginalInterbattle> staged_hub;
+            if(!terminal)staged_hub.emplace(root_,disc_);
             if(!campaign_reward_adapter_||!campaign_reward_adapter_(staged,settlement)){
                 campaign_blocker_="Original reward inventory/role baseline unavailable";return;
             }
             events=std::move(staged);campaign_settled_=true;
+            if(terminal){
+                // 40DDCF: successful battle with4F7CE0==0 returns state17h;
+                // 40D6D6 dispatches41E9CF, not the next-battle hub.
+                ending_.emplace(root_,events,disc_);campaign_blocker_.clear();phase_=Phase::campaign_blocked;return;
+            }
             interbattle_=std::move(staged_hub);phase_=Phase::interbattle;campaign_blocker_.clear();return;
         }
         if(phase_==Phase::campaign_defeat||phase_==Phase::campaign_blocked||phase_==Phase::story_ready||interbattle_active())return;
@@ -921,6 +1017,10 @@ public:
         throw std::runtime_error("Unsupported original prologue event transition");
     }
     std::vector<uint8_t> draw(const OriginalMenu& font)const {
+        if(skill94_visual_)return map_.skill32_frame(skill32_background_,skill94_visual_->current(),events.units,battle_->turn(),skill32_target_);
+        if(skill88_visual_)return map_.skill88_frame(skill32_background_,*skill88_visual_,events.units.at(skill32_target_));
+        if(skill32_visual_)return map_.skill32_frame(skill32_background_,skill32_visual_->current(),events.units,battle_->turn(),skill32_target_);
+        if(ending_)return ending_->draw();
         if(interbattle_active())return interbattle_->draw();
         auto image=map_.draw();
         auto story_units=events.units;

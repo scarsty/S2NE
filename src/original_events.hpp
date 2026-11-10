@@ -36,6 +36,7 @@ public:
     struct Line { int speaker; std::vector<uint8_t> name, text; };
     unsigned stage{}, first_stage{}, alternate_stage{};
     std::optional<std::array<int32_t,2>> campaign_currencies;
+    std::optional<std::array<int32_t,5>> ending_statistics;
     struct Unit {
         unsigned id, appearance; int x,y; std::vector<uint8_t> name; int first_turn{},last_turn{};
         int hp{},max_hp{},mp{},st{},sp{},strikeback{},attack{},defense{},fencing{},tactics{},behavior{};
@@ -58,11 +59,15 @@ public:
         std::array<unsigned,6> weapon_proficiency{}; // runtime +D7h..+E1h
         unsigned special_proficiency{}; // runtime +F9h
         uint32_t abilities{}; // runtime +115h; +116h = bits 8..15, +118h = bits 24..31
+        uint8_t status3d{},status3e{},status3f{};
+        std::optional<uint8_t> status39;
         uint8_t status34{},status3c{}; // runtime state, not fields in the 101-byte stage record
         std::optional<std::array<uint8_t,0x13A>> action_status_runtime;
         unsigned kind_attribute{}, allegiance_tag{};
         unsigned runtime_role_selector{};
         int persistent_role6{};
+        unsigned ending_kills{},ending_losses{};
+        std::optional<int> ending_combat_value;
         std::array<int,40> relationships{};
         // sub_4274B5 partitions stage units at the first behavior 2/3/8; behavior 1 is allied AI.
         uint32_t flags30()const{return (runtime_flags30&0x00FFFFFFu)|((status_flags&255u)<<24);}
@@ -174,7 +179,8 @@ public:
         auto kw=[&](size_t p){return unsigned(kinds_.at(p))|(unsigned(kinds_.at(p+1))<<8);};
         size_t kind=kw(18)+(size_t(kw(20))<<16)+size_t(unit.appearance-1)*37;
         original_combat::CombatValueInput in{};
-        in.value18=mode==2?unit.max_hp:unit.hp;
+        if(mode==1&&!unit.ending_combat_value)throw std::invalid_argument("Original runtime132 settlement snapshot unavailable");
+        in.value18=mode==2?unit.max_hp:mode==1?*unit.ending_combat_value:unit.hp;
         in.value14=mode==2?unit.max_sp:unit.sp;
         in.value10=mode==2?unit.max_mp:unit.mp;
         in.valueC=mode==2?unit.max_st:unit.st;
@@ -186,7 +192,6 @@ public:
         auto config=[&](size_t p){return int(int8_t(bin_.at(combat_config_+p)));};
         in.configD6=config(0xD6);in.configD7=config(0xD7);in.configD8=config(0xD8);in.configD9=config(0xD9);
         in.configDA=config(0xDA);in.configDB=config(0xDB);in.configDC=config(0xDC);in.configDF=config(0xDF);
-        if(mode==1)throw std::invalid_argument("Original runtime132 settlement snapshot not yet available");
         return original_combat::combat_value(in);
     }
     struct ActionRange { int minimum{},maximum{},shape{}; };
@@ -271,6 +276,12 @@ public:
         else if(f.slope>50){f.y+=dy<0?-16:16;f.x=f.source_x+(f.target_x-f.source_x)*(f.y-f.source_y)/(f.target_y-f.source_y);}
         else{f.x+=dx<0?-16:16;f.y=f.source_y+(f.target_y-f.source_y)*(f.x-f.source_x)/(f.target_x-f.source_x);}
         return true;
+    }
+    std::array<unsigned,2> skill_class_masks(const Unit& unit)const{
+        auto kw=[&](size_t p){return unsigned(kinds_.at(p))|(unsigned(kinds_.at(p+1))<<8);};
+        if(!unit.appearance)throw std::runtime_error("Missing skill class identity");
+        size_t kind=kw(18)+(size_t(kw(20))<<16)+size_t(unit.appearance-1)*37;
+        return {kw(kind+0x16),kw(kind+0x18)};
     }
     int equipment_evasion(const Unit& unit)const{
         int value=0;

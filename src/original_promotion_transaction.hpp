@@ -80,6 +80,31 @@ public:
         if(group_count_>11||items_.size()<2+size_t(item_count_)*38)throw std::runtime_error("Invalid promotion transaction resource tables");
     }
     unsigned item_count()const{return item_count_;}
+    int item_defense(unsigned id)const{return sb(items_,item(id)+21);}
+    bool usable_item(const Unit& u,unsigned id,int category=0)const{return id&&id<=item_count_&&usable(u,id,category);}
+    std::vector<uint8_t> item_name(unsigned id)const{
+        size_t p=item(id);std::vector<uint8_t> name;for(size_t i=2;i<14&&items_.at(p+i);++i)name.push_back(items_[p+i]);return name;
+    }
+    bool learning_item(unsigned id)const{return id&&id<=item_count_&&sb(items_,item(id)+14)==12&&(sb(items_,item(id)+25)==65||sb(items_,item(id)+25)==66);}
+    // 451DDA: inclusive one-based ordinal range; already learned entries skip the floor.
+    bool learn_range(Unit& u,unsigned group,unsigned first,unsigned last)const{
+        if(!group||group>group_count_||!first||first>last||last>bin_.at(groups_+(group-1)*2+1))return false;
+        --group;
+        for(unsigned ordinal=first;ordinal<=last;++ordinal){
+            unsigned mask=1u<<(ordinal-1);if(u.learned[group]&mask)continue;
+            u.learned[group]|=mask;size_t record=actions_+(bin_.at(groups_+group*2)+ordinal-1)*37;
+            int threshold=sw(bin_,record+15);
+            if(threshold>int(u.learned_proficiency[group])/10)u.learned_proficiency[group]=uint16_t(threshold*10);
+        }
+        return true;
+    }
+    // 450FE1 effect65 teaches one ordinal; 451032 effect66 teaches 1..ordinal.
+    bool use_learning_item(State& state,unsigned id,int category=0)const{
+        if(state.inventory.size()!=item_count_||!learning_item(id)||!state.inventory[id-1]||!usable(state.unit,id,category))return false;
+        size_t p=item(id);int group=sw(items_,p+17),ordinal=sb(items_,p+19);
+        if(!learn_range(state.unit,unsigned(group),sb(items_,p+25)==66?1u:unsigned(ordinal),unsigned(ordinal)))return false;
+        --state.inventory[id-1];return true;
+    }
     // 441143 reads runtime WORD +8 for the ability20/40 gate. Stage behavior
     // is not an equivalent substitute; supply the original role words in order.
     uint8_t aggregate_army_metadata(uint8_t existing,std::span<const Unit> units,
@@ -104,6 +129,11 @@ public:
             }
         }
         return result;
+    }
+    std::optional<size_t> first_consumable_special(const OriginalEvents::Unit& unit,unsigned special)const{
+        // 451D28: first matching special, accepting item+15 types0/1.
+        for(size_t slot=0;slot<unit.equipment.size();++slot)if(auto id=unit.equipment[slot]){auto p=item(id);if(sb(items_,p+25)==int(special)&&(sb(items_,p+15)==0||sb(items_,p+15)==1))return slot;}
+        return std::nullopt;
     }
     void remove_equipment(State& state,size_t slot,bool consume)const{
         auto& u=state.unit;unsigned id=u.equipment.at(slot);u.equipment[slot]=0;if(!id)return;
@@ -167,7 +197,7 @@ public:
     void learn_relations(Unit& u)const{
         if(u.learned[6]&&group_count_>6){unsigned first=bin_.at(groups_+12)+4;
             for(unsigned i=0;i<6;++i){size_t p=actions_+size_t(first+2*i)*37;
-                if(sw(bin_,p+15)<=int(u.learned_proficiency[6]/10)&&(u.learned[6]&(1u<<i))&&u.learned[i])u.learned[6]|=1u<<(i+4);}}
+                if(sw(bin_,p+15)<=int(u.learned_proficiency[6]/10)&&!(u.learned[6]&(1u<<i))&&u.learned[i])u.learned[6]|=1u<<(i+4);}}
     }
     // 4659BD: index is the original WORD +D7 array index, not group ID.
     // 0..5 weapon proficiency, 6..16 learned-group proficiency +E3.

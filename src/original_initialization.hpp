@@ -6,6 +6,7 @@
 namespace s2ne {
 // Original mode0 initialization and runtime arrivals, with caller-owned opening/settings state.
 class OriginalInitialization {
+    std::filesystem::path root_;
     std::vector<uint8_t> bin_,pal_,items_,prg_;
     static std::vector<uint8_t> read(const std::filesystem::path& p){
         std::ifstream f(p,std::ios::binary);if(!f)throw std::runtime_error("Missing original initialization resource");
@@ -84,7 +85,7 @@ public:
             for(int cy=top+2;cy<=top+2*radius-2;cy+=2){if(accepts(left,cy))return {left,cy};if(accepts(left+radius,cy))return {left+radius,cy};}
         }return {x,y};
     }
-    explicit OriginalInitialization(const std::filesystem::path& root):bin_(read(root/"SUPERSP.BIN")),pal_(read(root/"SUPERSP.PAL")),items_(read(root/"ITEMSP.BIN")),prg_(read(root/"SUPERSP.PRG")){
+    explicit OriginalInitialization(const std::filesystem::path& root):root_(root),bin_(read(root/"SUPERSP.BIN")),pal_(read(root/"SUPERSP.PAL")),items_(read(root/"ITEMSP.BIN")),prg_(read(root/"SUPERSP.PRG")){
         OriginalSave::item_count(items_);
     }
     Opening opening()const{
@@ -158,8 +159,9 @@ public:
     // 42012F condition0: create/reuse matching stage SOURCE roles, not transfer
     // an arbitrary live enemy or grant a replacement with invented statistics.
     OriginalSave::State insert_scripted_roles(const OriginalSave::State& before,const OriginalEvents& expanded,size_t event,const PlacementMap& map)const{
-        if(expanded.type(event)==12&&expanded.condition(event)==0)return reset_scripted_role(before,expanded,event);
+        if(expanded.type(event)==12&&(expanded.condition(event)==0||expanded.condition(event)==19||expanded.condition(event)==20))return reset_scripted_role(before,expanded,event);
         if(expanded.type(event)==12&&(expanded.condition(event)==22||expanded.condition(event)==1))return mutate_scripted_control(before,expanded,event);
+        if(expanded.type(event)==12&&(expanded.condition(event)==27||expanded.condition(event)==28))return learn_scripted_range(before,expanded,event);
         if(expanded.type(event)!=6||expanded.condition(event)!=0)throw std::runtime_error("Unsupported original scripted role operation stage "+std::to_string(expanded.stage)+" event "+std::to_string(event)+" opcode "+std::to_string(expanded.type(event))+" condition "+std::to_string(expanded.condition(event)));
         if(OriginalSaveBridge::get(before.globals_4f7cd0,8,4)!=expanded.stage)throw std::runtime_error("Scripted role stage mismatch");
         auto source=sources(expanded.stage);if(source.size()!=expanded.units.size())throw std::runtime_error("Scripted roles require complete source expansion");
@@ -182,6 +184,22 @@ public:
         }
         return staged;
     }
+    // 461700/46172E ->451DDA. Dead/inactive actors follow 461149.
+    OriginalSave::State learn_scripted_range(const OriginalSave::State& before,const OriginalEvents& current,size_t event)const{
+        int condition=current.condition(event);
+        if(current.type(event)!=12||(condition!=27&&condition!=28)||OriginalSaveBridge::get(before.globals_4f7cd0,8,4)!=current.stage)throw std::runtime_error("Invalid original scripted learning");
+        auto staged=before;unsigned id=unsigned(current.event_word(event,5));
+        for(auto& group:staged.groups)for(auto& role:group.units)if(OriginalSaveBridge::get(role,2)==id){
+            if((role[0x33]&0x20)||!(role[0x33]&0x80))return staged;
+            unsigned school=unsigned(current.event_word(event,7)),last=unsigned(current.event_word(event,9));
+            OriginalPromotionTransaction rules(root_);OriginalEvents::Unit student{};
+            for(unsigned g=0;g<11;++g){student.learned[g]=OriginalSaveBridge::get(role,0xFB+2*g);student.learned_proficiency[g]=OriginalSaveBridge::get(role,0xE3+2*g);}
+            if(!rules.learn_range(student,school,condition==28?1u:last,last))throw std::runtime_error("Invalid original scripted learning range");
+            for(unsigned g=0;g<11;++g){OriginalSaveBridge::put(role,0xFB+2*g,student.learned[g]);OriginalSaveBridge::put(role,0xE3+2*g,student.learned_proficiency[g]);}
+            return staged;
+        }
+        throw std::runtime_error("Original461110 learning role missing");
+    }
     // 461535 changes control words in-place, without army transfer or activation.
     // 461236 condition1 withdraws the role (40h on,80h off), not reverse control.
     OriginalSave::State mutate_scripted_control(const OriginalSave::State& before,const OriginalEvents& current,size_t event)const{
@@ -198,10 +216,12 @@ public:
     }
     // 461215 removes identity from its fixed army slot, not from the vector.
     OriginalSave::State reset_scripted_role(const OriginalSave::State& before,const OriginalEvents& current,size_t event)const{
-        if(current.type(event)!=12||current.condition(event)!=0||OriginalSaveBridge::get(before.globals_4f7cd0,8,4)!=current.stage)throw std::runtime_error("Invalid original role reset transaction");
+        if(current.type(event)!=12||(current.condition(event)!=0&&current.condition(event)!=19&&current.condition(event)!=20)||OriginalSaveBridge::get(before.globals_4f7cd0,8,4)!=current.stage)throw std::runtime_error("Invalid original role reset transaction");
         auto staged=before;unsigned id=unsigned(current.event_word(event,5));
         for(auto& group:staged.groups)for(auto& role:group.units)if(OriginalSaveBridge::get(role,2)==id){
-            OriginalSaveBridge::put(role,0x30,0,4);OriginalSaveBridge::put(role,8,1);OriginalSaveBridge::put(role,2,0);return staged;
+            auto condition=current.condition(event);if(condition>=10&&((role[0x33]&0x20)||!(role[0x33]&0x80)))return staged;
+            if(condition!=20){OriginalSaveBridge::put(role,0x30,0,4);OriginalSaveBridge::put(role,8,1);OriginalSaveBridge::put(role,2,0);}
+            if(condition>=19)role[0x33]&=0x7F;return staged;
         }
         throw std::runtime_error("Original461215 role missing");
     }
@@ -267,8 +287,10 @@ public:
         if(target_mode!=1&&target_mode!=3)throw std::runtime_error("Original intermediary stage requires separate scripted entry");
         OriginalEvents source(root,deployed.difficulty);source.flags=deployed.flags;source.load_stage(deployed.stage);
         auto raw=settled;
-        if(target_mode!=3){
+        {
+            // Both 40FEE9 (battle) and 410478 (story) call44A4A9 before loading arrivals.
             auto& army=raw.groups[0];std::vector<OriginalSave::UnitRecord> retained;
+            for(size_t i=0;i<11;++i)army.status[i*3]=0;
             for(auto role:army.units){unsigned flags=role[0x33];
                 if(OriginalSaveBridge::get(role,8)==1&&((flags&0x20)||!(flags&0x40)))continue;
                 if(flags&0x10)throw std::runtime_error("Original44A4A9 alternate appearance retention requires army status lookup");
@@ -289,7 +311,21 @@ public:
         unsigned sections=bin_.at(h+25);size_t p=data+sections*4;
         for(unsigned i=0;i<sections;++i){unsigned type=get(bin_,data+i*4),count=get(bin_,data+i*4+2);if(type==5){if(count%4||count>80)throw std::runtime_error("Invalid original transition chains");OriginalSaveBridge::put(raw.value_4f705c,0,count/4,4);for(size_t j=0;j<count*2;++j)raw.words_4f6fbc[j]=bin_.at(p+j);break;}p+=count*2;}
         if(target_mode==3){
-            for(size_t i=0;i<raw.groups[0].units.size();++i)OriginalSaveBridge::patch_unit(raw.groups[0].units[i],deployed.units.at(i));
+            for(size_t i=0;i<raw.groups[0].units.size();++i){auto& r=raw.groups[0].units[i];
+                unsigned original_index=OriginalSaveBridge::get(r,0);
+                if(!original_index||original_index>deployed.units.size())throw std::runtime_error("Missing retained original story slot");
+                const auto& u=deployed.units[original_index-1];
+                if(OriginalSaveBridge::get(r,2)!=u.id||OriginalSaveBridge::get(r,4)!=u.appearance)throw std::runtime_error("Changed original story identity");
+                OriginalSaveBridge::patch_unit(r,u);OriginalSaveBridge::put(r,0,unsigned(i+1));
+                // 410478 passes mode0:45DDA6 clears presence and resets temporary pools.
+                r[0x33]&=0x73;r[0x2D]=0;
+                std::fill(r.begin()+0x34,r.begin()+0x40,uint8_t(0));
+                std::fill(r.begin()+0x124,r.begin()+0x13A,uint8_t(0));
+                for(unsigned j=0;j<4;++j)OriginalSaveBridge::put(r,0x124+j*2,OriginalSaveBridge::get(r,0xB7+j*2));
+                unsigned ap=std::min(OriginalSaveBridge::get(r,0xBF),110u);
+                OriginalSaveBridge::put(r,0x12C,ap);OriginalSaveBridge::put(r,0x12E,ap);
+                for(auto [to,from]:{std::pair{0x134u,0xC3u},{0x136u,0xC5u},{0x138u,0xC9u}})OriginalSaveBridge::put(r,to,OriginalSaveBridge::get(r,from));
+            }
             // 40D7D4 ->427870 ->427645 creates this story turn's source actors.
             return insert_arrivals(raw,source,1,placement_map(root,source.map_id));
         }

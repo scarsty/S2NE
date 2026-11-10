@@ -4,6 +4,8 @@
 #include "original_events.hpp"
 #include "original_palette.hpp"
 #include "original_combat_visual.hpp"
+#include "original_skill_visual.hpp"
+#include "original_skill88_visual.hpp"
 #include <algorithm>
 #include <map>
 #include <utility>
@@ -15,6 +17,7 @@ class OriginalMap {
     mutable std::map<size_t,Image> cache_;
     struct UnitBitmap { unsigned w{},h{};size_t frame{};int x{},y{},left{},top{};uint8_t state{};unsigned status{};std::vector<uint8_t> ad,b1;bool alternate=true; };
     mutable std::map<unsigned,UnitBitmap> unit_bitmaps_;
+    mutable std::vector<uint8_t> skill88_indexed_;
     original_combat::Disappearance disappearance_;
     mutable std::vector<std::vector<uint8_t>> disappearance_frames_;
     mutable uint64_t reaction_draws_{};
@@ -171,6 +174,13 @@ public:
     unsigned object_at(int x,int y)const{
         if(x<0||y<0||unsigned(y)>=height*2||unsigned(x)>=width-(unsigned(y)&1))throw std::runtime_error("Invalid original object cell");
         return cell_object(item(6,map_id-1)+28+(size_t(y)*width+unsigned(x))*5);
+    }
+    unsigned dynamic_marker(int x,int y)const{
+        size_t m=item(6,map_id-1),special=m+28+size_t(width)*height*2*5+word(prg_,m+12)*10;
+        for(unsigned i=0;i<word(prg_,m+14);++i){size_t p=special+i*6;
+            if(int(int16_t(word(prg_,p)))==x&&int(int16_t(word(prg_,p+2)))==y)return word(prg_,p+4);
+        }
+        return 0;
     }
     void set_checker_mask(bool enabled){checker_mask_=enabled;}
     void set_dynamic_object_chains(const std::vector<std::array<unsigned,4>>& chains){dynamic_object_chains_=chains;}
@@ -453,7 +463,7 @@ public:
     uint64_t reaction_draws()const{return reaction_draws_;}
     const std::vector<uint8_t>& last_reaction_bitmap()const{return last_reaction_;}
     // Full roster order is required for 4485DB's persistent B1 overlays.
-    void draw_units(std::vector<uint8_t>& image,const std::vector<OriginalEvents::Unit>& units,unsigned turn=1,uint64_t elapsed_ms=0,std::optional<unsigned> silhouette=std::nullopt,std::optional<unsigned> reaction=std::nullopt,unsigned background_mode=0,std::optional<unsigned> only_instance=std::nullopt)const{
+    void draw_units(std::vector<uint8_t>& image,const std::vector<OriginalEvents::Unit>& units,unsigned turn=1,uint64_t elapsed_ms=0,std::optional<unsigned> silhouette=std::nullopt,std::optional<unsigned> reaction=std::nullopt,unsigned background_mode=0,std::optional<unsigned> only_instance=std::nullopt,std::vector<uint8_t>* indexed=nullptr)const{
         size_t index=group(1),frames=group(2);unsigned count=word(prg_,index);
         struct Presented {unsigned instance;OriginalEvents::Unit unit;unsigned w,h;int left,top;std::vector<uint8_t> pixels;};
         std::vector<Presented> presented;
@@ -540,8 +550,51 @@ public:
                 pose.w=128;pose.left=pose.unit.x*64+(pose.unit.y&1)*32+32-64+displacement-camera_x;
                 mask_unit_ground(pose.pixels,pose.w,pose.h,pose.unit.x,pose.unit.y,int(prg_.at(item(6,map_id-1)+28+(size_t(pose.unit.y)*width+pose.unit.x)*5)),checker_mask_,displacement);
             }else if(!reaction&&!silhouette)unit_bitmaps_.at(pose.instance).alternate=true;
-            for(unsigned y=0;y<pose.h;++y)for(unsigned x=0;x<pose.w;++x){unsigned c=pose.pixels.at(size_t(y)*pose.w+x);int dx=pose.left+int(x),dy=pose.top+int(y);if(!c||dx<0||dy<0||dx>=640||dy>=480)continue;size_t dst=(size_t(dy)*640+dx)*4;for(unsigned k=0;k<3;++k)image.at(dst+k)=uint8_t(unsigned(pal_.at(c*3+k))*255/63);}
+            for(unsigned y=0;y<pose.h;++y)for(unsigned x=0;x<pose.w;++x){unsigned c=pose.pixels.at(size_t(y)*pose.w+x);int dx=pose.left+int(x),dy=pose.top+int(y);if(!c||dx<0||dy<0||dx>=640||dy>=480)continue;size_t dst=(size_t(dy)*640+dx)*4;if(indexed)indexed->at(dst/4)=uint8_t(c);for(unsigned k=0;k<3;++k)image.at(dst+k)=uint8_t(unsigned(pal_.at(c*3+k))*255/63);}
         }
+    }
+    std::vector<uint8_t> skill32_background(const std::vector<OriginalEvents::Unit>& units,unsigned turn,unsigned caster,unsigned target,unsigned tint_source=140,unsigned tint_amount=45)const{
+        auto image=draw();std::vector<uint8_t> indexed(640*480);
+        for(unsigned y=0;y<480;++y)for(unsigned x=0;x<640;++x)indexed[size_t(y)*640+x]=pixels_.at(size_t(camera_y+y)*width*64+camera_x+x);
+        draw_units(image,units,turn,0,std::nullopt,std::nullopt,0,std::nullopt,&indexed);
+        OriginalPalette palette(pal_);for(auto& color:indexed)if(color)color=uint8_t(palette.blend_index(color,tint_source,tint_amount));
+        for(size_t p=0;p<indexed.size();++p)for(unsigned k=0;k<3;++k)image[p*4+k]=uint8_t(unsigned(pal_.at(indexed[p]*3+k))*255/63);
+        // 46B5DE restores the caster and the selected enemy after the indexed tint.
+        draw_units(image,units,turn,0,std::nullopt,std::nullopt,0,caster);
+        draw_units(image,units,turn,0,std::nullopt,std::nullopt,0,target);
+        return image;
+    }
+    std::vector<uint8_t> skill32_frame(const std::vector<uint8_t>& background,const OriginalSkill32Visual::Frame& frame,const std::vector<OriginalEvents::Unit>& units,unsigned turn,unsigned target)const{
+        const auto& destination=units.at(target);int x=destination.x,y=destination.y;
+        size_t cells=item(6,map_id-1)+28;int elevation=prg_.at(cells+(size_t(y)*width+x)*5);
+        auto pixels=frame.pixels;mask_unit_ground(pixels,frame.width,frame.height,x,y,elevation);
+        int left=x*64+(y&1)*32+32-int(frame.width/2),top=y*16+32-int(frame.height);
+        // 46B9A9 mode2 -> 4468DF(arg0=1,arg4=0): clear nearer unit AD silhouettes.
+        for(unsigned i=0;i<units.size();++i){const auto& u=units[i];
+            if(!u.present(turn)||(u.status_flags&0x20)||!(u.status_flags&0x80)||u.action_state==1||u.action_state==3||u.action_state==5||(u.x==x&&u.y==y)||u.x<x-2||u.x>x+2||u.y<=y||u.y>y+24)continue;
+            auto found=unit_bitmaps_.find(i);if(found==unit_bitmaps_.end())continue;
+            int rise=prg_.at(cells+(size_t(u.y)*width+u.x)*5);if(!rise)continue;
+            const auto& b=found->second;int dx=u.x*64+(u.y&1)*32+32-int(b.w/2)-left,dy=u.y*16+32-int(b.h)-top-(rise-elevation)*16;
+            for(unsigned yy=0;yy<b.h;++yy)for(unsigned xx=0;xx<b.w;++xx){int tx=dx+int(xx),ty=dy+int(yy);if(tx>=0&&ty>=0&&tx<int(frame.width)&&ty<int(frame.height)&&b.ad.at(size_t(yy)*b.w+xx))pixels.at(size_t(ty)*frame.width+tx)=0;}
+        }
+        auto image=background;top-=camera_y+std::max(0,elevation-1)*16;left-=camera_x;
+        for(unsigned yy=0;yy<frame.height;++yy)for(unsigned xx=0;xx<frame.width;++xx){auto c=pixels.at(size_t(yy)*frame.width+xx);int dx=left+int(xx),dy=top+int(yy);if(!c||dx<0||dy<0||dx>=640||dy>=480)continue;for(unsigned k=0;k<3;++k)image.at((size_t(dy)*640+dx)*4+k)=uint8_t(unsigned(pal_.at(c*3+k))*255/63);}
+        return image;
+    }
+    std::vector<uint8_t> skill88_background(const std::vector<OriginalEvents::Unit>& units,unsigned turn,unsigned caster)const{
+        auto image=draw();std::vector<uint8_t> indexed(640*480);for(unsigned y=0;y<480;++y)for(unsigned x=0;x<640;++x)indexed[size_t(y)*640+x]=pixels_.at(size_t(camera_y+y)*width*64+camera_x+x);
+        draw_units(image,units,turn,0,std::nullopt,std::nullopt,0,std::nullopt,&indexed);OriginalPalette palette(pal_);
+        for(size_t p=0;p<indexed.size();++p){unsigned c=indexed[p];if(c)c=palette.blend_index(c,233,50);indexed[p]=uint8_t(c);for(unsigned k=0;k<3;++k)image[p*4+k]=uint8_t(unsigned(pal_.at(c*3+k))*255/63);}
+        draw_units(image,units,turn,0,std::nullopt,std::nullopt,0,caster,&indexed);skill88_indexed_=std::move(indexed);return image;
+    }
+    std::vector<uint8_t> skill88_frame(const std::vector<uint8_t>& background,const OriginalSkill88Visual& visual,const OriginalEvents::Unit& actor)const{
+        auto image=background;const auto& frame=visual.current();OriginalPalette palette(pal_);
+        int left=actor.x*64+(actor.y&1)*32-camera_x+32-89,top=actor.y*16-camera_y+32-124;
+        int elevation=prg_.at(item(6,map_id-1)+28+(size_t(actor.y)*width+actor.x)*5);top-=std::max(0,elevation-1)*16;
+        for(unsigned y=0;y<frame.height;++y)for(unsigned x=0;x<frame.width;++x){unsigned c=frame.pixels[size_t(y)*frame.width+x];int dx=left+int(x),dy=top+int(y);if(!c||dx<0||dy<0||dx>=640||dy>=480)continue;size_t p=(size_t(dy)*640+dx)*4;
+            if(visual.amount(c)>=0)c=palette.blend_index(skill88_indexed_.at(p/4),c,visual.amount(c));
+            for(unsigned k=0;k<3;++k)image[p+k]=uint8_t(unsigned(pal_.at(c*3+k))*255/63);
+        }return image;
     }
     void pan(int dx,int dy){camera_x=std::clamp(camera_x+dx,32,std::max(32,int(width*64)-21*32));camera_y=std::clamp(camera_y+dy,16,std::max(16,int(height*32)-480));}
     bool edge_scroll(float x,float y){

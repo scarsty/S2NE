@@ -10,9 +10,9 @@ namespace s2ne {
 class Flic {
     std::vector<uint8_t> data, pixels;
     std::array<uint8_t, 768> palette{};
-    size_t position = 128, cursor{}, limit{};
-    unsigned frame{};
-    uint8_t byte() { if (cursor >= limit) throw std::runtime_error("Truncated FLIC chunk"); return data.at(cursor++); }
+    size_t position = 128, first_position_=128, cursor{}, limit{};
+    unsigned frame{},chunk_type_{};
+    uint8_t byte() { if (cursor >= limit) throw std::runtime_error("Truncated FLIC chunk frame="+std::to_string(frame)+" cursor="+std::to_string(cursor)+" limit="+std::to_string(limit)+" type="+std::to_string(chunk_type_)); return data.at(cursor++); }
     unsigned word() { unsigned n=byte(); return n | (unsigned(byte())<<8); }
     void put(int x,int y,uint8_t value) {
         if(x<0 || y<0 || x>=width || y>=height) throw std::runtime_error("Invalid FLIC pixel position");
@@ -27,9 +27,9 @@ public:
         if(!in) throw std::runtime_error("Missing intro resource");
         return std::vector<uint8_t>(std::istreambuf_iterator<char>(in),{});
     }
-    static Flic from_disc(const std::filesystem::path& root, unsigned id) {
-        if(id!=21 && id!=22) throw std::runtime_error("Invalid opening resource ID");
-        auto bytes=OriginalDiscResources(root).dat_entry(OriginalDisc::one,id);
+    static Flic from_disc(const std::filesystem::path& root, unsigned id,OriginalDisc disc=OriginalDisc::one) {
+        if(id<21||id>25) throw std::runtime_error("Invalid original movie resource ID");
+        auto bytes=OriginalDiscResources(root).dat_entry(disc,id);
         auto get16=[](const auto& b,size_t p){return unsigned(b.at(p))|(unsigned(b.at(p+1))<<8);};
         auto get32=[&](const auto& b,size_t p){return get16(b,p)|(get16(b,p+2)<<16);};
         if(bytes.size()<128) throw std::runtime_error("Invalid opening archive entry");
@@ -48,9 +48,11 @@ public:
         if(word()!=8 || width!=640 || height<1 || height>480 || !frames) throw std::runtime_error("Unsupported FLIC dimensions");
         cursor=16;delay=word();delay|=word()<<16;
         if(!delay || delay>1000) throw std::runtime_error("Invalid FLIC frame delay");
+        cursor=80;unsigned first=word();first|=word()<<16;
+        if(first>=128&&first<data.size())position=first;first_position_=position;
         pixels.resize(size_t(width)*height);
     }
-    void rewind(){position=128;frame=0;std::fill(pixels.begin(),pixels.end(),0);palette.fill(0);}
+    void rewind(){position=first_position_;frame=0;std::fill(pixels.begin(),pixels.end(),0);palette.fill(0);}
     bool next(std::vector<uint8_t>& rgba) {
         if(frame>=frames) return false;
         cursor=position;limit=data.size();
@@ -61,7 +63,7 @@ public:
             size_t start=cursor;limit=end;
             size_t length=word();length|=size_t(word())<<16;unsigned type=word();
             if(length<6 || length>end-start) throw std::runtime_error("Invalid FLIC chunk length");
-            limit=start+length;
+            limit=start+length;chunk_type_=type;
             if(type==4 || type==11){
                 unsigned packets=word(),index=0;
                 for(unsigned p=0;p<packets;++p){index+=byte();unsigned count=byte();if(!count)count=256;
@@ -69,8 +71,8 @@ public:
                     for(unsigned i=0;i<count*3;++i){unsigned value=byte();palette[index*3+i]=uint8_t(type==11?value*255/63:value);}index+=count;
                 }
             } else if(type==15){
-                for(int y=0;y<height;++y){unsigned packets=byte();int x=0;
-                    for(unsigned p=0;p<packets;++p){int n=int8_t(byte());if(n>=0){auto value=byte();while(n--)put(x++,y,value);}else{while(n++)put(x++,y,byte());}}
+                for(int y=0;y<height;++y){byte();int x=0;
+                    while(x<width){int n=int8_t(byte());if(!n)throw std::runtime_error("Invalid empty FLIC BRUN run");if(n>=0){auto value=byte();while(n--)put(x++,y,value);}else{while(n++)put(x++,y,byte());}}
                     if(x!=width)throw std::runtime_error("Incomplete FLIC BRUN row");
                 }
             } else if(type==7){
@@ -84,7 +86,7 @@ public:
                         else{uint8_t a=byte(),b=byte();while(n++){put(x++,y,a);put(x++,y,b);}}
                     }++y;--lines;
                 }
-            } else if(type==16){for(int y=0;y<height;++y)for(int x=0;x<width;++x)put(x,y,byte());}
+            } else if(type==16){if(length!=6+size_t(width)*height&&length!=4+size_t(width)*height)throw std::runtime_error("Invalid native FLIC COPY size");limit=std::min(data.size(),cursor+size_t(width)*height);for(int y=0;y<height;++y)for(int x=0;x<width;++x)put(x,y,byte());}
             else if(type==13){std::fill(pixels.begin(),pixels.end(),0);}
             else if(type!=18)throw std::runtime_error("Unsupported FLIC chunk: "+std::to_string(type));
             cursor=start+length;

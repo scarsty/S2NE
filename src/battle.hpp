@@ -25,6 +25,7 @@ private:
     unsigned width_{},height_{};
     std::vector<Cell> cells_;
     std::vector<unsigned> ground_attributes_,object_attributes_;
+    std::vector<Point> teleport_pads_;
     std::vector<uint8_t> movement_;
     std::vector<Point> sealed_cells_;
     std::array<int,12> config_{};
@@ -112,6 +113,7 @@ private:
 public:
     int requested_command()const{return requested_command_;}
     void clear_requested_command(){requested_command_=-1;}
+    void commit_external_action(){acted_=true;}
     // Modal owners supply their proven complete skill/promotion eligibility.
     void set_command_request_availability(std::function<bool(const OriginalEvents::Unit&,int)> available){command_request_available_=std::move(available);}
 private:
@@ -163,6 +165,10 @@ public:
             if(layer<2)for(unsigned i=0;i<count;++i)dest.push_back(word(prg,attributes+i*2));
             attributes+=count*2;
         }
+        // 4296BF caches at most twenty category35 pads in map row order.
+        for(unsigned y=0;y<h;++y)for(unsigned x=0;x<w-(y&1);++x)
+            if(result.object_category({int(x),int(y)})==35&&result.teleport_pads_.size()<20)
+                result.teleport_pads_.push_back({int(x),int(y)});
         result.movement_=disc_resources.dat_entry(disc,6);
         // sub_4262EC loads ICONSO from DAT item 5; sub_4785E6 uses
         // pointer slots 35/36/37 = DAT entries 36/37/38 (slot 0 is entry 1).
@@ -229,6 +235,20 @@ public:
             if(!u.hostile()&&u.runtime_role_selector!=1&&category==4)events.flags[7]=1;
             if(u.hostile()&&category==3)events.flags[5]=1;
         }
+    }
+    const std::vector<Point>& teleport_pads()const{return teleport_pads_;}
+    // 4608B2 case35 -> 42FFA2 -> 45DB10, once per unit at side end.
+    unsigned settle_teleport_pads(std::vector<OriginalEvents::Unit>& units,bool hostile){
+        unsigned moved=0;
+        for(auto& actor:units){
+            if(actor.hostile()!=hostile||!(actor.status_flags&0x80)||(actor.status_flags&0x20)||object_category({actor.x,actor.y})!=35)continue;
+            std::vector<Point> available;
+            for(auto p:teleport_pads_)if(occupant(units,p)<0)available.push_back(p);
+            if(available.empty())continue;
+            auto destination=available.at(size_t(roll(int(available.size()))));
+            actor.x=destination.x;actor.y=destination.y;++moved;
+        }
+        return moved;
     }
     bool target_surface(Point p)const{
         if(p.x<0||p.y<0||(!(p.y&1)&&p.x<1)||p.x>=int(width_)-1||p.y>=int(height_)-1)return false;
@@ -778,6 +798,8 @@ public:
     }
     bool attack_command_available(const std::vector<OriginalEvents::Unit>& units,int index)const{
         if(index<0||index>7||selected_<0)return false;
+        if(index==2&&command_request_available_&&command_request_available_(units[size_t(selected_)],6))return true;
+        if(index==3&&command_request_available_&&command_request_available_(units[size_t(selected_)],7))return true;
         for(size_t i=0;i<units.size();++i)if(can_attack(units,size_t(selected_),i,index))return true;
         return false;
     }
@@ -807,7 +829,10 @@ public:
     bool activate(std::vector<OriginalEvents::Unit>& units){
         if(animating_movement()||combat_feedback_active())return false;
         if(selected_<0)return false;
-        if(state_==State::attack_menu){if(!attack_command_available(units,attack_index_))return false;state_=State::attack_target;target_=-1;
+        if(state_==State::attack_menu){if(!attack_command_available(units,attack_index_))return false;
+            if(attack_index_==2&&command_request_available_&&command_request_available_(units[size_t(selected_)],6)){requested_command_=6;state_=State::command;return true;}
+            if(attack_index_==3&&command_request_available_&&command_request_available_(units[size_t(selected_)],7)){requested_command_=7;state_=State::command;return true;}
+            state_=State::attack_target;target_=-1;
             for(size_t i=0;i<units.size();++i)if(can_attack(units,selected_,i,attack_index_)){target_=int(i);break;}
             if(target_<0){state_=State::command;message_="No supported original action target";return false;}
             message_="Select target; Enter/Space or left click confirms; Esc cancels";return true;}
@@ -935,11 +960,34 @@ public:
     void seed(unsigned value){random_seconds_=value;random_=original_combat::Random(1);random_.initialize(value);}
     // Callback must stage its own domain mutations; false/throw leaves the
     // combat stream untouched. Permutation initialization is never repeated.
+    bool mutate_combat_random(const std::function<bool(original_combat::Random&,uint32_t)>& transaction){
+        auto staged=random_;if(!transaction(staged,random_seconds()))return false;random_=staged;return true;
+    }
+    bool present_skill32_preparation(std::vector<OriginalEvents::Unit>& units,size_t index,size_t target,bool second=false){
+        if(!movement_animation_enabled_||index>=units.size()||target>=units.size())return false;
+        auto& actor=units[index];if(!actor.appearance||actor.appearance>action_sequences_.size()||(actor.status_flags&0x10))return false;
+        if(!hostile_resources_)return false;
+        auto actions=hostile_resources_->action_records(actor);auto casting=std::find_if(actions.begin(),actions.end(),[second](const auto& a){return a.fields[0]==(second?12:11);});
+        // 46C078 defaults to action offset8, overridden by signed action-record +Ah *4.
+        int offset=casting==actions.end()?8:int(int8_t(casting->fields[10]))*4;
+        if(offset<0||offset%4||offset>=28)return false;
+        const auto& destination=units[target];unsigned facing=actor.direction&3;
+        if(actor.x!=destination.x||actor.y!=destination.y){
+            bool right=(actor.y&1)?actor.x<destination.x:actor.x<=destination.x;
+            facing=right?(actor.y>destination.y?2u:1u):(actor.y>destination.y?3u:0u);
+        }
+        unsigned sequence=unsigned(offset)+facing;const auto& frames=action_sequences_[actor.appearance-1][sequence];if(frames.empty())return false;
+        movement_poses_.clear();for(size_t frame=0;frame<frames.size();++frame){auto pose=actor;pose.direction=facing;pose.animation_action=unsigned(offset)/4;pose.movement_pose=true;pose.movement_frame=unsigned(frame);movement_poses_.push_back(pose);}
+        actor.direction=facing;
+        // 454E43 ->473192 waits 0Ch DOS hundredths after each presented frame.
+        moving_unit_=int(index);movement_elapsed_=0;movement_interval_=12*10;attack_animation_=true;return true;
+    }
     bool mutate_random(const std::function<bool(OriginalRandom&,uint32_t)>& transaction){
         OriginalRandom staged({random_.seed_state(),random_.draw_count()});
         if(!transaction(staged,random_seconds()))return false;
         auto state=staged.state();random_.restore_stream(state.seed,state.calls);return true;
     }
+    std::array<uint8_t,3> original_42c88f_bytes(const OriginalEvents& resources,const OriginalEvents::Unit& unit)const{return terrain_effect(resources,unit,{unit.x,unit.y}).bytes;}
     unsigned turn()const{return turn_;}
     bool hostile_side()const{return hostile_side_;}
     bool hostile_actions_active()const{return hostile_actions_active_;}
@@ -1035,7 +1083,7 @@ public:
             plan_hostile(units,index);
             return false;
         }
-        if(controller_hostile_){reset_side(units,true);tick_action_statuses(units);++turn_;}
+        if(controller_hostile_){settle_teleport_pads(units,true);reset_side(units,true);tick_action_statuses(units);++turn_;}
         else automatic_actions_completed_=true;
         hostile_side_=false;hostile_actions_active_=false;
         selected_=-1;state_=State::idle;path_.clear();target_=-1;
@@ -1235,6 +1283,7 @@ public:
             }
             units[a].action_state=2;
         }
+        settle_teleport_pads(units,true);
         reset_side(units,true);++turn_;hostile_side_=false;selected_=-1;state_=State::idle;path_.clear();target_=-1;
         message_="Turn "+std::to_string(turn_)+"; enemy contact attacks "+std::to_string(responses)+"; Enter: finish side";
     }

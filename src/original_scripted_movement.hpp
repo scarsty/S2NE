@@ -43,12 +43,14 @@ class Group {
     std::vector<Track> tracks_;std::vector<size_t> actors_;unsigned mode_{};
 public:
     bool begin(const Battle& battle,const OriginalEvents& events,const std::vector<std::pair<size_t,Battle::Point>>& roles,unsigned mode){
-        if(active()||mode>3)return false;std::vector<Track> tracks;
+        if(active()||mode>3)return false;std::vector<Track> tracks;std::vector<size_t> actors;
         for(auto [index,destination]:roles){if(index>=events.units.size())return false;Track track;
-            if(!track.begin(battle,events.units[index],destination,events.movement_class(events.units[index])))return false;
-            tracks.push_back(std::move(track));
+            // 4619AB: a failed461EF8 route removes only this actor from the parallel list.
+            if(events.units[index].status_flags&0x20)continue;
+            if(!track.begin(battle,events.units[index],destination,events.movement_class(events.units[index])))continue;
+            tracks.push_back(std::move(track));actors.push_back(index);
         }
-        tracks_=std::move(tracks);actors_.clear();for(auto role:roles)actors_.push_back(role.first);mode_=mode;return true;
+        tracks_=std::move(tracks);actors_=std::move(actors);mode_=mode;return true;
     }
     bool active()const{return std::any_of(tracks_.begin(),tracks_.end(),[](const auto& t){return t.active();});}
     void tick(const Battle& battle,unsigned ms){for(auto& track:tracks_)track.tick(battle,ms);}

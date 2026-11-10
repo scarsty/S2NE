@@ -124,7 +124,7 @@ public:
             if(group.roles.size()>=size_t(capacity))throw std::runtime_error("Original grouped movement capacity exceeded");
             group.roles.push_back({unsigned(id),events.event_word(i,7),events.event_word(i,9),i});
         }
-        if(group.end==events.event_count())throw std::runtime_error("Original grouped movement terminator missing");
+        // 422074 also ends the scan at event_count; a same-flag terminator is optional.
         return group;
     }
     static unsigned completed_story_route(const OriginalEvents& source,const OriginalEvents& completed,unsigned header_next=0){
@@ -134,13 +134,16 @@ public:
             if(source.type(i)!=9||source.condition(i)!=6||completed.type(i)!=0)continue;
             int flag=source.event_word(i,3),route=source.event_word(i,5);
             if(flag>=1&&flag<=80&&completed.flags[size_t(flag-1)]&&route>0){
-                if(target&&target!=unsigned(route))throw std::runtime_error("Ambiguous original story route");
+                // 41C397/41C3A0 scan records in order; each successful 420DC3
+                // assignment replaces 4F7CE0, including later flag-chain overrides.
                 target=unsigned(route);
             }
         }
         if(!target&&header_next){
             bool exhausted=true;
             for(size_t i=0;i<source.event_count();++i)if(source.type(i)&&completed.type(i)){
+                // Group operands/terminators with no trigger are not standalone pending events.
+                if(source.type(i)==16&&(source.condition(i)==3||source.condition(i)==7)&&source.event_word(i,3)==0)continue;
                 // 41B9A3 scans false predicates without consuming their records.
                 if(auto predicate=original_role_predicate(completed,i);predicate&&!*predicate)continue;
                 exhausted=false;break;

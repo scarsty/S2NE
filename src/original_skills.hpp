@@ -2,6 +2,7 @@
 #include "original_events.hpp"
 #include "original_menu.hpp"
 #include "original_combat.hpp"
+#include "original_promotion_transaction.hpp"
 #include <functional>
 #include <optional>
 
@@ -68,7 +69,7 @@ public:
     int action_cost(const OriginalEvents::Unit& unit)const{return ap_base_+((unit.status34&12)?ap_repeat_:0);}
     bool entry_available(const OriginalEvents::Unit& unit,Context context)const{
         unsigned begin=context.second?bin_.at(header_+2):0,end=context.second?begin+bin_.at(header_+3):bin_.at(header_+2);
-        if(context.debug||context.status3d_40||(context.second?context.suppress_second:context.suppress_first)||unit.action_points<action_cost(unit))return false;
+        if(context.debug||context.status3d_40||((unit.action_status_runtime?unit.action_status_runtime->at(0x3D):unit.status3d)&0x40)||(context.second?context.suppress_second:context.suppress_first)||unit.action_points<action_cost(unit))return false;
         for(unsigned g=begin;g<end;++g)if(unit.learned.at(g))return true;return false;
     }
     void open(const OriginalEvents::Unit& unit,Context context){
@@ -114,7 +115,7 @@ public:
         return record.id==88&&record.group==8&&record.bit==5&&std::equal(tail.begin(),tail.end(),record.raw.begin()+13);
     }
     bool executable_available(const OriginalEvents::Unit& unit,Context context,bool award_bridge_ready)const{
-        return award_bridge_ready&&context.second&&entry_available(unit,context)&&(unit.learned[8]&(1u<<5));
+        return award_bridge_ready&&context.second&&entry_available(unit,context)&&((unit.learned[8]&(1u<<5))||(unit.learned[9]&1));
     }
     Result execute(OriginalEvents::Unit&)const{return {false,Failure::unsupported_execution};}
     Result execute(OriginalEvents::Unit& unit,const OriginalEvents::Unit& target,const OriginalEvents& events,
@@ -123,7 +124,7 @@ public:
         const auto request=*request_;
         if(unit.id!=request.unit_id||unit.appearance!=request.appearance||!(unit.learned.at(request.group)&(1u<<request.bit)))return {false,Failure::stale_unit};
         // Range0 origin + targetmode1; accept the actual actor reference only.
-        if(&unit!=&target||unit.hp<=0||unit.max_hp<unit.hp||execution.difficulty>3||!execution.friendly_army||execution.conditions_mode||
+        if(&unit!=&target||unit.hp<=0||unit.max_hp<unit.hp||execution.difficulty<1||execution.difficulty>5||!execution.friendly_army||execution.conditions_mode||
             (execution.status3c&255)!=unit.status3c||!entry_available(unit,context_))return {false,Failure::world_unresolved};
         if(auto failure=resource_failure(unit,selected());failure!=Failure::none)return {false,failure};
         auto staged=unit;auto rng=random;const auto& record=selected();int amount=0;
@@ -149,6 +150,49 @@ public:
         if(execution.skill_payment_state!=2)staged.st-=record.word(13);
         unit=std::move(staged);random=rng;request_.reset();page_=Page::closed;
         return {true,Failure::none,healed,experience,proficiency};
+    }
+    struct HostileResult {bool applied{},hit{},immune{};unsigned removed{},slot{};int chance{},roll{};Failure failure{Failure::none};};
+    bool sword94_supported()const{return page_!=Page::closed&&selected().id==94&&selected().group==9&&selected().bit==0&&selected().effect()==1&&selected().raw[20]==44&&selected().raw[33]==194;}
+    bool hostile_supported()const{return page_!=Page::closed&&selected().id==32&&selected().group==2&&selected().bit==11&&selected().effect()==34;}
+    // 401146 builds concentric diamond rings; record17 is the radius, not AP.
+    bool hostile_in_range(const OriginalEvents::Unit& actor,const OriginalEvents::Unit& target)const{
+        if((!hostile_supported()&&!sword94_supported())||actor.hostile()==target.hostile()||target.hp<=0||!(target.status_flags&0x80)||(target.status_flags&0x20))return false;
+        int dx=2*(target.x-actor.x)+int(target.y&1)-int(actor.y&1),dy=target.y-actor.y;
+        return std::max(std::abs(dx),std::abs(dy))<=int(selected().raw[17])&&(&actor!=&target);
+    }
+    HostileResult execute_hostile(OriginalEvents::Unit& actor,OriginalEvents::Unit& target,
+        original_combat::Random& random,ExecutionContext context,const OriginalPromotionTransaction& equipment,const AwardAdapter& award){
+        HostileResult result;
+        if(page_!=Page::requested||!request_||!hostile_supported()){result.failure=Failure::unsupported_execution;return result;}
+        if(actor.id!=request_->unit_id||actor.appearance!=request_->appearance||!(actor.learned[2]&0x800)){result.failure=Failure::stale_unit;return result;}
+        if(context.difficulty<1||context.difficulty>5||!hostile_in_range(actor,target)||!entry_available(actor,context_)||!award){result.failure=Failure::world_unresolved;return result;}
+        if(auto failure=resource_failure(actor,selected());failure!=Failure::none){result.failure=failure;return result;}
+        auto stagedActor=actor,stagedTarget=target;auto rng=random;
+        std::vector<unsigned> slots;for(unsigned i=1;i<6;++i)if(target.equipment[i])slots.push_back(i);
+        int defense=0;
+        if(!slots.empty()){result.slot=slots[size_t(rng.bounded(int(slots.size()),context.seconds))];defense=equipment.item_defense(target.equipment[result.slot]);}
+        // 46D874 ->407E2D modifies resistance first;46D496 adds its minimum5.
+        int resistance=(actor.st-defense)/2;
+        resistance=resistance*(config_[10]+rng.bounded(config_[11]+3,context.seconds))/10;
+        if(context.friendly_army&&!context.conditions_mode)resistance=resistance*(100+config_[0xF3+context.difficulty])/100;
+        result.chance=std::clamp(5+std::clamp(resistance,1,99),1,99);
+        result.roll=rng.percent(context.seconds);result.hit=result.roll<=result.chance;
+        unsigned status3e=target.action_status_runtime?target.action_status_runtime->at(0x3E):target.status3e;
+        result.immune=(status3e&0x10)||(target.abilities&0x4000);
+        if(result.hit){
+            stagedTarget.status3e=uint8_t(status3e&~2u);
+            if(stagedTarget.action_status_runtime)(*stagedTarget.action_status_runtime)[0x3E]&=uint8_t(~2u);
+            if(!result.immune&&!slots.empty()){
+                OriginalPromotionTransaction::State state{stagedTarget,std::vector<uint8_t>(equipment.item_count()),OriginalRandom({1,0})};
+                result.removed=target.equipment[result.slot];equipment.remove_equipment(state,result.slot,true);stagedTarget=std::move(state.unit);
+            }
+        }
+        int proficiency=(selected().word(13)+6-int(context.difficulty))*5/2+10;
+        if(!award(stagedActor,rng,5,proficiency,2)){result.failure=Failure::world_unresolved;return result;}
+        unsigned mask=4;stagedActor.action_points-=ap_base_+((stagedActor.status34&mask)?ap_repeat_:0);stagedActor.status34|=mask;
+        stagedActor.carry_points=std::min(stagedActor.carry_points,stagedActor.action_points);
+        if(context.skill_payment_state!=2)stagedActor.mp-=((actor.abilities&0x20)?selected().word(13)/2:selected().word(13));
+        actor=std::move(stagedActor);target=std::move(stagedTarget);random=rng;result.applied=true;request_.reset();page_=Page::closed;return result;
     }
     void resume(){if(page_==Page::requested){request_.reset();page_=Page::list;}}
     void cancel(){request_.reset();page_=Page::closed;}
