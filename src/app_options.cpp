@@ -11,7 +11,8 @@ AppOptions::AppOptions(int argc, char** argv)
     openingRightSmoke = argc > 1 && std::string(argv[1]) == "--smoke-opening-right-skip";
     smoke = openingRightSmoke || (argc > 1 && std::string(argv[1]) == "--smoke");
     newGameSmoke = argc > 1 && std::string(argv[1]) == "--smoke-new-game";
-    battleSmoke = argc > 1 && (std::string(argv[1]) == "--smoke-battle" || std::string(argv[1]) == "--smoke-battle-alternate");
+    freshSaveSmoke = argc > 1 && std::string(argv[1]) == "--smoke-fresh-save";
+    battleSmoke = freshSaveSmoke || (argc > 1 && (std::string(argv[1]) == "--smoke-battle" || std::string(argv[1]) == "--smoke-battle-alternate"));
     alternateSmoke = battleSmoke && std::string(argv[1]) == "--smoke-battle-alternate";
     autoSmoke = argc > 1 && (std::string(argv[1]) == "--smoke-auto" || std::string(argv[1]) == "--smoke-auto-alternate");
     if (autoSmoke && std::string(argv[1]) == "--smoke-auto-alternate")

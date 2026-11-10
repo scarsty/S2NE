@@ -5,6 +5,7 @@
 #include "original_shop.hpp"
 #include <chrono>
 #include <ctime>
+#include <memory>
 namespace s2ne
 {
 class OriginalShopMenu
@@ -98,13 +99,13 @@ private:
         }
     }
     bool equip_selected_ = false;
-    std::vector<unsigned> offers(const OriginalSave::State& state) const
+    s2ne::Result<std::vector<unsigned>> try_offers(const OriginalSave::State& state) const
     {
         // 411288 indexes town4F7CE8, not the battle stage4F7CD8.
         unsigned town = unsigned(state.globals_4f7cd0[24]) | (unsigned(state.globals_4f7cd0[25]) << 8);
         if (!town || town > word(towns_, 0) || option_ < 1 || option_ > 3)
         {
-            return { };
+            return s2ne::Result<std::vector<unsigned>>::success({ });
         }
         size_t record = 2 + size_t(town - 1) * 14;
         unsigned count = towns_.at(record + 10 + option_);
@@ -124,25 +125,23 @@ private:
             unsigned id = word(towns_, p + 2 * i);
             if (!id || id > state.groups[0].inventory.size())
             {
-                throw std::runtime_error("Unsupported original town offer ID");
+                return s2ne::Result<std::vector<unsigned>>::failure(make_error("Unsupported original town offer ID"));
             }
             result.push_back(id);
         }
-        return result;
+        return s2ne::Result<std::vector<unsigned>>::success(result);
+    }
+    std::vector<unsigned> offers(const OriginalSave::State& state) const
+    {
+        auto result = try_offers(state);
+        return std::move(result).value();
     }
     unsigned unit_price(const OriginalSave::State& state, unsigned id) const { return buying_ ? shop_.buy_price(state, id) : shop_.sale_price(state, id); }
-    static std::vector<uint8_t> read(const std::filesystem::path& path)
-    {
-        std::ifstream f(path, std::ios::binary);
-        if (!f)
-        {
-            throw std::runtime_error("Missing original shop graphics");
-        }
-        return { std::istreambuf_iterator<char>(f), { } };
-    }
+    static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& path) { return read_resource(path); }
+    static std::vector<uint8_t> read(const std::filesystem::path& path) { return try_read(path).value(); }
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
+    s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
     {
         size_t g = dword(pal_, 816) - 57, p = g + dword(cel_, g + 2 + (id - 142) * 8);
         unsigned w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
@@ -154,7 +153,7 @@ private:
                 unsigned op = cel_.at(p++), n = op ? op & 127 : 1, c = 0;
                 if (!n || n > w - x)
                 {
-                    throw std::runtime_error("Invalid original shop sprite");
+                    return s2ne::Result<bool>::failure(make_error("Invalid original shop sprite"));
                 }
                 if (op && !(op & 128))
                 {
@@ -176,8 +175,18 @@ private:
                 }
             }
         }
+
+        return s2ne::Result<bool>::success(true);
     }
-    void merchant(std::vector<uint8_t>& image, unsigned portrait = 0) const
+    void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
+    {
+        auto result = try_sprite(image, id, left, top);
+        if (!result)
+        {
+            report_error(result.error());
+        }
+    }
+    s2ne::Result<bool> try_merchant(std::vector<uint8_t>& image, unsigned portrait = 0) const
     {
         // 41144E ->426728(167,0): CEL group3 portrait pair, index332.
         size_t g = dword(pal_, 824) - 58, p = g + dword(cel_, g + 2 + (portrait ? portrait * 2 - 2 : buying_ ? 86 :
@@ -187,7 +196,7 @@ private:
         p += 4;
         if (type > 1 || w > 640 || h > 480)
         {
-            throw std::runtime_error("Original merchant portrait framing");
+            return s2ne::Result<bool>::failure(make_error("Original merchant portrait framing"));
         }
         int left = 80 - int(w) / 2;
         for (unsigned y = 0; y < h; ++y)
@@ -197,7 +206,7 @@ private:
                 unsigned op = type ? 0x81 : cel_.at(p++), n = op ? op & 127 : 1, c = 0;
                 if (!n || n > w - x)
                 {
-                    throw std::runtime_error("Original merchant portrait run");
+                    return s2ne::Result<bool>::failure(make_error("Original merchant portrait run"));
                 }
                 if (op && !(op & 128))
                 {
@@ -219,8 +228,56 @@ private:
                 }
             }
         }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    void merchant(std::vector<uint8_t>& image, unsigned portrait = 0) const
+    {
+        auto result = try_merchant(image, portrait);
+        if (!result)
+        {
+            report_error(result.error());
+        }
     }
     void text(std::vector<uint8_t>& image, const std::vector<uint8_t>& value, int x, int y, unsigned color = 42) const { font_.draw_original_large(image, value, x, y, color); }
+    void draw_help(std::vector<uint8_t>& image, const std::vector<uint8_t>& value) const
+    {
+        size_t p = 0;
+        for (int row = 0; row < 8; ++row)
+        {
+            int compensation = 0;
+            for (int cell = 0, units = 1; units < 18; ++cell)
+            {
+                if (p == value.size() || !value[p] || value[p] == '\n')
+                {
+                    return;
+                }
+                unsigned lead = value[p++];
+                if (lead == '*')
+                {
+                    if (!cell)
+                    {
+                        --cell;
+                        continue;
+                    }
+                    break;
+                }
+                std::vector<uint8_t> glyph{ uint8_t(std::max(lead, 30u)) };
+                if (lead > 128)
+                {
+                    if (p == value.size()) { return; }
+                    glyph.push_back(value[p++]);
+                    units += 2;
+                }
+                else
+                {
+                    ++units;
+                }
+                font_.draw_small(image, glyph, 29 + cell * 16 - compensation, 302 + row * 16, 42, true);
+                if (lead <= 128) { compensation += 8; }
+            }
+        }
+    }
     void number(std::vector<uint8_t>& image, uint32_t value, int x, int y, unsigned color = 42) const
     {
         auto s = std::to_string(value);
@@ -228,13 +285,17 @@ private:
     }
 
 public:
-    explicit OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one) : root_(root), shop_(root), font_(root), background_(root, disc, 14), cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL"))
+    struct InitializationTag
+    {
+    };
+    OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc, InitializationTag) : root_(root), shop_(root), font_(root), background_(root, disc, 14), cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")) { }
+    s2ne::Result<bool> initialize(const std::filesystem::path& root, OriginalDisc disc)
     {
         auto bin = read(root / "SUPERSP.BIN");
         size_t town = dword(pal_, 848 + 3 * 8) - 14, size = dword(pal_, 852 + 3 * 8) - 14;
         if (town > bin.size() || size > bin.size() - town)
         {
-            throw std::runtime_error("Invalid original town BIN4");
+            return s2ne::Result<bool>::failure(make_error("Invalid original town BIN4"));
         }
         towns_.assign(bin.begin() + town, bin.begin() + town + size);
         auto bytes = OriginalDiscResources(root).dat_entry(disc, 3);
@@ -250,7 +311,28 @@ public:
             help_.emplace_back(bytes.begin() + start, bytes.begin() + p);
             ++p;
         }
+
+        return s2ne::Result<bool>::success(true);
     }
+    explicit OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one) : root_(root), shop_(root), font_(root), background_(root, disc, 14), cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL"))
+    {
+        auto result = initialize(root, disc);
+        if (!result)
+        {
+            fatal(result.error());
+        }
+    }
+    static s2ne::Result<std::unique_ptr<OriginalShopMenu>> create(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one)
+    {
+        auto result = std::make_unique<OriginalShopMenu>(root, disc, InitializationTag{ });
+        auto ready = result->initialize(root, disc);
+        if (!ready)
+        {
+            return s2ne::Result<std::unique_ptr<OriginalShopMenu>>::failure(ready.error());
+        }
+        return s2ne::Result<std::unique_ptr<OriginalShopMenu>>::success(std::move(result));
+    }
+
     std::vector<uint8_t> service_panel(unsigned portrait, unsigned title, uint32_t cash, const OriginalInterbattle& background, bool show_cash = true) const
     {
         auto image = background.indexed_background(pal_);
@@ -269,7 +351,7 @@ public:
         }
         return image;
     }
-    void role_portrait(std::vector<uint8_t>& image, unsigned id, int x, int y) const
+    s2ne::Result<bool> try_role_portrait(std::vector<uint8_t>& image, unsigned id, int x, int y) const
     {
         size_t g = dword(pal_, 824) - 58, p = g + dword(cel_, g + 2 + (id * 2 - 2) * 8);
         unsigned type = cel_.at(p++), w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
@@ -281,7 +363,7 @@ public:
                 unsigned op = type ? 0x81 : cel_.at(p++), n = op ? op & 127 : 1, c = 0;
                 if (!n || n > w - xx)
                 {
-                    throw std::runtime_error("Role portrait run");
+                    return s2ne::Result<bool>::failure(make_error("Role portrait run"));
                 }
                 if (op && !(op & 128))
                 {
@@ -302,6 +384,16 @@ public:
                     }
                 }
             }
+        }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    void role_portrait(std::vector<uint8_t>& image, unsigned id, int x, int y) const
+    {
+        auto result = try_role_portrait(image, id, x, y);
+        if (!result)
+        {
+            report_error(result.error());
         }
     }
     void role_bitmap(std::vector<uint8_t>& image, const std::vector<uint8_t>& pixels, int w, int h, int x, int y) const
@@ -332,6 +424,20 @@ public:
         return int(word(cel_, p + 2)) + 1;
     }
     void panel(std::vector<uint8_t>& image, unsigned id, int x, int y) const { sprite(image, id, x, y); }
+    void shared_panel(std::vector<uint8_t>& image, unsigned address, int x, int y) const { sprite(image, shared_sprite(address), x, y); }
+    void outline(std::vector<uint8_t>& image, int left, int top, int right, int bottom, unsigned ink) const
+    {
+        for (int y = top; y <= bottom; ++y)
+        {
+            for (int x = left; x <= right; ++x)
+            {
+                if ((x != left && x != right && y != top && y != bottom) || x < 0 || x >= 640 || y < 0 || y >= 480) { continue; }
+                size_t p = (size_t(y) * 640 + x) * 4;
+                for (unsigned k = 0; k < 3; ++k) { image.at(p + k) = uint8_t(unsigned(pal_.at(ink * 3 + k)) * 255 / 63); }
+                image.at(p + 3) = 255;
+            }
+        }
+    }
     Page page() const { return page_; }
     int selected() const { return option_; }
     unsigned quantity() const { return quantity_; }
@@ -754,21 +860,18 @@ public:
             auto title = font_.text_bytes(buying_ ? 198 : 194);
             text(image, title, 80 - int(title.size()) * 6, 176, 54);
             text(image, font_.text_bytes(205), 355, 205, 179);
-            number(image, money(state), 480, 205, 179);
+            if (page_ == Page::sale)
+            {
+                number(image, money(state), 480, 205, 179);
+            }
             text(image, font_.text_bytes(buying_ ? 202 : 203), 410 - int(font_.text_bytes(buying_ ? 202 : 203).size()) * 6, 279, 139);
             for (unsigned col = 0; col < 8 && size_t(first_) + col < items_.size(); ++col)
             {
                 unsigned id = items_[size_t(first_) + col];
                 sprite(image, id + 492, 204 + int(col) * 54, 313);
                 auto price = std::to_string(unit_price(state, id));
-                if (buying_)
-                {
-                    font_.draw_small(image, { price.begin(), price.end() }, 220 - int(price.size()) * 4 + int(col) * 54, 358, unit_price(state, id) > money(state) ? 68 : 190);
-                }
-                else
-                {
-                    number(image, unit_price(state, id), 204 + int(col) * 54, 358, 190);
-                }
+                // 411F5B uses 422402 in both buy and sale paths (8-pixel ASCII advance).
+                font_.draw_small(image, { price.begin(), price.end() }, 220 - int(price.size()) * 4 + int(col) * 54, 358, buying_ && unit_price(state, id) > money(state) ? 68 : 190, true);
             }
             if (buying_ && page_ == Page::sale)
             {
@@ -809,10 +912,14 @@ public:
             auto name = shop_.name(item());
             text(image, name, 93 - int(name.size()) * 6, 267, 54);
             const auto& help = help_.at(item());
-            font_.draw_original_wrapped(image, help, 29, 302, 42, 8, 9, 16);
-            auto owned = font_.text_bytes(buying_ ? 251 : 110);
-            text(image, owned, 264, 416);
-            number(image, state.groups[0].inventory.at(item() - 1), buying_ ? 274 + int(owned.size()) * 12 : 400, 416);
+            // 411842 calls 4224F2: fixed small font, nine 16-pixel cells, eight rows.
+            draw_help(image, help);
+            if (page_ == Page::sale)
+            {
+                auto owned = font_.text_bytes(buying_ ? 251 : 110);
+                text(image, owned, 264, 416);
+                number(image, state.groups[0].inventory.at(item() - 1), buying_ ? 274 + int(owned.size()) * 12 : 400, 416);
+            }
         }
         if (insufficient_)
         {
@@ -929,8 +1036,12 @@ public:
                 }
             }
             text(image, prompt, 149, 90);
-            text(image, font_.text_bytes(110), 530, 416);
-            number(image, state.groups[0].inventory.at(item() - 1), 530 + int(font_.text_bytes(110).size()) * 12 + 10, 416, 59);
+            if (!buying_)
+            {
+                // 413BA0 draws remaining stock only for selling; 411FA1 has no stock field.
+                text(image, font_.text_bytes(110), 530, 416);
+                number(image, state.groups[0].inventory.at(item() - 1) - quantity_, 540 + int(font_.text_bytes(110).size()) * 12, 416);
+            }
             number(image, quantity_, buying_ ? 272 : 212, 415, 59);
             auto amount = std::string("$") + std::to_string(quantity_ * unit_price(state, item()));
             text(image, { amount.begin(), amount.end() }, buying_ ? 328 : 268, 415, 59);

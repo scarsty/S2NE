@@ -58,13 +58,18 @@ private:
     bool battlefield_ = true;
     unsigned word(size_t p) const { return kinds_.at(p) | (unsigned(kinds_.at(p + 1)) << 8); }
     unsigned dword(size_t p) const { return word(p) | (word(p + 2) << 16); }
-    size_t record(unsigned kind) const
+    s2ne::Result<size_t> try_record(unsigned kind) const
     {
         if (!kind || kind > count_)
         {
-            throw std::invalid_argument("Invalid original promotion kind");
+            return s2ne::Result<size_t>::failure(make_error("Invalid original promotion kind"));
         }
-        return records_ + size_t(kind - 1) * 37;
+        return s2ne::Result<size_t>::success(records_ + size_t(kind - 1) * 37);
+    }
+    size_t record(unsigned kind) const
+    {
+        auto result = try_record(kind);
+        return std::move(result).value();
     }
 
 public:
@@ -400,16 +405,16 @@ public:
         return_code_ = 2;
         return true;
     }
-    std::vector<uint8_t> draw(const std::vector<uint8_t>& background) const
+    s2ne::Result<std::vector<uint8_t>> try_draw(const std::vector<uint8_t>& background) const
     {
         if (background.size() != 640 * 480 * 4)
         {
-            throw std::invalid_argument("Promotion requires640x480 RGBA");
+            return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Promotion requires640x480 RGBA"));
         }
         auto image = background;
         if (page_ == Page::closed)
         {
-            return image;
+            return s2ne::Result<std::vector<uint8_t>>::success(image);
         }
         auto w = [](const auto& b, size_t p)
         {
@@ -432,6 +437,7 @@ public:
             }
             image[p + 3] = 255;
         };
+        std::optional<Error> sprite_error;
         auto sprite = [&](unsigned id, int left, int top)
         {
             size_t group = dw(pal_, 816) - 57;
@@ -446,7 +452,8 @@ public:
                     unsigned n = op ? unsigned(op) & 127 : 1;
                     if (!n || n > width - x)
                     {
-                        throw std::runtime_error("Invalid promotion CEL run");
+                        sprite_error = make_error("Invalid promotion CEL run");
+                        return;
                     }
                     unsigned repeat = op > 0 ? cel_.at(p++) : 0;
                     while (n--)
@@ -523,7 +530,16 @@ public:
                 }
             }
         }
-        return image;
+        if (sprite_error)
+        {
+            return s2ne::Result<std::vector<uint8_t>>::failure(*sprite_error);
+        }
+        return s2ne::Result<std::vector<uint8_t>>::success(image);
+    }
+    std::vector<uint8_t> draw(const std::vector<uint8_t>& background) const
+    {
+        auto result = try_draw(background);
+        return std::move(result).value();
     }
     Result event(const OriginalSettings::Event& e)
     {

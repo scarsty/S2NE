@@ -3,6 +3,7 @@
 #include "original_settings.hpp"
 #include "original_unit_status.hpp"
 #include <functional>
+#include <memory>
 
 namespace s2ne
 {
@@ -47,15 +48,8 @@ private:
     int friendly_count_ = 0, npc_count_ = 0, enemy_count_ = 0;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static std::vector<uint8_t> read(const std::filesystem::path& p)
-    {
-        std::ifstream f(p, std::ios::binary);
-        if (!f)
-        {
-            throw std::runtime_error("Missing battle report resource");
-        }
-        return { std::istreambuf_iterator<char>(f), { } };
-    }
+    static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& p) { return read_resource(p); }
+    static std::vector<uint8_t> read(const std::filesystem::path& p) { return try_read(p).value(); }
     static std::vector<uint8_t> bytes(const std::string& s) { return { s.begin(), s.end() }; }
     void pixel(std::vector<uint8_t>& image, int x, int y, unsigned c) const
     {
@@ -70,7 +64,7 @@ private:
         }
         image.at(p + 3) = 255;
     }
-    void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent = true) const
+    s2ne::Result<bool> try_sprite_validated(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent = true) const
     {
         size_t g = dword(pal_, 816) - 57, p = g + dword(cel_, g + 2 + (id - 142) * 8);
         unsigned w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
@@ -82,7 +76,7 @@ private:
                 unsigned op = cel_.at(p++), n = op ? op & 127 : 1, c = 0;
                 if (!n || n > w - x)
                 {
-                    throw std::runtime_error("Invalid battle report sprite");
+                    return s2ne::Result<bool>::failure(make_error("Invalid battle report sprite"));
                 }
                 if (op && !(op & 128))
                 {
@@ -99,15 +93,43 @@ private:
                 }
             }
         }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent = true) const
+    {
+        auto output = image;
+        auto result = try_sprite_validated(output, id, left, top, transparent);
+        if (result)
+        {
+            image.swap(output);
+        }
+        return result;
+    }
+    void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent = true) const
+    {
+        auto result = try_sprite(image, id, left, top, transparent);
+        if (!result)
+        {
+            report_error(result.error());
+        }
     }
     void large(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color) const { font_.draw_original_large(image, text, x, y, color); }
     void small(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color) const { font_.draw_small(image, text, x, y, color, true); }
-    void roster_row(std::vector<uint8_t>& image, int row, const Entry& entry) const
+    s2ne::Result<bool> try_roster_row_validated(std::vector<uint8_t>& image, int row, const Entry& entry) const
     {
         int y = 5 + row * 118;
-        sprite(image, 206, 5, y);
+        auto panel = try_sprite(image, 206, 5, y);
+        if (!panel)
+        {
+            return panel;
+        }
         std::vector<uint8_t> layer(640 * 480 * 4);
-        status_.draw(font_, layer, entry.unit, 0, entry.enemy);
+        auto status = status_.try_draw(font_, layer, entry.unit, 0, entry.enemy);
+        if (!status)
+        {
+            return status;
+        }
         // 4584FF uses the first (large) portrait in the character's pair.
         if (entry.unit.portrait)
         {
@@ -116,7 +138,7 @@ private:
             p += 4;
             if (type > 1 || w > 640 || h > 480)
             {
-                throw std::runtime_error("Invalid roster portrait");
+                return s2ne::Result<bool>::failure(make_error("Invalid roster portrait"));
             }
             for (unsigned yy = 0; yy < h; ++yy)
             {
@@ -125,7 +147,7 @@ private:
                     unsigned op = type ? 0x81 : cel_.at(p++), n = op ? op & 127 : 1, c = 0;
                     if (!n || n > w - x)
                     {
-                        throw std::runtime_error("Invalid roster portrait run");
+                        return s2ne::Result<bool>::failure(make_error("Invalid roster portrait run"));
                     }
                     if (op && !(op & 128))
                     {
@@ -166,15 +188,36 @@ private:
         auto suffix = font_.text_bytes(113);
         title.insert(title.end(), suffix.begin(), suffix.end());
         large(image, title, 507 - int(title.size()) * 12, y + 7, 179);
+
+        return s2ne::Result<bool>::success(true);
     }
-    void build_mini(OriginalMap map)
+    s2ne::Result<bool> try_roster_row(std::vector<uint8_t>& image, int row, const Entry& entry) const
     {
-        mini_w_ = (int(map.width) * 64 - 64) / 3;
-        mini_h_ = (int(map.height) * 32 - 32) / 3;
-        if (mini_w_ <= 0 || mini_h_ <= 0 || mini_w_ > 640 || mini_h_ > 480)
+        auto output = image;
+        auto result = try_roster_row_validated(output, row, entry);
+        if (result)
         {
-            throw std::runtime_error("Original inspection map exceeds screen");
+            image.swap(output);
         }
+        return result;
+    }
+    void roster_row(std::vector<uint8_t>& image, int row, const Entry& entry) const
+    {
+        auto result = try_roster_row(image, row, entry);
+        if (!result)
+        {
+            report_error(result.error());
+        }
+    }
+    s2ne::Result<bool> try_build_mini(OriginalMap map)
+    {
+        int width = (int(map.width) * 64 - 64) / 3, height = (int(map.height) * 32 - 32) / 3;
+        if (width <= 0 || height <= 0 || width > 640 || height > 480)
+        {
+            return s2ne::Result<bool>::failure(make_error("Original inspection map exceeds screen"));
+        }
+        mini_w_ = width;
+        mini_h_ = height;
         mini_.resize(size_t(mini_w_) * mini_h_ * 4);
         int cached_x = -1, cached_y = -1;
         std::vector<uint8_t> tile;
@@ -199,25 +242,40 @@ private:
                 }
             }
         }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    void build_mini(OriginalMap map)
+    {
+        auto result = try_build_mini(map);
+        if (!result)
+        {
+            report_error(result.error());
+        }
     }
 
 public:
     // Entries must retain the original two army arrays' order; no hostility reclassification.
+    struct InitializationTag
+    {
+    };
     OriginalBattleReports(const std::filesystem::path& root, Page page, const OriginalEvents& events,
-        std::vector<Entry> entries, const std::vector<uint8_t>& background, const OriginalMap* map = nullptr, bool small_font = false, int dword_4f7cd0 = 0) : font_(root),
-                                                                                                                                                               status_(root),
-                                                                                                                                                               cel_(read(root / "SUPERSP.CEL")),
-                                                                                                                                                               pal_(read(root / "SUPERSP.PAL")),
-                                                                                                                                                               background_(background),
-                                                                                                                                                               stage_name_(events.stage_name),
-                                                                                                                                                               victory_(events.victory_objective),
-                                                                                                                                                               defeat_(events.defeat_objective),
-                                                                                                                                                               stage_(events.stage),
-                                                                                                                                                               page_(page)
+        std::vector<Entry> entries, const std::vector<uint8_t>& background, const OriginalMap* map, bool small_font, int dword_4f7cd0, InitializationTag) : font_(root),
+                                                                                                                                                            status_(root),
+                                                                                                                                                            cel_(read(root / "SUPERSP.CEL")),
+                                                                                                                                                            pal_(read(root / "SUPERSP.PAL")),
+                                                                                                                                                            background_(background),
+                                                                                                                                                            stage_name_(events.stage_name),
+                                                                                                                                                            victory_(events.victory_objective),
+                                                                                                                                                            defeat_(events.defeat_objective),
+                                                                                                                                                            stage_(events.stage),
+                                                                                                                                                            page_(page) { }
+    s2ne::Result<bool> initialize(const std::filesystem::path& root, Page page, const OriginalEvents& events,
+        std::vector<Entry> entries, const std::vector<uint8_t>& background, const OriginalMap* map, bool small_font, int dword_4f7cd0)
     {
         if (background.size() != 640 * 480 * 4)
         {
-            throw std::runtime_error("Battle report requires640x480 RGBA");
+            return s2ne::Result<bool>::failure(make_error("Battle report requires640x480 RGBA"));
         }
         pal_[0] = pal_[1] = pal_[2] = 0;
         font_.small_font = small_font;
@@ -254,11 +312,47 @@ public:
         {
             if (!map)
             {
-                throw std::runtime_error("Map inspection requires OriginalMap");
+                return s2ne::Result<bool>::failure(make_error("Map inspection requires OriginalMap"));
             }
-            build_mini(*map);
+            auto mini = try_build_mini(*map);
+            if (!mini)
+            {
+                return mini;
+            }
+        }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    OriginalBattleReports(const std::filesystem::path& root, Page page, const OriginalEvents& events,
+        std::vector<Entry> entries, const std::vector<uint8_t>& background, const OriginalMap* map = nullptr, bool small_font = false, int dword_4f7cd0 = 0) : font_(root),
+                                                                                                                                                               status_(root),
+                                                                                                                                                               cel_(read(root / "SUPERSP.CEL")),
+                                                                                                                                                               pal_(read(root / "SUPERSP.PAL")),
+                                                                                                                                                               background_(background),
+                                                                                                                                                               stage_name_(events.stage_name),
+                                                                                                                                                               victory_(events.victory_objective),
+                                                                                                                                                               defeat_(events.defeat_objective),
+                                                                                                                                                               stage_(events.stage),
+                                                                                                                                                               page_(page)
+    {
+        auto result = initialize(root, page, events, std::move(entries), background, map, small_font, dword_4f7cd0);
+        if (!result)
+        {
+            fatal(result.error());
         }
     }
+    static s2ne::Result<std::unique_ptr<OriginalBattleReports>> create(const std::filesystem::path& root, Page page, const OriginalEvents& events,
+        std::vector<Entry> entries, const std::vector<uint8_t>& background, const OriginalMap* map = nullptr, bool small_font = false, int dword_4f7cd0 = 0)
+    {
+        auto result = std::make_unique<OriginalBattleReports>(root, page, events, entries, background, map, small_font, dword_4f7cd0, InitializationTag{ });
+        auto ready = result->initialize(root, page, events, std::move(entries), background, map, small_font, dword_4f7cd0);
+        if (!ready)
+        {
+            return s2ne::Result<std::unique_ptr<OriginalBattleReports>>::failure(ready.error());
+        }
+        return s2ne::Result<std::unique_ptr<OriginalBattleReports>>::success(std::move(result));
+    }
+
     Page page() const { return page_; }
     int first() const { return first_; }
     int selected_row() const { return row_; }
@@ -489,12 +583,12 @@ public:
         }
         return { };
     }
-    std::vector<uint8_t> draw() const
+    s2ne::Result<std::vector<uint8_t>> try_draw() const
     {
         auto image = background_;
         if (page_ == Page::closed)
         {
-            return image;
+            return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
         }
         if (page_ == Page::map)
         {
@@ -509,12 +603,18 @@ public:
                     }
                 }
             }
-            return image;
+            return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
         }
         if (page_ == Page::conditions)
         {
             int left = 10, top = 52;
-            sprite(image, 207, left, top);
+            {
+                auto rendered = try_sprite(image, 207, left, top);
+                if (!rendered)
+                {
+                    return s2ne::Result<std::vector<uint8_t>>::failure(rendered.error());
+                }
+            }
             large(image, font_.text_bytes(47), left + 320 - int(font_.text_bytes(47).size()) * 6, top + 17, 57);
             large(image, font_.text_bytes(48), left + 90, top + 57, 54);
             auto title = bytes(std::to_string(stage_) + ".");
@@ -532,12 +632,24 @@ public:
             {
                 large(image, bytes(std::to_string(numbers[i])), left + 144 + 176 * i, top + 330, 185);
             }
-            return image;
+            return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
         }
-        sprite(image, 205, 0, 0, false);
+        {
+            auto rendered = try_sprite(image, 205, 0, 0, false);
+            if (!rendered)
+            {
+                return s2ne::Result<std::vector<uint8_t>>::failure(rendered.error());
+            }
+        }
         for (int i = 0; i < 4 && first_ + i < int(size()); ++i)
         {
-            roster_row(image, i, entries_[first_ + i]);
+            {
+                auto rendered = try_roster_row(image, i, entries_[first_ + i]);
+                if (!rendered)
+                {
+                    return s2ne::Result<std::vector<uint8_t>>::failure(rendered.error());
+                }
+            }
         }
         for (int y = 9 + row_ * 118; y <= 118 + row_ * 118; ++y)
         {
@@ -554,15 +666,37 @@ public:
         {
             thumb += (first_ + row_ + 1) * 391 / int(size());
         }
-        sprite(image, 147, 616, thumb, true);
+        {
+            auto rendered = try_sprite(image, 147, 616, thumb, true);
+            if (!rendered)
+            {
+                return s2ne::Result<std::vector<uint8_t>>::failure(rendered.error());
+            }
+        }
         if (page_ == Page::detail || page_ == Page::proficiencies)
         {
-            sprite(image, 206, 5, 363);
-            status_.draw(font_, image, selected().unit, 363, selected().enemy);
+            {
+                auto rendered = try_sprite(image, 206, 5, 363);
+                if (!rendered)
+                {
+                    return s2ne::Result<std::vector<uint8_t>>::failure(rendered.error());
+                }
+            }
+            auto status = status_.try_draw(font_, image, selected().unit, 363, selected().enemy);
+            if (!status)
+            {
+                return s2ne::Result<std::vector<uint8_t>>::failure(status.error());
+            }
         }
         if (page_ == Page::proficiencies)
         {
-            sprite(image, 232, 0, 343);
+            {
+                auto rendered = try_sprite(image, 232, 0, 343);
+                if (!rendered)
+                {
+                    return s2ne::Result<std::vector<uint8_t>>::failure(rendered.error());
+                }
+            }
             auto title = font_.text_bytes(159);
             large(image, title, 320 - int(title.size()) * 6, 351, 73);
             large(image, font_.text_bytes(42), 135, 351, 73);
@@ -589,7 +723,12 @@ public:
             small(image, font_.text_bytes(171), 490, 449, 233);
             value(u.learned_proficiency[10] / 10, 570, 449);
         }
-        return image;
+        return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
+    }
+    std::vector<uint8_t> draw() const
+    {
+        auto result = try_draw();
+        return std::move(result).value();
     }
 };
 }    //namespace s2ne

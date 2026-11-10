@@ -68,21 +68,14 @@ private:
     std::unique_ptr<OriginalSettings> settings_;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static std::vector<uint8_t> read(const std::filesystem::path& p)
-    {
-        std::ifstream f(p, std::ios::binary);
-        if (!f)
-        {
-            throw std::runtime_error("Missing battlefield menu resource");
-        }
-        return { std::istreambuf_iterator<char>(f), { } };
-    }
+    static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& p) { return read_resource(p); }
+    static std::vector<uint8_t> read(const std::filesystem::path& p) { return try_read(p).value(); }
     size_t sprite_offset(unsigned id) const
     {
         size_t g = dword(pal_, 816) - 57;
         return g + dword(cel_, g + 2 + (id - 142) * 8);
     }
-    void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent) const
+    s2ne::Result<bool> try_sprite_validated(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent) const
     {
         size_t p = sprite_offset(id);
         unsigned w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
@@ -94,7 +87,7 @@ private:
                 unsigned op = cel_.at(p++), n = op ? op & 127 : 1, value = 0;
                 if (!n || n > w - x)
                 {
-                    throw std::runtime_error("Invalid battlefield menu sprite run");
+                    return s2ne::Result<bool>::failure(make_error("Invalid battlefield menu sprite run"));
                 }
                 if (op && !(op & 128))
                 {
@@ -116,6 +109,26 @@ private:
                     image.at(q + 3) = 255;
                 }
             }
+        }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent) const
+    {
+        auto output = image;
+        auto result = try_sprite_validated(output, id, left, top, transparent);
+        if (result)
+        {
+            image.swap(output);
+        }
+        return result;
+    }
+    void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent) const
+    {
+        auto result = try_sprite(image, id, left, top, transparent);
+        if (!result)
+        {
+            report_error(result.error());
         }
     }
     void close(int code)
@@ -227,11 +240,11 @@ public:
     unsigned confirmation_id() const { return confirmation_id_; }
     void saves_present(bool present) { context_.saves_present = present; }
     // Host return values are original callee results, not booleans except inspect_characters.
-    void complete_operation(int code = 0)
+    s2ne::Result<bool> try_complete_operation(int code = 0)
     {
         if (page_ != Page::operation)
         {
-            throw std::logic_error("No battlefield menu operation pending");
+            return s2ne::Result<bool>::failure(make_error("No battlefield menu operation pending"));
         }
         Action action = request_.action;
         request_ = { };
@@ -247,6 +260,16 @@ public:
         else if (action == Action::inspect_characters && code == 1)
         {
             close(1);
+        }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    void complete_operation(int code = 0)
+    {
+        auto result = try_complete_operation(code);
+        if (!result)
+        {
+            report_error(result.error());
         }
     }
     int hit(int x, int y) const
@@ -455,15 +478,15 @@ public:
         }
         return { };
     }
-    std::vector<uint8_t> draw(const std::vector<uint8_t>& battlefield) const
+    s2ne::Result<std::vector<uint8_t>> try_draw(const std::vector<uint8_t>& battlefield) const
     {
         if (battlefield.size() != 640 * 480 * 4)
         {
-            throw std::runtime_error("Battlefield menu requires 640x480 RGBA");
+            return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Battlefield menu requires 640x480 RGBA"));
         }
         if (page_ == Page::closed)
         {
-            return battlefield;
+            return s2ne::Result<std::vector<uint8_t>>::success(battlefield);
         }
         auto image = battlefield;
         draw_page(image, Page::root, page_ == Page::root ? selected_ : root_selected_);
@@ -475,13 +498,18 @@ public:
         }
         if (page_ == Page::settings)
         {
-            return settings_->draw(image);
+            return s2ne::Result<std::vector<uint8_t>>::success(settings_->draw(image));
         }
         if (page_ == Page::confirmation)
         {
             confirmation_->draw(image, font_);
         }
-        return image;
+        return s2ne::Result<std::vector<uint8_t>>::success(image);
+    }
+    std::vector<uint8_t> draw(const std::vector<uint8_t>& battlefield) const
+    {
+        auto result = try_draw(battlefield);
+        return std::move(result).value();
     }
 };
 }    //namespace s2ne

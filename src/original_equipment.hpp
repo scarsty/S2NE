@@ -1,5 +1,6 @@
 #pragma once
 #include "original_shop.hpp"
+#include "resource_result.hpp"
 namespace s2ne
 {
 class OriginalEquipment
@@ -13,13 +14,18 @@ class OriginalEquipment
         b.at(p + 1) = uint8_t(unsigned(v) >> 8);
     }
     static void add(auto& b, size_t p, int v) { put(b, p, sw(b, p) + v); }
-    size_t item(unsigned id) const
+    s2ne::Result<size_t> try_item(unsigned id) const
     {
         if (!id || id > word(items_, 0))
         {
-            throw std::runtime_error("Equipment item ID");
+            return s2ne::Result<size_t>::failure(make_error("Equipment item ID"));
         }
-        return 2 + size_t(id - 1) * 38;
+        return s2ne::Result<size_t>::success(2 + size_t(id - 1) * 38);
+    }
+    size_t item(unsigned id) const
+    {
+        auto result = try_item(id);
+        return std::move(result).value();
     }
     bool special(const auto& r, unsigned code) const
     {
@@ -144,34 +150,39 @@ public:
     {
         auto read = [](const auto& p)
         {
-            std::ifstream f(p, std::ios::binary);
-            if (!f)
-            {
-                throw std::runtime_error("Missing original equipment data");
-            }
-            return std::vector<uint8_t>(std::istreambuf_iterator<char>(f), { });
+            return read_resource(p).value();
         };
         items_ = read(root / "ITEMSP.BIN");
         kinds_ = read(root / "KINDSP.BIN");
     }
-    bool weapon_skill(const auto& r, unsigned id) const
+    s2ne::Result<bool> try_weapon_skill(const auto& r, unsigned id) const
     {
         size_t table = word(kinds_, 30) + (size_t(word(kinds_, 32)) << 16), kind = word(r, 4), count = word(kinds_, 22);
         if (!kind || kind > count)
         {
-            throw std::runtime_error("440C06 kind index");
+            return s2ne::Result<bool>::failure(make_error("440C06 kind index"));
         }
         size_t entry = table + (kind - 1) * 4, first = word(kinds_, entry), n = word(kinds_, entry + 2), records = table + count * 4;
         for (size_t i = 0; i < n; ++i)
         {
             if (int8_t(kinds_.at(records + (first + i) * 23)) == int(type(id) + 1))
             {
-                return true;
+                return s2ne::Result<bool>::success(true);
             }
         }
-        return false;
+        return s2ne::Result<bool>::success(false);
     }
-    void auto_equip(OriginalSave::State& state) const
+    bool weapon_skill(const auto& r, unsigned id) const
+    {
+        auto result = try_weapon_skill(r, id);
+        if (!result)
+        {
+            report_error(result.error());
+            return false;
+        }
+        return result.value();
+    }
+    s2ne::Result<bool> try_auto_equip(OriginalSave::State& state) const
     {
         auto staged = state;
         for (size_t index = 0; index < staged.groups[0].units.size(); ++index)
@@ -206,7 +217,7 @@ public:
                 unequip_slot(staged, index, s);
                 if (best && !equip(staged, index, best))
                 {
-                    throw std::runtime_error("451B21 original auto equipment rejected");
+                    return s2ne::Result<bool>::failure(make_error("451B21 original auto equipment rejected"));
                 }
             }
             auto& r = staged.groups[0].units[index];
@@ -218,20 +229,35 @@ public:
         }
         flags(staged);
         state = std::move(staged);
+
+        return s2ne::Result<bool>::success(true);
+    }
+    void auto_equip(OriginalSave::State& state) const
+    {
+        auto result = try_auto_equip(state);
+        if (!result)
+        {
+            report_error(result.error());
+        }
     }
     unsigned type(unsigned id) const { return items_.at(item(id) + 14); }
-    unsigned slot(unsigned id) const
+    s2ne::Result<unsigned> try_slot(unsigned id) const
     {
         unsigned t = type(id);
         if (t >= 1 && t <= 6)
         {
-            return 0;
+            return s2ne::Result<unsigned>::success(0);
         }
         if (t >= 7 && t <= 11)
         {
-            return t - 6;
+            return s2ne::Result<unsigned>::success(t - 6);
         }
-        throw std::runtime_error("4125FC non equipment");
+        return s2ne::Result<unsigned>::failure(make_error("4125FC non equipment"));
+    }
+    unsigned slot(unsigned id) const
+    {
+        auto result = try_slot(id);
+        return std::move(result).value();
     }
     int field(unsigned id, unsigned offset, bool wide = false) const { return !id ? 0 : wide ? sw(items_, item(id) + offset) :
                                                                                                int(int8_t(items_.at(item(id) + offset))); }
@@ -285,8 +311,36 @@ public:
         }
         return out;
     }
+    Result<bool> try_unequip(OriginalSave::State& state, size_t index, unsigned destination) const
+    {
+        if (index >= state.groups[0].units.size() || destination >= 6 || state.groups[0].inventory.size() != word(items_, 0))
+        {
+            return Result<bool>::failure(make_error("Invalid original44D11B equipment removal"));
+        }
+        auto& role = state.groups[0].units[index];
+        unsigned old = word(role, 0xCB + destination * 2);
+        if ((role[0x33] & 0x70) || sw(role, 8) == 1 || old > word(items_, 0))
+        {
+            return Result<bool>::failure(make_error("Original44D439 equipment recipient unavailable"));
+        }
+        auto staged = state;
+        unequip_slot(staged, index, destination);
+        flags(staged);
+        state = std::move(staged);
+        return Result<bool>::success(true);
+    }
     bool equip(OriginalSave::State& state, size_t index, unsigned id) const
     {
+        if (!id || id > word(items_, 0) || index >= state.groups[0].units.size() || state.groups[0].inventory.size() != word(items_, 0))
+        {
+            return false;
+        }
+        auto destination = try_slot(id);
+        if (!destination)
+        {
+            report_error(destination.error());
+            return false;
+        }
         auto allowed = recipients(state, id);
         if (std::find(allowed.begin(), allowed.end(), index) == allowed.end() || !state.groups[0].inventory.at(id - 1))
         {
@@ -295,7 +349,7 @@ public:
         auto copy = state;
         auto& army = copy.groups[0];
         auto& r = army.units[index];
-        unsigned s = slot(id);
+        unsigned s = destination.value();
         unequip_slot(copy, index, s);
         put(r, 0xCB + 2 * s, id);
         --army.inventory[id - 1];

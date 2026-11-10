@@ -12,6 +12,7 @@ struct AppOptions
     bool openingRightSmoke;
     bool smoke;
     bool newGameSmoke;
+    bool freshSaveSmoke;
     bool battleSmoke;
     bool alternateSmoke;
     bool autoSmoke;

@@ -4,6 +4,166 @@
 
 自动化启动测试使用隔离写档目录，避免覆盖用户存档。算法测试、实际游戏流程测试和原版画面对照应分别记录，不互相替代。
 
+## 2026-11-11 续作：原反击最小值、生产状态与稳定Release（类别仍未收口）
+
+- 原4093DE→409442在407C35后仅伤害小于1才抽minimum百分比，阈值为1／6／16／46，对应5／4／3／2／1。修正`try_counter_damage`原先简单max(1)的缺口，新增9个边界与正伤害不替换断言；`out\combat-counter-minimum-build.log`及`out\combat-counter-minimum.log`均exit0。这是原算法契约fixture，尚不是自然反击生产验收，无关卡流程宣称。
+- 原408E6F的status39 bit2／3C DWORD 2A000必中，以及408E8C的status3D bit8免伤，原先HitChanceInput已有算法但普通strike未传运行时字段。现在以action_status_runtime优先、Unit字段后备传入。原伤害抽取提取为`draw_forward_damage`，保留现有AP和反馈顺序，供后续交换使用；不能将提取当连击接线。
+- `out\combat-forward-extract.log`重编battle_test exit0，新增原type5范围受控fixture免伤实际攻击／呈现结束HP不变，以及动画windup直接重入拒绝且不再次扣AP。此夹具沿既有测试扫描原动作／装备并受控摆位和属性，明确不称第1《第一神劍》自然得到对应装备或免伤状态。
+- 为避免根长期停留Debug，本批稳定后Debug→Release两构建均exit0，日志`combat-stable-debug.log`／`combat-stable-release.log`；根已同步本批最新Release。根Release `--smoke-auto`实SDL正常140开场→第1《第一神劍》自动菜单→友敌动作→玩家恢复通过，`combat-stable-release-auto-sdl.log`记录1392呈现帧（帧数受呈现计时影响，非固定499要求）。未强化、未注入库存或flags。尚未生成新包／独立解包，不宣称最终交付。
+- 43BF9F前向连击是先408CB7、4096F3、4095B5，再可选第二次408CB7相加，之后动画与分段HP；43CB4A反击仅原攻击者用409060／40976F，附带目标用408CB7／4096F3。409060使用前向保存的调整后tactics3C，不能重新以反击当前HP调整，也不能调用普通strike冒充。多目标context预生成／共享RNG顺序、装备死亡补充43C820等与剧情挂起仍须完整生产实现；未留下临时反击草稿，战斗AI不收口，不越到死亡／技能。
+
+## 2026-11-11：战斗／AI实核中的确证缺口（未收口）
+
+`combat-current-*`新重编combat、AI、AI-special、stage15-value、equipment、retreat、battle、special-action、stage15-actions、random、promotion-transaction通过。`combat-production-auto-sdl.log`整app正常新游戏140开场→第1《第一神劍》自动菜单→友方／敌方行动→玩家恢复499帧exit0，无强化注入。原AI6不可达回退实际已有40B0BA→40AED5实现，不沿用旧拒绝结论；特殊6/7现测试为原第15《沙漠名珠》受控kind／无对手fixture，不冒称原关自然触发。
+
+真实生产缺口仍有：`Battle::strike`当前只单向物理伤害与状态尾；409A2D反击池和4096F3／40976F连击、409060反击伤害虽有算法，尚未接43BF9F→43CB4A完整结算，不能称普通反击完成。正在连续读40840D→409A2D／409BBA→43BF9F→43CB4A，原先全效果/反击草稿未完成契约即已移除，保留验证过的安全生产，不把部分反击假接线提交。
+
+已实修同链409BBA +28熟练度契约：动作type>=21用runtime+F9，否则原武器ITEMSP type选择+D7..E1六WORD，无武器0；原代码错误固定weapon_proficiency[3]。新增OriginalEvents::action_proficiency并接生产命中／伤害与AI预估；`combat-action-proficiency.log`第1《第一神劍》、15《沙漠名珠》、71《惡兆》158原动作字段及另列六武器／special／unarmed区别字段fixture通过；battle/special-action/stage15-value改后再重编全0。fixture只验字段契约，不注入角色冒称自然习得。
+
+40A4B3原装备evasion（ITEMSP+23）原本未传生产命中modifier，现补攻击与AI preview。第15《沙漠名珠》原turn4 actor18→target202两动作159/160预估由45/35修为42/32，保留原命中差异排序；旧精确期待首次失败后按原字段修正并重跑通过，battle／special-action也通过，不隐瞒基线变化。此不是反击完成。
+
+`original_random_test`旧异常期待改为try_bounded缺时钟Result失败且stream不变，再显式时钟恢复；没有新增throw或异常处理。战斗／AI尚未收口，死亡及技能尚未进入；根仍上一菜单SDL的Debug，包含最新proficiency源码的Release／根同步最终交付待统一完成。
+
+## 2026-11-11：菜单／关间本轮有限清单验收
+
+- 最新`menus-production-debug.log`完整Debug构建成功；`menus-production-sdl.log`整app `--smoke-shop` exit0，真实SDL事件队列涵盖410FFE／411034旅店5／7原矩形点击、16次present期间Escape输入锁、页取消留旅店，41104F标题取消与肯定；另含真实库存买卖／对象装备／保存往返、自动装备、设置、传闻。来源是第65《龍穴》原SAVE派生关间入口，不称从战役胜利自然走到该旅店；教会复活／大额捐献以及12角色名单滚动日志明确受控fixture。第115《小丑奪權》及第1《第一神劍》三原SAVE额外由独立页专项覆盖。
+- `menus-army-equipment.log`最终重编exit0：五原SAVE，双资源域OriginalInn生产鼠标入口／draw／逐present／取消，327次真实SDL present、两档合法装备与卸下精确SAVE delta；修复原44D675的AP+12C、末行+C5、status33 bit10隐名、原456EEA装备名色233。地图与共享panel沿原disc传递，不再默认disc1。ITEMHLSP通过Result预解析，缺失／截断拒绝构造，不静默打开残页；空slot卸下不误报changed。
+- `menus-current-original_settings_test.log`、`original_battle_reports_test.log`、`original_unit_status_test.log`及inn/shop/church/interbattle/battle-menu、item-use/item-shop针对日志均通过。旧status_test期待异常已更新为try_draw Result失败与不发布buffer，匹配现生产契约，非放宽拒绝。
+- 450F77 effect61→45154D逐dword sar16已核实为下一WORD（如+C1→+C3、+132→+134），当前同offset delta/clamp正确，不将其误认相邻错误；451072 effect67先WORD加法再999 cap已保真。118保留checkpoint及BIN4商店仍无283／296自然样本，未注入物品验证自然流程；此为明确自然覆盖不足，不是删除handler。已有原库存组合与第124《力量與魔法》正常买入四物品事务证据保留。
+- 菜单本轮有限清单收口，战斗AI／死亡剧情尚未收口。为上述SDL已发布Debug到根，根暂不是最终Release；尚未重打包，最终统一发布另行记录，不能沿用下面旧稳定Release hash称当前根。
+
+## 菜单续作：旅店装备／物品页生产接线（历史阶段，后由上项收口）
+
+- 入口410FFE／411034→44D439，筛选原WORD+8!=1且status33&70==0；新增OriginalArmyEquipmentMenu使用原217／218／229，原44DC93／44F4DB鼠标区域、十角色滚动、六装备分类／五库存行、440A89灰显。角色页44D675复用现有OriginalRolePanel，新增可选origin=0，默认行为不改。装备44D018及卸下44D11B都先独立State，再bridge重建成功后发布；app沿既有take_equipment_changed→sync_roster更新角色。
+- `menus-army-equipment-build.log`／`menus-army-equipment.log`：五原SAVE第65《龍穴》、第115《小丑奪權》、第1《第一神劍》三档；真实SDL呈现原页、旅店正常矩形入口／取消保持完整字节、两档合法库存鼠标装备／卸下与既有算法精确delta、capture往返通过。第115名从原stage_name字节A470A4A1B9DCC576经CP950核实。此为原SAVE派生菜单生产调用+真实SDL，不称从标题自然走到旅店的整app鼠标E2E或原录像逐像素认证。
+- 原44FD8B先列当前角色六装备中use!=0，再列库存type12且use!=0；非战场45024C拒绝use2，use1弹43183B字符串80于(200,400)，取消不消耗。原ITEMHLSP.BIN按428736的零结束串表显示450055说明。已接原确认／返回／普通回复、解状态、永久属性、现有451DDA学习物品复用；没有扩展技能施放。未完成handler通过Result拒绝并保持State／RNG，不静默消费。
+- `menus-item-use-build.log`／`menus-item-use.log`：五原SAVE原有库存／装备共306角色物品组合，无注入；168允许提交后的完整SAVE重捕获相等、138不可用对象／use2按原条件拒绝且字节不变。新增effect35／61／67等未在这五档获得自然覆盖，不能以306组合替代全部物品handler验收。已新增`menus-item-shop.log`第124《力量與魔法》保留强化checkpoint原商店category3正常买入250／254／257／262→使用→库存减一／HP／MP／ST／解状态精确字段与SAVE往返通过，无注入物品／旗标／金钱；这四项不是全部handler。另只读遍历118个保留stage-start原流程checkpoint没有283／296库存，穷尽原BIN4所有town三类offer也无283／296，不伪造样本。最终handler接线后整页专项重跑通过；现有旅店／商店／教会／关间／战场菜单五回归新重编全部通过（menus-current-original_*-test日志），生产app_runtime用MSBuild /t:ClCompile验证通过，未执行PublishGameRuntime。
+- `visual-class4-equipment.log`再次通过第124《力量與魔法》正常购买141的卸下退库／class4消失与非法slot拒绝回滚。原SAVE及旧证据未覆盖；未重复构建打包，根EXE仍是上一稳定Release，本轮源码不是已发布包。
+
+剩余：effect61／67无现有库存或原商店样本，仍缺自然调用证据（已实现按原字段，不造物品）；角色详情与页输入边界还需完整核对及整app SDL。原475970为轮廓矩形，已补六类别选择框；44DC93／44F4DB的472EF1(-4)新增16呈现阶梯、淡入输入锁和use后重建淡入，SDL专项已逐present验证（仅draw不推进）。实核菜单完整有限清单后才进入战斗AI及死亡剧情，尚未宣告这些类别收口。
+
+## 2026-11-10 23:48续作：class4真实非技能来源与class5边界
+
+不再以“现有开场角色无状态”停止调查：ITEMSP记录special17且type0的实际物品为**141**；原BIN4正常商店category2可售town55/56/59/62/124..129/133。只读所有1..158 source含迟到角色未发现初始携带141，不据此说它不可获得。`visual-source-coverage.log`保存实际可售列表。
+
+新增`original_class4_equipment_test.cpp`沿保留的真实强化战役checkpoint `run-79984-stage124-start.sav`（第124关《力量與魔法》）正常原商店option2→原offer列表141→买入／装备对象／确认；未改town、库存、学习、flags或金钱，原已有钱支付。actor0 role1实际装备141，`events.movement_class`自然得4，原Battle选人→移动命令→合法目标→生产route pose.movement_visual_class4→OriginalMap compositor→真实SDL呈现通过。动画期间不能取消，等待原120ms动作完成后取消准确恢复原坐标，装备保留且capture／restore仍class4。`visual-class4-equipment-{build,}.log`exit0。明确这是**原强化checkpoint上的正常商店／非技能移动链**，不是未强化全战役自然通关，也不是注入class4状态的renderer fixture；SDL仅展示该实际生产frame，非整个app鼠标端到端。
+
+class4另一个来源status3C bit1仅原4668F0状态技能dispatcher写入，属下一轮技能。class5 status33 bit4直接置位／xor写点仅45DC37（161904/161999行），caller466544/effect39，原45CAA0仍被普通route／camera共享调用，但状态来源是技能；无独立普通“起降菜单”可臆造。原45CA1D先绘共享503464 phase再mode1逐call切换，否则19cs；45CAA0按direction&3原资源不切phase，当前生产一致。上批class4/5图元fixture仍只证明渲染分支，不替代本次合法物品来源证据。未继续菜单／AI／死亡新功能，保持逐类。
+
+## 2026-11-10 23:23续作：菜单当前实现边界
+
+新增旅店8原41104F→43183B：原坐标(300,200)、默认肯定、原确认面板／字符串51；键盘Escape／左右切换／Enter，右键取消／鼠标确认，肯定后app_runtime清理旅店与当前局面返回标题。第65关《龍穴》`menus-inn.log`正常原rect鼠标进入／绘制、Escape取消留旅店、再进入Enter肯定、SAVE逐字节不变通过。此为菜单类中的一个生产分支，尚无新增真实SDL输入专项，**不是菜单类完成**。5／7仍blocker，已核原44D439筛control WORD8!=1、status33&70==0名单；mode0→44DC93及44EA2D／44EC85装备交易，mode1→44F4DB物品页；没有用只读roster冒充它们。战斗AI／死亡剧情未开始新功能。
+
+保留当前可构建状态：`menus-current-{Debug,Release,verify,package}.log`及独立`out\\menus-current-independent`verify／opening SDL均通过，根最新Release与包当前SHA256 `1B2BAEA3F127C4FBB63674DABE6ABB50DD0CC1BEAF2CB5F109440C081BECBFC1`。这只是稳定检查点，不是四类最终交付。
+
+## 2026-11-10 23:23后画面定向实核（尚不宣称完整类别收口）
+
+有限清单见PROGRESS顶部。新重编`visual-map-frame.log`：第1关《第一神劍》／71《惡兆》122原PRG帧signed displacement正负各61、clipped10052、drawn431262；indexed B1反应、silhouette独立及RGBA等价通过。`visual-special.log`第65关《龍穴》原actor14原AD上移64精确2613像素、脚印570像素、class4/5共享phase／19cs／camera每present门控通过；新增**已进入绘制事务后**无效animation_action失败，RGBA／indexed不变、先前pending presentation保留，不仅测试早期buffer尺寸拒绝；这仍是受控class3/4/5 renderer fixture，不称自然状态来源。
+
+`visual-worldmap.log`正常旅店option1第65关《龍穴》入口／DAT11世界图／DAT7 markers、边缘持续四像素滚动／原百分秒delay／64+64淡入淡出／返回不改SAVE，真实SDL通过。`visual-movement.log`仅第42关《小丑獻媚》原图裁剪脚印图元及全256索引，不冒充自然路线。原teleport图元测试旧输出“dispatcher not wired”已更正，因为生产侧末链早已接，图元测试不应发布全局错误结论。
+
+普通伤害真实SDL首次失败`visual-feedback-sdl.log`是smokePhase>1000的入口检查误用于已在战场；修正仅未入战场检查。第二次`visual-feedback-retry-sdl.log`turn2卡住，发现smoke多回合复测未复位autoMenuOpened，修正每轮打开状态，不修改战斗规则。`visual-feedback-final-sdl.log`第1关《第一神劍》正常开场／原自动战斗菜单，多回合真实friendly／hostile、原indexed reaction／silhouette／浮动伤害／逐步扣血，exit0／1547呈现，无强化／flags／物品注入。两个失败日志保留。
+
+`visual-teleport-sdl.log`第60关《返鄉的遊子》52呈现、生产侧末／保存锁／原action恢复；`visual-evacuation-sdl.log`第42关《小丑獻媚》29敌军170呈现／Escape保存锁／恢复一次。二者均明确原SAVE派生受控pad／隔离records14/17，非自然触发。源码停写Debug→Release `visual-final-{Debug,Release}.log`exit0、verify、package与独立解包`out\\visual-final-independent`verify／正常feedback SDL通过。根SHA256 `E8581980051E72AAFE7F218E760A5F962D3024C38819539F7547629141E77F48`。尚需补完清单正常选中合成／遮挡的全面调用审计与未覆盖分支，不以本批测试直接进入下一类。
+
+## 2026-11-10 22:57续作：正常新游戏与跨关两路径实核／纠正旧结论
+
+上节把bridge低层拒绝误认成生产初始化缺失，结论错误，现明确替代：`app_runtime.cpp`新游戏首关autosave前已调用`OriginalInitialization::fresh`，关间option4部署后已调用`transition_stage`；不是任取UJ档作baseline。本次这两调用改`try_fresh`／`try_transition_stage`并显式检查Result，新游戏restore也改try_restore；失败不发布rawSave，原failclosed保留。其余规则未臆造或扩展。
+
+原证据：44367C army结构与inventory清零、44382B十一组三元状态；443C3E／4443B3角色raw362字节清零后按原101字节source与KIND／ITEM资源赋值；427645／427870原turn到场；opening配置给两线首关、初始货币，实际140对话完成flags及settings映射至4F7CF0。40FEE9入口先427609、44A4A9(group0,mode1)、44A79C(group1)，turn4F7CDC=1、next4F7CE4→stage4F7CD8，再4274B5／436C06；410478对应mode0故事入口。当前transition保留原我军raw／inventory／metadata／货币／settings，按44A4A9去原临时角色、清11状态首字节／重建敌军，再装目标stage／event states／dynamic chains／到场记录，未用跨stage capture强改globals绕锁。
+
+- `save-init-build.log`／`save-init.log`：重编`original_initialization_test`exit0；旧两处期待runtime_error的测试改当前try API失败断言。真实140开场两选择；第1关《第一神劍》17名turn1、第71关《惡兆》22名turn1，难度1..5、原设置／到场／摆位／raw codec及bridge往返；1→2《攔路虎》库存／metadata／progress与全部字节往返、71→72《青色草原》原部署及stage恢复；非法73跳关拒绝。受控flags边界测试与真实140开场测试分别存在，不混称均为自然输入。
+- 新`--smoke-fresh-save`只复用正常标题／设置／对话输入，进入第1关《第一神劍》后核实生产autosave已完成，capture→隔离slot52 write/load→bridge restore，未读源SAVE或注入flags／物品／强化属性。`save-init-fresh-final-sdl.log`exit0；独立包本无SAVE，同专项`save-init-independent-fresh-sdl.log`exit0／439呈现，这是可复现非拷档初始化证据。仍非手动点击战场保存菜单专项；菜单另由上批原资源键鼠测试覆盖。
+- 正常跨关真实SDL命令`S2NE.exe --smoke-campaign`：先Debug `save-init-transition-sdl.log`600s到第1关turn8超时，未推进／伪造胜利；改优化Release `save-init-transition-release-sdl.log`正常turn10获胜。最终源码`save-init-transition-final-sdl.log`exit0，正常第1关《第一神劍》turn10胜利→原奖励→关间option4→第2关《攔路虎》，目标slot52原autosave load→bridge restore→capture全部编码字节相等，3400呈现；无HP/MP强化、无物品flags注入、无强制胜利。只跑这一跨关，不重跑全战役。
+- 最终停止C++写入，`save-init-Debug.log`→`save-init-Release.log`exit0；`save-init-verify.log`exit0；`save-init-package.log`package-game；独立解包`out\\save-init-independent`，verify与上述真实fresh SDL exit0。根／Release／独立包EXE SHA256 `53A44E0CE0B04A2FB5BDAD2EB214F17C8FCC92EE130BC5A7AD77BDB872E12ADC`一致。包仍单DAT／PRG、无多余TXT，不含源SAVE。原档和全部失败证据保留。
+
+边界：这消除“正常新游戏无baseline、正常跨关全状态缺失”的两个误报，不开放任意stage跳转／未知模式，也不宣称完整剧情／未来技能所有持久语义已实现。上节断电／写满等未覆盖仍有效；不自动移画面类别。
+
+## 2026-11-10 存档／回归有限清单与统一验收（22:44调整后，初始化缺口判断由上节纠正）
+
+本轮只核实／修补存档回归，不再扩画面、AI、死亡剧情或技能。以下“通过”仅指已实现的有限路径；新游戏缺完整raw baseline是实际存档入口缺口，不能以fixture替代并宣称全类完成。
+
+|有限项|当前实现与证据|未覆盖／边界|
+|---|---|---|
+|原格式／全持久字节|4362B4写、4367CB读；`original_save_test`五份磁盘SAVE完整encode/decode逐字节相等；两原档每个截断、签名／尾随／人数／事件数量／库存错误均拒绝；保留未知raw区。`original_save_bridge_test`全22／42角色、角色WORD／关系BYTE／货币／行动值／事件状态往返通过|不意味着未知raw字段均已赋予运行语义；未完成技能／剧情不列为本类前提|
+|读写失败／损坏拒绝|上述codec拒绝、missing-file；store新增slots0/54、库存不匹配、目录位置为普通文件、pending冲突及真实Windows目标共享锁拒绝|不模拟物理断电、磁盘写满或FlushFileBuffers硬件失败|
+|原子目标／备份|43619F原码先以35h=53备份，再4362B4写；现CREATE_NEW pending、循环WriteFile、Flush、ReplaceFile／MoveFileEx。新共享锁测试失败目标逐字节不变、自有pending清理；解锁后成功、`.s2ne-backup`精确保存旧字节；原slot53与slots51/52测试通过|53号备份和目标是顺序两次单文件替换；目标写失败时53可已更新为目标旧内容，并非跨文件事务。未承诺OS崩溃后两文件同时回滚|
+|已实现事务兼容|转职40合法／22材料／6装备退还分支，缺RNG时钟返回空optional且原RNG／库存不变；传送第60关《返鄉的遊子》生产侧末受控72帧保存锁／原action恢复；技能94既有隔离事务survivor／revival／reverse／award失败rollback及64固定RNG；shop出售拒绝隔离／精确raw delta；church取消／确认／完整SAVE delta往返|技能94是既有受控fixture兼容，不新增技能／不声称生产E2E；商店算法通过不代表尚未接入的全部UI完成|
+|战场／关间菜单|`original_save_menu_test`原几何／metadata／键鼠／覆盖取消／失败不成功返回；`original_inn_test`第65关《龍穴》关间正常save／cancel／load；最新Release `--smoke-load`标题正常读取第65关《龍穴》turn9，隔离slot52写／重读，42呈现|并非每个slot所有UI组合；移动动画时新增`!animating_movement()`边界锁已编译，未新增菜单级移动保存输入专项；原bridge已有movement_pose/frame拒绝|
+|现有支持功能回归|save／bridge／store／menu／promotion／teleport／skill94／inn／church／shop专项通过，未重跑强化战役|**无baseline的新游戏capture及stage/difficulty变化仍明确拒绝**；未知原始globals／inventory初始化与完整关卡转移raw状态尚未实现，本轮未修，不以捏造默认值解锁|
+
+本轮修复两旧测试`.stack.count`为`std::stacktrace::empty()`；转职旧异常测试改按当前prepare失败optional断言，未恢复throw；生产仅新增移动时保存锁。所有改动C++已clang-format。证据`out\\save-scope-<test>{-build,}.log`，包括`original_save_test`、`original_save_store_test`、`original_save_bridge_test`、`original_save_menu_test`、`original_promotion_transaction_test`、`original_teleport_transaction_test`、`original_skill94_transaction_test`、`original_inn_test`、`original_church_test`、`original_shop_test`。原SAVE保留。
+
+停止C++写入后`save-scope-Debug.log`→`save-scope-Release.log`均exit0，`save-scope-verify.log`资源exit0，`save-scope-load-sdl.log`真实load SDL exit0。package-game生成14运行／资源文件+launcher，独立解包`out\\save-scope-independent`；`save-scope-independent-verify.log`exit0，`save-scope-independent-sdl.log`真实SDL开场exit0／92呈现。独立库存1DAT／1PRG／0TXT／4DLL。根、Release、独立包EXE SHA256均`5766DA0D79C407C8D2AEE553B3AD9ED679888D2A5D9DF69B913801E1F3061121`。该包是当前有限路径稳定检查点，不是整个存档类别或六类总完成；不自动推进下一类别。
+
+## 2026-11-10 本批统一构建/独立包证据（不是六类总完成）
+
+停止本批C++写入后Debug→Release均通过，最新Release --verify与第42关《小丑獻媚》隔离撤离SDL再次通过。package-game生成14运行/资源文件+launcher；独立解包`out/systems-batch-independent`，verify exit0、真实SDL opening-right-skip exit0/91呈现，当前远程音频设备实际输出330246非静音样本且位置推进（只证明该开场片段，不是音频完整恢复）。根/Release/独立包EXE SHA256 73EC7898D00873BDBE5906C6D7903D68B441F5979A8B18C6C0973A921645B547一致。独立库存1DAT/1PRG/0TXT/4DLL，无源CD路径。日志`out/systems-batch-{Debug,Release,verify,evacuation,package,independent-verify,independent-sdl}.log`。保留原SAVE及证据；不重跑强化全战役。
+
+## 2026-11-10 本轮非技能接线与六类缺口核实（仍未总完成）
+
+45DC37依466544/effect39证据明确移交**下一轮技能**，本轮不再为此注入学习位/寻找伪合法样本。class4/5并非只有该技能caller：42B461/42B6C3镜头、452450普通特殊路线、4535A1确认重绘均有直接45CA1D/45CAA0调用。本批解除其**非技能**route pose/撤离/death preflight拒绝，复用已验45CADA与shared phase/present事务；Result资源读取失败仍回滚draw/cache/pending，未开放effect39。原资源第65关《龍穴》actor14受控fixture补status4导致mode3/4画面差异，原battle_test class3/4/5正常click→route→120ms/逐present→取消回滚通过；不声称原SAVE自然产生class4/5（只读五档仍为0）。这关闭调用链遗漏，不等于自然特殊状态全验。
+
+菜单/关间实核而非沿旧表：`original_inn_test`当前真实410EEE→4732ED(2)/414C4A城镇闲谈、auto-equip取消/提交通过；`original_church_test`41430B复活确认/金额/SAVE往返与44ACAD大额捐献难度1..5通过（受控死亡/现金fixture，非自然死亡）。日志`systems-inn.log`、`systems-church.log`。实际尚缺旅店**option5/7**的44D439(mode0/1)人物装备/物品完整子页与option8的43183B返回标题确认，现明确blocker不做替代。此入口可在第65关《龍穴》原SAVE进入关间旅店复现；option10原451ABC是自动装备，不是住宿，不造“住店恢复”规则。
+
+死亡最小正常交互新增无throw测试`original_death_input_test`：第6关《沙盜營地》role104、第82关《惡德商人》role147，**完整原事件表**未删，直接受控死亡dispatcher入口后正常advance/cancel/present/try_tick，保存锁/恢复一次通过；非自然击杀。避免旧continuation测试末尾故意event-index损坏导致fatal而掩盖前段。`systems-death.log`还列具体原表阻碍：1《第一神劍》records4/6 type9 cond1/2；11《惡德商人》records6..12 type5/14/type9cond6；15《沙漠名珠》type6/type9cond1/3/type12；42《小丑獻媚》type6/7/12/13。41C02A→41FF30→41C33E→41B9A3同步栈仍只支持type9cond0、4211A3角色谓词及4214C1/4214D5货币，完整其它handler及41FF6E completion1/3未开放。这些是明确生产缺口，不以两关对话通过宣称死亡全完成。
+
+AI实核：原40D171→40C425/40C659低HP撤退生产及role14=5存档往返通过（`systems-retreat.log`，第1关《第一神劍》受控HP=1）；40D351行为6/7仍仅第15关《沙漠名珠》受控行为/无敌fixture通过，未自然AI全认证。非技能特殊移动渲染接线不等于飞行route规则所有分支完成。六类其余：资源v3已验；SAVE特殊半事务仍禁止保存、完整events历史campaign_modal回归未收口；画面遮挡自然样本不足；上述菜单/AI/死亡未完，不发布六类完成结论。
+
+## 2026-11-10 class4/5共享相位门控续作（尚未解除生产拒绝）
+
+新增503464共享相位与每actor时间戳：45CA1D先绘当前slot，camera/movement mode1每次原调用切换；其它mode由473192以百分秒abs差>=19切换并更新actor+A8。renderer用局部staged phase保证同帧多actor共享顺序，重复draw不发布，Prologue::frame_presented只提交一次；输出错误恢复pending，不推进phase。加载新map清actor时间戳/pending而保留全局phase。`out/class45-render.log`原第65关《龍穴》actor14受控class4/5图像fixture、19cs、camera、重复present、错误输出、真实SDL通过；`movement-bitmap.log`补189/190ms和时钟回退绝对差专项通过。这里class4/5是显式renderer fixture，**非原Unit状态/装备来源**；撤离/death preflight拒绝仍保留，正常路线不传播class4/5 visual class。
+
+同时补生产movement呈现锁：启用presentation timing后，原120ms路线到时但未present不能丢弃pose；每pose只能ack一次，新movement/attack起点清ack。未启用presentation timing的算法测试保持旧计时。原battle_test含此边界与取消回滚通过（`out/class45-battle.log`），special AI6/7既有fixture通过（`class45-ai.log`）。原第42关《小丑獻媚》隔离records14/17死亡→撤离生产SDL通过，29敌人170呈现，输入/save锁/恢复一次（`class45-evacuation-sdl.log`）；此仍明确隔离脚本fixture，不冒充自然死亡或特殊class4/5角色。
+
+**45DC37具体入口新增证据**：唯一caller466544，按BIN10每37字节技能record+19的effect==0x27进入（4666E3→4666B0→45DC37），不是普通菜单“起飞”可自行构造。先置status33 bit4、保存坐标/方向/AP12E/130→476707路表→42B37A/476A78→452B64选择→452AD5移动→447E59/4483CB→4535A1确认；否定恢复坐标/方向重选；肯定恢复AP、重绘、xor bit4、476905清路表。现有OriginalSkills仅32/88/94有限执行，effect39仍unsupported_execution。新增只读`original_movement_save_coverage_test`检查原SAVE五个battle文件：class4/5可见角色0、正常技能菜单可用effect39为0；原1..158关开场可控/到场角色菜单effect39也0（`out/movement-save-coverage.log`）。未注入已学位/装备/flag；这些结果只限定现有入口样本，不证明后续合法学习不能触发。完整45DC37依赖的技能支付/选择与route事务尚缺，不能仅动画/共享时钟通过就解除拒绝。六类余项未完成；本批尚未重新打包。源码格式化后Debug→Release统一构建、最新Release撤离SDL与verify通过；根/Release SHA256一致5EC080724E0B267F085F7057CA7F135E37BFAA83BB5DD886E1973DC641B276F7，日志`class45-production-{Debug,Release,verify}.log`。
+
+## 2026-11-10 class3 buffer/投影阻碍定位与最小闭环（替代下节失败结论）
+
+继续同一trace：42927B将4F7DF0静态world按6C/70镜头复制到4F7E18；42B327经42C50A在**当前4F7E18绘图destination**截脚下64×32（不是永远从静态world截）；47566E保持请求尺寸并在负边界补零。448B99在该indexed crop套DAT5 index21及map5；4468DF以原AD非零清mask，两军团在本实现统一完整roster，x±2、y严格后方到+24、排除state1/3/5；42AFBA清地形/物件；42B1D2影子arg0=0，随后角色原AD arg0=4抬高64像素，**不使用已经地形清过的ordinary display AD再次抬高**。frame+6 signed displacement只加角色，不加脚印，遮挡源4468DF不加该displacement。
+
+旧exit4诊断：65《龍穴》首个class3 actor9 (10,33) ordinary相对静态图就没有一个差异，原测试未建立“源角色可见”前置条件；不能以该候选宣称整个投影链无效。新`tests/original_class3_render_test.cpp`跳过ordinary_delta=0，原actor14 (20,44) ordinary_delta=7670；控制action4测试2613个非零原AD像素逐个符合原palette与上移64坐标，570个脚印像素符合map5且不同静态；ordinary/special/static三图不同、重复一致、恢复原Unit后ordinary完全一致。镜头+32后重叠608×480所有RGBA逐像素相同。真实SDL window/texture/render/present通过（非dummy）。`out/class3-render-build.log`及`class3-render.log`保存证据。此为**第65关《龍穴》原角色+受控action4 renderer fixture**，不是自然移动/死亡E2E；没有注入原SAVE装备或旗标。
+
+生产接线：Prologue撤离target传递原movement_class；OriginalEvacuation及death preflight仅解除class3拒绝，class4/5继续拒绝。Battle的452450 class3路线pose传递visual class，保留原120ms门控/原状态，不把presentation字段写入SAVE。`out/class3-battle.log`的既有battle_test通过（含新class3 dispatch断言、120ms及取消回滚）；图元回归`out/movement-bitmap.log`通过，关卡42《小丑獻媚》仍仅静态脚印fixture。
+
+45CADA下一层resource/projection fixture也通过：45CA1D的4EAD9C=slots23/24（各64×32）；45CAA0的4F70FC是shared base+39*4，方向slots39..42（128×160/121×63/121×63/121×63）；原raw长度及方向&3、交替slot重现一致，effect先mode3/4后原AD mode4，renderer差异断言通过。尚未把全局503464和19cs/每present交替门控混成draw次数，因此class4/5生产仍拒绝，不宣称该类完成。45DC37确证需合法路表选择/验证/回滚而非动画，仍未接；六类、AI/死亡剩余未完成。
+
+补验：显式提供不同indexed destination，确认42B327脚印确实读取当前destination而非静态world；half-tile镜头平移逐像素通过。生产Debug→Release及`--verify`通过，`out/class3-production-{Debug,Release,verify}.log`；根与Release SHA256同为E582C20BF85DE135BDA02719CF29DC1422FF1FC2FC88A8061E33AC6854B20D84。未重打包，旧包不含本批，不将其称最新交付。
+
+另定向运行旧`original_death_continuation_test`失败于其故意破坏event index的末尾fixture，当前fatal策略进程退出而其旧try/catch无法捕获；日志`out/class3-death.log`。未为通过它恢复throw，也未宣称死亡全回归通过。
+
+## 2026-11-10 生产特殊移动继续尝试及阻碍（历史失败，已由上节继续定位）
+
+`tests/original_movement_coverage_test.cpp`重编运行：`out/movement-coverage-build.log`／`movement-coverage.log`列原1..158可读关卡开场名册。第42关《小丑獻媚》class3/4/5均0；第65关《龍穴》class3=11、4/5=0。不能为42注入移动类型再称真实入口，也不能以开场名册4/5=0认定自然后续不可触发（状态／装备动态门控仍需追踪）。
+
+实际两次尝试生产renderer：新增显式渲染class选择→448B99静态64x32脚印→4468DF邻人mask清除→42AFBA→原AD mode4抬高64px；第42关测试找不到原class3角色，exit2，记录`out/class3.log`。转第65关《龍穴》实际class3角色，控制action4并强制present谓词筛选后，画面与ordinary仍相同，`out/class3-render.log`exit4；尚未定位bitmap可见／投影与控制入口分歧，因此删除该实验与对应短期测试源码、恢复生产class3/4/5严格拒绝。没有把失败分支发布为已实现，也没有修改原SAVE／flags来制造自然流程。证据日志保留。
+
+确证原链：42B461在action4才440F56分派；class3先448B99再42B1D2(mode4，即elevation+4)，class4→45CA1D强制交替shared23/24，class5→45CAA0方向4F70FC；45CADA先脚印再mode3/4特效、复制AD最后mode4。45DC37还需476707/476A78路表、452B64→452AD5→447E59→4483CB→4535A1合法移动结果，成功才恢复12E/130并xor status4；当前未形成可验收实现。无缺失工具证明，属于原生状态／buffer契约尚未补齐，不声称无法继续或六类完成。本次未重复整工程打包，根Release仍为上一有效批。
+
+## 2026-11-10 城镇连续滚动与原淡入淡出续补（进行中，未最终交付）
+
+**纠错：首次城镇闭环误读41020B的FFFFFFF5为-12，实际是-11（DAT11），先前DAT12是640x480旅店等静态图，导致滚动测试条件允许不移动而虚通过。现已改DAT11真正大世界图，并强制断言实移动：第65关《龍穴》原SAVE视口(0,56)，首滚(8,56)，重复(12,56)，每次四像素。原SAVE delay0；另隔离副本仅delay10验证109不滚／110滚，明确非自然配置。旧PCX12闭环证据不再有效，不隐藏此问题。**
+
+DAT11纠正及小图元最终停写后重新Debug→Release（同`worldmap-timing-{Debug,Release}.log`），重新资源／传送SDL及package；独立`out/worldmap-corrected-package-check`，`worldmap-corrected-package-{verify,sdl}.log`均0，开场右键87帧（silent fallback）。根／Release／独立包EXE现均`A8BE401BD0E92888390E52415FC0FC4BC7CAEB8AB72B431D5C7CA40AA4FABA4D`，替代下方旧AF60检查点。此仍非六类完成。
+
+第65关《龍穴》原SAVE，`tests/original_worldmap_test.cpp`→`out/worldmap-timing-build.log`、`out/worldmap-timing.log`当前通过。新增生产`app_runtime`正常旅店入口启用presentation；每次SDL present才推进世界图和重绘，不仅fixture API。原415415边缘x<5/x>635/y<5/y>475连续四像素滚动；右键仅60..580、40..440内返回。4157C6边界逐指令核实：到宽-640／高-480时原回退宽-641／高-481，不继续使用先前通用clamp推测。414E62→47308B→415084(1)→473111使用SAVE globals+32原百分秒步进延时与abs(start-now)，不做模差回绕；每帧未present不可推进。
+
+414D5B入口472EF1(palette,0,0)是64级0..63、出口(palette,1,0)为63..0，**不是商店-4的16级**；无delay_。当前64+64次真实SDL呈现逐阶验收、淡入输入锁及淡出返回通过，直接原palette DAC乘法，不从RGBA反推调色板。出口473006先47FA40读当前已淡入palette，再逐阶47F5D2，因此出口使用入场63末值二次乘法，不错误复用原DAC直接淡出。仍未实现音乐36→4，键盘按住连续时序与原系统调色板同频不能称全等价。渲染／受控时钟断言与未改SAVE正常旅店入口分开陈述；没有重跑强化战役或技能。
+
+新增`original_movement_bitmap.hpp::try_shadow`仅实现448B99已确证的64x32索引脚印mask/5045B8映射小图元；`out/movement-bitmap-build.log`／`out/movement-bitmap.log`原DAT5 index21/2052字节及palette map5、256索引与错长拒绝专项通过。另新增423D76非棋盘mode0的负偏移裁剪非零清mask、`OriginalMap::try_movement_shadow`原静态索引64x32取图，严格按地图height*2半行坐标而不是height；第42关《小丑獻媚》原角色(4,68)资源隔离专项通过。它尚未生产接线，不计任何自然关卡流程或class3完成。曾尝试用“移除目标后重画整幅背景”衔接，发现不等价于42B327从当前buffer取图及4468DF双军团清mask，已删除该未验算法，保留严格拒绝，不将图元测试包装成流程。
+
+正在继续448B99／45CADA：已核42B327先抓当前buffer的64x32脚下索引，经4F70B0 mask及5045B8变换，随后4468DF双军团叠图、42AFBA遮挡、42B1D2投影；不能直接套现有反应bitmap或把普通角色叠脚印当完成。class3/4/5拒绝仍保留，45DC37起降状态/路表仍未接。本批源码停写后`out/worldmap-timing-{Debug,Release}.log`按序构建通过；`worldmap-timing-verify.log`、第60关《返鄉的遊子》`worldmap-timing-teleport.log`52帧SDL回归通过。`worldmap-timing-package.log`打包、独立`out/worldmap-timing-package-check`的verify及真实SDL右键跳开场89帧均0（无默认音频，silent fallback，不冒称音频通过）。根／Release／独立包EXE SHA256一致`AF60865DF35B580D33866FEADDD50079384AACFE2153185389211E5D2A0D0089`。仍只是本批闭环，不是剩余六类全部收口。
+
+## 2026-11-10 21:15 恢复系统补全：传送生产实核／原城镇探索首闭环
+
+下方旧“传送尚未生产接线”已由磁盘实现及本次重编验证替代，不删除历史失败。`out/teleport-current-build.log`重编当前头文件，`teleport-current.log`：第60关《返鄉的遊子》原地图、受控传送格和行动耗尽，生产end-side 39次present、原action恢复、坐标提交和保存锁通过。根程序`--smoke-teleport D:\project\S2NE-workspace`真实SDL通过52次present，保留原来源SAVE及`teleport-controlled-before/after.sav`；仍非自然走格E2E。最初直接运行旧测试二进制因旧PRG读取报Invalid battle map ID／sprite index，重编当前合并资源读取后通过，未将旧exe失败隐藏。
+
+新`OriginalWorldmap`接OriginalInn正常option1，不删城镇表也不以战场背景替代：`41020B`调用`425092(-12, palette+0xC00,3)`解原DAT12 PCX；`426971(5/6)`实际`473CDB(3,7)`，因此资源是**DAT7 other cell，不是PRG7**。单元头有一字节type，原样RLE解码；当前两个标记type0，原当前位置标记偏移(-7,-25)，目的地(-7,-30)，透明0。BIN4 town WORD+6/+8坐标及DWORD名字偏移、原40像素命中、左键414F5D居中裁界、键盘4157C6四像素滚动、Escape/Return/右键原退出保留。
+
+`out/worldmap-build.log`及`worldmap-test.log`：第65关《龍穴》用户原SAVE正常旅店option1进入、完整原表、原世界图与标记、方向滚动／重定位、两次返回、640x480真实SDL present及键事件、逐字节SAVE不变通过。`out/inn-current-build.log`／`inn-current.log`原传闻／自动装备／存读档等既有旅店专项回归通过。新增/改动C++均已clang-format。
+
+边界：未称城镇全画面时序等价；边缘持续滚动、百分秒计时／按住重复、原淡入淡出与音乐36→4尚缺，本次无整套强化战役。特殊遮罩及起降未改；阶段停写后实际执行Debug→Release：`out/system-current-{Debug,Release}.log`均0；`system-current-verify.log`原资源核验通过；第60关《返鄉的遊子》`system-current-teleport-sdl.log`生产传送52帧通过。`system-current-package.log`打包成功，独立解包`out/system-current-package-check`仅1 DAT／1 PRG／0 TXT，独立`system-current-package-verify.log`与`system-current-package-sdl.log`资源及真实SDL右键跳开场91帧均exit0。当前设备无默认音频，SDL明确silent fallback通过，不冒称音频播放通过。根EXE／Release／独立包EXE SHA256全部`967AC31FDC743668FD913D047AE2CEAAE9001B5709CEDF5D76D9F65CF664929B`。这是有限阶段闭环，不是六类最终收口；后续写入后必须重新统一验收。
+
 ## 2026-11-10 画面续作：411587原调色板阶梯／撤离普通移动姿态／到达图元
 
 **有限新增已验收，不是本请求全部收口；传送生产dispatcher、特殊移动遮罩及城镇正常探索链仍未实现。未改PROGRESS。**
@@ -1028,3 +1188,27 @@ runtime_diagnostics.hpp在main首行调用：CRT debug报告file/stderr，SetErr
 Release/Debug MSBuild exit0，日志out/refactor-{release,debug}-build.log。Release verify/menu/new-game/battle/shop/promotion通过；Debug verify/menu通过。Debug battle/shop触发MSVC span下标越界stderr断言；旧main独立对照同点复现（out/refactor-baseline-smoke-{battle,shop}.err与新debug对应.err），不是重构引入证据，但仍是未修缺陷，不能列全绿。断言现在终端退出，不忽略继续执行。未重跑完整战役或技能专项。
 
 最终根Release SHA256=9DED3DCC606E3FA740AA9392EFD8C1B98AF193C7C3BC3ABB08B9E4A419BFC916，与out/x64/Release/S2NE.exe一致；父重打共享资源ZIP189423232字节，独立临时解包--verify及--smoke-opening-right-skip通过，104帧，非零混音361650；临时目录清理。包不附两个TXT。补全任务暂停，原档与旧证据未撤销。CDS仍为82映射40块去重内容，无须用户手工执行。
+
+## SSD重构、统一资源去重及点名UI交付（2026-11-10）
+
+本节覆盖18:02重构记录的旧状态。开发工作目录为D:\project\S2NE-workspace；原目录复制4986文件后包含隐藏文件逐项SHA256一致。未删除旧E盘资源、SAVE或历史证据。
+
+### 架构与错误回归
+
+- 全部本次C++按现有clang-format规则整理。原生MSBuild x64统一Debug后Release构建均退出0；两配置--verify、--smoke真实SDL均退出0。日志out/all-errors-{Debug,Release}-{build,verify,smoke}.log。
+- src剥离注释和字面量后的扫描out/all-errors-lexical-scan.json只剩main中的try/catch；main外显式throw/try/catch为0，Windows自定义栈API/VEH/DbgHelp及longjmp为0。工程采用C++23标准调用栈，不再自实现平台栈展开。
+- out/runtime_error-completion-test.log显示Error创建点tests/runtime_error_test.cpp:12及标准库栈条目；可恢复battle/event/map/skill失败回滚通过。未知库异常的main兜底明确不伪称拥有原始throw现场。
+- 菜单、商店、转职、教会、装备、设置、存档菜单、确认及报告专项见out/*-all-errors-test.log；剧情移动结果见original_campaign_motion-completion-test.log，娜线结局所有原生页面回归见original_natalia_ending-completion-test.log。此处是专项，不是双线完整战役重新通关。
+- 存档bridge原settings_4f7cf0读取修复，避免从29字节globals块offset32越界；Debug存档专项、战斗smoke已通过。
+
+### 资源与UI
+
+- 合并档逐字节去重后DAT=180661337字节、PRG=100706959字节；两档281368296字节，较完整双源节省193231888字节(40.7147%)。100项源资源字节等价、132地图、原CD目录不存在时读取、损坏拒绝、片头结局及地图回归通过。原始归档保留，不以去重后较小误判丢失CD2内容。
+- UI原依据42BEED地形面板；4224F2购买小字、411F5B价格、411FA1/4138F7数量页。original_ui_layout专项及原商店交易测试通过；渲染证据out/ui-*.png。未覆盖全部城镇、长装备提示及原程序逐像素对照。
+
+### 发布与独立包验收
+
+- 根S2NE.exe与out/x64/Release/S2NE.exe及out/dedupe-final-package内EXE SHA256一致：78438462FDE99B4246B4C8AEFC51BD70EA791B360F4CBB7024CA61E2E49C0A90。
+- S2NE-game-win64.zip使用最终Release重新生成，仅一DAT、一PRG，无CDS、源CD目录及额外新增TXT。
+- 独立解包out/dedupe-final-package后--verify、真实SDL --smoke均退出0，呈现91帧。音频设备可输出不代表完整原音频恢复已完成。
+- 游戏系统补全保持暂停；本次仅重构、资源及用户点名UI问题，不宣告技能/剑法、AI、死亡剧情及全流程全部完成。

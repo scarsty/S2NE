@@ -1,6 +1,7 @@
 #pragma once
 #include "original_menu.hpp"
 #include "original_save.hpp"
+#include <memory>
 #include <optional>
 #include <string>
 
@@ -49,15 +50,8 @@ private:
     int return_code_ = 0;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static std::vector<uint8_t> read(const std::filesystem::path& path)
-    {
-        std::ifstream f(path, std::ios::binary);
-        if (!f)
-        {
-            throw std::runtime_error("Missing original save-menu resource");
-        }
-        return { std::istreambuf_iterator<char>(f), { } };
-    }
+    static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& path) { return read_resource(path); }
+    static std::vector<uint8_t> read(const std::filesystem::path& path) { return try_read(path).value(); }
     size_t sprite_position() const
     {
         size_t group = dword(pal_, 816) - 57;
@@ -76,7 +70,7 @@ private:
         }
         image.at(p + 3) = 255;
     }
-    void panel(std::vector<uint8_t>& image) const
+    s2ne::Result<bool> try_panel_validated(std::vector<uint8_t>& image) const
     {
         size_t p = sprite_position() + 4;
         for (int y = 0; y < height_; ++y)
@@ -95,7 +89,7 @@ private:
                 }
                 if (!n || n > unsigned(width_ - x))
                 {
-                    throw std::runtime_error("Invalid original save-menu sprite run");
+                    return s2ne::Result<bool>::failure(make_error("Invalid original save-menu sprite run"));
                 }
                 while (n--)
                 {
@@ -103,6 +97,26 @@ private:
                     pixel(image, left_ + x++, top_ + y, c);
                 }
             }
+        }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    s2ne::Result<bool> try_panel(std::vector<uint8_t>& image) const
+    {
+        auto output = image;
+        auto result = try_panel_validated(output);
+        if (result)
+        {
+            image.swap(output);
+        }
+        return result;
+    }
+    void panel(std::vector<uint8_t>& image) const
+    {
+        auto result = try_panel(image);
+        if (!result)
+        {
+            report_error(result.error());
         }
     }
     unsigned slot_for(int row) const { return unsigned(row < 10 ? page_ * 10 + row + 1 : row + 41); }
@@ -159,11 +173,15 @@ public:
         }
         return slots;
     }
-    OriginalSaveMenu(const std::filesystem::path& root, int mode, Slots slots, int page = 0, bool original_mode_one = false) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")), slots_(std::move(slots)), mode_(mode), page_(page)
+    struct InitializationTag
+    {
+    };
+    OriginalSaveMenu(const std::filesystem::path& root, int mode, Slots slots, int page, bool original_mode_one, InitializationTag) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")), slots_(std::move(slots)), mode_(mode), page_(page) { }
+    s2ne::Result<bool> initialize(const std::filesystem::path& root, int mode, Slots slots, int page, bool original_mode_one)
     {
         if (mode < 0 || mode > 3 || page < 0 || page > 4)
         {
-            throw std::runtime_error("Invalid original save-menu mode/page");
+            return s2ne::Result<bool>::failure(make_error("Invalid original save-menu mode/page"));
         }
         pal_.at(0) = pal_.at(1) = pal_.at(2) = 0;
         size_t p = sprite_position();
@@ -171,7 +189,7 @@ public:
         height_ = int(word(cel_, p + 2)) + 1;
         if (width_ > 640 || height_ > 480)
         {
-            throw std::runtime_error("Invalid original save-menu dimensions");
+            return s2ne::Result<bool>::failure(make_error("Invalid original save-menu dimensions"));
         }
         left_ = 320 - width_ / 2;
         top_ = 240 - height_ / 2;
@@ -179,7 +197,27 @@ public:
         {
             closed_ = true;
         }
+        return s2ne::Result<bool>::success(true);
     }
+    OriginalSaveMenu(const std::filesystem::path& root, int mode, Slots slots, int page = 0, bool original_mode_one = false) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")), slots_(std::move(slots)), mode_(mode), page_(page)
+    {
+        auto result = initialize(root, mode, { }, page, original_mode_one);
+        if (!result)
+        {
+            fatal(result.error());
+        }
+    }
+    static s2ne::Result<std::unique_ptr<OriginalSaveMenu>> create(const std::filesystem::path& root, int mode, Slots slots, int page = 0, bool original_mode_one = false)
+    {
+        auto result = std::make_unique<OriginalSaveMenu>(root, mode, std::move(slots), page, original_mode_one, InitializationTag{ });
+        auto ready = result->initialize(root, mode, { }, page, original_mode_one);
+        if (!ready)
+        {
+            return s2ne::Result<std::unique_ptr<OriginalSaveMenu>>::failure(ready.error());
+        }
+        return s2ne::Result<std::unique_ptr<OriginalSaveMenu>>::success(std::move(result));
+    }
+
     int left() const { return left_; }
     int top() const { return top_; }
     int width() const { return width_; }
@@ -338,11 +376,11 @@ public:
         return r;
     }
     // Original closes after its synchronous IO. Adapter reports failure without claiming success.
-    void complete(bool success)
+    s2ne::Result<bool> try_complete(bool success)
     {
         if (!pending_ || pending_->action == Action::confirm_overwrite)
         {
-            throw std::runtime_error("No original save-menu IO pending");
+            return s2ne::Result<bool>::failure(make_error("No original save-menu IO pending"));
         }
         if (success)
         {
@@ -351,14 +389,28 @@ public:
                                                                                          7;
         }
         pending_.reset();
+
+        return s2ne::Result<bool>::success(true);
     }
-    void draw(std::vector<uint8_t>& image, const OriginalMenu& font) const
+    void complete(bool success)
+    {
+        auto result = try_complete(success);
+        if (!result)
+        {
+            report_error(result.error());
+        }
+    }
+    s2ne::Result<bool> try_draw_validated(std::vector<uint8_t>& image, const OriginalMenu& font) const
     {
         if (image.size() != 640 * 480 * 4)
         {
-            throw std::runtime_error("Invalid save-menu framebuffer");
+            return s2ne::Result<bool>::failure(make_error("Invalid save-menu framebuffer"));
         }
-        panel(image);
+        auto panel_result = try_panel(image);
+        if (!panel_result)
+        {
+            return panel_result;
+        }
         font.draw_original_large(image, font.text_bytes(title_ids.at(mode_)), left_ + 180, top_ + 12, 73, 55);
         auto text = [&](const std::vector<uint8_t>& bytes, int x, int y, unsigned c)
         {
@@ -386,6 +438,26 @@ public:
             text(font.text_bytes(155), 150, 341, 175);
         }
         text(ascii(std::to_string(page_ + 1) + "/5"), 316, 341, 175);
+
+        return s2ne::Result<bool>::success(true);
+    }
+    s2ne::Result<bool> try_draw(std::vector<uint8_t>& image, const OriginalMenu& font) const
+    {
+        auto output = image;
+        auto result = try_draw_validated(output, font);
+        if (result)
+        {
+            image.swap(output);
+        }
+        return result;
+    }
+    void draw(std::vector<uint8_t>& image, const OriginalMenu& font) const
+    {
+        auto result = try_draw(image, font);
+        if (!result)
+        {
+            report_error(result.error());
+        }
     }
 };
 }    //namespace s2ne

@@ -299,6 +299,36 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                 running = false;
             }
         }
+        if (options.freshSaveSmoke && prologue && prologue->in_battle() && !prologue->campaign_modal())
+        {
+            if (!rawSave || !isolatedSaveRoot || !prologue->autosave_requests().empty())
+            {
+                s2ne::fatal("Fresh normal battle entered without initialized autosave");
+            }
+            auto captured = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+            if (!captured)
+            {
+                s2ne::fatal(captured.error());
+            }
+            auto written = s2ne::OriginalSaveStore::try_write(*isolatedSaveRoot, 52, captured.value(), saveItems);
+            if (!written)
+            {
+                s2ne::fatal(written.error());
+            }
+            auto loaded = s2ne::OriginalSave::try_load(s2ne::OriginalSave::slot_path(*isolatedSaveRoot, 52), saveItems);
+            if (!loaded || s2ne::OriginalSave::encode(loaded.value(), saveItems) != s2ne::OriginalSave::encode(captured.value(), saveItems))
+            {
+                s2ne::fatal("Fresh normal game save byte roundtrip failed");
+            }
+            auto restored = s2ne::OriginalSaveBridge::try_restore(root, loaded.value());
+            if (!restored || restored.value().events.stage != prologue->events.stage)
+            {
+                s2ne::fatal("Fresh normal game restore failed");
+            }
+            std::cout << "SDL normal title/setup/opening -> fresh stage=" << prologue->events.stage << " name=" << campaign_name_utf8(s2ne::OriginalCampaign(root).stage(prologue->events.stage)) << " original initialization/save/reload verified; no source SAVE or injected flags/items/stats\n";
+            running = false;
+            return true;
+        }
         if (campaignSmoke && !campaignContinue && prologue && prologue->events.stage == (alternateSmoke ? 72u : 2u) && prologue->in_battle())
         {
             if (!rawSave || !prologue->autosave_requests().empty())
@@ -307,11 +337,16 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
             }
             auto saved = s2ne::OriginalSave::load(s2ne::OriginalSave::slot_path(*isolatedSaveRoot, 52), saveItems);
             auto restored = s2ne::OriginalSaveBridge::restore(root, saved);
+            auto recaptured = s2ne::OriginalSaveBridge::try_capture(restored.events, restored.turn, restored.camera, &restored.raw);
+            if (!recaptured || s2ne::OriginalSave::encode(recaptured.value(), saveItems) != s2ne::OriginalSave::encode(saved, saveItems))
+            {
+                s2ne::fatal("Next-battle complete persistent state did not roundtrip");
+            }
             if (restored.events.stage != (alternateSmoke ? 72u : 2u))
             {
                 s2ne::fatal("Next-battle autosave restored the wrong stage");
             }
-            std::cout << "SDL campaign victory -> rewards -> hub -> next battle -> original autosave reload verified\n";
+            std::cout << "SDL campaign victory -> rewards -> hub -> next battle stage=" << restored.events.stage << " name=" << campaign_name_utf8(s2ne::OriginalCampaign(root).stage(restored.events.stage)) << " -> original autosave complete byte reload verified\n";
             clearVerified = true;
             running = false;
         }
@@ -940,6 +975,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                         s2ne::fatal("No complete rendered flash/number/HP feedback within 15 original turns");
                     }
                     battleSmokeStartTurn = 0;
+                    autoMenuOpened = false;
                 }
                 else
                 {
@@ -1151,7 +1187,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
         }
         if (!prologue || !prologue->computer_actions())
         {
-            if (++smokePhase > 1000 && !clearSmoke)
+            if (++smokePhase > 1000 && !clearSmoke && (!prologue || !prologue->in_battle()))
             {
                 s2ne::fatal("SDL battle entry timed out");
             }

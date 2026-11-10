@@ -158,8 +158,12 @@ public:
         draw_big5(image, text_bytes(id), x, y, color);
     }
     // sub_422402: BIN 12 contains 16x16 Big5 glyphs; BIN 15 contains 8x15 ASCII.
-    void draw_small(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, bool original_padding = false) const
+    s2ne::Result<bool> try_draw_small_validated(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, bool original_padding = false) const
     {
+        if (image.size() != 640u * 480 * 4 || color > 255)
+        {
+            return s2ne::Result<bool>::failure(make_error("Invalid text framebuffer or palette color"));
+        }
         for (size_t p = 0; p < text.size();)
         {
             unsigned lead = text.at(p++);
@@ -171,6 +175,10 @@ public:
             size_t bits = entry(15) + std::max(30u, lead) * 15;
             if (lead > 128)
             {
+                if (p >= text.size())
+                {
+                    return s2ne::Result<bool>::failure(make_error("Truncated Big5 text"));
+                }
                 unsigned trail = text.at(p++), base = 0, first = 0;
                 if (lead == 0xC6 && trail >= 0xA1)
                 {
@@ -202,18 +210,18 @@ public:
                     }
                     else
                     {
-                        throw std::runtime_error("Invalid small-font Big5 lead");
+                        return s2ne::Result<bool>::failure(make_error("Invalid small-font Big5 lead"));
                     }
                     if (!((trail >= 0x40 && trail <= 0x7E) || (trail >= 0xA1 && trail <= 0xFE)))
                     {
-                        throw std::runtime_error("Invalid small-font Big5 trail");
+                        return s2ne::Result<bool>::failure(make_error("Invalid small-font Big5 trail"));
                     }
                     trail -= trail <= 0x7E ? 0x40 : 0x62;
                 }
                 unsigned glyph = word(index + (base + (lead - first) * 157 + trail - 0x8000) * 2);
                 if (!glyph)
                 {
-                    throw std::runtime_error("Missing small-font glyph");
+                    return s2ne::Result<bool>::failure(make_error("Missing small-font glyph"));
                 }
                 bits = entry(12) + (glyph - 1) * 32;
                 width = height = 16;
@@ -241,10 +249,34 @@ public:
             }
             x += int(width);
         }
+
+        return s2ne::Result<bool>::success(true);
     }
-    void draw_big5(std::vector<uint8_t>& image, const std::vector<uint8_t>& text,
+    s2ne::Result<bool> try_draw_small(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, bool original_padding = false) const
+    {
+        auto output = image;
+        auto result = try_draw_small_validated(output, text, x, y, color, original_padding);
+        if (result)
+        {
+            image.swap(output);
+        }
+        return result;
+    }
+    void draw_small(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, bool original_padding = false) const
+    {
+        auto result = try_draw_small(image, text, x, y, color, original_padding);
+        if (!result)
+        {
+            report_error(result.error());
+        }
+    }
+    s2ne::Result<bool> try_draw_big5_validated(std::vector<uint8_t>& image, const std::vector<uint8_t>& text,
         int x, int y, unsigned color) const
     {
+        if (image.size() != 640u * 480 * 4 || color > 255)
+        {
+            return s2ne::Result<bool>::failure(make_error("Invalid text framebuffer or palette color"));
+        }
         for (size_t p = 0; p < text.size();)
         {
             unsigned lead = text.at(p++), code = 0;
@@ -273,6 +305,10 @@ public:
                 }
                 x += 16;
                 continue;
+            }
+            if (p >= text.size())
+            {
+                return s2ne::Result<bool>::failure(make_error("Truncated Big5 text"));
             }
             unsigned trail = text.at(p++);
             if (lead == 0xC6 && trail >= 0xA1)
@@ -304,18 +340,18 @@ public:
                 }
                 else
                 {
-                    throw std::runtime_error("Invalid original Big5 lead");
+                    return s2ne::Result<bool>::failure(make_error("Invalid original Big5 lead"));
                 }
                 if (!((trail >= 0x40 && trail <= 0x7E) || (trail >= 0xA1 && trail <= 0xFE)))
                 {
-                    throw std::runtime_error("Invalid original Big5 trail");
+                    return s2ne::Result<bool>::failure(make_error("Invalid original Big5 trail"));
                 }
                 code = base + (lead - first) * 157 + trail - (trail <= 0x7E ? 0x40 : 0x62);
             }
             unsigned glyph = word(index + (code - 0x8000) * 2);
             if (!glyph)
             {
-                throw std::runtime_error("Missing original dialogue glyph");
+                return s2ne::Result<bool>::failure(make_error("Missing original dialogue glyph"));
             }
             size_t bits = glyphs + (glyph - 1) * 72;
             for (int gy = 0; gy < 24; ++gy)
@@ -340,9 +376,36 @@ public:
             }
             x += 24;
         }
+
+        return s2ne::Result<bool>::success(true);
     }
-    void draw_original_large(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, std::optional<unsigned> shadow = std::nullopt) const
+    s2ne::Result<bool> try_draw_big5(std::vector<uint8_t>& image, const std::vector<uint8_t>& text,
+        int x, int y, unsigned color) const
     {
+        auto output = image;
+        auto result = try_draw_big5_validated(output, text, x, y, color);
+        if (result)
+        {
+            image.swap(output);
+        }
+        return result;
+    }
+    void draw_big5(std::vector<uint8_t>& image, const std::vector<uint8_t>& text,
+        int x, int y, unsigned color) const
+    {
+        auto result = try_draw_big5(image, text, x, y, color);
+        if (!result)
+        {
+            report_error(result.error());
+        }
+    }
+    s2ne::Result<bool> try_draw_original_large(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, std::optional<unsigned> shadow = std::nullopt) const
+    {
+        if (image.size() != 640u * 480 * 4 || color > 255)
+        {
+            return s2ne::Result<bool>::failure(make_error("Invalid text framebuffer or palette color"));
+        }
+        auto output = image;
         for (size_t p = 0; p < text.size();)
         {
             unsigned lead = text.at(p++);
@@ -353,6 +416,10 @@ public:
             std::vector<uint8_t> glyph{ uint8_t(lead) };
             if (lead > 128)
             {
+                if (p >= text.size())
+                {
+                    return s2ne::Result<bool>::failure(make_error("Truncated Big5 text"));
+                }
                 glyph.push_back(text.at(p++));
             }
             int ink_x = x + (lead > 128 ? 1 : 3), ink_y = y + (lead > 128 ? 0 : 1);
@@ -361,19 +428,53 @@ public:
                 int gx = x + (lead > 128 ? 4 : 2), gy = y + 4;
                 if (shadow)
                 {
-                    draw_small(image, glyph, gx + 1, gy + 1, *shadow, true);
+                    {
+                        auto rendered = try_draw_small(output, glyph, gx + 1, gy + 1, *shadow, true);
+                        if (!rendered)
+                        {
+                            return rendered;
+                        }
+                    }
                 }
-                draw_small(image, glyph, gx, gy, color, true);
+                {
+                    auto rendered = try_draw_small(output, glyph, gx, gy, color, true);
+                    if (!rendered)
+                    {
+                        return rendered;
+                    }
+                }
             }
             else
             {
                 if (shadow)
                 {
-                    draw_big5(image, glyph, ink_x + 1, ink_y + 1, *shadow);
+                    {
+                        auto rendered = try_draw_big5(output, glyph, ink_x + 1, ink_y + 1, *shadow);
+                        if (!rendered)
+                        {
+                            return rendered;
+                        }
+                    }
                 }
-                draw_big5(image, glyph, ink_x, ink_y, color);
+                {
+                    auto rendered = try_draw_big5(output, glyph, ink_x, ink_y, color);
+                    if (!rendered)
+                    {
+                        return rendered;
+                    }
+                }
             }
             x += lead > 128 ? 24 : 16;
+        }
+        image.swap(output);
+        return s2ne::Result<bool>::success(true);
+    }
+    void draw_original_large(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, std::optional<unsigned> shadow = std::nullopt) const
+    {
+        auto result = try_draw_original_large(image, text, x, y, color, shadow);
+        if (!result)
+        {
+            report_error(result.error());
         }
     }
     void draw_original_wrapped(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, unsigned rows, unsigned columns, int row_height, std::optional<unsigned> shadow = std::nullopt) const

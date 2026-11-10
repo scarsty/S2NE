@@ -65,6 +65,8 @@ public:
         unsigned direction{ }, animation_action{ };
         uint8_t action_state{ };    // Original runtime +2Dh: 0 idle, 1 selected, 2 finished, 3 moving, 4 moved.
         bool movement_pose{ };
+        unsigned movement_visual_class{ };
+        bool movement_camera_pose{ };
         unsigned movement_frame{ };
         int level{ 1 }, max_mp{ }, max_st{ }, max_sp{ }, max_action_points{ }, attack_limit{ }, defense_limit{ };    // max_action_points is runtime +12Ch, not current +12Eh.
         unsigned portrait{ }, status_flags{ 0x80 }, experience{ };
@@ -495,6 +497,14 @@ public:
             }
         }
         return maximum;
+    }
+    unsigned action_proficiency(const Unit& unit, const ActionRecord& action) const
+    {
+        if (action.fields[0] >= 21) { return unit.special_proficiency; }
+        unsigned weapon = unit.equipment[0];
+        if (!weapon) { return 0; }
+        int type = int(int8_t(items_.at(2 + size_t(weapon - 1) * 38 + 14)));
+        return type >= 1 && type <= 6 ? unit.weapon_proficiency[size_t(type - 1)] : 0;
     }
     int action_accuracy_bonus(const Unit& unit, const ActionRecord& action) const
     {

@@ -11,7 +11,7 @@ class OriginalConfirmation
     std::optional<bool> result_;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
+    s2ne::Result<bool> try_sprite_validated(std::vector<uint8_t>& image, unsigned id, int left, int top) const
     {
         size_t group = dword(pal_, 816) - 57, p = group + dword(cel_, group + 2 + (id - 142) * 8);
         unsigned width = word(cel_, p) + 1, height = word(cel_, p + 2) + 1;
@@ -29,7 +29,7 @@ class OriginalConfirmation
                 }
                 if (!n || n > width - x)
                 {
-                    throw std::runtime_error("Invalid confirmation sprite run");
+                    return s2ne::Result<bool>::failure(make_error("Invalid confirmation sprite run"));
                 }
                 while (n--)
                 {
@@ -48,6 +48,26 @@ class OriginalConfirmation
                 }
             }
         }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
+    {
+        auto output = image;
+        auto result = try_sprite_validated(output, id, left, top);
+        if (result)
+        {
+            image.swap(output);
+        }
+        return result;
+    }
+    void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
+    {
+        auto result = try_sprite(image, id, left, top);
+        if (!result)
+        {
+            report_error(result.error());
+        }
     }
 
 public:
@@ -55,12 +75,7 @@ public:
     {
         auto read = [](const auto& path)
         {
-            std::ifstream f(path, std::ios::binary);
-            if (!f)
-            {
-                throw std::runtime_error("Missing confirmation resource");
-            }
-            return std::vector<uint8_t>(std::istreambuf_iterator<char>(f), { });
+            return read_resource(path).value();
         };
         cel_ = read(root / "SUPERSP.CEL");
         pal_ = read(root / "SUPERSP.PAL");
@@ -89,7 +104,7 @@ public:
             confirm();
         }
     }
-    void draw(std::vector<uint8_t>& image, const OriginalMenu& font) const
+    s2ne::Result<bool> try_draw(std::vector<uint8_t>& image, const OriginalMenu& font) const
     {
         // 431997 calls 475970 with fill=0: outline the embedded O/X artwork.
         size_t group = dword(pal_, 816) - 57, p = group + dword(cel_, group + 2 + (197 - 142) * 8);
@@ -110,7 +125,13 @@ public:
                 effects.transform_rect(image, x_ - 8, y_ + 8 + height, width, 8, 6);
             }
         }
-        sprite(image, 197, x_, y_);
+        {
+            auto rendered = try_sprite(image, 197, x_, y_);
+            if (!rendered)
+            {
+                return s2ne::Result<bool>::failure(rendered.error());
+            }
+        }
         int text_x = x_ + 88 - int(text_.size()) * (text_.size() > 14 ? 4 : 6);
         if (text_.size() > 14)
         {
@@ -143,7 +164,23 @@ public:
         }
         if (result_)
         {
-            sprite(image, *result_ ? 198 : 199, x_ + (*result_ ? 169 : 200), y_ + 5);
+            {
+                auto rendered = try_sprite(image, *result_ ? 198 : 199, x_ + (*result_ ? 169 : 200), y_ + 5);
+                if (!rendered)
+                {
+                    return s2ne::Result<bool>::failure(rendered.error());
+                }
+            }
+        }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    void draw(std::vector<uint8_t>& image, const OriginalMenu& font) const
+    {
+        auto result = try_draw(image, font);
+        if (!result)
+        {
+            report_error(result.error());
         }
     }
 };

@@ -256,8 +256,20 @@ int s2ne::run_application(int argc, char** argv)
                 return EXIT_FAILURE;
             }
             auto restored = std::move(restoreResult).value();
-            prologue = std::make_unique<s2ne::Prologue>(root, restored.events.difficulty);
-            prologue->set_resource_domain(s2ne::app_domain_for_save(restored.raw));
+            auto created = s2ne::Prologue::create(root, restored.events.difficulty);
+            if (!created)
+            {
+                s2ne::report_error(created.error());
+                return EXIT_FAILURE;
+            }
+            prologue = std::move(created).value();
+            auto domain = s2ne::try_app_domain_for_save(restored.raw);
+            if (!domain)
+            {
+                s2ne::report_error(domain.error());
+                return EXIT_FAILURE;
+            }
+            prologue->set_resource_domain(domain.value());
             prologue->restore_battle(std::move(restored.events), restored.turn);
             rawSave = std::move(restored.raw);
             paused = true;
@@ -284,8 +296,20 @@ int s2ne::run_application(int argc, char** argv)
                 return EXIT_FAILURE;
             }
             auto restored = std::move(restoreResult).value();
-            prologue = std::make_unique<s2ne::Prologue>(root, restored.events.difficulty);
-            prologue->set_resource_domain(s2ne::app_domain_for_save(restored.raw));
+            auto created = s2ne::Prologue::create(root, restored.events.difficulty);
+            if (!created)
+            {
+                s2ne::report_error(created.error());
+                return EXIT_FAILURE;
+            }
+            prologue = std::move(created).value();
+            auto domain = s2ne::try_app_domain_for_save(restored.raw);
+            if (!domain)
+            {
+                s2ne::report_error(domain.error());
+                return EXIT_FAILURE;
+            }
+            prologue->set_resource_domain(domain.value());
             prologue->restore_battle(std::move(restored.events), restored.turn);
             rawSave = std::move(restored.raw);
             paused = true;
@@ -316,8 +340,20 @@ int s2ne::run_application(int argc, char** argv)
                 return EXIT_FAILURE;
             }
             auto restored = std::move(restoreResult).value();
-            prologue = std::make_unique<s2ne::Prologue>(root, restored.events.difficulty);
-            prologue->set_resource_domain(s2ne::app_domain_for_save(restored.raw));
+            auto created = s2ne::Prologue::create(root, restored.events.difficulty);
+            if (!created)
+            {
+                s2ne::report_error(created.error());
+                return EXIT_FAILURE;
+            }
+            prologue = std::move(created).value();
+            auto domain = s2ne::try_app_domain_for_save(restored.raw);
+            if (!domain)
+            {
+                s2ne::report_error(domain.error());
+                return EXIT_FAILURE;
+            }
+            prologue->set_resource_domain(domain.value());
             prologue->restore_battle(std::move(restored.events), restored.turn);
             rawSave = std::move(restored.raw);
             paused = true;
@@ -326,7 +362,14 @@ int s2ne::run_application(int argc, char** argv)
         menu.small_font = settingsState.small_font != 0;
         auto showSettings = [&]
         {
-            auto image = settings->draw(s2ne::load_title(root, 20, false));
+            auto rendered = settings->try_draw(s2ne::load_title(root, 20, false));
+            if (!rendered)
+            {
+                s2ne::report_error(rendered.error());
+                settings.reset();
+                return;
+            }
+            auto image = std::move(rendered).value();
             if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4))
             {
                 s2ne::fatal(SDL_GetError());
@@ -334,7 +377,13 @@ int s2ne::run_application(int argc, char** argv)
         };
         auto beginSettings = [&]
         {
-            settings.emplace(root, 0, settingsState);
+            auto created = s2ne::OriginalSettings::create(root, 0, settingsState);
+            if (!created)
+            {
+                s2ne::report_error(created.error());
+                return;
+            }
+            settings.emplace(std::move(*created.value()));
             showSettings();
         };
         std::optional<s2ne::OriginalConfirmation> exitConfirmation;
@@ -368,6 +417,10 @@ int s2ne::run_application(int argc, char** argv)
             else
             {
                 SDL_ShowCursor();
+            }
+            if (innMenu)
+            {
+                innMenu->tick(s2ne::OriginalShopMenu::wall_clock_cs());
             }
             if (shopMenu && rawSave)
             {
@@ -433,16 +486,43 @@ int s2ne::run_application(int argc, char** argv)
             if (battleMenu)
             {
                 SDL_ShowCursor();
-                image = battleMenu->draw(image);
+                auto rendered = battleMenu->try_draw(image);
+                if (rendered)
+                {
+                    image = std::move(rendered).value();
+                }
+                else
+                {
+                    s2ne::report_error(rendered.error());
+                    battleMenu.reset();
+                }
             }
             if (battleReports)
             {
-                image = battleReports->draw();
+                auto rendered = battleReports->try_draw();
+                if (rendered)
+                {
+                    image = std::move(rendered).value();
+                }
+                else
+                {
+                    s2ne::report_error(rendered.error());
+                    battleReports.reset();
+                }
             }
             if (promotionMenu)
             {
                 SDL_ShowCursor();
-                image = promotionMenu->draw(image);
+                auto rendered = promotionMenu->try_draw(image);
+                if (rendered)
+                {
+                    image = std::move(rendered).value();
+                }
+                else
+                {
+                    s2ne::report_error(rendered.error());
+                    promotionMenu.reset();
+                }
             }
             if (skillMenu && !pendingSkillTarget)
             {
@@ -503,7 +583,12 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (saveMenu)
             {
-                saveMenu->draw(image, menu);
+                auto rendered = saveMenu->try_draw(image, menu);
+                if (!rendered)
+                {
+                    s2ne::report_error(rendered.error());
+                    saveMenu.reset();
+                }
             }
             if (overwriteConfirmation)
             {
@@ -567,7 +652,13 @@ int s2ne::run_application(int argc, char** argv)
             rawSave.reset();
             autosaveBlocked = false;
             connectedCampaign = nullptr;
-            prologue = std::make_unique<s2ne::Prologue>(root, setup.confirmed);
+            auto created = s2ne::Prologue::create(root, setup.confirmed);
+            if (!created)
+            {
+                s2ne::report_error(created.error());
+                return;
+            }
+            prologue = std::move(created).value();
             prologue->set_small_font(settingsState.small_font != 0);
             prologue->enable_text_animation(unsigned(settingsState.message_delay));
             inMenu = false;
@@ -987,7 +1078,7 @@ int s2ne::run_application(int argc, char** argv)
                 {
                     settingsState.difficulty = prologue->events.difficulty;
                     innMenu->prepare_settings(settingsState);
-                    if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
+                    if (event.type == SDL_EVENT_KEY_DOWN && (!event.key.repeat || innMenu->world_active()))
                     {
                         unsigned code = 0;
                         switch (event.key.key)
@@ -997,18 +1088,32 @@ int s2ne::run_application(int argc, char** argv)
                         case SDLK_DOWN: code = 0x50; break;
                         case SDLK_LEFT: code = 0x4B; break;
                         case SDLK_RIGHT: code = 0x4D; break;
+                        case SDLK_HOME: code = 0x47; break;
+                        case SDLK_END: code = 0x4F; break;
+                        case SDLK_PAGEUP: code = 0x49; break;
+                        case SDLK_PAGEDOWN: code = 0x51; break;
                         case SDLK_TAB: code = 0x0F; break;
                         case SDLK_RETURN: code = 0x1C; break;
                         case SDLK_SPACE: code = 0x39; break;
                         }
+                        bool enteringWorld = !innMenu->world_active();
                         innMenu->scan(code, *rawSave);
+                        if (enteringWorld && innMenu->world_active())
+                        {
+                            innMenu->enable_world_presentation();
+                        }
                     }
                     else if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
                         float x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x, y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y, rx{ }, ry{ };
                         if (SDL_RenderCoordinatesFromWindow(renderer, x, y, &rx, &ry))
                         {
+                            bool enteringWorld = !innMenu->world_active();
                             innMenu->mouse(int(rx), int(ry), event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT, *rawSave);
+                            if (enteringWorld && innMenu->world_active())
+                            {
+                                innMenu->enable_world_presentation();
+                            }
                         }
                     }
                     if (innMenu->take_equipment_changed())
@@ -1038,6 +1143,17 @@ int s2ne::run_application(int argc, char** argv)
                     if (!innMenu->blocker().empty())
                     {
                         std::cout << "Original inn unavailable: " << innMenu->blocker() << '\n';
+                    }
+                    if (innMenu->title_requested())
+                    {
+                        innMenu.reset();
+                        prologue.reset();
+                        rawSave.reset();
+                        connectedCampaign = nullptr;
+                        autosaveBlocked = false;
+                        inSetup = false;
+                        showMenu();
+                        continue;
                     }
                     if (innMenu->closed())
                     {
@@ -1627,8 +1743,22 @@ int s2ne::run_application(int argc, char** argv)
                                 continue;
                             }
                             auto restored = std::move(restoreResult).value();
-                            auto loaded = std::make_unique<s2ne::Prologue>(root, restored.events.difficulty);
-                            loaded->set_resource_domain(s2ne::app_domain_for_save(restored.raw));
+                            auto created = s2ne::Prologue::create(root, restored.events.difficulty);
+                            if (!created)
+                            {
+                                s2ne::report_error(created.error());
+                                saveMenu->complete(false);
+                                continue;
+                            }
+                            auto loaded = std::move(created).value();
+                            auto domain = s2ne::try_app_domain_for_save(restored.raw);
+                            if (!domain)
+                            {
+                                s2ne::report_error(domain.error());
+                                saveMenu->complete(false);
+                                continue;
+                            }
+                            loaded->set_resource_domain(domain.value());
                             loaded->restore_battle(std::move(restored.events), restored.turn);
                             loaded->set_small_font(settingsState.small_font != 0);
                             prologue = std::move(loaded);
@@ -2228,6 +2358,7 @@ int s2ne::run_application(int argc, char** argv)
                     if (request->option == 1)
                     {
                         innMenu.emplace(root, s2ne::app_domain_for_save(*rawSave));
+                        innMenu->enable_presentation_timing();
                     }
                     else if (request->option == 2)
                     {
@@ -2279,7 +2410,13 @@ int s2ne::run_application(int argc, char** argv)
                         std::cout << "Original boss-outcome checkpoint=" << path.string() << '\n';
                     }
                     auto next = campaignAdapter.deploy_next(*rawSave);
-                    auto staged = initialization.transition_stage(root, *rawSave, next);
+                    auto transitioned = initialization.try_transition_stage(root, *rawSave, next);
+                    if (!transitioned)
+                    {
+                        s2ne::report_error(transitioned.error());
+                        return EXIT_FAILURE;
+                    }
+                    auto staged = std::move(transitioned).value();
                     auto readGlobal = [](const auto& bytes, size_t at)
                     {
                         uint32_t v = 0;
@@ -2322,8 +2459,20 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (prologue && !rawSave && !prologue->autosave_requests().empty() && prologue->events.stage != 140)
             {
-                auto staged = initialization.fresh(root, prologue->events.stage, prologue->events.difficulty, prologue->events.flags, s2ne::OriginalInitialization::setup_from_settings(settingsState, 0));
-                auto restored = s2ne::OriginalSaveBridge::restore(root, staged);
+                auto initialized = initialization.try_fresh(root, prologue->events.stage, prologue->events.difficulty, prologue->events.flags, s2ne::OriginalInitialization::setup_from_settings(settingsState, 0));
+                if (!initialized)
+                {
+                    s2ne::report_error(initialized.error());
+                    return EXIT_FAILURE;
+                }
+                auto staged = std::move(initialized).value();
+                auto restoredResult = s2ne::OriginalSaveBridge::try_restore(root, staged);
+                if (!restoredResult)
+                {
+                    s2ne::report_error(restoredResult.error());
+                    return EXIT_FAILURE;
+                }
+                auto restored = std::move(restoredResult).value();
                 auto publication = prologue->try_normalize_campaign_roster(std::move(restored.events), 1);
                 if (!publication)
                 {
@@ -2476,7 +2625,12 @@ int s2ne::run_application(int argc, char** argv)
             {
                 auto image = title;
                 menu.draw(image);
-                saveMenu->draw(image, menu);
+                auto rendered = saveMenu->try_draw(image, menu);
+                if (!rendered)
+                {
+                    s2ne::report_error(rendered.error());
+                    saveMenu.reset();
+                }
                 if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4))
                 {
                     s2ne::fatal(SDL_GetError());
@@ -2488,6 +2642,11 @@ int s2ne::run_application(int argc, char** argv)
             if (!SDL_RenderPresent(renderer))
             {
                 s2ne::fatal(SDL_GetError());
+            }
+            if (innMenu && innMenu->world_active())
+            {
+                innMenu->frame_presented();
+                showPrologue();
             }
             if (shopMenu && shopMenu->transitioning())
             {

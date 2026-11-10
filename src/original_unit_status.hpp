@@ -1,6 +1,7 @@
 #pragma once
 #include "original_events.hpp"
 #include "original_menu.hpp"
+#include <memory>
 #include <string>
 
 namespace s2ne
@@ -12,15 +13,8 @@ class OriginalUnitStatus
     size_t heads_{ };
     static unsigned word(const std::vector<uint8_t>& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const std::vector<uint8_t>& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static std::vector<uint8_t> read(const std::filesystem::path& p)
-    {
-        std::ifstream f(p, std::ios::binary);
-        if (!f)
-        {
-            throw std::runtime_error("Missing original unit-status resource");
-        }
-        return { std::istreambuf_iterator<char>(f), { } };
-    }
+    static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& p) { return read_resource(p); }
+    static std::vector<uint8_t> read(const std::filesystem::path& p) { return try_read(p).value(); }
     void pixel(std::vector<uint8_t>& image, int x, int y, unsigned c) const
     {
         if (x < 0 || x >= 640 || y < 0 || y >= 480)
@@ -44,11 +38,11 @@ class OriginalUnitStatus
             }
         }
     }
-    void portrait(std::vector<uint8_t>& image, unsigned id, int y) const
+    s2ne::Result<bool> try_portrait(std::vector<uint8_t>& image, unsigned id, int y) const
     {
         if (!id || size_t(id) * 2 > word(cel_, heads_))
         {
-            throw std::runtime_error("Invalid original portrait ID");
+            return s2ne::Result<bool>::failure(make_error("Invalid original portrait ID"));
         }
         // 4461D5/445D38 select the second (small) image of each portrait pair.
         size_t p = heads_ + dword(cel_, heads_ + 2 + (size_t(id) * 2 - 1) * 8);
@@ -56,7 +50,7 @@ class OriginalUnitStatus
         p += 4;
         if (w > 640 || h > 480 || type > 1)
         {
-            throw std::runtime_error("Invalid original status portrait");
+            return s2ne::Result<bool>::failure(make_error("Invalid original status portrait"));
         }
         for (unsigned yy = 0; yy < h; ++yy)
         {
@@ -81,7 +75,7 @@ class OriginalUnitStatus
                 }
                 if (!n || n > w - x)
                 {
-                    throw std::runtime_error("Invalid original portrait run");
+                    return s2ne::Result<bool>::failure(make_error("Invalid original portrait run"));
                 }
                 unsigned repeat = code & 128 ? 0 : cel_.at(p++);
                 while (n--)
@@ -95,31 +89,70 @@ class OriginalUnitStatus
                 }
             }
         }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    void portrait(std::vector<uint8_t>& image, unsigned id, int y) const
+    {
+        auto result = try_portrait(image, id, y);
+        if (!result)
+        {
+            report_error(result.error());
+        }
     }
     static std::vector<uint8_t> bytes(const std::string& s) { return { s.begin(), s.end() }; }
 
 public:
-    explicit OriginalUnitStatus(const std::filesystem::path& root) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL"))
+    struct InitializationTag
+    {
+    };
+    OriginalUnitStatus(const std::filesystem::path& root, InitializationTag) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")) { }
+    s2ne::Result<bool> initialize(const std::filesystem::path& root)
     {
         pal_.at(0) = pal_.at(1) = pal_.at(2) = 0;
         heads_ = dword(pal_, 808 + 2 * 8) - 58;
         if (heads_ + 2 > cel_.size())
         {
-            throw std::runtime_error("Invalid original portrait archive");
+            return s2ne::Result<bool>::failure(make_error("Invalid original portrait archive"));
+        }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    explicit OriginalUnitStatus(const std::filesystem::path& root) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL"))
+    {
+        auto result = initialize(root);
+        if (!result)
+        {
+            fatal(result.error());
         }
     }
+    static s2ne::Result<std::unique_ptr<OriginalUnitStatus>> create(const std::filesystem::path& root)
+    {
+        auto result = std::make_unique<OriginalUnitStatus>(root, InitializationTag{ });
+        auto ready = result->initialize(root);
+        if (!ready)
+        {
+            return s2ne::Result<std::unique_ptr<OriginalUnitStatus>>::failure(ready.error());
+        }
+        return s2ne::Result<std::unique_ptr<OriginalUnitStatus>>::success(std::move(result));
+    }
+
     // Returns the missing right-hand segment, exactly as IDIV in 4573A1 (no ratio clamp).
     static int missing_bar(int current, int limit)
     {
         return !current || !limit ? 107 : int((int64_t(limit) - current) * 107 / limit);
     }
-    void draw(const OriginalMenu& font, std::vector<uint8_t>& image, const OriginalEvents::Unit& u, int panel_y, bool alternate_context = false) const
+    s2ne::Result<bool> try_draw(const OriginalMenu& font, std::vector<uint8_t>& image, const OriginalEvents::Unit& u, int panel_y, bool alternate_context = false) const
     {
         if (image.size() != 640 * 480 * 4)
         {
-            throw std::runtime_error("Invalid status framebuffer");
+            return s2ne::Result<bool>::failure(make_error("Invalid status framebuffer"));
         }
-        portrait(image, u.portrait, panel_y + 3);
+        auto portrait_result = try_portrait(image, u.portrait, panel_y + 3);
+        if (!portrait_result)
+        {
+            return portrait_result;
+        }
         if (!(u.status_flags & 0x10))
         {
             font.draw_original_large(image, u.name, 111, panel_y + 7, alternate_context ? 60 : 167);
@@ -178,6 +211,20 @@ public:
             number(value[i], i < 3 ? 409 : 475, y + (i % 3 == 2 ? -1 : i % 3 == 0 ? 1 :
                                                                                     0),
                 202);
+        }
+        return s2ne::Result<bool>::success(true);
+    }
+    void draw(const OriginalMenu& font, std::vector<uint8_t>& image, const OriginalEvents::Unit& u, int panel_y, bool alternate_context = false) const
+    {
+        auto staged = image;
+        auto result = try_draw(font, staged, u, panel_y, alternate_context);
+        if (result)
+        {
+            image.swap(staged);
+        }
+        else
+        {
+            report_error(result.error());
         }
     }
 };

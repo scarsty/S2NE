@@ -46,10 +46,6 @@ public:
             {
                 continue;
             }
-            if (u.action_state == 4 && e.movement_class(u) >= 3)
-            {
-                return Result<std::optional<unsigned>>::failure(make_error("46234F movement class3/4/5 requires448B99/45CADA indexed shadow overlays"));
-            }
             int distance = 0xFFFF;
             if (x_ || y_)
             {

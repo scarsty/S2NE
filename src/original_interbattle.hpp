@@ -2,6 +2,7 @@
 #include "original_menu.hpp"
 #include "title_image.hpp"
 #include <functional>
+#include <memory>
 #include <optional>
 
 namespace s2ne
@@ -12,15 +13,8 @@ class OriginalInterbattle
     std::vector<uint8_t> background_, palette_, indices_;
     int selected_{ 1 }, pointer_x_{ 298 }, pointer_y_{ 253 };
     bool pending_{ }, closed_{ };
-    static std::vector<uint8_t> read(const std::filesystem::path& p)
-    {
-        std::ifstream f(p, std::ios::binary);
-        if (!f)
-        {
-            throw std::runtime_error("Missing original interbattle resource");
-        }
-        return { std::istreambuf_iterator<char>(f), { } };
-    }
+    static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& p) { return read_resource(p); }
+    static std::vector<uint8_t> read(const std::filesystem::path& p) { return try_read(p).value(); }
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     void caption(std::vector<uint8_t>& image, unsigned id, int x, int y) const
@@ -66,31 +60,40 @@ public:
     static constexpr std::array<unsigned, 4> labels{ 89, 90, 91, 92 };
     static constexpr std::array<unsigned, 4> targets{ 0x410EEE, 0x410DC0, 0x41115D, 0x416333 };
     static constexpr std::array<Rect, 4> rectangles{ { { 226, 211, 370, 296 }, { 97, 277, 206, 366 }, { 421, 272, 584, 402 }, { 79, 419, 296, 479 } } };
-    explicit OriginalInterbattle(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one, unsigned resource = 17) : font_(root)
+    struct InitializationTag
+    {
+    };
+    OriginalInterbattle(const std::filesystem::path& root, OriginalDisc disc, unsigned resource, InitializationTag) : font_(root) { }
+    s2ne::Result<bool> initialize(const std::filesystem::path& root, OriginalDisc disc, unsigned resource)
     {
         if (resource != 17 && resource != 14 && resource != 15 && resource != 13)
         {
-            throw std::invalid_argument("Unsupported original interbattle background");
+            return s2ne::Result<bool>::failure(make_error("Unsupported original interbattle background"));
         }
-        auto dat = OriginalDiscResources(root).dat_entry(disc, resource);
+        auto dat_result = OriginalDiscResources(root).try_dat_entry(disc, resource);
+        if (!dat_result)
+        {
+            return s2ne::Result<bool>::failure(dat_result.error());
+        }
+        auto dat = std::move(dat_result).value();
         size_t offset = 0, size = dat.size();
         if (offset > dat.size() || size > dat.size() - offset || size < 897)
         {
-            throw std::runtime_error("Invalid hub PCX17");
+            return s2ne::Result<bool>::failure(make_error("Invalid hub PCX17"));
         }
         if (dat.at(offset) != 10 || dat.at(offset + 2) != 1 || dat.at(offset + 3) != 8 || dat.at(offset + 65) != 1 || word(dat, offset + 8) != 639 || word(dat, offset + 10) != 479)
         {
-            throw std::runtime_error("Unsupported hub PCX17");
+            return s2ne::Result<bool>::failure(make_error("Unsupported hub PCX17"));
         }
         unsigned stride = word(dat, offset + 66);
         if (stride < 640 || stride > 4096)
         {
-            throw std::runtime_error("Invalid hub stride");
+            return s2ne::Result<bool>::failure(make_error("Invalid hub stride"));
         }
         size_t colors = offset + size - 768;
         if (dat.at(colors - 1) != 12)
         {
-            throw std::runtime_error("Missing hub palette");
+            return s2ne::Result<bool>::failure(make_error("Missing hub palette"));
         }
         palette_.assign(dat.begin() + colors, dat.begin() + colors + 768);
         background_.resize(640 * 480 * 4);
@@ -100,7 +103,7 @@ public:
         {
             if (p >= colors - 1)
             {
-                throw std::runtime_error("Truncated hub PCX");
+                return s2ne::Result<bool>::failure(make_error("Truncated hub PCX"));
             }
             unsigned value = dat.at(p++), n = 1;
             if ((value & 192) == 192)
@@ -108,13 +111,13 @@ public:
                 n = value & 63;
                 if (p >= colors - 1)
                 {
-                    throw std::runtime_error("Truncated hub run");
+                    return s2ne::Result<bool>::failure(make_error("Truncated hub run"));
                 }
                 value = dat.at(p++);
             }
             if (!n || n > total - pixel)
             {
-                throw std::runtime_error("Invalid hub run");
+                return s2ne::Result<bool>::failure(make_error("Invalid hub run"));
             }
             while (n--)
             {
@@ -133,13 +136,34 @@ public:
                 background_[q + 3] = 255;
             }
         }
+
+        return s2ne::Result<bool>::success(true);
     }
+    explicit OriginalInterbattle(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one, unsigned resource = 17) : font_(root)
+    {
+        auto result = initialize(root, disc, resource);
+        if (!result)
+        {
+            fatal(result.error());
+        }
+    }
+    static s2ne::Result<std::unique_ptr<OriginalInterbattle>> create(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one, unsigned resource = 17)
+    {
+        auto result = std::make_unique<OriginalInterbattle>(root, disc, resource, InitializationTag{ });
+        auto ready = result->initialize(root, disc, resource);
+        if (!ready)
+        {
+            return s2ne::Result<std::unique_ptr<OriginalInterbattle>>::failure(ready.error());
+        }
+        return s2ne::Result<std::unique_ptr<OriginalInterbattle>>::success(std::move(result));
+    }
+
     const std::vector<uint8_t>& background() const { return background_; }
-    std::vector<uint8_t> indexed_background(const std::vector<uint8_t>& palette) const
+    s2ne::Result<std::vector<uint8_t>> try_indexed_background(const std::vector<uint8_t>& palette) const
     {
         if (palette.size() < 768)
         {
-            throw std::invalid_argument("Original indexed background palette");
+            return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Original indexed background palette"));
         }
         auto image = background_;
         for (size_t i = 0; i < indices_.size(); ++i)
@@ -149,7 +173,12 @@ public:
                 image[i * 4 + k] = uint8_t(unsigned(palette[indices_[i] * 3 + k]) * 255 / 63);
             }
         }
-        return image;
+        return s2ne::Result<std::vector<uint8_t>>::success(image);
+    }
+    std::vector<uint8_t> indexed_background(const std::vector<uint8_t>& palette) const
+    {
+        auto result = try_indexed_background(palette);
+        return std::move(result).value();
     }
     int selected() const { return selected_; }
     bool closed() const { return closed_; }

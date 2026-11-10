@@ -69,13 +69,18 @@ private:
         promotion_.candidate(id);
         return records_ + size_t(id - 1) * 37;
     }
-    size_t item(unsigned id) const
+    s2ne::Result<size_t> try_item(unsigned id) const
     {
         if (!id || id > item_count_)
         {
-            throw std::invalid_argument("Invalid promotion equipment ID");
+            return s2ne::Result<size_t>::failure(make_error("Invalid promotion equipment ID"));
         }
-        return 2 + size_t(id - 1) * 38;
+        return s2ne::Result<size_t>::success(2 + size_t(id - 1) * 38);
+    }
+    size_t item(unsigned id) const
+    {
+        auto result = try_item(id);
+        return std::move(result).value();
     }
     bool special(const Unit& u, int value) const
     {

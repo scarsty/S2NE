@@ -1,5 +1,6 @@
 #pragma once
 #include "original_save.hpp"
+#include <memory>
 namespace s2ne
 {
 // 412F1D ->4138F7: sell only carried, priced items; equipped items are not
@@ -8,14 +9,19 @@ class OriginalShop
 {
     std::vector<uint8_t> items_;
     unsigned count_{ };
-    unsigned price(unsigned id) const
+    s2ne::Result<unsigned> try_price(unsigned id) const
     {
         if (!id || id > count_)
         {
-            throw std::out_of_range("Original shop item ID");
+            return s2ne::Result<unsigned>::failure(make_error("Original shop item ID"));
         }
         size_t p = 2 + size_t(id - 1) * 38 + 0x1A;
-        return items_.at(p) | (unsigned(items_.at(p + 1)) << 8);
+        return s2ne::Result<unsigned>::success(items_.at(p) | (unsigned(items_.at(p + 1)) << 8));
+    }
+    unsigned price(unsigned id) const
+    {
+        auto result = try_price(id);
+        return std::move(result).value();
     }
     static uint32_t get(std::span<const uint8_t> bytes, size_t p)
     {
@@ -23,21 +29,54 @@ class OriginalShop
     }
 
 public:
-    explicit OriginalShop(const std::filesystem::path& root)
+    struct InitializationTag
+    {
+    };
+    OriginalShop(const std::filesystem::path& root, InitializationTag) { }
+    s2ne::Result<bool> initialize(const std::filesystem::path& root)
     {
         std::ifstream f(root / "ITEMSP.BIN", std::ios::binary);
         if (!f)
         {
-            throw std::runtime_error("Missing original shop items");
+            return s2ne::Result<bool>::failure(make_error("Missing original shop items"));
         }
         items_ = { std::istreambuf_iterator<char>(f), { } };
-        count_ = unsigned(OriginalSave::item_count(items_));
+        if (items_.size() < 2)
+        {
+            return s2ne::Result<bool>::failure(make_error("Truncated shop item header"));
+        }
+        count_ = unsigned(items_[0]) | (unsigned(items_[1]) << 8);
+        if (!count_ || count_ > 10000 || items_.size() < 2 + size_t(count_) * 38)
+        {
+            return s2ne::Result<bool>::failure(make_error("Invalid shop item table"));
+        }
+
+        return s2ne::Result<bool>::success(true);
     }
-    std::vector<unsigned> sale_items(const OriginalSave::State& state) const
+    explicit OriginalShop(const std::filesystem::path& root)
+    {
+        auto result = initialize(root);
+        if (!result)
+        {
+            fatal(result.error());
+        }
+    }
+    static s2ne::Result<std::unique_ptr<OriginalShop>> create(const std::filesystem::path& root)
+    {
+        auto result = std::make_unique<OriginalShop>(root, InitializationTag{ });
+        auto ready = result->initialize(root);
+        if (!ready)
+        {
+            return s2ne::Result<std::unique_ptr<OriginalShop>>::failure(ready.error());
+        }
+        return s2ne::Result<std::unique_ptr<OriginalShop>>::success(std::move(result));
+    }
+
+    s2ne::Result<std::vector<unsigned>> try_sale_items(const OriginalSave::State& state) const
     {
         if (state.groups[0].inventory.size() != count_)
         {
-            throw std::runtime_error("Original shop inventory framing");
+            return s2ne::Result<std::vector<unsigned>>::failure(make_error("Original shop inventory framing"));
         }
         std::vector<unsigned> result;
         for (unsigned id = 1; id <= count_; ++id)
@@ -47,7 +86,12 @@ public:
                 result.push_back(id);
             }
         }
-        return result;
+        return s2ne::Result<std::vector<unsigned>>::success(result);
+    }
+    std::vector<unsigned> sale_items(const OriginalSave::State& state) const
+    {
+        auto result = try_sale_items(state);
+        return std::move(result).value();
     }
     std::vector<uint8_t> name(unsigned id) const
     {

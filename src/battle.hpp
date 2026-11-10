@@ -1552,6 +1552,12 @@ public:
         }
         units.at(feedback.target).hp -= feedback.consume();
     }
+    bool movement_presentation_driven_{ }, movement_presented_{ };
+    void enable_movement_presentation() { movement_presentation_driven_ = true; }
+    void movement_presented()
+    {
+        if (animating_movement()) { movement_presented_ = true; }
+    }
     void enable_movement_animation() { movement_animation_enabled_ = true; }
     bool animating_movement() const { return moving_unit_ >= 0; }
     bool attack_animation_active() const { return attack_animation_ && animating_movement(); }
@@ -1567,6 +1573,12 @@ public:
         unsigned elapsed = movement_elapsed_ % movement_interval_ + std::min(milliseconds, movement_interval_);
         if (elapsed >= movement_interval_)
         {
+            if (movement_presentation_driven_ && !movement_presented_)
+            {
+                movement_elapsed_ = frame * movement_interval_ + movement_interval_ - 1;
+                return;
+            }
+            movement_presented_ = false;
             ++frame;
             if (frame >= movement_poses_.size())
             {
@@ -2581,6 +2593,7 @@ public:
         actor.direction = facing;
         // 454E43 ->473192 waits 0Ch DOS hundredths after each presented frame.
         moving_unit_ = int(index);
+        movement_presented_ = false;
         movement_elapsed_ = 0;
         movement_interval_ = 12 * 10;
         attack_animation_ = true;
@@ -2609,6 +2622,7 @@ public:
         original_combat::PhysicalPreviewInput in{ };
         in.attack = actor.attack;
         in.defense = defender.defense;
+        in.context_bonus = int(resources.action_proficiency(actor, action));
         in.height_difference = original_combat::terrain_height_difference(cell({ actor.x, actor.y }).elevation, cell({ defender.x, defender.y }).elevation, resources.difficulty == 1);
         in.player_side = !actor.hostile();
         in.difficulty_bonus = ai_config_[0xF3 + std::min(5u, resources.difficulty)];
@@ -2884,6 +2898,7 @@ private:
             return false;
         }
         auto saved = actor;
+        unsigned movement_class = hostile_resources_ ? hostile_resources_->movement_class(actor) : 0;
         if (original_rules_)
         {
             actor.action_points -= cost;
@@ -2893,16 +2908,22 @@ private:
         actor.direction = facing({ actor.x, actor.y }, to, actor.direction);
         actor.x = to.x;
         actor.y = to.y;
-        actor.movement_frame = saved.direction == actor.direction ? saved.movement_frame + 1 : 0;
+        actor.movement_frame = saved.direction == actor.direction ? saved.movement_frame + (movement_class == 4 || movement_class == 5 ? 0 : 1) : 0;
         actor.action_state = 3;
         actor.status34 |= 1;
         actor.movement_pose = false;
         auto pose = actor;
         pose.movement_pose = true;
+        if (movement_class >= 3 && movement_class <= 5)
+        {
+            pose.movement_visual_class = movement_class;
+            pose.movement_camera_pose = true;
+        }
         movement_poses_ = { pose };
         moving_unit_ = int(index);
+        movement_presented_ = false;
         movement_elapsed_ = 0;
-        movement_interval_ = 80;
+        movement_interval_ = movement_class >= 3 && movement_class <= 5 ? 120 : 80;
         return true;
     }
     void plan_hostile(const std::vector<OriginalEvents::Unit>& units, size_t index)
@@ -3070,12 +3091,13 @@ private:
                     hit.defender_evasion = defender.strikeback;
                     hit.height_difference = original_combat::terrain_height_difference(cell({ position.x, position.y }).elevation, cell({ defender.x, defender.y }).elevation, hostile_resources_->difficulty == 1);
                     hit.attack_mode = int(attack_mode({ position.x, position.y }, { defender.x, defender.y }, defender.direction, hostile_resources_->difficulty == 1));
-                    hit.context_bonus = int(actor.weapon_proficiency[3]);
+                    hit.context_bonus = int(hostile_resources_->action_proficiency(actor, action));
                     hit.random_multiplier = original_combat::preview_multiplier(ai_config_[2], ai_config_[3]);
                     hit.player_side = !actor.hostile();
                     hit.difficulty_bonus = ai_config_[0xF3 + std::min(5u, hostile_resources_->difficulty)];
                     hit.modifiers.action_type = 21;
                     hit.modifiers.action_bonus = hostile_resources_->action_accuracy_bonus(actor, action);
+                    hit.modifiers.defender_equipment_penalty = hostile_resources_->equipment_evasion(defender);
                     hit.modifiers.defender_115 = uint8_t(defender.abilities);
                     hit.modifiers.defender_3c = defender.status3c;
                     hit.modifiers.defender_equipment_16 = hostile_resources_->equipment_special(defender, 0x16);
@@ -3530,6 +3552,7 @@ public:
                 movement_poses_.push_back(pose);
             }
             moving_unit_ = int(index);
+            movement_presented_ = false;
             movement_elapsed_ = 0;
             movement_interval_ = 120;
             attack_animation_ = true;
@@ -3560,9 +3583,100 @@ public:
         units[b].hp -= lost;
         settle_physical(units, a, b, lost);
     }
+    int draw_forward_damage(const std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, const OriginalEvents::ActionRecord& action, int attack_style)
+    {
+        const auto& attacker = units[a];
+        const auto& defender = units[b];
+        using namespace original_combat;
+        const auto& resources = *hostile_resources_;
+        bool simple_rules = resources.difficulty == 1;
+        auto attacking_terrain = terrain_effect(resources, attacker, { attacker.x, attacker.y });
+        auto defending_terrain = terrain_effect(resources, defender, { defender.x, defender.y });
+        int height = terrain_height_difference(cell({ attacker.x, attacker.y }).elevation, cell({ defender.x, defender.y }).elevation, simple_rules);
+        if (simple_rules)
+        {
+            attacking_terrain.bytes[1] = 0;
+            defending_terrain.bytes[2] = 0;
+        }
+        // 408D4C reads [runtime136] SAR16 == current tactics138;
+        // 408DD0 subtracts [runtime0BF] SAR16 == evasion0C1.
+        HitChanceInput hit{ };
+        hit.attacker_tactics = attacker.tactics;
+        hit.defender_evasion = defender.strikeback;
+        hit.height_difference = height;
+        hit.attack_mode = attack_style;
+        hit.context_bonus = int(resources.action_proficiency(attacker, action));
+        hit.attacker_condition = attacker.max_hp ? lost_health_percent(attacker.max_hp, attacker.hp) : 0;
+        hit.condition_roll = hit.attacker_condition > 70 ? percent() : 0;
+        // 408CB7 adjusts both tactics words before the forward hit draw.
+        if (defender.max_hp && lost_health_percent(defender.max_hp, defender.hp) > 70)
+        {
+            percent();
+        }
+        hit.random_multiplier = ai_config_[2] + roll(ai_config_[3] + 3);
+        hit.player_side = !attacker.hostile();
+        hit.difficulty_bonus = ai_config_[0xF3 + std::min(5u, resources.difficulty)];
+        hit.modifiers.action_type = 21;    // action_accuracy_bonus has already applied weapon accuracy.
+        hit.modifiers.action_bonus = resources.action_accuracy_bonus(attacker, action);
+        hit.modifiers.defender_equipment_penalty = resources.equipment_evasion(defender);
+        hit.modifiers.defender_115 = uint8_t(defender.abilities);
+        hit.modifiers.defender_3c = defender.status3c;
+        hit.modifiers.defender_equipment_16 = resources.equipment_special(defender, 0x16);
+        hit.defender_39 = defender.status39.value_or(0);
+        hit.defender_3d = defender.status3d;
+        hit.defender_status3c_dword = defender.status3c;
+        if (defender.action_status_runtime)
+        {
+            hit.defender_39 = (*defender.action_status_runtime)[0x39];
+            hit.defender_3d = (*defender.action_status_runtime)[0x3D];
+            hit.defender_status3c_dword = 0;
+            for (unsigned i = 0; i < 4; ++i)
+            {
+                hit.defender_status3c_dword |= uint32_t((*defender.action_status_runtime)[0x3C + i]) << (8 * i);
+            }
+        }
+        last_physical_diagnostic_ = PhysicalDiagnostic{ a, b, std::clamp(attacker.tactics - defender.strikeback + (attack_style == 3 ? 5 : attack_style == 2 ? 3 :
+                                                                                                                                                               0),
+                                                                  1, 100)
+                * 12 / 10,
+            hit_chance(hit), hit.modifiers.action_bonus, height, attack_style };
+        if (!hit_succeeds(hit, percent())) { return 0; }
+        PhysicalDamageInput damage{ };
+        damage.attack = attacker.attack;
+        damage.defense = defender.defense;
+        damage.height_difference = height;
+        damage.attack_mode = attack_style;
+        damage.context_bonus = hit.context_bonus;
+        damage.attacker_terrain_bonus = int(int8_t(attacking_terrain.bytes[1]));
+        damage.defender_terrain_bonus = int(int8_t(defending_terrain.bytes[2]));
+        int chance = percent(), decimal = roll(10);
+        damage.divisor = damage_divisor(chance, decimal);
+        damage.random_multiplier = ai_config_[0] + roll(ai_config_[1] + 3);
+        damage.player_side = !attacker.hostile();
+        damage.difficulty_bonus = hit.difficulty_bonus;
+        damage.attacker_3c = attacker.status3c;
+        damage.attacker_118 = uint8_t(attacker.abilities >> 24);
+        damage.defender_kind = uint8_t(defender.kind_attribute);
+        damage.modifiers.action_coefficient = action.fields[11];
+        damage.modifiers.class_matchup = resources.class_matchup(attacker, defender);
+        damage.modifiers.combat_value = resources.combat_value(attacker);
+        damage.modifiers.defender_116 = uint8_t(defender.abilities >> 8);
+        damage.modifiers.defender_3c = defender.status3c;
+        damage.modifiers.defender_equipment_13 = resources.equipment_special(defender, 0x13);
+        // The minimum-damage draw only occurs after all modifiers.
+        damage.minimum_roll = 99;
+        int dealt = physical_damage(damage);
+        if (dealt < 3)
+        {
+            damage.minimum_roll = percent();
+            dealt = physical_damage(damage);
+        }
+
+        return dealt;
+    }
     bool strike(std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, int slot = -1)
     {
-        if (a >= units.size() || b >= units.size() || a == b || combat_feedback_active())
+        if (a >= units.size() || b >= units.size() || a == b || animating_movement() || combat_feedback_active())
         {
             return false;
         }
@@ -3601,79 +3715,12 @@ public:
         int attack_style = attack_mode({ attacker.x, attacker.y }, { defender.x, defender.y }, defender.direction, simple_rules);
         if (original_rules_ && action)
         {
-            using namespace original_combat;
-            const auto& resources = *hostile_resources_;
-            auto attacking_terrain = terrain_effect(resources, attacker, { attacker.x, attacker.y });
-            auto defending_terrain = terrain_effect(resources, defender, { defender.x, defender.y });
-            int height = terrain_height_difference(cell({ attacker.x, attacker.y }).elevation, cell({ defender.x, defender.y }).elevation, simple_rules);
-            if (simple_rules)
-            {
-                attacking_terrain.bytes[1] = 0;
-                defending_terrain.bytes[2] = 0;
-            }
-            // 408D4C reads [runtime136] SAR16 == current tactics138;
-            // 408DD0 subtracts [runtime0BF] SAR16 == evasion0C1.
-            HitChanceInput hit{ };
-            hit.attacker_tactics = attacker.tactics;
-            hit.defender_evasion = defender.strikeback;
-            hit.height_difference = height;
-            hit.attack_mode = attack_style;
-            hit.context_bonus = int(attacker.weapon_proficiency[3]);
-            hit.attacker_condition = attacker.max_hp ? lost_health_percent(attacker.max_hp, attacker.hp) : 0;
-            hit.condition_roll = hit.attacker_condition > 70 ? percent() : 0;
-            // 408CB7 adjusts both tactics words before the forward hit draw.
-            if (defender.max_hp && lost_health_percent(defender.max_hp, defender.hp) > 70)
-            {
-                percent();
-            }
-            hit.random_multiplier = ai_config_[2] + roll(ai_config_[3] + 3);
-            hit.player_side = !attacker.hostile();
-            hit.difficulty_bonus = ai_config_[0xF3 + std::min(5u, resources.difficulty)];
-            hit.modifiers.action_type = 21;    // action_accuracy_bonus has already applied weapon accuracy.
-            hit.modifiers.action_bonus = resources.action_accuracy_bonus(attacker, *action);
-            hit.modifiers.defender_115 = uint8_t(defender.abilities);
-            hit.modifiers.defender_3c = defender.status3c;
-            hit.modifiers.defender_equipment_16 = resources.equipment_special(defender, 0x16);
-            last_physical_diagnostic_ = PhysicalDiagnostic{ a, b, std::clamp(attacker.tactics - defender.strikeback + (attack_style == 3 ? 5 : attack_style == 2 ? 3 :
-                                                                                                                                                                   0),
-                                                                      1, 100)
-                    * 12 / 10,
-                hit_chance(hit), hit.modifiers.action_bonus, height, attack_style };
-            if (!hit_succeeds(hit, percent()))
+            int dealt = draw_forward_damage(units, a, b, *action, attack_style);
+            if (!dealt)
             {
                 physical_feedback(units, a, b, 0, true);
                 message_ = "Original physical action: miss";
                 return true;
-            }
-            PhysicalDamageInput damage{ };
-            damage.attack = attacker.attack;
-            damage.defense = defender.defense;
-            damage.height_difference = height;
-            damage.attack_mode = attack_style;
-            damage.context_bonus = hit.context_bonus;
-            damage.attacker_terrain_bonus = int(int8_t(attacking_terrain.bytes[1]));
-            damage.defender_terrain_bonus = int(int8_t(defending_terrain.bytes[2]));
-            int chance = percent(), decimal = roll(10);
-            damage.divisor = damage_divisor(chance, decimal);
-            damage.random_multiplier = ai_config_[0] + roll(ai_config_[1] + 3);
-            damage.player_side = !attacker.hostile();
-            damage.difficulty_bonus = hit.difficulty_bonus;
-            damage.attacker_3c = attacker.status3c;
-            damage.attacker_118 = uint8_t(attacker.abilities >> 24);
-            damage.defender_kind = uint8_t(defender.kind_attribute);
-            damage.modifiers.action_coefficient = action->fields[11];
-            damage.modifiers.class_matchup = resources.class_matchup(attacker, defender);
-            damage.modifiers.combat_value = resources.combat_value(attacker);
-            damage.modifiers.defender_116 = uint8_t(defender.abilities >> 8);
-            damage.modifiers.defender_3c = defender.status3c;
-            damage.modifiers.defender_equipment_13 = resources.equipment_special(defender, 0x13);
-            // The minimum-damage draw only occurs after all modifiers.
-            damage.minimum_roll = 99;
-            int dealt = physical_damage(damage);
-            if (dealt < 3)
-            {
-                damage.minimum_roll = percent();
-                dealt = physical_damage(damage);
             }
             if (action->fields[0] == 40)
             {
@@ -3753,6 +3800,11 @@ public:
                 }
                 auto pose = units[selected_];
                 pose.movement_pose = true;
+                if (movement_class >= 3 && movement_class <= 5)
+                {
+                    pose.movement_visual_class = movement_class;
+                    pose.movement_camera_pose = true;
+                }
                 const auto& previous_pose = movement_poses_.empty() ? saved : movement_poses_.back();
                 pose.movement_frame = previous_pose.direction != pose.direction ? 0 : previous_pose.movement_frame + (movement_class == 4 || movement_class == 5 ? 0 : 1);
                 movement_poses_.push_back(std::move(pose));
@@ -3779,6 +3831,7 @@ public:
             if (movement_animation_enabled_ && !movement_poses_.empty())
             {
                 moving_unit_ = selected_;
+                movement_presented_ = false;
                 movement_elapsed_ = 0;
             }
             moved_ = true;

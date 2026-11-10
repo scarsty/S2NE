@@ -2,6 +2,7 @@
 #include "original_menu.hpp"
 #include <cstdint>
 #include <cstdio>
+#include <memory>
 #include <sstream>
 #include <string>
 
@@ -52,15 +53,8 @@ private:
     size_t password_cursor_ = 0;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static std::vector<uint8_t> read(const std::filesystem::path& p)
-    {
-        std::ifstream f(p, std::ios::binary);
-        if (!f)
-        {
-            throw std::runtime_error("Missing original settings resource");
-        }
-        return { std::istreambuf_iterator<char>(f), { } };
-    }
+    static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& p) { return read_resource(p); }
+    static std::vector<uint8_t> read(const std::filesystem::path& p) { return try_read(p).value(); }
     std::array<uint8_t*, 7> toggles() { return { &state_.masking, &state_.flag_4f7d05, &state_.animation, &state_.status_window, &state_.flag_4f7d0a, &state_.flag_4f7d09, &state_.cdda }; }
     std::array<uint8_t, 7> toggles() const { return { state_.masking, state_.flag_4f7d05, state_.animation, state_.status_window, state_.flag_4f7d0a, state_.flag_4f7d09, state_.cdda }; }
     void pixel(std::vector<uint8_t>& image, int x, int y, unsigned color) const
@@ -161,32 +155,46 @@ private:
     }
 
 public:
-    explicit OriginalSettings(const std::filesystem::path& root, int mode, State state) : font_(root), state_(state), mode_(mode), old_mask_(state.status_window)
+    struct InitializationTag
+    {
+    };
+    OriginalSettings(const std::filesystem::path& root, int mode, State state, InitializationTag) : font_(root), state_(state), mode_(mode), old_mask_(state.status_window) { }
+    s2ne::Result<bool> initialize(const std::filesystem::path& root, int mode, State state)
     {
         if (mode < 0 || mode > 2)
         {
-            throw std::runtime_error("Invalid original settings context");
+            return s2ne::Result<bool>::failure(make_error("Invalid original settings context"));
         }
-        pal_ = read(root / "SUPERSP.PAL");
+        auto pal_read_result = read_resource(root / "SUPERSP.PAL");
+        if (!pal_read_result)
+        {
+            return s2ne::Result<bool>::failure(pal_read_result.error());
+        }
+        pal_ = std::move(pal_read_result).value();
         pal_.at(0) = pal_.at(1) = pal_.at(2) = 0;
-        const auto cel = read(root / "SUPERSP.CEL");
+        auto cel_read_result = read_resource(root / "SUPERSP.CEL");
+        if (!cel_read_result)
+        {
+            return s2ne::Result<bool>::failure(cel_read_result.error());
+        }
+        const auto cel = std::move(cel_read_result).value();
         // 425E84: CEL correction starts at 56; 426CB0 maps 202 to index 60.
         size_t group = dword(pal_, 808 + 8) - 57;
         if (word(cel, group) <= 60)
         {
-            throw std::runtime_error("Missing CEL2 settings panel");
+            return s2ne::Result<bool>::failure(make_error("Missing CEL2 settings panel"));
         }
         size_t q = group + 2 + 60 * 8, offset = group + dword(cel, q), size = dword(cel, q + 4);
         if (offset > cel.size() || size > cel.size() - offset || size < 4)
         {
-            throw std::runtime_error("Invalid CEL2 settings panel");
+            return s2ne::Result<bool>::failure(make_error("Invalid CEL2 settings panel"));
         }
         sprite_.assign(cel.begin() + offset, cel.begin() + offset + size);
         width_ = word(sprite_, 0) + 1;
         height_ = word(sprite_, 2) + 1;
         if (width_ > 640 || height_ > 480)
         {
-            throw std::runtime_error("Invalid settings panel dimensions");
+            return s2ne::Result<bool>::failure(make_error("Invalid settings panel dimensions"));
         }
         left_ = 320 - width_ / 2;
         top_ = 240 - height_ / 2;
@@ -198,7 +206,7 @@ public:
                 unsigned code = sprite_.at(p++), n = code ? code & 127 : 1;
                 if (!n || n > unsigned(width_ - x))
                 {
-                    throw std::runtime_error("Invalid settings panel run");
+                    return s2ne::Result<bool>::failure(make_error("Invalid settings panel run"));
                 }
                 if (code)
                 {
@@ -206,16 +214,37 @@ public:
                 }
                 if (p > sprite_.size())
                 {
-                    throw std::runtime_error("Truncated settings panel run");
+                    return s2ne::Result<bool>::failure(make_error("Truncated settings panel run"));
                 }
                 x += int(n);
             }
         }
         if (p != sprite_.size())
         {
-            throw std::runtime_error("Trailing settings panel bytes");
+            return s2ne::Result<bool>::failure(make_error("Trailing settings panel bytes"));
+        }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    explicit OriginalSettings(const std::filesystem::path& root, int mode, State state) : font_(root), state_(state), mode_(mode), old_mask_(state.status_window)
+    {
+        auto result = initialize(root, mode, state);
+        if (!result)
+        {
+            fatal(result.error());
         }
     }
+    static s2ne::Result<std::unique_ptr<OriginalSettings>> create(const std::filesystem::path& root, int mode, State state)
+    {
+        auto result = std::make_unique<OriginalSettings>(root, mode, state, InitializationTag{ });
+        auto ready = result->initialize(root, mode, state);
+        if (!ready)
+        {
+            return s2ne::Result<std::unique_ptr<OriginalSettings>>::failure(ready.error());
+        }
+        return s2ne::Result<std::unique_ptr<OriginalSettings>>::success(std::move(result));
+    }
+
     static State load_state(const std::filesystem::path& root)
     {
         State state;
@@ -461,11 +490,11 @@ public:
         }
         return r;
     }
-    std::vector<uint8_t> draw(const std::vector<uint8_t>& background) const
+    s2ne::Result<std::vector<uint8_t>> try_draw(const std::vector<uint8_t>& background) const
     {
         if (background.size() != 640 * 480 * 4)
         {
-            throw std::runtime_error("Settings requires a 640x480 RGBA backdrop");
+            return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Settings requires a 640x480 RGBA backdrop"));
         }
         auto image = background;
         size_t p = 4;
@@ -532,7 +561,12 @@ public:
             text(image, { password_text_.begin(), password_text_.end() }, 144, 452, true, 254, 0, 2);
             text(image, { '_' }, 144 + int(password_cursor_) * 16, 452, true, 254, 0, 2);
         }
-        return image;
+        return s2ne::Result<std::vector<uint8_t>>::success(image);
+    }
+    std::vector<uint8_t> draw(const std::vector<uint8_t>& background) const
+    {
+        auto result = try_draw(background);
+        return std::move(result).value();
     }
 };
 }    //namespace s2ne

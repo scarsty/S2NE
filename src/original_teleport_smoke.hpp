@@ -1,7 +1,7 @@
 #pragma once
-#include "runtime_error.hpp"
 #include "original_save_bridge.hpp"
 #include "prologue.hpp"
+#include "runtime_error.hpp"
 namespace s2ne
 {
 inline void original_teleport_smoke(const std::filesystem::path& root, SDL_Renderer* renderer, SDL_Texture* texture)

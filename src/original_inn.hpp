@@ -1,10 +1,12 @@
 #pragma once
+#include "original_army_equipment_menu.hpp"
 #include "original_battle_reports.hpp"
 #include "original_combat.hpp"
 #include "original_save_bridge.hpp"
 #include "original_save_menu.hpp"
 #include "original_save_store.hpp"
 #include "original_shop_menu.hpp"
+#include "original_worldmap.hpp"
 #include <ctime>
 namespace s2ne
 {
@@ -19,9 +21,15 @@ class OriginalInn
     bool closed_ = false, reading_ = false;
     std::string blocker_;
     std::optional<OriginalBattleReports> roster_;
+    std::optional<OriginalArmyEquipmentMenu> equipment_menu_;
+    std::optional<OriginalWorldmap> world_;
+    OriginalDisc domain_;
     std::optional<OriginalSettings> settings_;
     std::optional<OriginalConfirmation> auto_confirm_;
     bool equipment_changed_ = false;
+    bool title_requested_ = false;
+    bool presentation_driven_ = false;
+    std::optional<OriginalConfirmation> title_confirm_;
     std::optional<OriginalSaveMenu> saves_;
     std::optional<OriginalConfirmation> overwrite_;
     std::optional<OriginalSave::State> loaded_;
@@ -34,7 +42,7 @@ class OriginalInn
 public:
     static constexpr std::array<unsigned, 10> labels{ 193, 194, 128, 129, 195, 192, 80, 131, 123, 190 };
     static constexpr std::array<OriginalInterbattle::Rect, 10> rectangles{ { { 473, 60, 562, 176 }, { 310, 106, 380, 216 }, { 534, 184, 617, 303 }, { 455, 179, 530, 299 }, { 292, 243, 412, 479 }, { 292, 206, 352, 240 }, { 398, 209, 420, 252 }, { 48, 167, 120, 302 }, { 250, 158, 294, 202 }, { 121, 151, 266, 444 } } };
-    explicit OriginalInn(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one) : font_(root), background_(root, disc, 13), graphics_(root, disc), root_(root)
+    explicit OriginalInn(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one) : font_(root), background_(root, disc, 13), graphics_(root, disc), root_(root), domain_(disc)
     {
         auto result = try_load_towns(root);
         if (!result)
@@ -77,8 +85,49 @@ public:
         return Result<std::vector<uint8_t>>::success({ bin.value().begin() + p, bin.value().begin() + p + n - 14 });
     }
     bool closed() const { return closed_; }
+    bool title_requested() const { return title_requested_; }
+    bool title_confirmation_active() const { return title_confirm_.has_value(); }
+    void finish_title_confirmation()
+    {
+        if (auto yes = title_confirm_->result())
+        {
+            title_requested_ = *yes;
+            closed_ = *yes;
+            title_confirm_.reset();
+        }
+    }
     bool reading() const { return reading_; }
     bool roster_active() const { return roster_.has_value(); }
+    bool equipment_active() const { return equipment_menu_.has_value(); }
+    bool world_active() const { return world_.has_value(); }
+    void tick(unsigned clock)
+    {
+        if (world_)
+        {
+            world_->tick(clock);
+            if (world_->closed())
+            {
+                world_.reset();
+            }
+        }
+    }
+    void enable_world_presentation()
+    {
+        if (world_)
+        {
+            world_->enable_presentation_timing();
+        }
+    }
+    void enable_presentation_timing() { presentation_driven_ = true; }
+    void frame_presented()
+    {
+        if (equipment_menu_) { equipment_menu_->frame_presented(); }
+        if (world_)
+        {
+            world_->frame_presented();
+        }
+    }
+    const OriginalWorldmap* worldmap() const { return world_ ? &*world_ : nullptr; }
     const auto& rumor() const { return rumor_; }
     const std::string& blocker() const { return blocker_; }
     std::vector<uint8_t> town_rumor(const OriginalSave::State& state, unsigned branch) const
@@ -230,6 +279,23 @@ public:
     }
     void scan(unsigned code, OriginalSave::State& state)
     {
+        if (title_confirm_)
+        {
+            if (code == 1) { title_confirm_->cancel(); }
+            else if (code == 0x4B || code == 0x4D || code == 0x0F) { title_confirm_->toggle(); }
+            else if (code == 0x1C || code == 0x39) { title_confirm_->confirm(); }
+            finish_title_confirmation();
+            return;
+        }
+        if (world_)
+        {
+            world_->scan(code);
+            if (world_->closed())
+            {
+                world_.reset();
+            }
+            return;
+        }
         if (auto_confirm_)
         {
             if (code == 1)
@@ -262,6 +328,13 @@ public:
             event.type = 1;
             event.scan = code;
             settings_event(event);
+            return;
+        }
+        if (equipment_menu_)
+        {
+            equipment_menu_->scan(code, state);
+            equipment_changed_ |= equipment_menu_->take_changed();
+            if (equipment_menu_->closed()) { equipment_menu_.reset(); }
             return;
         }
         if (roster_)
@@ -302,6 +375,17 @@ public:
             return;
         }
         blocker_.clear();
+        if (selected_ == 1)
+        {
+            auto world = OriginalWorldmap::create(root_, domain_, towns_, state);
+            if (!world)
+            {
+                blocker_ = world.error().message;
+                return;
+            }
+            world_ = std::move(world).value();
+            return;
+        }
         if (selected_ == 3 || selected_ == 4)
         {
             auto slots = OriginalSaveMenu::scan(root_);
@@ -315,6 +399,11 @@ public:
             saves_.emplace(root_, selected_ == 4 ? 1 : 0, std::move(slots), 0, true);
             return;
         }
+        if (selected_ == 8)
+        {
+            title_confirm_.emplace(root_, font_, 51, 300, 200, true);
+            return;
+        }
         if (selected_ == 10)
         {
             auto_confirm_.emplace(root_, font_, 6, 200, 200, true);
@@ -325,9 +414,30 @@ public:
             settings_.emplace(root_, 2, settings_initial_);
             return;
         }
+        if (selected_ == 5 || selected_ == 7)
+        {
+            auto menu = OriginalArmyEquipmentMenu::create(root_, state, selected_ == 7, domain_);
+            if (!menu)
+            {
+                blocker_ = menu.error().message;
+                return;
+            }
+            if (!menu.value().closed())
+            {
+                equipment_menu_ = std::move(menu).value();
+                if (presentation_driven_) { equipment_menu_->enable_presentation_timing(); }
+            }
+            return;
+        }
         if (selected_ == 6)
         {
-            auto restored = OriginalSaveBridge::restore(root_, state);
+            auto result = OriginalSaveBridge::try_restore(root_, state);
+            if (!result)
+            {
+                blocker_ = result.error().message;
+                return;
+            }
+            auto restored = std::move(result).value();
             std::vector<OriginalBattleReports::Entry> entries;
             for (size_t i = 0; i < state.groups[0].units.size(); ++i)
             {
@@ -358,6 +468,25 @@ public:
     }
     void mouse(int x, int y, bool left, bool right, OriginalSave::State& state)
     {
+        if (title_confirm_)
+        {
+            if (right) { title_confirm_->cancel(); }
+            else
+            {
+                title_confirm_->mouse(float(x), float(y), left);
+            }
+            finish_title_confirmation();
+            return;
+        }
+        if (world_)
+        {
+            world_->mouse(x, y, left, right);
+            if (world_->closed())
+            {
+                world_.reset();
+            }
+            return;
+        }
         if (auto_confirm_)
         {
             if (right)
@@ -391,6 +520,13 @@ public:
             event.buttons = left ? 1 : right ? 2 :
                                                0;
             settings_event(event);
+            return;
+        }
+        if (equipment_menu_)
+        {
+            equipment_menu_->mouse(x, y, left, right, state);
+            equipment_changed_ |= equipment_menu_->take_changed();
+            if (equipment_menu_->closed()) { equipment_menu_.reset(); }
             return;
         }
         if (roster_)
@@ -436,9 +572,17 @@ public:
     }
     std::vector<uint8_t> draw(const OriginalSave::State& state) const
     {
+        if (world_)
+        {
+            return world_->draw(font_);
+        }
         if (settings_)
         {
             return settings_->draw(background_.background());
+        }
+        if (equipment_menu_)
+        {
+            return equipment_menu_->draw(state);
         }
         if (roster_)
         {
@@ -450,7 +594,12 @@ public:
             font_.draw_original_wrapped(image, rumor_, 149, 42, 42, 6, 16, 28);
             return image;
         }
-        auto image = auto_confirm_ || saves_ ? graphics_.indexed_scene(background_) : background_.background();
+        auto image = auto_confirm_ || saves_ || title_confirm_ ? graphics_.indexed_scene(background_) : background_.background();
+        if (title_confirm_)
+        {
+            title_confirm_->draw(image, font_);
+            return image;
+        }
         if (auto_confirm_)
         {
             auto_confirm_->draw(image, font_);

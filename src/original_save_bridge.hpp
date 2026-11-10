@@ -54,9 +54,16 @@ class OriginalSaveBridge
                 return Result<bool>::failure(make_error("Original saved group exceeds runtime capacity"));
             }
         }
-    return Result<bool>::success(true);
+        return Result<bool>::success(true);
     }
-    static void validate(const OriginalSave::State& raw){auto result=try_validate(raw);if(!result)fatal(result.error());}
+    static void validate(const OriginalSave::State& raw)
+    {
+        auto result = try_validate(raw);
+        if (!result)
+        {
+            fatal(result.error());
+        }
+    }
     static void decode_unit(const Raw& r, OriginalEvents::Unit& u)
     {
         u.ending_kills = get(r, 0x1F);
@@ -150,7 +157,11 @@ class OriginalSaveBridge
         {
             if (value < -32768 || value > 32767)
             {
-                if(!error)error=make_error("Unit stat exceeds original signed WORD");return;
+                if (!error)
+                {
+                    error = make_error("Unit stat exceeds original signed WORD");
+                }
+                return;
             }
             put(r, p, uint16_t(value));
         };
@@ -158,7 +169,11 @@ class OriginalSaveBridge
         {
             if (value > 65535)
             {
-                if(!error)error=make_error("Unit value exceeds original WORD");return;
+                if (!error)
+                {
+                    error = make_error("Unit value exceeds original WORD");
+                }
+                return;
             }
             put(r, p, value);
         };
@@ -269,10 +284,20 @@ class OriginalSaveBridge
             uw(0x11B + 2 * i, u.initial_status[i]);
             w(0x13A + 2 * i, u.equipment_stat_deltas[i]);
         }
-    if(error)return Result<bool>::failure(std::move(*error));
+        if (error)
+        {
+            return Result<bool>::failure(std::move(*error));
+        }
         return Result<bool>::success(true);
     }
-    static void patch_unit(Raw& record,const OriginalEvents::Unit& unit){auto result=try_patch_unit(record,unit);if(!result)fatal(result.error());}
+    static void patch_unit(Raw& record, const OriginalEvents::Unit& unit)
+    {
+        auto result = try_patch_unit(record, unit);
+        if (!result)
+        {
+            fatal(result.error());
+        }
+    }
 
 public:
     struct Restored
@@ -286,9 +311,22 @@ public:
     static constexpr std::pair<int, int> restored_camera{ 32, 16 };
     static Result<Restored> try_restore(const std::filesystem::path& root, const OriginalSave::State& raw)
     {
-        auto valid=try_validate(raw);if(!valid)return Result<Restored>::failure(valid.error());
-        auto created=OriginalEvents::create(root,raw.globals_4f7cd0[28]);if(!created)return Result<Restored>::failure(created.error());
-        auto events=std::move(created).value();auto loaded=events.try_load_stage(get(raw.globals_4f7cd0,8,4));if(!loaded)return Result<Restored>::failure(loaded.error());
+        auto valid = try_validate(raw);
+        if (!valid)
+        {
+            return Result<Restored>::failure(valid.error());
+        }
+        auto created = OriginalEvents::create(root, raw.globals_4f7cd0[28]);
+        if (!created)
+        {
+            return Result<Restored>::failure(created.error());
+        }
+        auto events = std::move(created).value();
+        auto loaded = events.try_load_stage(get(raw.globals_4f7cd0, 8, 4));
+        if (!loaded)
+        {
+            return Result<Restored>::failure(loaded.error());
+        }
         events.camera_step_delay = int32_t(get(raw.settings_4f7cf0, 0, 4));
         unsigned chains = get(raw.value_4f705c, 0, 4);
         if (chains > 20)
@@ -319,22 +357,42 @@ public:
                 }
                 u.behavior = group == 1 ? 2 : ai ? 1 :
                                                    0;
-                auto resources=events.try_restore_unit_resources(u);if(!resources)return Result<Restored>::failure(resources.error());
+                auto resources = events.try_restore_unit_resources(u);
+                if (!resources)
+                {
+                    return Result<Restored>::failure(resources.error());
+                }
                 events.units.push_back(std::move(u));
             }
         }
-        auto states=events.try_restore_event_states(raw.event_states);if(!states)return Result<Restored>::failure(states.error());
+        auto states = events.try_restore_event_states(raw.event_states);
+        if (!states)
+        {
+            return Result<Restored>::failure(states.error());
+        }
         events.flags = raw.flags_4f7d10;
         events.campaign_currencies = std::array<int32_t, 2>{ int32_t(get(raw.stage_4fb478, 0, 4)), int32_t(get(raw.stage_4fb478, 4, 4)) };
         events.ending_statistics = std::array<int32_t, 5>{ int32_t(get(raw.stage_4fb478, 8, 4)), int32_t(int8_t(raw.globals_4f7cd0[28])), int32_t(get(raw.stage_4fb478, 0, 4)), int32_t(get(raw.stage_4fb478, 4, 4)), int32_t(get(raw.groups[0].metadata, 8, 4)) };
-        return Result<Restored>::success({std::move(events),get(raw.globals_4f7cd0,12,4),restored_camera,raw});
+        return Result<Restored>::success({ std::move(events), get(raw.globals_4f7cd0, 12, 4), restored_camera, raw });
     }
-    static Restored restore(const std::filesystem::path& root,const OriginalSave::State& raw){auto result=try_restore(root,raw);if(!result)fatal(result.error());return std::move(result).value();}
+    static Restored restore(const std::filesystem::path& root, const OriginalSave::State& raw)
+    {
+        auto result = try_restore(root, raw);
+        if (!result)
+        {
+            fatal(result.error());
+        }
+        return std::move(result).value();
+    }
     static Result<OriginalSave::State> try_capture_promotion(const OriginalEvents& events, unsigned turn, std::pair<int, int> camera,
         const OriginalSave::State& baseline, size_t selected, unsigned source_kind,
         std::span<const uint8_t> inventory, uint8_t army_metadata)
     {
-        auto valid=try_validate(baseline);if(!valid)return Result<OriginalSave::State>::failure(valid.error());
+        auto valid = try_validate(baseline);
+        if (!valid)
+        {
+            return Result<OriginalSave::State>::failure(valid.error());
+        }
         if (selected >= baseline.groups[0].units.size() || selected >= events.units.size())
         {
             return Result<OriginalSave::State>::failure(make_error("Promotion requires original allied unit identity"));
@@ -362,7 +420,11 @@ public:
         {
             return Result<OriginalSave::State>::failure(make_error("Fresh original save requires complete original raw state; unknown globals/inventory cannot be invented"));
         }
-        auto valid=try_validate(*baseline);if(!valid)return Result<OriginalSave::State>::failure(valid.error());
+        auto valid = try_validate(*baseline);
+        if (!valid)
+        {
+            return Result<OriginalSave::State>::failure(valid.error());
+        }
         (void)camera;    // Original intentionally reconstructs the camera instead of serializing it.
         if (!turn || turn > 0x7FFFFFFF)
         {
@@ -387,7 +449,11 @@ public:
                 {
                     return Result<OriginalSave::State>::failure(make_error("Native unit identity/order/group changed"));
                 }
-                auto patched=try_patch_unit(record,u);if(!patched)return Result<OriginalSave::State>::failure(patched.error());
+                auto patched = try_patch_unit(record, u);
+                if (!patched)
+                {
+                    return Result<OriginalSave::State>::failure(patched.error());
+                }
             }
         }
         if (index != events.units.size())
@@ -422,8 +488,23 @@ public:
         put(result.globals_4f7cd0, 12, turn, 4);
         return Result<OriginalSave::State>::success(std::move(result));
     }
-    static OriginalSave::State capture(const OriginalEvents& events,unsigned turn,std::pair<int,int> camera,const OriginalSave::State* baseline=nullptr){auto result=try_capture(events,turn,camera,baseline);if(!result)fatal(result.error());return std::move(result).value();}
-    static OriginalSave::State capture_promotion(const OriginalEvents& events,unsigned turn,std::pair<int,int> camera,const OriginalSave::State& baseline,size_t selected,unsigned source_kind,std::span<const uint8_t> inventory,uint8_t metadata){auto result=try_capture_promotion(events,turn,camera,baseline,selected,source_kind,inventory,metadata);if(!result)fatal(result.error());return std::move(result).value();}
-
+    static OriginalSave::State capture(const OriginalEvents& events, unsigned turn, std::pair<int, int> camera, const OriginalSave::State* baseline = nullptr)
+    {
+        auto result = try_capture(events, turn, camera, baseline);
+        if (!result)
+        {
+            fatal(result.error());
+        }
+        return std::move(result).value();
+    }
+    static OriginalSave::State capture_promotion(const OriginalEvents& events, unsigned turn, std::pair<int, int> camera, const OriginalSave::State& baseline, size_t selected, unsigned source_kind, std::span<const uint8_t> inventory, uint8_t metadata)
+    {
+        auto result = try_capture_promotion(events, turn, camera, baseline, selected, source_kind, inventory, metadata);
+        if (!result)
+        {
+            fatal(result.error());
+        }
+        return std::move(result).value();
+    }
 };
 }    //namespace s2ne

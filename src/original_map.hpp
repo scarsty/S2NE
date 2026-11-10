@@ -2,6 +2,8 @@
 #include "original_combat_visual.hpp"
 #include "original_disc.hpp"
 #include "original_events.hpp"
+#include "original_menu.hpp"
+#include "original_movement_bitmap.hpp"
 #include "original_palette.hpp"
 #include "original_skill88_visual.hpp"
 #include "original_skill_visual.hpp"
@@ -14,7 +16,8 @@ namespace s2ne
 {
 class OriginalMap
 {
-    std::vector<uint8_t> prg_, pal_, pixels_;
+    std::vector<uint8_t> prg_, pal_, pixels_, terrain_names_;
+    unsigned terrain_ground_names_{ }, terrain_object_names_{ };
     struct Image
     {
         unsigned w, h;
@@ -33,6 +36,15 @@ class OriginalMap
         bool alternate = true;
     };
     mutable std::map<unsigned, UnitBitmap> unit_bitmaps_;
+    original_movement::SharedEffectClock movement_effect_clock_;
+    std::map<unsigned, uint64_t> movement_effect_stamps_;
+    struct EffectPresentation
+    {
+        unsigned actor;
+        bool camera;
+        uint64_t time;
+    };
+    mutable std::vector<EffectPresentation> pending_effect_presentations_;
     mutable std::vector<uint8_t> skill88_indexed_;
     original_combat::Disappearance disappearance_;
     std::optional<unsigned> arrival_target_;
@@ -452,6 +464,148 @@ public:
         }
     }
     unsigned width{ }, height{ }, map_id{ };
+    // 42BEED: the terrain area shares the status panel's top/bottom placement.
+    void draw_terrain(const OriginalMenu& font, std::vector<uint8_t>& image, int x, int y, int panel_y) const
+    {
+        if (!map_id || x < 0 || y < 0 || x >= int(width) || y >= int(height * 2)) { return; }
+        size_t m = item(6, map_id - 1), cell = m + 28 + (size_t(y) * width + x) * 5;
+        unsigned ground = word(prg_, cell + 1), object = cell_object(cell);
+        if (ground == 1) { return; }
+        size_t attributes = group(7), ground_attributes = attributes + 6;
+        unsigned attr = ground ? word(prg_, ground_attributes + (ground - 1) * 2) : 0;
+        if (!attr)
+        {
+            font.draw_original_large(image, font.text_bytes(0), 543, panel_y + 50, 179);
+            return;
+        }
+        size_t lookups = m + 28 + size_t(width) * height * 10 + word(prg_, m + 12) * 10 + word(prg_, m + 14) * 6;
+        unsigned ground_used = word(prg_, lookups), ground_count = word(prg_, group(3));
+        size_t ground_lookup = lookups + 2;
+        size_t object_lookup = ground_lookup + ground_count * 2 + ground_used * 8 + 2;
+        auto put = [&](unsigned ink, int dx, int dy)
+        {
+            if (!ink || dx < 0 || dx >= 640 || dy < 0 || dy >= 480) { return; }
+            size_t p = (size_t(dy) * 640 + dx) * 4;
+            for (unsigned c = 0; c < 3; ++c) { image.at(p + c) = uint8_t(unsigned(pal_.at(ink * 3 + c)) * 255 / 63); }
+            image.at(p + 3) = 255;
+        };
+        auto mapped_image = [&](unsigned layer, unsigned id, size_t lookup) -> const Image&
+        {
+            return raw(item(layer, word(prg_, lookup + (id - 1) * 2) - 1));
+        };
+        const auto& ground_image = mapped_image(3, ground, ground_lookup);
+        for (unsigned yy = 0; yy < ground_image.h; ++yy)
+        {
+            for (unsigned xx = 0; xx < ground_image.w; ++xx)
+            {
+                unsigned ink = ground_image.pixels.at(size_t(yy) * ground_image.w + xx);
+                if ((ground == 5 || ground == 6) && !ink) { continue; }
+                // 4753A4 is transparent; the panel's ground images use their original shape.
+                put(ink, 526 + int(xx), panel_y + 40 + int(yy));
+            }
+        }
+        unsigned category = object ? object_attributes_.at(object - 1) >> 8 : 0;
+        bool visible_object = object && !(category == 5 && !event_flags_[1]) && !(category == 6 && !event_flags_[0]) && !(category == 11 && !event_flags_[3]);
+        if (visible_object)
+        {
+            const auto& object_image = mapped_image(4, object, object_lookup);
+            // 42C16F copies only the bottom 64x32 of the original 64x96 object image.
+            for (unsigned yy = 0; yy < 32; ++yy)
+            {
+                for (unsigned xx = 0; xx < 64; ++xx)
+                {
+                    put(object_image.pixels.at(4096 + yy * 64 + xx), 526 + int(xx), panel_y + 40 + int(yy));
+                }
+            }
+        }
+        auto small = [&](const std::string& text, int dx, int dy)
+        {
+            font.draw_small(image, { text.begin(), text.end() }, dx, panel_y + dy, 137, true);
+        };
+        small("X=" + std::to_string(x), 595, 48);
+        small("Y=" + std::to_string(y), 595, 64);
+        font.draw_original_large(image, [&]
+            {
+                auto s = std::to_string(prg_.at(cell));
+                return std::vector<uint8_t>(s.begin(), s.end());
+            }(),
+            531, panel_y + 14, 141);
+        unsigned local = attr & 255;
+        if (visible_object && category != 7 && category != 12)
+        {
+            unsigned object_local = object_attributes_.at(object - 1) & 255;
+            if (object_local <= terrain_object_names_) { local = terrain_ground_names_ + object_local; }
+        }
+        if (!local || size_t(local) * 11 > terrain_names_.size()) { return; }
+        size_t start = size_t(local - 1) * 11;
+        std::vector<uint8_t> name;
+        for (size_t p = start; p < start + 11 && terrain_names_[p]; ++p) { name.push_back(terrain_names_[p]); }
+        font.draw_small(image, name, 596 - int(name.size()) * 4, panel_y + 17, 54, true);
+        font.draw_small(image, name, 595 - int(name.size()) * 4, panel_y + 16, 178, true);
+    }
+    void movement_effect_presented()
+    {
+        for (const auto& effect : pending_effect_presentations_)
+        {
+            movement_effect_clock_.presented(effect.camera, effect.time, movement_effect_stamps_[effect.actor]);
+        }
+        pending_effect_presentations_.clear();
+    }
+    unsigned movement_effect_phase() const { return movement_effect_clock_.phase(); }
+    Result<std::vector<uint8_t>> try_movement_effect(unsigned movement_class, unsigned frame, unsigned direction) const
+    {
+        if (movement_class != 4 && movement_class != 5)
+        {
+            return Result<std::vector<uint8_t>>::failure(make_error("45CADA effect requires movement class4/5"));
+        }
+        auto resources = OriginalDiscResources(root_).try_dat_entry(disc_, 5);
+        if (!resources) { return Result<std::vector<uint8_t>>::failure(resources.error()); }
+        const auto& data = resources.value();
+        ResourceReader reader(data);
+        // 45CA1D's 4EAD9C table contains shared slots23/24; 45CAA0
+        // indexes 4F70FC = 4F7060 +39*4 by direction&3.
+        unsigned slot = movement_class == 4 ? 23 + (frame & 1) : 39 + (direction & 3);
+        unsigned count = reader.number(0);
+        if (slot > count) { return Result<std::vector<uint8_t>>::failure(make_error("Missing45CADA shared slot")); }
+        size_t entry = 2 + size_t(slot - 1) * 8;
+        size_t offset = reader.number(entry, 4), length = reader.number(entry + 4, 4);
+        unsigned w = reader.number(offset) + 1, h = reader.number(offset + 2) + 1;
+        if (!reader || w > 512 || h > 512 || length != 4 + size_t(w) * h || offset > data.size() || length > data.size() - offset)
+        {
+            return Result<std::vector<uint8_t>>::failure(make_error("Invalid45CADA raw shared bitmap"));
+        }
+        return Result<std::vector<uint8_t>>::success({ data.begin() + offset, data.begin() + offset + length });
+    }
+    Result<std::vector<uint8_t>> try_movement_shadow(int x, int y) const
+    {
+        if (x < 0 || y < 0 || unsigned(x) >= width || unsigned(y) >= height * 2)
+        {
+            return Result<std::vector<uint8_t>>::failure(make_error("448B99 map coordinate out of range"));
+        }
+        std::vector<uint8_t> background(2048);
+        int elevation = prg_.at(item(6, map_id - 1) + 28 + (size_t(y) * width + x) * 5);
+        int left = x * 64 + (y & 1) * 32, top = y * 16 - (elevation - 1) * 16;
+        for (unsigned row = 0; row < 32; ++row)
+        {
+            for (unsigned column = 0; column < 64; ++column)
+            {
+                int sx = left + int(column), sy = top + int(row);
+                if (sx >= 0 && sy >= 0 && sx < int(width * 64) && sy < int(height * 32))
+                {
+                    background[size_t(row) * 64 + column] = pixels_[size_t(sy) * width * 64 + sx];
+                }
+            }
+        }
+        if (reaction_foot_mask_.empty())
+        {
+            auto resources = try_compose_reaction(64, 32, background, background, true);
+            if (!resources)
+            {
+                return Result<std::vector<uint8_t>>::failure(resources.error());
+            }
+        }
+        return original_movement::try_shadow(background, reaction_foot_mask_, reaction_shadow_);
+    }
     int camera_x{ }, camera_y{ };
     // Explicit indexed B1 contract: callers must supply 4483CB's reconstructed
     // background, including 4485DB/448773 roster overlays, never a framebuffer.
@@ -459,7 +613,9 @@ public:
     {
         if (reaction_foot_mask_.empty())
         {
-            auto dat = OriginalDiscResources(root_).dat_entry(disc_, 5);
+            auto loaded = OriginalDiscResources(root_).try_dat_entry(disc_, 5);
+            if (!loaded) { return Result<std::vector<uint8_t>>::failure(loaded.error()); }
+            auto dat = std::move(loaded).value();
             size_t base = 0;
             size_t entry = base + 2 + 21 * 8, offset = base + dword(dat, entry);
             if (dword(dat, entry + 4) != 2052 || word(dat, offset) != 63 || word(dat, offset + 2) != 31 || offset + 2052 > dat.size())
@@ -590,6 +746,25 @@ public:
         {
             return Result<OriginalMap>::failure(r.error());
         }
+        // 427F25: DAT6 names follow appearance_count * terrain_stride movement triples.
+        auto movement = OriginalDiscResources(root).try_dat_entry(disc, 6);
+        auto kinds = read_resource(root / "KINDSP.BIN");
+        if (!movement || !kinds)
+        {
+            return Result<OriginalMap>::failure(!movement ? movement.error() : kinds.error());
+        }
+        const auto& table = movement.value();
+        ResourceReader terrain_reader(table), kind_reader(kinds.value());
+        unsigned stride = terrain_reader.number(0);
+        result.terrain_ground_names_ = terrain_reader.number(2);
+        result.terrain_object_names_ = terrain_reader.number(4);
+        size_t names = 6 + size_t(stride) * kind_reader.number(22) * 3;
+        size_t names_size = size_t(stride) * 11;
+        if (!terrain_reader.extent(names, names_size) || !kind_reader)
+        {
+            return Result<OriginalMap>::failure(make_error("Invalid original terrain names"));
+        }
+        result.terrain_names_.assign(table.begin() + names, table.begin() + names + names_size);
         OriginalPalette palette(result.pal_);
         for (unsigned color = 0; color < 256; ++color)
         {
@@ -728,6 +903,8 @@ public:
     Result<bool> load_validated(unsigned id)
     {
         unit_bitmaps_.clear();
+        pending_effect_presentations_.clear();
+        movement_effect_stamps_.clear();
         last_reaction_.clear();
         reaction_draws_ = 0;
         map_id = id;
@@ -1497,8 +1674,101 @@ public:
             {
                 return a.unit.y < b.unit.y;
             });
+        std::vector<uint8_t> movement_indices;
+        if (std::any_of(presented.begin(), presented.end(), [](const auto& pose)
+                {
+                    return (pose.unit.action_state == 4 || pose.unit.movement_pose) && pose.unit.movement_visual_class >= 3 && pose.unit.movement_visual_class <= 5;
+                }))
+        {
+            movement_indices.resize(640 * 480);
+            for (int y = 0; y < 480; ++y)
+            {
+                for (int x = 0; x < 640; ++x)
+                {
+                    movement_indices[size_t(y) * 640 + x] = indexed ? indexed->at(size_t(y) * 640 + x) : pixels_.at(size_t(camera_y + y) * width * 64 + camera_x + x);
+                }
+            }
+        }
+        auto staged_effect_clock = movement_effect_clock_;
+        auto staged_effect_stamps = movement_effect_stamps_;
         for (auto& pose : presented)
         {
+            if (!silhouette && (pose.unit.action_state == 4 || pose.unit.movement_pose) && pose.unit.movement_visual_class >= 3 && pose.unit.movement_visual_class <= 5)
+            {
+                const int elevation = prg_.at(item(6, map_id - 1) + 28 + (size_t(pose.unit.y) * width + pose.unit.x) * 5);
+                const int left = pose.unit.x * 64 + (pose.unit.y & 1) * 32 - camera_x;
+                const int top = pose.unit.y * 16 - (elevation - 1) * 16 - camera_y;
+                std::vector<uint8_t> background(2048);
+                for (int y = 0; y < 32; ++y)
+                {
+                    for (int x = 0; x < 64; ++x)
+                    {
+                        if (left + x >= 0 && left + x < 640 && top + y >= 0 && top + y < 480)
+                        {
+                            background[size_t(y) * 64 + x] = movement_indices[size_t(top + y) * 640 + left + x];
+                        }
+                    }
+                }
+                auto resources = try_movement_shadow(pose.unit.x, pose.unit.y);
+                if (!resources) { return Result<bool>::failure(resources.error()); }
+                auto shadow = original_movement::try_shadow(background, reaction_foot_mask_, reaction_shadow_);
+                if (!shadow) { return Result<bool>::failure(shadow.error()); }
+                for (const auto& other : presented)
+                {
+                    if (other.unit.action_state == 1 || other.unit.action_state == 3 || other.unit.action_state == 5 || std::abs(other.unit.x - pose.unit.x) > 2 || other.unit.y <= pose.unit.y || other.unit.y > pose.unit.y + 24) { continue; }
+                    // 4468DF consumes raw AD, not the ground-masked display copy.
+                    const auto& source = unit_bitmaps_.at(other.instance);
+                    const int source_elevation = prg_.at(item(6, map_id - 1) + 28 + (size_t(other.unit.y) * width + other.unit.x) * 5);
+                    auto erased = original_movement::try_erase(shadow.value(), 64, 32, source.ad, source.w, source.h,
+                        other.unit.x * 64 + (other.unit.y & 1) * 32 + 32 - int(source.w / 2) - camera_x - left,
+                        other.unit.y * 16 + 32 - int(source.h) - (source_elevation - 1) * 16 - camera_y - top);
+                    if (!erased) { return Result<bool>::failure(erased.error()); }
+                }
+                mask_unit_ground(shadow.value(), 64, 32, pose.unit.x, pose.unit.y, elevation);
+                for (int y = 0; y < 32; ++y)
+                {
+                    for (int x = 0; x < 64; ++x)
+                    {
+                        unsigned c = shadow.value()[size_t(y) * 64 + x];
+                        if (!c || left + x < 0 || left + x >= 640 || top + y < 0 || top + y >= 480) { continue; }
+                        size_t dst = size_t(top + y) * 640 + left + x;
+                        movement_indices[dst] = uint8_t(c);
+                        if (indexed) { indexed->at(dst) = uint8_t(c); }
+                        for (unsigned k = 0; k < 3; ++k) { image[dst * 4 + k] = uint8_t(unsigned(pal_.at(c * 3 + k)) * 255 / 63); }
+                    }
+                }
+                if (pose.unit.movement_visual_class >= 4)
+                {
+                    auto effect = try_movement_effect(pose.unit.movement_visual_class, staged_effect_clock.phase(), pose.unit.direction);
+                    if (!effect) { return Result<bool>::failure(effect.error()); }
+                    if (pose.unit.movement_visual_class == 4)
+                    {
+                        pending_effect_presentations_.push_back({ pose.instance, pose.unit.movement_camera_pose, elapsed_ms });
+                        staged_effect_clock.presented(pose.unit.movement_camera_pose, elapsed_ms, staged_effect_stamps[pose.instance]);
+                    }
+                    const auto& bytes = effect.value();
+                    unsigned ew = word(bytes, 0) + 1, eh = word(bytes, 2) + 1;
+                    int displacement = pose.left - (pose.unit.x * 64 + (pose.unit.y & 1) * 32 + 32 - int(pose.w / 2) - camera_x);
+                    int ex = left - (int(ew) - 64) / 2 + displacement;
+                    int ey = top + 32 - int(eh) - ((pose.unit.status_flags & 4) ? 48 : 64);
+                    for (unsigned y = 0; y < eh; ++y)
+                    {
+                        for (unsigned x = 0; x < ew; ++x)
+                        {
+                            unsigned c = bytes[4 + size_t(y) * ew + x];
+                            int dx = ex + int(x), dy = ey + int(y);
+                            if (!c || dx < 0 || dx >= 640 || dy < 0 || dy >= 480) { continue; }
+                            size_t dst = size_t(dy) * 640 + dx;
+                            movement_indices[dst] = uint8_t(c);
+                            if (indexed) { indexed->at(dst) = uint8_t(c); }
+                            for (unsigned k = 0; k < 3; ++k) { image[dst * 4 + k] = uint8_t(unsigned(pal_.at(c * 3 + k)) * 255 / 63); }
+                        }
+                    }
+                }
+                // 42B1D2 arg0=4 raises the raw AD, not the already masked ordinary pose.
+                pose.pixels = unit_bitmaps_.at(pose.instance).ad;
+                pose.top -= 64;
+            }
             if (disappearance_.active() && pose.instance == disappearance_.target && !silhouette)
             {
                 pose.pixels = disappearance_frames_.at(disappearance_.frame);
@@ -1548,6 +1818,10 @@ public:
                         continue;
                     }
                     size_t dst = (size_t(dy) * 640 + dx) * 4;
+                    if (!movement_indices.empty())
+                    {
+                        movement_indices[dst / 4] = uint8_t(c);
+                    }
                     if (indexed)
                     {
                         indexed->at(dst / 4) = uint8_t(c);
@@ -1567,6 +1841,8 @@ public:
         {
             return Result<bool>::failure(make_error("Invalid unit drawing framebuffer"));
         }
+        auto pending_effects = pending_effect_presentations_;
+        if (!silhouette) { pending_effect_presentations_.clear(); }
         auto bitmaps = unit_bitmaps_;
         auto foot = reaction_foot_mask_;
         auto shadow = reaction_shadow_;
@@ -1579,6 +1855,7 @@ public:
         auto result = draw_units_validated(output, units, turn, elapsed_ms, silhouette, reaction, background_mode, only_instance, indexed ? &indices : nullptr);
         if (!result)
         {
+            pending_effect_presentations_ = std::move(pending_effects);
             unit_bitmaps_ = std::move(bitmaps);
             reaction_foot_mask_ = std::move(foot);
             reaction_shadow_ = shadow;

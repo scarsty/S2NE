@@ -236,17 +236,6 @@ public:
             {
                 return { };
             }
-            // Death entry completion is a flag write, not a call to41FF6E.
-            if (i != death.event && (type == 9 || currency || predicate) && completion == 7)
-            {
-                for (const auto& unit : events.units)
-                {
-                    if (unit.hostile() && unit.appearance && (unit.status_flags & 0x80) && unit.action_state == 4 && events.movement_class(unit) >= 3)
-                    {
-                        return { };
-                    }
-                }
-            }
         }
         auto staged = events;
         Stack stack(staged, death.event);

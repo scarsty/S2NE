@@ -115,20 +115,33 @@ public:
         state.globals_4f7cd0[27] = 1;
         return true;
     }
-    static void sync_roster(const OriginalSave::State& state, OriginalEvents& events)
+    static s2ne::Result<bool> try_sync_roster(const OriginalSave::State& state, OriginalEvents& events)
     {
         if (state.groups[0].units.size() > events.units.size())
         {
-            throw std::runtime_error("Church persistent roster missing");
+            return s2ne::Result<bool>::failure(make_error("Church persistent roster missing"));
         }
+        auto staged = events;
         for (size_t i = 0; i < state.groups[0].units.size(); ++i)
         {
             const auto& record = state.groups[0].units[i];
             if (OriginalSaveBridge::get(record, 2) != events.units[i].id)
             {
-                throw std::runtime_error("Church persistent role identity mismatch");
+                return s2ne::Result<bool>::failure(make_error("Church persistent role identity mismatch"));
             }
-            OriginalSaveBridge::decode_unit(record, events.units[i]);
+            OriginalSaveBridge::decode_unit(record, staged.units[i]);
+        }
+
+        using std::swap;
+        swap(events, staged);
+        return s2ne::Result<bool>::success(true);
+    }
+    static void sync_roster(const OriginalSave::State& state, OriginalEvents& events)
+    {
+        auto result = try_sync_roster(state, events);
+        if (!result)
+        {
+            report_error(result.error());
         }
     }
     void set_donation(std::function<bool(OriginalSave::State&)> transaction) { donation_ = std::move(transaction); }

@@ -17,13 +17,18 @@ class OriginalCampaign
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     size_t table() const { return dword(pal_, 848) - 11; }
-    size_t header(unsigned stage) const
+    s2ne::Result<size_t> try_header(unsigned stage) const
     {
         if (!stage || stage > word(bin_, table()))
         {
-            throw std::runtime_error("Invalid campaign stage");
+            return s2ne::Result<size_t>::failure(make_error("Invalid campaign stage"));
         }
-        return table() + 2 + (stage - 1) * 30;
+        return s2ne::Result<size_t>::success(table() + 2 + (stage - 1) * 30);
+    }
+    size_t header(unsigned stage) const
+    {
+        auto result = try_header(stage);
+        return std::move(result).value();
     }
     void pixel(std::vector<uint8_t>& image, int x, int y, unsigned color) const
     {
@@ -38,7 +43,7 @@ class OriginalCampaign
         }
         image.at(p + 3) = 255;
     }
-    void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
+    s2ne::Result<bool> try_sprite_validated(std::vector<uint8_t>& image, unsigned id, int left, int top) const
     {
         size_t g = dword(pal_, 816) - 57, p = g + dword(cel_, g + 2 + (id - 142) * 8);
         unsigned w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
@@ -50,7 +55,7 @@ class OriginalCampaign
                 unsigned op = cel_.at(p++), n = op ? op & 127 : 1, c = 0;
                 if (!n || n > w - x)
                 {
-                    throw std::runtime_error("Invalid campaign sprite");
+                    return s2ne::Result<bool>::failure(make_error("Invalid campaign sprite"));
                 }
                 if (op && !(op & 128))
                 {
@@ -66,6 +71,26 @@ class OriginalCampaign
                     ++x;
                 }
             }
+        }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
+    {
+        auto output = image;
+        auto result = try_sprite_validated(output, id, left, top);
+        if (result)
+        {
+            image.swap(output);
+        }
+        return result;
+    }
+    void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
+    {
+        auto result = try_sprite(image, id, left, top);
+        if (!result)
+        {
+            report_error(result.error());
         }
     }
 
@@ -288,17 +313,21 @@ public:
         size_t begin{ }, end{ };
         std::vector<StoryAnimationRole> roles;
     };
-    static StoryAnimationGroup story_animation_group(const OriginalEvents& events, size_t begin)
+    static s2ne::Result<StoryAnimationGroup> try_story_animation_group(const OriginalEvents& events, size_t begin)
     {
+        if (begin >= events.event_count())
+        {
+            return s2ne::Result<StoryAnimationGroup>::failure(make_error("Invalid grouped animation event index"));
+        }
         unsigned condition = events.condition(begin);
         if (events.type(begin) != 15 || (condition != 0 && condition != 3))
         {
-            throw std::runtime_error("Not an original grouped animation event");
+            return s2ne::Result<StoryAnimationGroup>::failure(make_error("Not an original grouped animation event"));
         }
         int capacity = events.event_word(begin, 5), flag = events.event_word(begin, 3);
         if (capacity <= 0 || flag < 1 || flag > 80 || !events.flags[size_t(flag - 1)])
         {
-            throw std::runtime_error("Original grouped animation trigger unavailable");
+            return s2ne::Result<StoryAnimationGroup>::failure(make_error("Original grouped animation trigger unavailable"));
         }
         StoryAnimationGroup group;
         group.hostile = condition == 3;
@@ -321,7 +350,7 @@ public:
             }
             if (group.roles.size() >= size_t(capacity))
             {
-                throw std::runtime_error("Original grouped animation capacity exceeded");
+                return s2ne::Result<StoryAnimationGroup>::failure(make_error("Original grouped animation capacity exceeded"));
             }
             int id = events.event_word(i, 5);
             if (id > 0)
@@ -331,9 +360,14 @@ public:
         }
         if (group.end == events.event_count())
         {
-            throw std::runtime_error("Original grouped animation terminator missing");
+            return s2ne::Result<StoryAnimationGroup>::failure(make_error("Original grouped animation terminator missing"));
         }
-        return group;
+        return s2ne::Result<StoryAnimationGroup>::success(group);
+    }
+    static StoryAnimationGroup story_animation_group(const OriginalEvents& events, size_t begin)
+    {
+        auto result = try_story_animation_group(events, begin);
+        return std::move(result).value();
     }
     struct StoryMovementRole
     {
@@ -348,12 +382,16 @@ public:
         unsigned camera{ };
         std::vector<StoryMovementRole> roles;
     };
-    static StoryMovementGroup story_movement_group(const OriginalEvents& events, size_t event)
+    static s2ne::Result<StoryMovementGroup> try_story_movement_group(const OriginalEvents& events, size_t event)
     {
+        if (event >= events.event_count())
+        {
+            return s2ne::Result<StoryMovementGroup>::failure(make_error("Invalid grouped movement event index"));
+        }
         int condition = events.condition(event), flag = events.event_word(event, 3), capacity = events.event_word(event, 5);
         if (events.type(event) != 16 || (condition != 0 && condition != 4) || capacity <= 0)
         {
-            throw std::runtime_error("Invalid original grouped movement header");
+            return s2ne::Result<StoryMovementGroup>::failure(make_error("Invalid original grouped movement header"));
         }
         StoryMovementGroup group{ event, events.event_count(), condition == 4, unsigned(events.event_word(event, 7)), { } };
         for (size_t i = event + 1; i < events.event_count(); ++i)
@@ -369,7 +407,7 @@ public:
             }
             if (events.condition(i) == condition + 2)
             {
-                throw std::runtime_error("Original grouped movement role-relative operand requires461808");
+                return s2ne::Result<StoryMovementGroup>::failure(make_error("Original grouped movement role-relative operand requires461808"));
             }
             if (events.condition(i) != condition + 1)
             {
@@ -382,18 +420,23 @@ public:
             }
             if (group.roles.size() >= size_t(capacity))
             {
-                throw std::runtime_error("Original grouped movement capacity exceeded");
+                return s2ne::Result<StoryMovementGroup>::failure(make_error("Original grouped movement capacity exceeded"));
             }
             group.roles.push_back({ unsigned(id), events.event_word(i, 7), events.event_word(i, 9), i });
         }
         // 422074 also ends the scan at event_count; a same-flag terminator is optional.
-        return group;
+        return s2ne::Result<StoryMovementGroup>::success(group);
     }
-    static unsigned completed_story_route(const OriginalEvents& source, const OriginalEvents& completed, unsigned header_next = 0)
+    static StoryMovementGroup story_movement_group(const OriginalEvents& events, size_t event)
+    {
+        auto result = try_story_movement_group(events, event);
+        return std::move(result).value();
+    }
+    static s2ne::Result<unsigned> try_completed_story_route(const OriginalEvents& source, const OriginalEvents& completed, unsigned header_next = 0)
     {
         if (source.stage != completed.stage || source.event_count() != completed.event_count())
         {
-            throw std::runtime_error("Mismatched original story event state");
+            return s2ne::Result<unsigned>::failure(make_error("Mismatched original story event state"));
         }
         unsigned target = 0;
         for (size_t i = 0; i < source.event_count(); ++i)
@@ -436,7 +479,12 @@ public:
                 target = header_next;
             }
         }
-        return target;
+        return s2ne::Result<unsigned>::success(target);
+    }
+    static unsigned completed_story_route(const OriginalEvents& source, const OriginalEvents& completed, unsigned header_next = 0)
+    {
+        auto result = try_completed_story_route(source, completed, header_next);
+        return std::move(result).value();
     }
     unsigned selected_route(const OriginalEvents& completed) const
     {
@@ -445,13 +493,13 @@ public:
         unsigned route = completed_story_route(source, completed);
         return route ? route : stage(completed.stage).next;
     }
-    unsigned animation_sequence_length(unsigned appearance, unsigned sequence) const
+    s2ne::Result<unsigned> try_animation_sequence_length(unsigned appearance, unsigned sequence) const
     {
         size_t index = dword(pal_, 808 + 8 * 64) - 10;
         unsigned count = word(prg_, index);
         if (!appearance || appearance > count || sequence >= 30)
         {
-            throw std::runtime_error("Unsupported original grouped appearance sequence");
+            return s2ne::Result<unsigned>::failure(make_error("Unsupported original grouped appearance sequence"));
         }
         size_t cursor = index + 2 + count * 8 + (appearance - 1) * 200, end = cursor + 200;
         for (unsigned i = 0; i < sequence; ++i)
@@ -462,7 +510,7 @@ public:
             }
             if (++cursor >= end)
             {
-                throw std::runtime_error("Missing original grouped sequence");
+                return s2ne::Result<unsigned>::failure(make_error("Missing original grouped sequence"));
             }
         }
         unsigned length = 0;
@@ -472,41 +520,56 @@ public:
         }
         if (cursor + length == end)
         {
-            throw std::runtime_error("Unterminated original grouped sequence");
+            return s2ne::Result<unsigned>::failure(make_error("Unterminated original grouped sequence"));
         }
-        return length;
+        return s2ne::Result<unsigned>::success(length);
     }
-    bool protagonist_at_exit(const OriginalEvents& events) const
+    unsigned animation_sequence_length(unsigned appearance, unsigned sequence) const
+    {
+        auto result = try_animation_sequence_length(appearance, sequence);
+        return std::move(result).value();
+    }
+    s2ne::Result<bool> try_protagonist_at_exit(const OriginalEvents& events) const
     {
         unsigned id = events.flags[40] ? 1 : 11;
         auto role = std::find_if(events.units.begin(), events.units.end(), [&](const auto& u)
             {
-                return !u.hostile() && u.id == id && living(u);
+                return s2ne::Result<bool>::success(!u.hostile() && u.id == id && living(u));
             });
         if (role == events.units.end())
         {
-            return false;
+            return s2ne::Result<bool>::success(false);
         }
         size_t maps = dword(pal_, 808 + 8 * (64 + 6 - 1)) - 15;
         size_t map = maps + dword(prg_, maps + 2 + (events.map_id - 1) * 8);
         int width = int(word(prg_, map)), height = int(word(prg_, map + 2)) * 2;
         if (role->x < 0 || role->y < 0 || role->x >= width - (role->y & 1) || role->y >= height)
         {
-            return false;
+            return s2ne::Result<bool>::success(false);
         }
         size_t cell = map + 28 + (size_t(role->y) * width + role->x) * 5;
         unsigned object = word(prg_, cell + 3);
         if (!object)
         {
-            return false;
+            return s2ne::Result<bool>::success(false);
         }
         size_t attrs = dword(pal_, 808 + 8 * (64 + 7 - 1)) - 16;
         if (object > word(prg_, attrs + 2))
         {
-            throw std::runtime_error("Invalid original exit object");
+            return s2ne::Result<bool>::failure(make_error("Invalid original exit object"));
         }
         size_t objects = attrs + 6 + word(prg_, attrs) * 2;
-        return (word(prg_, objects + (object - 1) * 2) >> 8) == 6;
+        return s2ne::Result<bool>::success((word(prg_, objects + (object - 1) * 2) >> 8) == 6);
+    }
+    bool protagonist_at_exit(const OriginalEvents& events) const
+    {
+        auto result = try_protagonist_at_exit(events);
+        if (!result)
+        {
+            report_error(result.error());
+            return false;
+        }
+        return result.value();
     }
     static bool living(const OriginalEvents::Unit& u) { return (u.status_flags & 0x80) && !(u.status_flags & 0x20); }
     static bool absent(std::span<const OriginalEvents::Unit> roster, int selector)
@@ -615,11 +678,11 @@ public:
         }
         return result;
     }
-    static Settlement plan(const Stage& s, Decision d, std::span<const OriginalEvents::Unit> allies)
+    static s2ne::Result<Settlement> try_plan(const Stage& s, Decision d, std::span<const OriginalEvents::Unit> allies)
     {
         if (d.outcome != Outcome::victory)
         {
-            throw std::runtime_error("Cannot settle a non-victory");
+            return s2ne::Result<Settlement>::failure(make_error("Cannot settle a non-victory"));
         }
         Settlement p;
         p.stage = s.id;
@@ -633,7 +696,12 @@ public:
                 p.survivor_indices.push_back(i);
             }
         }
-        return p;
+        return s2ne::Result<Settlement>::success(p);
+    }
+    static Settlement plan(const Stage& s, Decision d, std::span<const OriginalEvents::Unit> allies)
+    {
+        auto result = try_plan(s, d, allies);
+        return std::move(result).value();
     }
     enum class SavePoint
     {
@@ -685,18 +753,18 @@ public:
     static unsigned victory_experience(unsigned xp) { return uint16_t(xp + 30u); }
     // Verified 46243A reward panel subset (recruit/money/items); not the 410C86 hub.
     // Call only after reward effects are staged, and await confirm before +30 XP.
-    bool render_rewards(std::vector<uint8_t>& image, const Stage& s,
+    s2ne::Result<bool> try_render_rewards_validated(std::vector<uint8_t>& image, const Stage& s,
         std::span<const OriginalEvents::Unit> roster) const
     {
         if (image.size() != 640u * 480 * 4)
         {
-            throw std::runtime_error("Invalid campaign framebuffer");
+            return s2ne::Result<bool>::failure(make_error("Invalid campaign framebuffer"));
         }
         for (const auto& r : s.rewards)
         {
             if (r.type != 1 && r.type != 3 && r.type != 4)
             {
-                return false;
+                return s2ne::Result<bool>::success(false);
             }
             if (r.type == 4)
             {
@@ -704,7 +772,7 @@ public:
                 {
                     if (id < 1 || unsigned(id) > word(items_, 0))
                     {
-                        return false;
+                        return s2ne::Result<bool>::success(false);
                     }
                 }
             }
@@ -720,14 +788,18 @@ public:
                                 return int(u.id) == id;
                             }))
                     {
-                        return false;
+                        return s2ne::Result<bool>::success(false);
                     }
                 }
             }
         }
         size_t g = dword(pal_, 816) - 57, p = g + dword(cel_, g + 2 + (207 - 142) * 8);
         int left = 320 - int(word(cel_, p) + 1) / 2, top = 240 - int(word(cel_, p + 2) + 1) / 2;
-        sprite(image, 207, left, top);
+        auto panel_result = try_sprite(image, 207, left, top);
+        if (!panel_result)
+        {
+            return panel_result;
+        }
         auto draw = [&](unsigned id, int x, int y, unsigned c)
         {
             font_.draw_original_large(image, font_.text_bytes(id), x, y, c);
@@ -764,7 +836,11 @@ public:
                 for (size_t j = 0; j < r.values.size(); ++j)
                 {
                     int x = left + 198 + int(j % 2) * 168, yy = y + int(j / 2) * 30;
-                    sprite(image, unsigned(r.values[j]) + 492, x, yy);
+                    auto icon_result = try_sprite(image, unsigned(r.values[j]) + 492, x, yy);
+                    if (!icon_result)
+                    {
+                        return icon_result;
+                    }
                     size_t name = 2 + size_t(r.values[j] - 1) * 38 + 2;
                     std::vector<uint8_t> text;
                     for (size_t k = 0; k < 12 && items_.at(name + k); ++k)
@@ -776,7 +852,24 @@ public:
                 y += int((r.values.size() + 1) / 2) * 30;
             }
         }
-        return true;
+        return s2ne::Result<bool>::success(true);
+    }
+    s2ne::Result<bool> try_render_rewards(std::vector<uint8_t>& image, const Stage& s,
+        std::span<const OriginalEvents::Unit> roster) const
+    {
+        auto output = image;
+        auto result = try_render_rewards_validated(output, s, roster);
+        if (result)
+        {
+            image.swap(output);
+        }
+        return result;
+    }
+    bool render_rewards(std::vector<uint8_t>& image, const Stage& s,
+        std::span<const OriginalEvents::Unit> roster) const
+    {
+        auto result = try_render_rewards(image, s, roster);
+        return std::move(result).value();
     }
 };
 }    //namespace s2ne

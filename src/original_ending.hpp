@@ -4,6 +4,7 @@
 #include "original_disc.hpp"
 #include "original_events.hpp"
 #include "original_menu.hpp"
+#include <memory>
 #include <optional>
 namespace s2ne
 {
@@ -12,7 +13,7 @@ class OriginalEnding
 {
     OriginalMenu font_;
     std::vector<uint8_t> text_, pal_, cel_, prg_, background_, intro_;
-    void class_image(std::vector<uint8_t>& image, unsigned appearance) const
+    s2ne::Result<bool> try_class_image_validated(std::vector<uint8_t>& image, unsigned appearance) const
     {
         auto group = [&](unsigned id)
         {
@@ -21,7 +22,7 @@ class OriginalEnding
         size_t index = group(1), frames = group(2);
         if (!appearance || appearance > word(prg_, index))
         {
-            throw std::runtime_error("Invalid ending class appearance");
+            return s2ne::Result<bool>::failure(make_error("Invalid ending class appearance"));
         }
         unsigned first = word(prg_, index + 2 + (appearance - 1) * 8 + 2);
         size_t table = frames + 2 + first * 7;
@@ -41,7 +42,7 @@ class OriginalEnding
                 unsigned ink = op & 128 ? prg_.at(p++) : c;
                 if (n >= size_t(w) * h)
                 {
-                    throw std::runtime_error("Invalid ending class image");
+                    return s2ne::Result<bool>::failure(make_error("Invalid ending class image"));
                 }
                 int x = 225 - int(w / 2) + int(n % w), y = 180 - int(h) + int(n / w);
                 ++n;
@@ -58,7 +59,27 @@ class OriginalEnding
         }
         if (n != size_t(w) * h)
         {
-            throw std::runtime_error("Truncated ending class image");
+            return s2ne::Result<bool>::failure(make_error("Truncated ending class image"));
+        }
+
+        return s2ne::Result<bool>::success(true);
+    }
+    s2ne::Result<bool> try_class_image(std::vector<uint8_t>& image, unsigned appearance) const
+    {
+        auto output = image;
+        auto result = try_class_image_validated(output, appearance);
+        if (result)
+        {
+            image.swap(output);
+        }
+        return result;
+    }
+    void class_image(std::vector<uint8_t>& image, unsigned appearance) const
+    {
+        auto result = try_class_image(image, appearance);
+        if (!result)
+        {
+            report_error(result.error());
         }
     }
     OriginalEvents events_;
@@ -102,14 +123,15 @@ class OriginalEnding
         }
     }
     bool scrolling() const { return std::find(illustration_pages_.begin(), illustration_pages_.end(), unsigned(page_)) != illustration_pages_.end(); }
-    static unsigned word(const auto& b, size_t p)
+    static s2ne::Result<unsigned> try_word(const auto& b, size_t p)
     {
         if (p >= b.size() || b.size() - p < 2)
         {
-            throw std::runtime_error("Ending word offset=" + std::to_string(p) + " size=" + std::to_string(b.size()));
+            return s2ne::Result<unsigned>::failure(make_error("Ending word offset=" + std::to_string(p) + " size=" + std::to_string(b.size())));
         }
-        return b.at(p) | (unsigned(b.at(p + 1)) << 8);
+        return s2ne::Result<unsigned>::success(b.at(p) | (unsigned(b.at(p + 1)) << 8));
     }
+    static unsigned word(const auto& b, size_t p) { return try_word(b, p).value(); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     static std::vector<uint8_t> read(const std::filesystem::path& p) { return read_resource(p).value(); }
     std::vector<uint8_t> string(size_t p) const
@@ -121,22 +143,22 @@ class OriginalEnding
         }
         return result;
     }
-    std::vector<uint8_t> pcx(const std::filesystem::path& root, unsigned id, OriginalDisc disc)
+    s2ne::Result<std::vector<uint8_t>> try_pcx(const std::filesystem::path& root, unsigned id, OriginalDisc disc)
     {
         auto b = OriginalDiscResources(root).dat_entry(disc, id);
         if (b.size() < 897 || b[0] != 10 || b[2] != 1 || b[3] != 8 || b[65] != 1 || word(b, 8) != 639 || word(b, 10) < 479)
         {
-            throw std::runtime_error("Unsupported native ending PCX");
+            return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Unsupported native ending PCX"));
         }
         size_t colors = b.size() - 768;
         if (b.at(colors - 1) != 12)
         {
-            throw std::runtime_error("Missing ending palette");
+            return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Missing ending palette"));
         }
         unsigned stride = word(b, 66), height = word(b, 10) + 1;
         if (stride < 640)
         {
-            throw std::runtime_error("Invalid ending PCX stride");
+            return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid ending PCX stride"));
         }
         size_t p = 128, n = 0;
         std::vector<uint8_t> out(size_t(640) * height * 4);
@@ -150,7 +172,7 @@ class OriginalEnding
             }
             if (!count || count > size_t(stride) * height - n || p >= colors)
             {
-                throw std::runtime_error("Invalid ending PCX run");
+                return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid ending PCX run"));
             }
             while (count--)
             {
@@ -168,7 +190,12 @@ class OriginalEnding
                 out[q + 3] = 255;
             }
         }
-        return out;
+        return s2ne::Result<std::vector<uint8_t>>::success(out);
+    }
+    std::vector<uint8_t> pcx(const std::filesystem::path& root, unsigned id, OriginalDisc disc)
+    {
+        auto result = try_pcx(root, id, disc);
+        return std::move(result).value();
     }
     void paragraph(std::vector<uint8_t>& image, const std::vector<uint8_t>& bytes, int x, int y, int width) const
     {
@@ -220,22 +247,46 @@ class OriginalEnding
     }
 
 public:
-    OriginalEnding(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc) : font_(root), events_(events), root_(root), disc_((events.stage == 61 || events.stage == 131) ? OriginalDisc::two : disc)
+    struct InitializationTag
+    {
+    };
+    OriginalEnding(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc, InitializationTag) : font_(root), events_(events), root_(root), disc_((events.stage == 61 || events.stage == 131) ? OriginalDisc::two : disc) { }
+    s2ne::Result<bool> initialize(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc)
     {
         disc = disc_;
         if ((events.stage != 61 && events.stage != 131) || OriginalCampaign(root).selected_route(events) != 0 || !events.flags[12])
         {
-            throw std::runtime_error("Native terminal outcome not authorized");
+            return s2ne::Result<bool>::failure(make_error("Native terminal outcome not authorized"));
         }
-        pal_ = read(root / "SUPERSP.PAL");
-        cel_ = read(root / "SUPERSP.CEL");
-        prg_ = read(root / "SUPERSP.PRG");
-        auto bin = read(root / "SUPERSP.BIN");
+        auto pal_read_result = read_resource(root / "SUPERSP.PAL");
+        if (!pal_read_result)
+        {
+            return s2ne::Result<bool>::failure(pal_read_result.error());
+        }
+        pal_ = std::move(pal_read_result).value();
+        auto cel_read_result = read_resource(root / "SUPERSP.CEL");
+        if (!cel_read_result)
+        {
+            return s2ne::Result<bool>::failure(cel_read_result.error());
+        }
+        cel_ = std::move(cel_read_result).value();
+        auto prg_read_result = read_resource(root / "SUPERSP.PRG");
+        if (!prg_read_result)
+        {
+            return s2ne::Result<bool>::failure(prg_read_result.error());
+        }
+        prg_ = std::move(prg_read_result).value();
+        auto bin_result = read_resource(root / "SUPERSP.BIN");
+        if (!bin_result)
+        {
+            return s2ne::Result<bool>::failure(bin_result.error());
+        }
+        auto bin = std::move(bin_result).value();
         size_t at = 848 + 16;
         size_t offset = dword(pal_, at) - 13, size = dword(pal_, at + 4) - 13;
         if (offset > bin.size() || size > bin.size() - offset)
         {
-            throw std::runtime_error("Invalid BIN3 ending text");
+            return s2ne::Result<bool>::failure(make_error("Invalid BIN3 ending text"));
         }
         text_.assign(bin.begin() + offset, bin.begin() + offset + size);
         for (unsigned i = 0; i < 8; ++i)
@@ -268,8 +319,18 @@ public:
                 append(id);
             }
         }
-        background_ = pcx(root, 26, disc);
-        intro_ = pcx(root, 40, disc);
+        auto background_result = try_pcx(root, 26, disc);
+        if (!background_result)
+        {
+            return s2ne::Result<bool>::failure(background_result.error());
+        }
+        background_ = std::move(background_result).value();
+        auto intro_result = try_pcx(root, 40, disc);
+        if (!intro_result)
+        {
+            return s2ne::Result<bool>::failure(intro_result.error());
+        }
+        intro_ = std::move(intro_result).value();
         sequence_.push_back(Page{ .text = 0 });
         sequence_.push_back(Page{ .movie = 4 });
         sequence_.push_back(Page{ .text = 1 });
@@ -280,7 +341,12 @@ public:
             if (it != order.end())
             {
                 illustration_pages_.push_back(unsigned(sequence_.size()));
-                illustrations_.push_back(pcx(root, 27 + unsigned(it - order.begin()), disc));
+                auto illustration = try_pcx(root, 27 + unsigned(it - order.begin()), disc);
+                if (!illustration)
+                {
+                    return s2ne::Result<bool>::failure(illustration.error());
+                }
+                illustrations_.push_back(std::move(illustration).value());
                 sequence_.push_back(Page{ .illustration = int(illustrations_.size() - 1) });
             }
             sequence_.push_back(Page{ .role = int(r) });
@@ -290,7 +356,28 @@ public:
         sequence_.push_back(Page{ .text = 2 });
         sequence_.push_back(Page{ .movie = 3 });
         enter();
+
+        return s2ne::Result<bool>::success(true);
     }
+    OriginalEnding(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc) : font_(root), events_(events), root_(root), disc_((events.stage == 61 || events.stage == 131) ? OriginalDisc::two : disc)
+    {
+        auto result = initialize(root, events, disc);
+        if (!result)
+        {
+            fatal(result.error());
+        }
+    }
+    static s2ne::Result<std::unique_ptr<OriginalEnding>> create(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc)
+    {
+        auto result = std::make_unique<OriginalEnding>(root, events, disc, InitializationTag{ });
+        auto ready = result->initialize(root, events, disc);
+        if (!ready)
+        {
+            return s2ne::Result<std::unique_ptr<OriginalEnding>>::failure(ready.error());
+        }
+        return s2ne::Result<std::unique_ptr<OriginalEnding>>::success(std::move(result));
+    }
+
     size_t page() const { return page_; }
     size_t pages() const { return sequence_.size(); }
     unsigned variant() const { return variant_; }
@@ -365,23 +452,23 @@ public:
             enter();
         }
     }
-    std::vector<uint8_t> draw() const
+    s2ne::Result<std::vector<uint8_t>> try_draw() const
     {
         auto image = background_;
         if (done())
         {
-            return image;
+            return s2ne::Result<std::vector<uint8_t>>::success(image);
         }
         const auto& phase = sequence_[page_];
         if (phase.movie)
         {
-            return movie_image_.empty() ? std::vector<uint8_t>(640 * 480 * 4) : movie_image_;
+            return s2ne::Result<std::vector<uint8_t>>::success(movie_image_.empty() ? std::vector<uint8_t>(640 * 480 * 4) : movie_image_);
         }
         if (phase.illustration >= 0)
         {
             const auto& source = illustrations_[phase.illustration];
             std::copy_n(source.begin() + size_t(scroll_) * 640 * 4, image.size(), image.begin());
-            return image;
+            return s2ne::Result<std::vector<uint8_t>>::success(image);
         }
         unsigned count = word(text_, 0);
         size_t records = 4, variants = records + count * 6;
@@ -389,14 +476,14 @@ public:
         {
             image = phase.text < 2 ? intro_ : background_;
             paragraph(image, string(dword(text_, records + phase.text * 6)), phase.text < 2 ? 25 : 60, phase.text == 1 ? 120 : 50, 590);
-            return image;
+            return s2ne::Result<std::vector<uint8_t>>::success(image);
         }
         if (phase.summary)
         {
             paragraph(image, font_.text_bytes(258), 70, 50, 300);
             if (!events_.ending_statistics)
             {
-                throw std::runtime_error("Native ending campaign statistics unavailable");
+                return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Native ending campaign statistics unavailable"));
             }
             unsigned total = 0;
             for (auto id : roles_)
@@ -413,7 +500,7 @@ public:
                 auto number = std::to_string(i < 5 ? (*events_.ending_statistics)[i] : int(total));
                 font_.draw_original_large(image, { number.begin(), number.end() }, 400, y[i], 175);
             }
-            return image;
+            return s2ne::Result<std::vector<uint8_t>>::success(image);
         }
         auto id = roles_.at(phase.role);
         const auto& unit = *std::find_if(events_.units.begin(), events_.units.end(), [&](auto& u)
@@ -422,7 +509,11 @@ public:
             });
         if (!phase.relationship)
         {
-            class_image(image, unit.appearance);
+            auto class_result = try_class_image(image, unit.appearance);
+            if (!class_result)
+            {
+                return s2ne::Result<std::vector<uint8_t>>::failure(class_result.error());
+            }
             font_.draw_original_large(image, unit.name, 367, 42, 175);
             auto title = unit.profession;
             auto level = " " + std::to_string(unit.level) + " ";
@@ -439,7 +530,7 @@ public:
             };
             if (!unit.ending_combat_value)
             {
-                throw std::runtime_error("Native ending cached combat statistic unavailable");
+                return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Native ending cached combat statistic unavailable"));
             }
             number(28, *unit.ending_combat_value, 102);
             number(256, int(unit.ending_kills), 132);
@@ -467,7 +558,7 @@ public:
                         unsigned op = type ? 0x81 : cel_.at(p++), n = op ? op & 127 : 1, c = 0;
                         if (!n || n > w - x)
                         {
-                            throw std::runtime_error("Invalid ending portrait");
+                            return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid ending portrait"));
                         }
                         if (op && !(op & 128))
                         {
@@ -515,7 +606,12 @@ public:
                 }
             }
         }
-        return image;
+        return s2ne::Result<std::vector<uint8_t>>::success(image);
+    }
+    std::vector<uint8_t> draw() const
+    {
+        auto result = try_draw();
+        return std::move(result).value();
     }
 };
 }    //namespace s2ne

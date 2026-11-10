@@ -254,7 +254,15 @@ private:
         {
             campaign_.emplace(root_);
         }
-        const auto group = OriginalCampaign::story_animation_group(events, event);
+        auto group_result = OriginalCampaign::try_story_animation_group(events, event);
+        if (!group_result)
+        {
+            report_error(group_result.error());
+            campaign_blocker_ = group_result.error().message;
+            phase_ = Phase::campaign_blocked;
+            return false;
+        }
+        const auto group = std::move(group_result).value();
         std::vector<StoryPose> poses;
         bool turning = false;
         for (const auto& item : group.roles)
@@ -274,7 +282,15 @@ private:
                 return true;
             }
             unsigned facing = unsigned(item.direction) & 3, sequence = unsigned(item.action) + facing;
-            poses.push_back({ size_t(role - events.units.begin()), campaign_->animation_sequence_length(role->appearance, sequence), unsigned(item.action) / 4, role->action_state });
+            auto frames = campaign_->try_animation_sequence_length(role->appearance, sequence);
+            if (!frames)
+            {
+                report_error(frames.error());
+                campaign_blocker_ = frames.error().message;
+                phase_ = Phase::campaign_blocked;
+                return false;
+            }
+            poses.push_back({ size_t(role - events.units.begin()), frames.value(), unsigned(item.action) / 4, role->action_state });
             turning = turning || role->direction != facing;
         }
         for (size_t i = group.begin; i <= group.end; ++i)
@@ -353,7 +369,15 @@ private:
             }
             if (events.type(i) == 16 && (events.condition(i) == 0 || events.condition(i) == 4))
             {
-                auto decoded = OriginalCampaign::story_movement_group(events, i);
+                auto decoded_result = OriginalCampaign::try_story_movement_group(events, i);
+                if (!decoded_result)
+                {
+                    report_error(decoded_result.error());
+                    campaign_blocker_ = decoded_result.error().message;
+                    phase_ = Phase::campaign_blocked;
+                    return;
+                }
+                auto decoded = std::move(decoded_result).value();
                 std::vector<std::pair<size_t, Battle::Point>> roles;
                 for (const auto& item : decoded.roles)
                 {
@@ -551,7 +575,15 @@ private:
                     return;
                 }
                 unsigned action = unsigned(events.event_word(i, 7)), facing = unsigned(events.event_word(i, 9)) & 3;
-                unsigned frames = campaign_->animation_sequence_length(role->appearance, action * 4 + facing);
+                auto frame_result = campaign_->try_animation_sequence_length(role->appearance, action * 4 + facing);
+                if (!frame_result)
+                {
+                    report_error(frame_result.error());
+                    campaign_blocker_ = frame_result.error().message;
+                    phase_ = Phase::campaign_blocked;
+                    return;
+                }
+                unsigned frames = frame_result.value();
                 story_poses_ = { { size_t(role - events.units.begin()), frames, action, role->action_state } };
                 story_turning_ = role->direction != facing;
                 story_pose_elapsed_ = 0;
@@ -697,8 +729,16 @@ private:
             campaign_blocker_ = "Original story event " + std::to_string(i) + " opcode " + std::to_string(events.type(i)) + " condition " + std::to_string(events.condition(i)) + " requires native executor";
             if (events.type(i) == 15 && (events.condition(i) == 0 || events.condition(i) == 3))
             {
-                const auto group = OriginalCampaign::story_animation_group(events, i);
-                campaign_blocker_ += " 421B6F->454A96 grouped animation roles=" + std::to_string(group.roles.size());
+                auto group_result = OriginalCampaign::try_story_animation_group(events, i);
+                if (!group_result)
+                {
+                    report_error(group_result.error());
+                    campaign_blocker_ += group_result.error().message;
+                }
+                else
+                {
+                    campaign_blocker_ += " 421B6F->454A96 grouped animation roles=" + std::to_string(group_result.value().roles.size());
+                }
             }
             phase_ = Phase::campaign_blocked;
             return;
@@ -1095,6 +1135,7 @@ private:
         battle_.emplace(std::move(stagedBattle).value());
         map_ = std::move(stagedMap);
         battle_->enable_movement_animation();
+        if (presentation_driven_) { battle_->enable_movement_presentation(); }
         connect_combat_progression();
         for (unsigned y = 0; y < map_.height * 2; ++y)
         {
@@ -1953,6 +1994,7 @@ public:
     {
         presentation_driven_ = true;
         map_.enable_disappearance_presentation();
+        if (battle_) { battle_->enable_movement_presentation(); }
     }
     bool teleport_active() const { return teleport_.has_value(); }
     void rollback_teleport()
@@ -2038,7 +2080,7 @@ public:
         resume();
     }
     bool synchronous_death_active() const { return bool(synchronous_death_return_); }
-    bool original_save_boundary_ready() const { return !teleport_ && !synchronous_death_active() && !skill94_death_commit_ && (!battle_ || !battle_->combat_feedback_active()); }
+    bool original_save_boundary_ready() const { return !teleport_ && !synchronous_death_active() && !skill94_death_commit_ && (!battle_ || (!battle_->combat_feedback_active() && !battle_->animating_movement())); }
     bool begin_synchronous_death(unsigned role, std::function<void()> resume)
     {
         if (synchronous_death_active() || !resume)
@@ -2079,6 +2121,7 @@ public:
     }
     void frame_presented()
     {
+        map_.movement_effect_presented();
         if (teleport_)
         {
             teleport_->presented = true;
@@ -2097,6 +2140,7 @@ public:
         }
         if (battle_)
         {
+            battle_->movement_presented();
             battle_->feedback_presented();
         }
         if (battle_intro())
@@ -2966,6 +3010,7 @@ public:
         events = std::move(restored);
         battle_.emplace(Battle::load(root_, events.map_id, disc_));
         battle_->enable_movement_animation();
+        if (presentation_driven_) { battle_->enable_movement_presentation(); }
         battle_->restore_turn(turn);
         connect_combat_progression();
         // Flag changes reload the old map; do not give it the new map's chains.
@@ -3378,6 +3423,25 @@ public:
         return Result<bool>::failure(make_error("Unsupported original prologue event transition"));
         return Result<bool>::success(true);
     }
+    void draw_status_terrain(const OriginalMenu& font, std::vector<uint8_t>& image, const OriginalEvents::Unit& unit, int panel_y) const
+    {
+        map_.draw_terrain(font, image, unit.x, unit.y, panel_y);
+        const auto tile = battle_->cell({ unit.x, unit.y });
+        if (tile.ground == 1) { return; }
+        const auto effect = battle_->terrain_effect(events, unit, { unit.x, unit.y });
+        if (effect.result != 1) { return; }
+        // 42C3C6: native CEL pointers 4F7358/4F735C, followed by signed percentages.
+        sprite(image, sprite_offset(2, (0x4F7358u - 0x4F7060u) / 4u - 1u - 142u), false, 527, panel_y + 91);
+        sprite(image, sprite_offset(2, (0x4F735Cu - 0x4F7060u) / 4u - 1u - 142u), false, 577, panel_y + 91);
+        for (unsigned i = 0; i < 2; ++i)
+        {
+            int value = int(int8_t(effect.bytes[i + 1]));
+            auto sign = std::string(value < 0 ? "-" : "+");
+            auto number = std::to_string(std::abs(value));
+            font.draw_small(image, { sign.begin(), sign.end() }, i ? 599 : 548, panel_y + 92, 137, true);
+            font.draw_small(image, { number.begin(), number.end() }, i ? 607 : 556, panel_y + 92, 137, true);
+        }
+    }
     std::vector<uint8_t> draw(const OriginalMenu& font) const
     {
         if (skill94_visual_)
@@ -3541,6 +3605,8 @@ public:
                 if (u.action_state == 4)
                 {
                     u.movement_pose = true;
+                    u.movement_visual_class = events.movement_class(u);
+                    u.movement_camera_pose = true;
                     u.movement_frame = events.units.at(*target).movement_frame;
                 }
             }
@@ -3609,6 +3675,7 @@ public:
                 int panel_y = status_panel_side_ == 2 ? 363 : 0;
                 sprite(image, sprite_offset(2, 143 - 142), false, 0, panel_y);
                 unit_status_.draw(font, image, unit, panel_y);
+                draw_status_terrain(font, image, unit, panel_y);
                 auto origin = battle_command_origin();
                 bool submenu = battle_->state() == Battle::State::attack_menu;
                 if (submenu)
@@ -3685,6 +3752,7 @@ public:
                     int panel_y = status_panel_side_ == 2 ? 363 : 0;
                     sprite(image, sprite_offset(2, 143 - 142), false, 0, panel_y);
                     unit_status_.draw(font, image, unit, panel_y, unit.hostile());
+                    draw_status_terrain(font, image, unit, panel_y);
                 }
             }
             if (in_battle() && battle_->state() == Battle::State::finish_confirm && finish_confirmation_)
