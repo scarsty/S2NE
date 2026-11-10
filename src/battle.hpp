@@ -63,6 +63,8 @@ private:
     bool movement_animation_enabled_=false;
     bool attack_animation_=false;
     original_combat::Feedback combat_feedback_;
+    bool skill94_feedback_{},skill94_feedback_presented_{},skill94_death_lock_{};
+    std::function<void()> skill94_feedback_commit_;
     std::optional<OriginalEvents::Unit> reaction_pose_;
     std::function<void(std::vector<OriginalEvents::Unit>&,size_t,size_t)> death_settlement_;
 public:
@@ -530,11 +532,20 @@ public:
             movement_categories_[i]=categories[i]<=2?categories[i]:0;
     }
     const original_combat::Feedback& combat_feedback()const{return combat_feedback_;}
-    bool combat_feedback_active()const{return combat_feedback_.active();}
+    bool combat_feedback_active()const{return combat_feedback_.active()||skill94_death_lock_;}
+    void lock_skill94_death(bool locked){skill94_death_lock_=locked;}
+    void feedback_presented(){if(skill94_feedback_)skill94_feedback_presented_=true;}
+    bool begin_skill94_feedback(size_t actor,size_t target,int hp,int damage,std::function<void()> commit){
+        if(combat_feedback_active()||!commit||damage<0||damage>hp)return false;
+        combat_feedback_.begin(actor,target,hp,damage,damage==0,false);
+        // 468BAC starts directly at number step0: no physical452E7F flash.
+        combat_feedback_.phase=original_combat::Feedback::Phase::numbers;
+        combat_feedback_.consume();skill94_feedback_=true;skill94_feedback_presented_=false;skill94_feedback_commit_=std::move(commit);return true;
+    }
     template<class ScreenPosition,class Silhouette,class Text>
     void render_combat_feedback(const std::vector<OriginalEvents::Unit>& units,ScreenPosition screen_position,Silhouette silhouette,Text text)const{
         const auto& f=combat_feedback_;if(!f.active()||f.target>=units.size())return;
-        const auto& unit=units[f.target];auto position=screen_position(unit);
+        auto unit=units[f.target];if(skill94_feedback_)unit.hp=f.hp_after;auto position=screen_position(unit);
         if(f.silhouette())silhouette(unit,position,f.silhouette_palette());
         if(f.text_visible())text(f.text(),position.x+f.text_x(),position.y+f.text_y(),f.text_foreground(),f.text_background());
     }
@@ -582,6 +593,15 @@ public:
     void tick_combat_feedback(std::vector<OriginalEvents::Unit>& units,unsigned milliseconds){
         auto& feedback=combat_feedback_;
         if(!feedback.active())return;
+        if(skill94_feedback_){
+            feedback.elapsed+=std::min(milliseconds,1000u);
+            unsigned interval=feedback.step<3?30u:feedback.step<4?20u:10u;
+            // 468F5A waits only for steps0..5, for both damage and MISS.
+            if(!skill94_feedback_presented_||(feedback.step<6&&feedback.elapsed<interval))return;
+            skill94_feedback_presented_=false;feedback.elapsed=0;++feedback.step;
+            if(feedback.step>=8&&!feedback.remaining){feedback.phase=original_combat::Feedback::Phase::idle;skill94_feedback_=false;auto commit=std::move(skill94_feedback_commit_);commit();return;}
+            feedback.consume();return;
+        }
         if(feedback.phase==original_combat::Feedback::Phase::windup){
             if(animating_movement())return;
             if(projectile_){
@@ -642,7 +662,7 @@ public:
         }
         // Presentation-only presence keeps a lethal target visible until its HP
         // number sequence and settlement callback complete; gameplay stays dead.
-        if(combat_feedback_active()&&combat_feedback_.target<result.size())result[combat_feedback_.target].hp=std::max(1,result[combat_feedback_.target].hp);
+        if(combat_feedback_active()&&combat_feedback_.target<result.size())result[combat_feedback_.target].hp=std::max(1,skill94_feedback_?combat_feedback_.hp_after:result[combat_feedback_.target].hp);
         return result;
     }
     void cancel(){

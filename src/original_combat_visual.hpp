@@ -40,7 +40,7 @@ inline std::vector<uint8_t> reaction_bitmap(unsigned width,unsigned height,
 // 455048(ebx=0,ecx=0): five original indexed mixes, presented at 20ms.
 // Gameplay presence is deliberately caller-owned until finished().
 struct Disappearance {
-    unsigned target{};unsigned frame{},elapsed{};bool running{},done{};
+    unsigned target{};unsigned frame{},elapsed{},frame_count{5},frame_interval{20},first_weight{40};bool running{},done{};
     std::vector<uint8_t> source,background;
     void begin(unsigned id,std::span<const uint8_t> a,std::span<const uint8_t> b){
         if(a.empty()||a.size()!=b.size())throw std::invalid_argument("Original disappearance buffers");
@@ -48,9 +48,10 @@ struct Disappearance {
     }
     bool active()const{return running;}
     bool finished()const{return done;}
-    unsigned percentage()const{return 40+frame*10;}
-    void tick(unsigned ms){if(!running)return;elapsed+=std::min(ms,20u);if(elapsed<20)return;elapsed=0;
-        if(++frame==5){running=false;done=true;}
+    void death_mode(){frame_count=10;frame_interval=30;first_weight=10;}
+    unsigned percentage()const{return first_weight+frame*10;}
+    void tick(unsigned ms){if(!running)return;elapsed+=std::min(ms,frame_interval);if(elapsed<frame_interval)return;elapsed=0;
+        if(++frame==frame_count){running=false;done=true;}
     }
     template<class Blend>std::vector<uint8_t> pixels(Blend blend)const{
         std::vector<uint8_t> result(source.size());

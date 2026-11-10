@@ -14,7 +14,7 @@ public:
         OriginalSkill94Resolution::DamageContext damage;
         int elevation{};uint32_t seconds{};
         unsigned payment_state{};
-        bool original_second_partition{},target_runtime_known{};
+        bool original_second_partition{},target_runtime_known{},synchronous_death_ready{};
     };
     enum class Failure { none, gate, unknown_runtime, scripted_death, resurrection_consumption, award };
     struct Result {
@@ -24,7 +24,7 @@ public:
         bool killed{};unsigned consumed_item{};
     };
     static bool target_supported(const OriginalEvents& events,const OriginalEvents::Unit& target){
-        return !(target.status_flags&0x50)&&OriginalDeathDispatch::inspect(events,target.id).settled()&&
+        return !(target.status_flags&0x50)&&OriginalDeathDispatch::continuation(events,target.id).supported&&
             (target.action_status_runtime.has_value()||target.status39.has_value());
     }
     using Award=OriginalSkills::AwardAdapter;
@@ -75,7 +75,7 @@ public:
                 // Scripted removal/transformation and summoned-role slots need
                 // the full41C02A/4531AB dispatcher, not a generic physical callback.
                 auto dispatch=OriginalDeathDispatch::inspect(resources,t.id);
-                if(!army_inventory||!equipment||!dispatch.settled()||(t.status_flags&0x50)){out.failure=Failure::scripted_death;return out;}
+                if(!army_inventory||!equipment||(!dispatch.settled()&&!ctx.synchronous_death_ready)||(t.status_flags&0x50)){out.failure=Failure::scripted_death;return out;}
                 out.killed=true;t.ending_losses=uint16_t(t.ending_losses+1);t.status_flags|=0x20;
                 a.ending_kills=uint16_t(a.ending_kills+1);
                 // 468FDF mode0/friendly army collects initial_status WORDs, not

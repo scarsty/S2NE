@@ -10,6 +10,21 @@
 4. 两路线剧情流程验证后，专项审计法术、剑术等习得条件、使用限制、效果与动画；不得以剧情跑通宣称这些系统全部完成。音频暂缓、双人对战排除的既定范围不变。
 5. 流程摘要必须包含原关卡名称及资源阶段号，区分实际通过、独立专项和未到达阶段。完整验证证据归VALIDATION，不写回README。
 
+## 交付更正：S2NE.exe与双盘PRG（2026-11-10）
+
+- 游戏EXE已改为与方案同名的`S2NE.exe`，原生两配置／备用CMake输出名／根目录发布／启动器／打包清单均同步。Debug与Release构建通过，最终根目录Release哈希一致；旧envoy-opening.exe保留为历史文件，不再发布或打入新包。
+- 用户指出双盘PRG不同，经哈希确认根目录PRG与CD1一致，CD2不同。上一包确实只带CD1 PRG，已更正：根目录保留CD1，`cd/windows-disc2/SUPERSP/SUPERSP.PRG`保留CD2，各只一份；DAT也保持各盘一份。新包248254008字节（约236.8MiB），独立解压16项哈希及改名EXE校验／SDL开场通过。
+- PRG用途进一步核实后纠正上一结论：原42800C从CFG的DEVICE首值读4F7D68，当前DEVICE=1；473B26..473B56在其非零时始终使用安装目录PRG，仅为0才经4737AD查光盘路径。因此“未随盘切PRG就是缺陷”的判断不成立，不应盲目换成CD2。按原PAL逐组哈希，两个文件前8组（角色／动作／瓦片／物件／场景／地图／属性／背景）全部相同；第9组及余下尾部不同，尚未完整解析其用途。打包目前保留不同CD2 PRG作为独立原资源，不意味着运行必须加载它。
+
+## 最新本地交付：根目录检查程序与精简游戏包（2026-11-10，以下包名／体积为更正前历史）
+
+- 原生MSBuild Debug／Release完成后自动同步游戏EXE及四个运行库到资源根目录；最新构建配置会覆盖检查副本。本次最终保留Release，根目录与Release EXE SHA256一致。备用CMake入口也已配置构建后同步，当前实际验收使用原生sln，未宣称备用入口已构建验证。
+- 已生成资源根目录`S2NE-game-win64.zip`，220993658字节（约210.8MiB）。工具为`tools/package-game.ps1`，固定使用Release；包含15个运行／资源文件及启动器、包说明、SHA256清单。
+- 双盘仅保留运行时优先选用的windows-disc1／windows-disc2各一份DAT，不带重复disc1／disc2；仅带当前实际读取的MP3曲目，不带原EXE、修改器、攻略、备份、源码、测试、日志、个人SAVE和其余未引用独立资源。原索引归档BIN／CEL／DAT必须完整保留，不能删除其内部条目破坏偏移。
+- 已在独立临时目录解压验证15项哈希，运行包内程序原资源校验及SDL开场右键跳过，均exit0，当前引用曲目混音正常；临时目录已清理。此为本地检查包，不是全游戏完成或独立机器VC运行库兼容认证。
+- 剧情现状：两条独立强化路线及完整视觉结局均通过；技能为32／88既有验收路径及94受限生产，另93非合作／19合作仍缺。94最新嵌套死亡调用栈仅隔离子集验证，完整原表复杂handler仍拒绝；自然击杀E2E未验。完整events第4回合历史失败边界保留。
+- 用户本次打包期间已停止继续派发技能实现；未丢弃既有源码。后续从现有磁盘继续，先完成完整原表的一类dispatcher支持及对应验证。
+
 ## 最新验收边界：娜塔莉娅路线131（2026-11-10）
 
 - 100《草原逐惡》事件3的opcode12／condition19及20已按原逻辑实现通用移除，复用原存档事务及消失动画，保留固定军队槽位和死亡／未激活无操作语义。真实100及白线26／158回归、Release／Debug通过。
@@ -37,7 +52,16 @@
 - 94隔离部分事务已恢复HP／+132反馈、常驻special25复活、special29反疗、存活奖励、ST5／AP支付及请求防重复提交；64固定随机案例覆盖命中／未命中／复活／反疗与回调失败回滚，父级复跑通过。紧耦合修复mode1战力快照及+132原档写回，生产身份校验未放宽。最新Release／Debug、七项相关专项及真实Windows SDL15帧恢复通过。
 - 94新增special28首匹配装备消费／属性扣除、普通无脚本死亡／kill与loss计数、原掉落合并与99封顶，以及原档往返；奖励失败时装备／库存／HP／计数／RNG均回滚。纠正94真正击杀的rawXP为46913D提前返回1，未套通用尾公式。父级复跑64案例事务通过，最新Release／Debug、九项紧耦合回归及Windows SDL15帧恢复通过。
 - 94死亡派发新增原41C02A有序扫描：首个匹配空／负行数记录直接返回0，不能继续后续同角色记录；正行数实际返回12h（十进制18）并要求同步剧情，仍拒绝执行。纠正此前把其它不可达条件返回11h／13h列为此入口产出的说法。特殊移除／召唤槽分支仍原子拒绝。父级复跑事务通过，最新Release／Debug及九项相关专项通过。
-- 94仍未接生产菜单或真实输入。真实131只读核实角色32范围3内有1个合法活敌，活敌无正行数死亡脚本；首领20距离4，不得冒称合法目标。下一步先对支持的普通目标严格能力预检，连接真实运行态／职业mask／army库存、原菜单／准备／15帧与保存，取得有限生产路径E2E；复杂同步死亡／移除／召唤仍单列未实现，不以一个普通目标通过称94完整完成。
+- 94有限生产路径已接通：真实army库存、运行态39及职业抗性来源、后分区菜单／范围3／准备／15帧／事务／保存；未知运行态、同步死亡脚本、特殊召唤／移除目标在呈现与随机前拒绝，不批量开放effect1。
+- 重要资格纠正：此前131角色32虽已学94但原为未激活reserve，不能正常选中，未改旗标激活。实际E2E由同一原档原已学且激活的角色11完成，合法普通敌role0，首次施放自然MISS（chance50／roll53），ST219→214、AP71→26、熟练2800→2826、XP2→3；15帧、取消与恢复后500ms无重复支付通过。父级复跑原存档持久证据专项通过，证据`out/skill94-input/`及`out/skill94-production-input.log`。
+- 94普通命中数字反馈已接原468BAC呈现链：逐present分块HP显示、至少8帧、无物攻flash，数字结束一次提交HP／费用／奖励／库存／RNG，输入期间锁定，不重复调用物攻结算。父级复跑反馈专项通过。
+- 新实际HIT证据从上一轮MISS结果继续一次正常输入，改由下一位原激活已学角色16施放，未筛随机：chance50／roll32，普通敌HP减少1，ST230→225、AP72→27、熟练2800→2830、XP60→61。独立15帧后数字恢复、取消与500ms无重复提交均通过，证据`out/skill94-feedback-input/`；不能与角色11 MISS混称同次结果，也不是击杀验收。
+- 94普通无脚本HP0已接数字→455048(3C,0)原死亡模式→单次发布保存：原独立十帧、调色3C／80%、30ms节拍，非旧故事五帧消失。结束前输入锁及延后尸体／费用／奖励提交。Windows SDL隔离整链23次present、一次提交通过，父级复跑通过；必杀／loot／支付／存档由64案例隔离事务覆盖。未取得正常输入自然击杀E2E，不把隔离整链称作实际击杀验收。
+- 94新增受限同步死亡对白：completion先置位→原逐字分页／输入推进→可证明无副作用的41FF30扫描→死亡十帧→单次结算；数字／对白／死亡期间禁止保存与加载半事务。真实资源stage6角色104／stage82角色147专项通过，父级复跑通过；后者核实旗标13先于对白生效、返回仅一次。此为原资源fixture，不是自然击杀E2E。
+- 最新Release／Debug及11项紧耦合专项、原事件finish-facing专项通过。完整original_events_test在branch0第4回合campaign_modal仍失败；隔离禁用本轮同步路径后同点复现，不能称完整原事件套件全绿，也未为通过放宽门控。
+- 同步dispatcher已新增41C33E→41B9A3逐记录调用栈，支持type9／condition0嵌套扫描与原返回值重扫，不预展平对白。原stage11三条保留资源记录的隔离fixture验证五层嵌套、旗标顺序、单次返回、保存／取消锁及异常全回滚，父级复跑专项exit0。完整stage11仍有未支持handler，生产预检继续拒绝，不能把删去其它事件的fixture称完整原表／真实E2E。
+- 最新Release／Debug及12项紧耦合专项通过；完整events已有对照失败边界保留，未冒称全套通过。其余type4..16及41FF6E的1／3／7仍严格拒绝。当前继续挑选实际阻塞原表且已有确证事务的一类handler，目标使一张未经删改事件的原死亡链可执行；自然击杀E2E仍待验。
+- 其它93条非合作、19合作及94特殊移除／召唤、多段复活反疗呈现仍缺；不称全94完成。
 - 其它94条技能专用执行器及19项单人合作技能等缺口继续保留。音频暂缓、仅双人对战排除。技能专项仍未完成，不因双线剧情跑通而计为技能系统完成。下节为累计历史，出现早期阻塞时以上述最新边界为准。
 
 ## 当前流程验证（2026-11-10，恢复推进）
@@ -328,3 +352,7 @@ UI timing correction: SDL edge scrolling now uses configured screen_delay centis
 Focused SDL --smoke-battle failure was production easiest-mode AI, not banner acknowledgement: difficulty1 sideDA1 dispatches 40AFE6 -> 43939D -> 47736A(reserve0), previously marked unsupported and returned without a path. Added nearest approachable target selection and original select_toward route execution. Release dummy SDL smoke now passes (1461 action frames, 1974 presented); standalone original_easiest_goal_test passes. Existing broad battle_test reaches a failing stage3 automatic-routing assertion after the changed enemy behavior; not claimed passing, no assertion relaxed.
 
 Stage3 regression resolved as an isolated native-stat visibility encounter fixture: restored hostile pursuit changes encounters, leaving hidden77 at (1,45) after every visible enemy is defeated; a scriptless automatic run cannot guarantee discovery. Test now places hidden77 on a checked unoccupied/equal-height traversable tile beside a real observer, proves hidden before placement, revealed with observers, hidden again with observers removed, and retains the original all-enemies/death/bounded-turn assertions (passes turn12). No stats, invisibility bits or production visibility rules changed. Full rebuilt battle_test and easiest_goal test PASS; Release and Debug native builds PASS; final Release dummy --smoke-battle PASS (1461 hostile frames,1961 presented). No campaign autoplay launched.
+
+### 打包清单追加更正（2026-11-10）
+
+按用户要求移除新增的PACKAGE.txt和SHA256SUMS.txt；打包脚本及现有ZIP均已更新，17项=16运行/资源文件+启动器，不再包含这两个文本文件。前述含三辅助项的记录为旧包历史。

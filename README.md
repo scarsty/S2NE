@@ -36,9 +36,15 @@ msbuild .\S2NE.sln /p:Configuration=Release /p:Platform=x64 /m
 ```
 
 - 启动脚本：[run-opening.cmd](run-opening.cmd)。
-- Release 输出：`out\x64\Release\envoy-opening.exe`；Debug 输出在对应 Debug 目录。
+- Release 输出：`out\x64\Release\S2NE.exe`；Debug 输出在对应 Debug 目录。
 - 默认资源位置为工程上一级游戏目录；Visual Studio 的调试工作目录也指向该目录。
 - 游戏存档位于游戏目录下。
+
+## 本地检查与游戏包
+
+原生 Debug／Release 构建完成后，会自动将当前游戏程序及运行库同步到资源根目录，可直接运行根目录的 `S2NE.exe`。Debug 构建也会覆盖该检查副本；日常交付包固定使用 Release。
+
+运行 `powershell -NoProfile -ExecutionPolicy Bypass -File S2NE\tools\package-game.ps1` 可在资源根目录生成 `S2NE-game-win64.zip`。解压后使用 `run-game.cmd` 启动；需要 Windows x64 及 Microsoft Visual C++ x64 运行库。包中仅保留运行依赖与当前使用资源，不含个人存档、源码或验证产物。
 
 ## 工程导航
 

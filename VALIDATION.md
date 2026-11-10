@@ -611,3 +611,99 @@ Release/Debug原生MSBuild均成功（`out\skill-final-release.log`/`skill-final
 统一验证exit0：Release/Debug原生MSBuild（`out\skill94-dispatch-Release.log`/Debug）；九项当前源码cl C++20专项：original_skill94_transaction_test、original_skill94_resolution_test、original_skill94_visual_test、original_skill_schedule_test、original_skill_input_evidence_test、original_skill88_positive_evidence_test、original_save_bridge_test、original_promotion_transaction_test、original_combat_test。日志`out\<name>-dispatch94-compile.log`/`out\<name>-dispatch94.log`。复现资源根运行`S2NE\out\original_skill94_transaction_test.exe`；输出固定64 hit27/miss37，真实131只读range/death诊断。Windows SDL=windows独立原SPELLSP85仍15个不同帧/50ms/恢复PASS，仅视觉子链，不是正常输入94 E2E。新增只读诊断后transaction重新编译重跑exit0。
 
 **本轮未达用户期望的生产收口，明确未完成：**41CA6E即时对话/41FF30触发链的通用事务同步复用，452FB1移除/召唤槽清理与441143提交，94 main真实army库存/菜单/准备/15帧/range3/正常输入结算尚未接。现生产仍只32/88（2/96），94部分，19单人合作仍缺失非排除。不可因本轮scan/fixture/视觉通过称94技能可用。后续可执行范围：先把原同步死亡脚本所需flags/event states/单位与army33字节同事务呈现提交，再将该支持能力而非脚本queue接入94；或严格预检无脚本普通目标后接生产，但仍需补全真实运行态39/职业mask来源、原反馈时序和保存提交，不能默认零。未写PROGRESS/README，停写前复核两结局hash及进程退出。
+
+## 94有限生产路径与真实SDL输入（131角色11；角色32原为reserve）
+
+本轮不再以完整41CA6E作为全部目标前置。main接入独立94事务、原army groups[0].inventory、原菜单后分区、46C078准备、独立SPELLSP85 15帧/tint233/35/50ms、原范围3/公式/支付奖励、OriginalSave capture保存。未批量开放effect1。OriginalSkills新增显式94 record gate；后分区可操作性只加原已学group9 bit0。target_supported在准备前及事务随机前拒绝status33 10/40、首匹配正行数同步死亡脚本或未知39运行态；空首匹配仍按41C0FE退出，不改脚本旗标。不支持目标不会消费随机/HP/ST/AP/inventory。actor新增active/dead gate，避免此前隔离fixture漏验真实reserve资格。复杂死亡仍未实现。
+
+运行态来源：OriginalSaveBridge从每个原unit record+39保存optional byte，不依赖仅bit400才存在的action_status_runtime；若runtime snapshot存在，生产读live snapshot+39/+3C/+3D/+3F，否则读原解码缓存。不以未知零冒充已知。KINDSP+18 DWORD职业表、(appearance-1)*37，+16/+18 WORD按46E489/46E4DB给mask64抗性/弱点；main调用OriginalEvents::skill_class_masks，不复用32/88公式。army来自rawSave完整group0 inventory，事务同单位/RNG暂存并在成功后捕获持久化。39缓存写回同原byte；保存身份校验未放宽。实际验证mask0/256、runtime39=0，是真实读取而非默认猜零。
+
+纠正前轮源档可达断言：run-43140-stage131-start.sav角色32虽原已学94、ST142/AP70，但status33=0，是reserve，原occupant返回-1，不能正常选中。已有五个131原档角色32均inactive。原日志曾把其range3唯一敌当可达施放，遗漏active前提，不能再沿此断言。本轮保留原旗标，未激活角色32。只读查实际沿途存档：stage40/46有active32但初始无range3目标；有界正常接近/回合尝试未形成施放，未用此掩盖完成。探索性stage46单waypoint输入已删除，未加入生产战术参数。
+
+**实际成功路径：同一未改131原档另有角色11原已学94且active。**正常输入驱动严格过滤active/dead，选原角色11、原现地敌role0（原资源普通敌合法ID，非boss20），未注入技能/熟练/位置/HP/ST/旗标，未设置seed或按命中重跑。固定这次结果MISS：chance50/roll53、damage0；原ST219→214/AP71→26/熟练2800→2826/XP2→3，MP401不变，无升级。生产正常选人→攻击后分区→94→原目标→取消无支付→重开确认→原准备→SPELLSP85帧0..14→事务→画面恢复，500ms idle无重复支付。Windows SDL实际Presented312，15帧逐present序列/图像见out\skill94-input\sequence.csv及frame-*.bmp；before/after/cancel/settled原档在同目录。成功日志out\skill94-production-input.log（原首写文件名input-blocked.log来自预期reserve阻断探测，但结果实际为角色11成功，已复制为准确success日志；不把角色11冒称角色32）。没有为获取hit而重跑成功施放；首次达到施放即MISS验收。
+
+新增original_skill94_input_evidence_test核对源131角色11已学/active、before与源学习位/装备/位置/ST一致，after原ST5/AP45/熟练26/XP1、库存未变，cancel及settled逐字节相同。复现资源根S2NE\out\original_skill94_input_evidence_test.exe。正常输入命令：S2NE\out\x64\Release\envoy-opening.exe --smoke-skill94-input . S2NE\out\strengthened-flow-acceptance\run-43140-stage131-start.sav。会重新运行真实随机施放，不应要求仍roll53；持久证据测试不重新掷随机。
+
+统一Release/Debug MSBuild exit0：out\skill94-production-Release.log/Debug；当前源码十专项重新cl并执行exit0：94 source/transaction64/resolution/visual、32/88 schedule、32 input evidence、88 positive evidence、save bridge、promotion transaction、physical combat；另新增94 input evidence重新编译执行exit0。日志out\*-production94-compile.log/*-production94.log及skill94-input-evidence.log。原15帧独立Windows SDL仍PASS；真实输入另有上述E2E，不再仅视觉。调度32仍64案例34旧误报、无双支付。真实输入驱动修正鼠标像素落在原picker内部，禁用smoke期间外部真实鼠标edge scroll干扰，未改生产玩家点击/地图或单位位置。
+
+准确覆盖：94现在有限生产接线并有真实角色11 MISS完整输入及存档证据，不是全目标/全死亡脚本完成。32/88保持；96非合作中2条既有完整路径+94受限路径，其余93未有此种完整生产验收；19单人合作仍未实现而非排除。41CA6E同步死亡、0x10召唤/0x40移除、死亡特殊呈现/数字反馈进一步原时序仍缺，不声称本轮完成这些。原角色32的131正常输入不可达因reserve，未帮改旗标；下一范围可独立扩原部署或同步脚本，不能把本轮角色11成功推广全94目标。未写README/PROGRESS，结局档hash不变，结束停止辅助并停写。
+
+## 94命中数字反馈：原468BAC新生产分支与续档HIT证据
+
+重读468BAC asm180011..180415，确定原数字循环与物攻不同：直接step0，不走物攻452E7F silhouette/20ms flash；damage0显示MISS，正damage用3C/56，MISS68/24；x=32-字数*8，y=-64-step*8（仅前8步更新y）；每步扣min(remaining,1<<step)，至少8次present，剩余伤害未扣完则继续；前0..2步30ms、step3为20ms、step4..5为10ms，6以后无时钟等待但仍须实际present；文字仅step<7。新增Battle::begin_skill94_feedback单94专用入口，复用原Feedback文字投影/字体与presented HP chunks，明确绕开settle_physical（不得二次物攻XP/死亡回调）。present gating保证卡顿不会跳过原数字帧；presentation_units用反馈HP临时显示，不将暂存计算当提前live写入。
+
+main在原15帧结束计算94完整暂存副本（unit/inventory/menu/RNG及奖励），仅接受后挂起在数字显示；数字完成callback一次性发布actor/target/ST/AP/熟练XP/inventory/RNG并capture原save。此期间live值未提交、游戏输入由combat_feedback_active锁定；不会用物攻routine再结算94。不是异步死亡脚本队列：**41CA6E/41FF30仍未接，不支持同步事件的目标仍在选择和随机之前拒绝**。本轮新增可用分支是普通目标命中伤害数字显示+延后提交，不是全死亡/脚本完成。原特殊25/28/29事务算术仍在，但其独立多次数字恢复与死亡淡出完整呈现尚未全覆盖，不能将一次普通hit外推特殊动画已完成。
+
+真实HIT并非从同起点为命中重跑：从上一轮真实MISS的持久结果`out\skill94-input\cast-after.sav`继续，仅执行一次正常输入；未设置seed/筛roll。此时原角色11已支付后AP不足，正常驱动按已有合法门控选下一位原active且原已学94角色16（非reserve32），原位置22,81、原现地普通敌role0。取消后重新确认是原既有cancel验收，不是重掷；最终HIT chance50/roll32、damage1，目标实际HP减少1。actor16 ST230→225/AP72→27、熟练2800→2830、XP60→61、MP400不变、level60不变。数字完成后保存，500ms idle无重复。SDL=windows，Presented359，独立15帧后数字恢复完成日志`out\skill94-feedback-input.log`；证据`out\skill94-feedback-input\cast-before.sav`/cast-after.sav/cancel-before.sav/cancel-after.sav/settled-after.sav/sequence.csv/frame-*.bmp。旧MISS证据目录保留未覆盖。**MISS是原角色11，HIT是续档原角色16，两者不是同一次结果，不冒称角色32或击杀。**
+
+新增`original_skill94_feedback_test`：固定300 damage验证step0、暂停20 tick未present不前进、不发布live HP，至少8帧、无物攻flash、commit仅一次；持久HIT证据核实角色16与原MISS after存档学习位/熟练/HP/ST/位置一致，后ST5/AP45/熟练30，恰一个敌HP减1、cancel/settled逐字节一致。复现资源根`S2NE\out\original_skill94_feedback_test.exe`，不重新掷随机。真实输入复现命令`S2NE\out\x64\Release\envoy-opening.exe --smoke-skill94-input . S2NE\out\skill94-input\cast-after.sav skill94-feedback-input-new`，新运行不保证hit（不能用重跑筛hit），指定新目录保留既有证据。
+
+统一Release/Debug MSBuild exit0，日志out\skill94-feedback-Release.log/Debug；十二专项当前源码编译运行exit0：94 feedback/transaction64/input-evidence/resolution/visual、32/88 schedule、32 input evidence、88 positive evidence、save bridge、promotion transaction、physical combat、physical combat visual。日志out\*-feedback94-compile.log/*-feedback94.log。Windows独立15帧仍PASS；真实SDL命中数字新链已执行。最后HP presentation与source continuity断言变更后两配置重建、feedback专项重编译exit0；没有再次从原起点重复施放求hit。
+
+剩余精确边界：未实现41CA6E同步对话及41FF30触发链的共享dispatcher挂起/恢复，未开放正行数死亡事件/0x10召唤槽/0x40移除。普通HP0死亡数字后还缺完整455048死亡呈现，故本轮不声称真实击杀E2E或完整死亡动画。同步脚本事务后续须在原completion flag→即时对话→41FF30整条链结束后再交452FB1，不能拿queue_original_death替代。本轮无脚本能力新增；交付确证普通HIT+数字延后提交这一新生产分支。reserve32纠正保持，19单人合作仍未实现非排除；仍94受限覆盖、其余93非合作未有此类完整生产验收。未写PROGRESS/README，未改两结局证据，结束无辅助进程并停写。
+
+## 94普通HP0：数字→原455048(3C,0)死亡模式→延后单次发布
+
+重读452FB1与455048 asm147835..148110发现不能复用现故事消失的五帧模式：普通死亡loc4530C5传EBX=3Ch/ECX=0，455195先424873把原masked source用3C、80%映射，再4551B7选择初始weight10、10帧、step10、间隔3 DOS百分秒即30ms；无色参数故事消失才是初始40、5帧、20ms。本轮OriginalMap::begin_disappearance增加显式death模式，复用原AD/B1、脚影、地形与遮挡mask，单独原tint3C/80及10..100十次原palette mix；旧五帧故事模式默认未改，不拿几何/RGBA淡出替代。
+
+Prologue新增单94 death continuation：数字完成且暂存finalHP==0时先begin_skill94_death，不立刻公布corpse/loot/payments。原live目标保持可绘制，Battle专用death lock继续阻挡选择、取消、移动、物攻、脚本扫描；每帧须实际present并30ms才推进，末帧结束解除锁并只调用一次原先暂存publish。main最终actor/target/inventory/RNG/reward/ST/AP及save capture全部在该点发布。普通目标不再数字结束即突然变尸体，亦不调用物攻settle_physical/queue重复奖励。特殊同步死亡脚本/0x10/0x40预检仍拒绝。
+
+新增tests\original_skill94_death_visual_test.cpp实际Windows SDL：原资源普通敌indexed十帧distinct10、weight10..100/30ms；29ms不提前帧。再用真实资源Prologue隔离lethal数字→死亡→单次fixture发布，20次无present tick不公布HP，23次实际present完成整个numbers/death锁链，commit计数1，额外idle不重复。此整链为明确隔离fixture：末回调发布transaction64已生成的skill94-death-fixture.sav事件副本，**不是自然击杀E2E，也不是在此测试里重新调用完整main菜单事务**；对应必杀/loot/库存99/kill-loss/一次支付/RNG原子与原save往返由original_skill94_transaction_test固定64隔离回归覆盖。本轮没有正常输入自然击杀，不把上轮damage1非致死HIT当击杀，未修改任何真实验收档造HP0。
+
+Release/Debug原生MSBuild exit0（out\skill94-death-Release.log/Debug）；十一当前源码专项编译执行exit0：94 death visual/feedback/transaction64/input evidence/visual、32-88 schedule、32 input evidence、88 positive evidence、save bridge、physical combat、physical combat visual。日志out\*-death94-compile.log/*-death94.log。集成death测试补充后重新cl与真实SDL执行exit0；复现资源根S2NE\out\original_skill94_transaction_test.exe后S2NE\out\original_skill94_death_visual_test.exe。原Windows SDL截图链没有生成新的自然kill存档。
+
+本轮确证新增生产能力为普通无脚本HP0的专属原死亡十帧与数字后挂起/提交，非全94死亡事件。41CA6E→41FF30同步dispatcher仍未接，本轮没有开放任何正行数事件：completion flag必须在即时对话前、41FF30整条触发链必须在452FB1继续前完成；现queue不是等价，不以“设计”名义开放。未知脚本/移除/召唤持续精确拒绝。特殊复活/反疗多段反馈仍缺独立完整呈现。原reserve32资格纠正保留；旧角色11 MISS及角色16 HIT证据未改，两结局hash未改。未写PROGRESS/README，结束无本轮辅助进程并停写。
+
+## 94同步死亡：真实原对白挂起/恢复（严格受限，不等于完整dispatcher）
+
+本轮接通最小确证链：数字结束→41C02A completion flag先置位→Prologue原prepare/分页/逐字/输入advance对白→41FF30可证明无操作扫描→返回452FB1原死亡十帧→原暂存奖励/支付/库存/RNG一次发布。没有使用script_queue，也没有跳过对白输入。death record按原保留type3；重复begin拒绝、tick/cancel不能跳过、尾resume仅一次。正行数死亡目标的选择/提交能力预检复用同一OriginalDeathDispatch::continuation。
+
+严格纠正预检：41C33E每个扫描位置还调用41B9A3；41B5DF接受type4..16，不能只凭+3旗标未激活就认定无副作用。因此本轮仅接受整张当前event表无type4..16的正行数死亡，任何此类记录均保守拒绝（含type9/cond0，尚未实现其嵌套扫描顺序）。41FF6E对completion1/3有原显示、7有原例程，均拒绝；其它completion在该routine无操作。无脚本/首空仍保持原早退，不擅自执行41FF30。此前候选stage2/15含其它dispatcher指令，已改为拒绝，未以其假称安全。
+
+新增original_death_continuation_test真实资源fixture：stage6 role104首匹配一行、completion0；stage82 role147一行、completion13。后者验证13在对白开始后且恢复前已置1、死亡record未消费、链尾仅回一次。draw/advance使用原Prologue，不是正常存档自然击杀E2E。stage1 role90与stage15 role202拒绝且flags/锁/return计数不变；重复begin、无present多tick/取消不跳过覆盖。原资源扫描器tests\original_death_event_scan.cpp及out\death-event-scan.log提供选链证据（扫描器仅诊断，不改变资源）。
+
+中途原sav策略为禁止写半事务，不序列化continuation：original_save_boundary_ready在数字/同步对白/死亡呈现期间false；main原保存/读取提交与autosave均门控，SDL quit期间拒绝跳过；完成后恢复保存。prepare任意后续行解析异常会恢复events baseline/flags、清pending callback及锁并抛出，不继续奖励支付。外部强制终止不写新半事务存档。尚未建立复杂脚本中途可恢复sav协议。
+
+验证：原生MSBuild S2NE.sln /p:Configuration=Release及Debug /p:Platform=x64 /m /nologo /v:minimal均exit0，日志out\skill94-sync-Release.log、Debug.log。当前源码cl C++20编译、资源根运行以下11项均exit0：original_death_continuation_test、original_skill94_transaction_test、original_skill94_feedback_test、original_skill94_death_visual_test、original_skill94_input_evidence_test、original_skill_schedule_test、original_skill_input_evidence_test、original_skill88_positive_evidence_test、original_save_bridge_test、original_combat_test、original_combat_visual_test；日志out\*-sync94-compile.log及*-sync94.log。原事件专项original_events_test --finish-facing-only exit0。
+
+完整original_events_test本轮执行exit10：Automatic battle cycle branch0 turn4 expected4 campaign_modal1，不能列作全绿。已用out中的隔离prologue头副本禁用本轮prepare异常包装与advance同步分支重新编译原同一测试，仍同处exit10（out\original_events_baseline.log）；确认此失败不依赖本轮同步执行路径，未放宽测试/生产门控。隔离头已清理，保留复现日志。未声称完整原事件套件通过。
+
+未完成：41C33E type9cond0嵌套扫描及41B9A3 type4..16有副作用链、41FF6E 1/3/7原呈现；下一最小范围为独立实现41C33E每记录后41B9A3调用栈continuation，而不是预展平queue。未取得正常输入自然击杀E2E，既有角色11 MISS/角色16 HIT与两结局档均未改。94仍仅受限生产覆盖；其它93非合作技能与19单人合作原缺口保留，不称全94目标。未写README/PROGRESS。
+
+## 94同步dispatcher：41C33E→41B9A3逐记录调用栈（本轮有界扩展）
+
+OriginalDeathDispatch::Stack现在保存death/41FF30-repeat/41C33E-flags/41B9A3-generic原调用帧、逐记录index/返回PC/本次change返回值。每次next只执行到下一条实际对白，原输入结束后从原PC恢复；不是预展平对白队列。41C33E每个记录（含不匹配）后进入41B9A3；41B9A3成功type9/cond0处理后进入嵌套41C33E，再返回原generic索引，最后返回外层scan。依据asm47512..47750，41C33E只有合法completion置位才返回change=1，不把仅消费记录且completion0当作1。41FF30按原返回值重扫至0。依据420A3B cond0的确定分支，generic在合法trigger且flag>0时返回true；其余type4..16或非cond0 type9继续整表保守拒绝，不按未激活旗标猜安全。41FF6E completion1/3/7继续拒绝，其它无操作分支可用。
+
+共享能力预检用副本完整运行同一Stack并验证原line资源，只保留entry索引，不保存预展开执行顺序；实际Prologue另建live stack，completion仍在death对白前、flag对白后complete。原prepare/advance分页与输入锁继续复用。advance新异常边界同时保护stack.next中的后续complete/资源异常，恢复完整events baseline（含原event bytes/flags）、清callback/stack并解锁；不返回452FB1、不发布支付。原save/input/quit门控沿用。
+
+真实资源fixture：stage11 role147 event1 completion13、event2 type9cond0/trigger13/空行/completion11、event5 type9cond0/trigger13/三行/completion14。**整张真实stage11另有currency等未支持handler，生产仍拒绝**；隔离测试仅把其它event的type状态设0，原保留三条目录/对白/条件/旗标字节均来自原资源，不是正常E2E档。精确验证death event1先显示且flag13=1；外层到event0后的generic扫描消费空event2并置11；event5在深度5的repeat→flags→generic→flags→generic调用帧暂停（event2成功后先嵌套扫描，再进入下一generic），type仍9且14尚为0；三行完成才type0/14=1；death record仍3，整栈仅return一次。Prologue原draw/advance完成同链、取消无跳过/save锁验证；在嵌套暂停后人为破坏运行stage的隔离故障测试触发原index异常，确认flags/event状态恢复、return0且解锁。未修改任何真实验收sav或资源。
+
+资源扫描stage1..156当前初始flags没有找到无需隔离就有多对白nested链的安全死亡目标；不可把隔离stage11当真实自然击杀。已支持原stage6/82无副作用死亡对白仍PASS；复杂stage1/15和完整stage11预检无旗标泄漏。新增能力为实际嵌套type9cond0调用栈，不是开放全部死亡脚本，普通自然击杀E2E仍未验。
+
+验证原生命令：MSBuild S2NE.sln /p:Configuration=Release（及Debug） /p:Platform=x64 /m /nologo /v:minimal，均exit0；out\skill94-stack-Release.log、Debug.log。当前源码C++20 cl编译及资源根执行12专项exit0：original_death_continuation_test、original_skill94_transaction_test、original_skill94_feedback_test、original_skill94_death_visual_test、original_skill94_input_evidence_test、original_skill_schedule_test、original_skill_input_evidence_test、original_skill88_positive_evidence_test、original_save_bridge_test、original_combat_test、original_combat_visual_test、original_events_test --finish-facing-only；out\*-stack94-compile.log/*-stack94.log。完整events既有对照失败边界不变，本轮未重复跑全套、不声称全套通过。未写PROGRESS/README，未扩其它技能。
+
+## 2026-11-10 本地检查副本与精简打包验收
+
+新增 tools/publish-runtime.ps1，原生vcxproj AfterTargets=Build同步EXE及四个实际运行DLL；Debug与Release均构建exit0，最后Release覆盖根目录，SHA256与out/x64/Release一致：9EEA4EF3EDFF2187907B9439C5C4E06500149DE19285463D528AD65577B19F2E。备用CMake POST_BUILD亦配置同步，但本轮未运行CMake，不能称该入口已验证。
+
+新增 tools/package-game.ps1，用显式运行清单而非整目录复制：EXE、SDL3/SDL3_mixer/fluidsynth/mpg123四DLL、PAL/BIN/CEL/PRG/CFG/ITEMSP/KINDSP七文件、当前main实际读取的MP3/SUPERSP_A02.mp3，以及运行时首选windows-disc1和windows-disc2各一个DAT；加run-game.cmd、PACKAGE.txt、SHA256SUMS.txt，总18个ZIP项。无个人存档、旧EXE、重复光盘、调试符号、源码/测试/分析产物、攻略或修改器。不可裁剪原索引归档内部内容，避免破坏偏移。目标Windows x64，仍需Microsoft VC++ x64系统运行库。
+
+打包命令：powershell -NoProfile -ExecutionPolicy Bypass -File S2NE\tools\package-game.ps1。最终S2NE-game-win64.zip为220993658字节。曾发现遗漏当前引用MP3的初版包，已重打替代，最终独立解压后全部15项SHA256核对通过；包内--verify原标题与双开场解码exit0，--smoke-opening-right-skip实际SDL dummy呈现105帧exit0，混音322773个非零样本。临时解压目录已清理，未触碰原SAVE或结局证据。DLL直接依赖经dumpbin核查，包内运行未依赖工程目录。该验证不冒称完整战役重新跑通或全新机器VC运行库安装测试。
+
+## 2026-11-10 交付更正：S2NE.exe及不同CD2 PRG
+
+用户要求EXE与sln同名：原生TargetName改为ProjectName、备用CMake OUTPUT_NAME=S2NE，同步publish/package/run-opening/README。Debug与Release实际MSBuild均exit0，最终资源根S2NE.exe与Release SHA256同为999D1E9650A7056572B1FA2AF150A521CBF299363DD543264A07BC0AD1DC4183。历史envoy-opening文件不再发布且不入新包，未批量改写历史验证命令。
+
+确认根SUPERSP.PRG与windows-disc1相同，SHA256 F3B3EF5587536991062879782209C7E104A19BD4DC568169C1ADAD7A4A69498A；windows-disc2不同，SHA256 C6E36E77DEC30C3FEC80E156096B8F6DFBB2DF35A97CC07FF5061815C0E9A62F。上包只带根PRG，确有遗漏，现追加cd/windows-disc2/SUPERSP/SUPERSP.PRG，CD1不再重复放cd子目录。最终ZIP248254008字节，16项运行资源加三辅助项；独立临时解压全部哈希通过，包内S2NE.exe --verify和--smoke-opening-right-skip退出0，103帧，当前音乐非零样本322773，临时目录清理。
+
+源码核实仍有独立运行缺口：OriginalMap构造及其它PRG消费者直接读根SUPERSP.PRG，set_disc仅改disc字段和reaction缓存，不重载PRG。此次修正没有未经原证据盲改所有PRG索引，包含双PRG不代表生产已正确换PRG；原双路线记录也不能当作该项验收。后续必须独立核原PAL与CD2 PRG索引/加载调用并补回归。
+
+## 2026-11-10 PRG用途核实及上一结论纠正
+
+直接核原473A55 case2（473B26..473B56）：4F7D68非零用安装目录supersp.prg，为0才4737AD解析光盘路径。原42800C在69066附近清默认值、随后fscanf DEVICE首值写4F7D68；本地SUPERSP.CFG实际DEVICE=1,0,F。因此上一节将“固定读取安装PRG”定性为换盘缺陷证据不足，现明确撤回，不应盲目替换CD2 PRG。
+
+按同一原PAL目录比较：第1组136角色记录、第2组4417动作帧、第3组4284地面图、第4组896物件图、第5组360场景图、第6组132地图、第7组属性表、第8组50背景图，共8组全部SHA256一致。第9组（原PAL offset100703123/length11086）不同，CD2余下尾部也不同；第9组用途与CD2内置布局尚未完整核实，不能称全文件只有尾部填充差异。两文件头SuperSp_P，均9组；CD1长度100714209、CD2长度103481337。PRG是原图形/地图资源归档，不是待运行的游戏EXE，也不是DAT影片/换盘资源的同义替代。当前恢复所用前8组在双盘实字节相同，故现证据不支持必须按关卡切换PRG。
+
+## 2026-11-10 包内容精简
+
+按用户要求，package-game.ps1不再生成或打入PACKAGE.txt、SHA256SUMS.txt，已重建资源根S2NE-game-win64.zip并检查ZIP目录：16个运行/资源文件加run-game.cmd，共17项，无上述两个TXT。其余资源与程序清单不变；上文含说明/哈希清单的包记录为历史。

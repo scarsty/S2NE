@@ -15,6 +15,7 @@
 #include "original_interbattle.hpp"
 #include "original_scripted_movement.hpp"
 #include "original_skill94_visual.hpp"
+#include "original_death_dispatch.hpp"
 #include <deque>
 #include <map>
 #include <optional>
@@ -30,6 +31,12 @@ class Prologue {
     std::optional<OriginalSkill94Visual> skill94_visual_;
     std::vector<uint8_t> skill32_background_;
     unsigned skill32_target_{};
+    std::function<void()> skill94_death_commit_;
+    bool skill94_death_presented_{};
+    unsigned skill94_death_frame_{};
+    std::optional<OriginalDeathDispatch::Stack> synchronous_death_stack_;
+    std::optional<OriginalEvents> synchronous_death_baseline_;
+    std::function<void()> synchronous_death_return_;
     std::filesystem::path root_;
     OriginalDisc disc_{OriginalDisc::one};
     std::optional<Battle> battle_;
@@ -334,6 +341,17 @@ private:
         }}
     }
     void prepare() {
+        try{prepare_unchecked();}
+        catch(...){
+            if(synchronous_death_baseline_){
+                events=std::move(*synchronous_death_baseline_);synchronous_death_baseline_.reset();
+                synchronous_death_return_={};synchronous_death_stack_.reset();
+                phase_=Phase::battle;battle_->lock_skill94_death(false);map_.set_event_flags(events.flags);
+            }
+            throw;
+        }
+    }
+    void prepare_unchecked() {
         map_.set_event_flags(events.flags);
         pages_={{}};page_=0;revealed_glyphs_=0;text_elapsed_=0;
         auto dialogue=events.line(event_,line_);
@@ -467,8 +485,7 @@ private:
                 using std::swap;swap(events,transaction->events);swap(*battle_,prepared);
             }else if(type==11&&(condition==11||condition==12)){
                 if(!events.campaign_currencies){campaign_blocker_="Original campaign currency baseline unavailable";phase_=Phase::campaign_blocked;return true;}
-                auto& value=events.campaign_currencies->at(size_t(condition-11));
-                value=int32_t(uint32_t(value)+uint32_t(subject));
+                (void)original_currency_handler(events,i);
             }else if(type==14){
                 if(condition==0&&found!=events.units.end()){
                     int other=events.event_word(i,7);if(other<1||other>40)continue;
@@ -659,7 +676,23 @@ public:
     const original_combat::Feedback* combat_feedback()const{return battle_?&battle_->combat_feedback():nullptr;}
     bool battle_intro()const{return phase_==Phase::battle_intro;}
     void enable_presentation_timing(){presentation_driven_=true;}
-    void frame_presented(){if(battle_intro())banner_presentation_.presented();if(skill32_visual_)skill32_visual_->presented();if(skill88_visual_)skill88_visual_->presented();if(skill94_visual_)skill94_visual_->presented();}
+    bool synchronous_death_active()const{return bool(synchronous_death_return_);}
+    bool original_save_boundary_ready()const{return !synchronous_death_active()&&!skill94_death_commit_&&(!battle_||!battle_->combat_feedback_active());}
+    bool begin_synchronous_death(unsigned role,std::function<void()> resume){
+        if(synchronous_death_active()||!resume)return false;
+        auto plan=OriginalDeathDispatch::continuation(events,role);if(!plan.supported)return false;
+        if(plan.dialogue.empty()){resume();return true;}
+        synchronous_death_baseline_=events;synchronous_death_return_=std::move(resume);
+        synchronous_death_stack_.emplace(events,plan.dialogue.front());
+        event_=*synchronous_death_stack_->next(events);line_=0;
+        battle_->lock_skill94_death(true);phase_=Phase::campaign_dialogue;
+        try{prepare();}catch(...){return false;}return true;
+    }
+    bool begin_skill94_death(unsigned target,std::function<void()> commit){
+        if(skill94_death_commit_||!commit||!map_.begin_disappearance(events.units,target,battle_->turn(),animation_elapsed_,true))return false;
+        skill94_death_commit_=std::move(commit);skill94_death_presented_=false;skill94_death_frame_=0;battle_->lock_skill94_death(true);return true;
+    }
+    void frame_presented(){if(skill94_death_commit_)skill94_death_presented_=true;if(battle_)battle_->feedback_presented();if(battle_intro())banner_presentation_.presented();if(skill32_visual_)skill32_visual_->presented();if(skill88_visual_)skill88_visual_->presented();if(skill94_visual_)skill94_visual_->presented();}
     bool skill_visual_active()const{return skill32_visual_||skill88_visual_||skill94_visual_;}
     bool begin_skill88_visual(unsigned caster){try{OriginalSkill88Visual visual(root_);auto background=map_.skill88_background(events.units,battle_->turn(),caster);skill32_background_=std::move(background);skill32_target_=caster;skill88_visual_=std::move(visual);return true;}catch(const std::exception&){return false;}}
     int skill94_visual_frame()const{return skill94_visual_?int(skill94_visual_->frame()):-1;}
@@ -683,6 +716,7 @@ public:
     size_t revealed_glyphs()const{return revealed_glyphs_;}
     void reveal_text(){if(!dialogue_scrolling()&&text_revealing())revealed_glyphs_=pages_.at(page_).size();}
     void tick(unsigned milliseconds){
+        if(skill94_death_commit_){if(!skill94_death_presented_)return;map_.tick_disappearance(milliseconds);if(map_.disappearance_finished()){auto commit=std::move(skill94_death_commit_);battle_->lock_skill94_death(false);commit();}else if(map_.disappearance_frame()!=skill94_death_frame_) {skill94_death_frame_=map_.disappearance_frame();skill94_death_presented_=false;}return;}
         if(skill94_visual_){skill94_visual_->tick(milliseconds);if(skill94_visual_->done()){skill94_visual_.reset();skill32_background_.clear();}return;}
         if(skill88_visual_){skill88_visual_->tick(milliseconds);if(skill88_visual_->done()){skill88_visual_.reset();skill32_background_.clear();}return;}
         if(skill32_visual_){skill32_visual_->tick(milliseconds);if(skill32_visual_->done()){skill32_visual_.reset();skill32_background_.clear();}return;}
@@ -936,6 +970,17 @@ public:
     size_t page_index()const{return page_;}
     bool dialogue_scrolling()const{return dialogue_camera_target_.has_value();}
     void advance(){
+        try{advance_unchecked();}
+        catch(...){
+            if(synchronous_death_baseline_){
+                events=std::move(*synchronous_death_baseline_);synchronous_death_baseline_.reset();
+                synchronous_death_return_={};synchronous_death_stack_.reset();
+                phase_=Phase::battle;battle_->lock_skill94_death(false);map_.set_event_flags(events.flags);
+            }
+            throw;
+        }
+    }
+    void advance_unchecked(){
         if(ending_){ending_->advance();return;}
         if(phase_==Phase::campaign_rewards){
             if(campaign_settled_)return;
@@ -986,6 +1031,12 @@ public:
         if(text_revealing()){revealed_glyphs_=pages_.at(page_).size();return;}
         if(page_+1<pages_.size()){++page_;revealed_glyphs_=0;text_elapsed_=0;return;}
         if(++line_<events.line_count(event_)){prepare();return;}
+        if(synchronous_death_active()){
+            if(auto next=synchronous_death_stack_->next(events)){
+                event_=*next;line_=0;prepare();return;
+            }
+            synchronous_death_baseline_.reset();synchronous_death_stack_.reset();phase_=Phase::battle;battle_->lock_skill94_death(false);auto resume=std::move(synchronous_death_return_);resume();return;
+        }
         events.complete(event_);
         if(scripted_battle_return_&&phase_==Phase::flag_dialogue){dispatch_story();return;}
         if(story_stage()&&(phase_==Phase::dialogue||phase_==Phase::branch||phase_==Phase::flag_dialogue)){

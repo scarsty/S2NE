@@ -1,5 +1,6 @@
 #pragma once
 #include "original_events.hpp"
+#include "original_script_predicates.hpp"
 namespace s2ne {
 // 41C02A's ordered type3/condition2 scan. A positive dialogue count
 // requires synchronous41CA6E followed by41FF30; a queue is not equivalent.
@@ -19,6 +20,80 @@ public:
             return {Kind::synchronous_script,i,0x12};
         }
         return {};
+    }
+    // Explicit native call frames:41FF30 ->41C33E ->41B9A3 ->41C33E.
+    // No pre-expanded dialogue list; predicates see flags at their call time.
+    class Stack {
+        enum class Routine { death, repeat, flags, generic };
+        struct Frame { Routine routine;size_t index{};unsigned pc{};bool changed{}; };
+        std::vector<Frame> frames_;
+        bool returned_change_{};
+        static bool active(const OriginalEvents& e,size_t i){int f=e.event_word(i,3);return f>=1&&f<=80&&e.flags[size_t(f-1)]>0;}
+        void complete(OriginalEvents& e,size_t i){e.complete(i);}
+    public:
+        size_t depth()const{return frames_.size();}
+        Stack()=default;
+        Stack(OriginalEvents& e,size_t death){
+            unsigned f=e.completion_flag(death);if(f>=1&&f<=80)e.flags[f-1]=1;
+            frames_.push_back({Routine::death,death});
+        }
+        std::optional<size_t> next(OriginalEvents& e){
+            while(!frames_.empty()){
+                auto& f=frames_.back();
+                if(f.routine==Routine::death){
+                    if(f.pc++==0)return f.index;
+                    frames_.pop_back();frames_.push_back({Routine::repeat});continue;
+                }
+                if(f.routine==Routine::repeat){
+                    if(f.pc&& !returned_change_){frames_.pop_back();continue;}
+                    f.pc=1;frames_.push_back({Routine::flags});continue;
+                }
+                if(f.index>=e.event_count()){
+                    returned_change_=f.routine==Routine::flags&&f.changed;
+                    frames_.pop_back();continue;
+                }
+                if(f.pc==0){
+                    bool eligible=e.type(f.index)==9&&e.condition(f.index)==0&&active(e,f.index);
+                    if(f.routine==Routine::generic&&active(e,f.index)&&e.type(f.index)==11){
+                        eligible=original_currency_handler(e,f.index);
+                    }
+                    f.pc=1;
+                    if(eligible){
+                        f.pc=2;
+                        if(int16_t(e.line_count(f.index))>0)return f.index;
+                    }
+                }
+                if(f.pc==2){
+                    unsigned flag=e.completion_flag(f.index);
+                    complete(e,f.index);
+                    if(f.routine==Routine::flags&&flag>=1&&flag<=80)f.changed=true;
+                    f.pc=3;
+                    //41B9A3 calls41C33E only after a successful handler.
+                    if(f.routine==Routine::generic){frames_.push_back({Routine::flags});continue;}
+                }
+                if(f.routine==Routine::flags&&f.pc!=4){
+                    f.pc=4;frames_.push_back({Routine::generic});continue;
+                }
+                ++f.index;f.pc=0;
+            }
+            return std::nullopt;
+        }
+    };
+    struct Continuation { bool supported{};std::vector<size_t> dialogue; };
+    static Continuation continuation(const OriginalEvents& events,unsigned role){
+        auto death=inspect(events,role);if(death.settled())return {true,{}};
+        for(size_t i=0;i<events.event_count();++i){
+            unsigned type=events.type(i);
+            bool currency=type==11&&(events.condition(i)==11||events.condition(i)==12);
+            if(type>=4&&type<=16&&!(type==9&&events.condition(i)==0)&&!currency)return {};
+            if(currency&&!events.campaign_currencies)return {};
+            unsigned completion=events.completion_flag(i);
+            if((i==death.event||type==9||currency)&&(completion==1||completion==3||completion==7))return {};
+        }
+        auto staged=events;Stack stack(staged,death.event);
+        while(auto i=stack.next(staged))for(size_t line=0;line<staged.line_count(*i);++line)(void)staged.line(*i,line);
+        // Only the entry is retained for API compatibility, never the scan order.
+        return {true,{death.event}};
     }
     static Plan inspect(const OriginalEvents& events,unsigned role){
         std::vector<Record> records;records.reserve(events.event_count());

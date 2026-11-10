@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
         bool skill88Positive=skill88Input&&argc>4&&std::string(argv[4])=="--positive-heal";
         unsigned contactStep=0;
         unsigned inputSkill=skill94Input?94:skill88Input?88:32;
-        std::string inputFolder=skill94Input?"skill94-input":skill88Positive?"skill88-positive-input":skill88Input?"skill88-input":"skill32-input";
+        std::string inputFolder=skill94Input?(argc>4?argv[4]:"skill94-input-next"):skill88Positive?"skill88-positive-input":skill88Input?"skill88-input":"skill32-input";
         unsigned skillInputPhase=0,skillInputCaster=0,skillInputTarget=0,skillInputFrames=0;
         uint64_t skillInputNext=0,skillInputImageHash=0;
         std::optional<s2ne::OriginalEvents::Unit> skillInputVictim;
@@ -441,6 +441,7 @@ int main(int argc, char** argv) {
                     int selected=prologue->battle_selected();auto target=*pendingSkillTarget;pendingSkillTarget.reset();
                     s2ne::OriginalSkills::HostileResult result;
                     int pendingMpGrowth=0;
+                    bool swordFeedbackPending=false;
                     bool applied=prologue->battle().mutate_combat_random([&](auto& rng,uint32_t seconds){
                         s2ne::OriginalSkills::ExecutionContext context;context.difficulty=prologue->events.difficulty;context.seconds=seconds;context.skill_payment_state=skillMenu->initial_payment_state(skillMenu->selected().id);
                         auto award=[&](auto& unit,auto& stream,int xp,int proficiency,unsigned group){
@@ -456,7 +457,7 @@ int main(int argc, char** argv) {
                         if(skillMenu->selected().id==94){
                             auto& actor=prologue->events.units.at(size_t(selected));auto& victim=prologue->events.units.at(target);
                             if(!rawSave||!s2ne::OriginalSkill94Transaction::target_supported(prologue->events,victim))return false;
-                            s2ne::OriginalSkill94Transaction::Context sword;sword.original_second_partition=true;sword.target_runtime_known=true;sword.seconds=seconds;sword.payment_state=context.skill_payment_state;
+                            s2ne::OriginalSkill94Transaction::Context sword;sword.original_second_partition=true;sword.target_runtime_known=true;sword.synchronous_death_ready=s2ne::OriginalDeathDispatch::continuation(prologue->events,victim.id).supported;sword.seconds=seconds;sword.payment_state=context.skill_payment_state;
                             auto a=prologue->battle().original_42c88f_bytes(prologue->events,actor),b=prologue->battle().original_42c88f_bytes(prologue->events,victim);
                             sword.hit={actor.learned_proficiency[9],victim.learned_proficiency[9],actor.fencing,victim.fencing,victim.tactics,int(int8_t(a[1])),int(int8_t(b[2]))};
                             sword.elevation=s2ne::original_combat::terrain_height_difference(prologue->battle().cell({actor.x,actor.y}).elevation,prologue->battle().cell({victim.x,victim.y}).elevation,prologue->events.difficulty==1);
@@ -464,9 +465,30 @@ int main(int argc, char** argv) {
                             sword.damage.difficulty=prologue->events.difficulty;sword.damage.friendly_army=true;
                             sword.damage.target_status39=status(0x39,victim.status39.value_or(0));sword.damage.target_status3c=status(0x3C,victim.status3c);sword.damage.target_status3d=status(0x3D,victim.status3d);sword.damage.target_status3f=status(0x3F,victim.status3f);
                             sword.damage.target_special13=prologue->events.equipment_special(victim,13);auto masks=prologue->events.skill_class_masks(victim);sword.damage.profession_resistance=masks[0];sword.damage.profession_weakness=masks[1];
-                            auto outcome=sword94.execute(*skillMenu,actor,victim,prologue->events,rng,sword,award,&rawSave->groups[0].inventory,&promotionTransaction);
+                            auto stagedActor=actor,stagedVictim=victim;auto stagedInventory=rawSave->groups[0].inventory;auto stagedMenu=*skillMenu;auto stagedRandom=rng;
+                            auto outcome=sword94.execute(stagedMenu,stagedActor,stagedVictim,prologue->events,stagedRandom,sword,award,&stagedInventory,&promotionTransaction);
+                            if(outcome.applied){
+                                // The accepted transaction remains unpublished through468BAC's
+                                // numbers. Do not invoke physical settlement/reward a second time.
+                                auto finalActor=std::make_shared<s2ne::OriginalEvents::Unit>(std::move(stagedActor));auto finalVictim=std::make_shared<s2ne::OriginalEvents::Unit>(std::move(stagedVictim));auto inventory=std::make_shared<std::vector<uint8_t>>(std::move(stagedInventory));
+                                auto seed=stagedRandom.seed_state(),calls=stagedRandom.draw_count();
+                                swordFeedbackPending=prologue->battle().begin_skill94_feedback(size_t(selected),target,victim.hp,outcome.damage,[&,selected,target,finalActor,finalVictim,inventory,seed,calls](){
+                                    auto publish=[&,selected,target,finalActor,finalVictim,inventory,seed,calls](){
+                                    prologue->events.units.at(size_t(selected))=std::move(*finalActor);prologue->events.units.at(target)=std::move(*finalVictim);rawSave->groups[0].inventory=std::move(*inventory);
+                                    prologue->battle().mutate_combat_random([&](auto& stream,uint32_t){stream.restore_stream(seed,calls);return true;});
+                                    prologue->battle().commit_external_action();skillCastVerified=true;*rawSave=s2ne::OriginalSaveBridge::capture(prologue->events,prologue->battle_turn(),prologue->camera(),&*rawSave);
+                                    std::cout<<"Original94 feedback/death complete; staged HP/reward/ST/AP/inventory/RNG published once\n";
+                                    };
+                                    if(finalVictim->hp==0){
+                                        auto death=[&,target,publish=std::move(publish)]()mutable{if(!prologue->begin_skill94_death(unsigned(target),std::move(publish)))throw std::runtime_error("Original94 death presentation rejected before settlement");};
+                                        if(!prologue->begin_synchronous_death(finalVictim->id,std::move(death)))throw std::runtime_error("Original94 synchronous death rejected before settlement");
+                                    }else publish();
+                                });
+                                if(!swordFeedbackPending)throw std::runtime_error("94 feedback staging rejected");
+                            }
                             result.applied=outcome.applied;result.hit=outcome.hit;result.chance=outcome.chance;result.roll=outcome.roll;
-                            std::cout<<"Original94 damage="<<outcome.damage<<" xp="<<outcome.raw_xp<<" proficiency="<<outcome.proficiency<<" runtime39="<<sword.damage.target_status39<<" masks="<<masks[0]<<','<<masks[1]<<" failure="<<int(outcome.failure)<<'\n';return outcome.applied;
+                            if(swordFeedbackPending)std::cout<<"Original94 accepted and suspended for468BAC numbers; no live payment yet\n";
+                            std::cout<<"Original94 damage="<<outcome.damage<<" xp="<<outcome.raw_xp<<" proficiency="<<outcome.proficiency<<" runtime39="<<sword.damage.target_status39<<" masks="<<masks[0]<<','<<masks[1]<<" failure="<<int(outcome.failure)<<'\n';return false;
                         }
                         result=skillMenu->execute_hostile(prologue->events.units.at(size_t(selected)),prologue->events.units.at(target),rng,context,promotionTransaction,award);return result.applied;
                     });
@@ -895,7 +917,10 @@ int main(int argc, char** argv) {
                     }
                     continue;
                 }
-                if (event.type == SDL_EVENT_QUIT) running = false;
+                if (event.type == SDL_EVENT_QUIT) {
+                    if(prologue&&!prologue->original_save_boundary_ready())continue;
+                    running = false;
+                }
                 if(prologue&&prologue->campaign_modal()){
                     if(event.type==SDL_EVENT_KEY_DOWN&&!event.key.repeat){
                         unsigned scan=0;
@@ -1075,6 +1100,7 @@ int main(int argc, char** argv) {
                         if(result.action==s2ne::OriginalSaveMenu::Action::confirm_overwrite)overwriteConfirmation.emplace(root,menu,253,176,76+30*saveMenu->row(),true);
                         if(result.action==s2ne::OriginalSaveMenu::Action::load||result.action==s2ne::OriginalSaveMenu::Action::save){
                             try{
+                                if(!prologue->original_save_boundary_ready())throw std::runtime_error("Original synchronous settlement in progress");
                                 auto path=s2ne::OriginalSave::slot_path(root,result.slot);
                                 if(result.action==s2ne::OriginalSaveMenu::Action::load){auto state=s2ne::OriginalSave::load(path,saveItems);auto restored=s2ne::OriginalSaveBridge::restore(root,state);prologue->set_disc(discForSave(restored.raw));prologue->restore_battle(std::move(restored.events),restored.turn);rawSave=std::move(restored.raw);connectedCampaign=nullptr;autosaveBlocked=false;}
                                 else{auto state=s2ne::OriginalSaveBridge::capture(prologue->events,prologue->battle_turn(),prologue->camera(),rawSave?&*rawSave:nullptr);s2ne::OriginalSaveStore::write(isolatedSaveRoot?*isolatedSaveRoot:root,result.slot,state,saveItems);rawSave=std::move(state);}
@@ -1237,6 +1263,7 @@ int main(int argc, char** argv) {
             if(prologue&&!autosaveBlocked&&!prologue->autosave_requests().empty()){ 
                 bool allSaved=true;
                 for(const auto& request:prologue->autosave_requests()){
+                    if(!prologue->original_save_boundary_ready()){allSaved=false;break;}
                     if(!rawSave){std::cerr<<"Original autosave "<<request.slot<<" blocked: no complete original baseline\n";allSaved=false;break;}
                     try{
                         auto staged=s2ne::OriginalSaveBridge::capture(prologue->events,std::max(1u,prologue->battle_turn()),prologue->camera(),&*rawSave);
@@ -1291,7 +1318,7 @@ int main(int argc, char** argv) {
                         if(skill88Input){skillInputCaster=i;skillInputTarget=i;found=true;break;}
                         for(unsigned t=0;t<prologue->events.units.size();++t)if(probe.hostile_in_range(u,prologue->events.units[t])&&prologue->battle().target_visible(prologue->events.units[t],std::span(&u,1),0)){skillInputCaster=i;skillInputTarget=t;found=true;break;}
                     }
-                    if(!found){if(skill94Input){bool active=false;for(const auto& u:prologue->events.units)if(u.controllable()&&(u.status_flags&0x80)&&!(u.status_flags&0x20)&&(u.learned[9]&1))active=true;if(!active||contactStep>=3)throw std::runtime_error("No active learned94 caster with naturally supported in-range target after bounded legal turns; original reserve flags retained");if(prologue->in_battle()&&!prologue->battle().animating_movement()&&!prologue->computer_actions()){++contactStep;key(SDLK_F10);} }else if(skill88Input){if(presented%120==0){for(const auto& u:prologue->events.units)if(u.id==3)std::cout<<"RECOVER turn="<<prologue->battle_turn()<<" state="<<int(prologue->battle_state())<<" AP="<<u.action_points<<" ST="<<u.st<<" action="<<unsigned(u.action_state)<<" status3d="<<unsigned(u.status3d)<<" inBattle="<<prologue->in_battle()<<" status="<<prologue->battle_status()<<'\n';}if(prologue->campaign_dialogue())key(SDLK_RETURN);else if(prologue->in_battle()&&!prologue->battle().animating_movement())key(SDLK_F10);}else throw std::runtime_error("Learned save has no naturally deployed in-range skill32 pair; no units relocated");}
+                    if(!found){if(skill94Input)throw std::runtime_error("No active learned94 caster with naturally supported in-range target; original reserve flags retained");if(skill88Input){if(prologue->campaign_dialogue())key(SDLK_RETURN);else if(prologue->in_battle()&&!prologue->battle().animating_movement())key(SDLK_F10);}else throw std::runtime_error("Learned save has no naturally deployed in-range skill32 pair; no units relocated");}
                     if(found){const auto& u=prologue->events.units[skillInputCaster];auto point=prologue->screen_cell({u.x,u.y});
                     if(skill94Input){auto [cx,cy]=prologue->camera();bool picked=false;for(int dy=-32;dy<=32&&!picked;++dy)for(int dx=-32;dx<=32;++dx)if(prologue->battle().pick_surface(float(point.x+dx),float(point.y+dy),cx,cy)==s2ne::Battle::Point{u.x,u.y}&&prologue->battle().pick_surface(float(point.x+dx+2),float(point.y+dy+2),cx,cy)==s2ne::Battle::Point{u.x,u.y}&&prologue->battle().pick_surface(float(point.x+dx-2),float(point.y+dy-2),cx,cy)==s2ne::Battle::Point{u.x,u.y}){point.x+=dx;point.y+=dy;picked=true;break;}}
                     if(prologue->battle_state()!=s2ne::Battle::State::idle){key(SDLK_ESCAPE);}
@@ -1305,7 +1332,7 @@ int main(int argc, char** argv) {
                 }else if(skillInputPhase==21&&!prologue->battle().animating_movement()){const auto& u=prologue->events.units[skillInputCaster];constexpr std::array<std::pair<int,int>,3> waypoints{{{23,30},{20,35},{16,41}}};if(std::pair(u.x,u.y)!=waypoints[contactStep]){snapshot("contact-blocked.sav");throw std::runtime_error("Bounded88 original movement rejected waypoint; no relocation fallback");}++contactStep;std::cout<<"CONTACT moved actor="<<u.id<<" xy="<<u.x<<","<<u.y<<" HP="<<u.hp<<" ST="<<u.st<<" AP="<<u.action_points<<std::endl;key(SDLK_F10);skillInputPhase=0;
                 }else if(skillInputPhase==1||skillInputPhase==6){
                     if(prologue->battle_state()==s2ne::Battle::State::command){if(prologue->battle_command_index()!=0)key(SDLK_RIGHT);else key(SDLK_RETURN);}
-                    else if(prologue->battle_state()==s2ne::Battle::State::attack_menu){if(prologue->battle().attack_index()!=int((skill88Input||skill94Input)?3:2))key(SDLK_RIGHT);else{key(SDLK_RETURN);++skillInputPhase;}}
+                    else if(prologue->battle_state()==s2ne::Battle::State::attack_menu){if(skill94Input)std::cout<<"94 submenu selected="<<prologue->events.units.at(size_t(prologue->battle_selected())).id<<" index="<<prologue->battle().attack_index()<<" secondAvailable="<<skillRules.executable_available(prologue->events.units.at(size_t(prologue->battle_selected())),s2ne::OriginalSkills::Context{.second=true},true)<<'\n';if(prologue->battle().attack_index()!=int((skill88Input||skill94Input)?3:2))key(SDLK_RIGHT);else{key(SDLK_RETURN);++skillInputPhase;}}
                 }else if(skillInputPhase==2||skillInputPhase==7){
                     if(skillMenu){if(skillMenu->page()==s2ne::OriginalSkills::Page::list){if(skillMenu->selected().id!=inputSkill){bool has=false;for(auto& r:skillMenu->groups()[skillMenu->selected_group()].records)has|=r.id==inputSkill;key(has?SDLK_DOWN:SDLK_RIGHT);}                    else key(SDLK_RETURN);}
                         else if(skillTarget&&*skillTarget==skillInputTarget){++skillInputPhase;}else key(SDLK_TAB);}
@@ -1313,7 +1340,7 @@ int main(int argc, char** argv) {
                 else if(skillInputPhase==4&&!skillMenu){if(snapshot("cancel-after.sav")!=skillCancelBaseline)throw std::runtime_error("Target cancel mutated original save");std::cout<<"PASS normal target cancel no payment or RNG change\n";skillInputPhase=6;}
                 else if(skillInputPhase==8){skillInputBefore=prologue->events.units[skillInputCaster];skillInputVictim=prologue->events.units[skillInputTarget];snapshot("cast-before.sav");key(SDLK_RETURN);++skillInputPhase;}
                 else if(skillInputPhase==9&&!skillMenu&&!pendingSkillTarget){
-                    if(!skillCastVerified)throw std::runtime_error("Normal skill cast did not commit");const auto& u=prologue->events.units[skillInputCaster];
+                    if(prologue->battle().combat_feedback_active())continue;if(!skillCastVerified)throw std::runtime_error("Normal skill cast did not commit");const auto& u=prologue->events.units[skillInputCaster];
                     if(((skill88Input||skill94Input)?u.st!=skillInputBefore->st+(u.max_st-skillInputBefore->max_st)-(skill94Input?5:25):u.mp!=skillInputBefore->mp+skillInputMpGrowth-40)||u.action_points>=skillInputBefore->action_points||skillInputFrames!=(skill94Input?15:skill88Input?35:23))throw std::runtime_error("Normal skill32 payment/frame count mismatch mp="+std::to_string(u.mp)+" before="+std::to_string(skillInputBefore->mp)+" ap="+std::to_string(u.action_points)+" beforeAP="+std::to_string(skillInputBefore->action_points)+" frames="+std::to_string(skillInputFrames));                    if(skill88Positive&&(u.hp<=skillInputBefore->hp||u.experience<=skillInputBefore->experience))throw std::runtime_error("88 positive heal/XP not obtained; no retry or RNG filtering");skillInputCommitted=snapshot("cast-after.sav");
                     std::cout<<"PASS INPUT complete"<<inputSkill<<" ST="<<skillInputBefore->st<<"->"<<u.st<<" HP="<<skillInputBefore->hp<<"->"<<u.hp<<" MP="<<skillInputBefore->mp<<"->"<<u.mp<<" nativeMPGrowth="<<skillInputMpGrowth<<" paidMP="<<(skillInputBefore->mp+skillInputMpGrowth-u.mp)<<" AP="<<skillInputBefore->action_points<<"->"<<u.action_points<<" proficiency="<<skillInputBefore->learned_proficiency[skill94Input?9:skill88Input?8:2]<<"->"<<u.learned_proficiency[skill94Input?9:skill88Input?8:2]<<" XP="<<skillInputBefore->experience<<"->"<<u.experience<<" level="<<skillInputBefore->level<<"->"<<u.level<<" SDL frames="<<skillInputFrames<<'\n';skillInputPhase=10;skillInputNext=nowUi+500;
                 }else if(skillInputPhase==10){

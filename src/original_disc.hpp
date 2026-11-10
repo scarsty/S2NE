@@ -59,6 +59,42 @@ class OriginalDiscResources {
         }
         return end==uint64_t(length);
     }
+    static uint64_t qword(std::span<const uint8_t> bytes,size_t at) {
+        return uint64_t(dword(bytes,at))|(uint64_t(dword(bytes,at+4))<<32);
+    }
+    std::vector<uint8_t> shared_entry(OriginalDisc disc,unsigned id)const {
+        std::ifstream file(root_/"SUPERSP.CDS",std::ios::binary);
+        std::array<uint8_t,28> header{};
+        if(!file.read(reinterpret_cast<char*>(header.data()),header.size())||
+            !std::equal(header.begin(),header.begin()+8,"S2NECDS1")||dword(header,8)!=1||dword(header,12)!=pal_.size())
+            throw std::runtime_error("Invalid shared disc version/index header");
+        std::vector<uint8_t> index(pal_.size());
+        if(!file.read(reinterpret_cast<char*>(index.data()),index.size())||index!=pal_)throw std::runtime_error("Shared disc PAL mismatch");
+        unsigned count=dword(header,16);
+        auto first=dword(pal_,776),second=dword(pal_,784);
+        if(first<8||second<20||count!=uint64_t(first-8)+second-20)throw std::runtime_error("Shared disc entry count mismatch");
+        uint64_t base=28+uint64_t(index.size())+uint64_t(count)*32,payload=qword(header,20);
+        file.seekg(0,std::ios::end);auto length=file.tellg();
+        if(length<0||base>uint64_t(length)||payload!=uint64_t(length)-base)throw std::runtime_error("Shared disc payload bounds mismatch");
+        file.seekg(28+index.size());
+        uint64_t selected_offset=0,selected_size=0,selected_hash=0;
+        for(unsigned n=0;n<count;++n){
+            std::array<uint8_t,32> record{};
+            if(!file.read(reinterpret_cast<char*>(record.data()),record.size()))throw std::runtime_error("Truncated shared disc table");
+            unsigned expected_disc=n<first-8?0:1,expected_id=n<first-8?n+1:n-(first-8)+1;
+            auto original=entry(expected_disc?OriginalDisc::two:OriginalDisc::one,expected_id);
+            uint64_t offset=qword(record,8),size=qword(record,16);
+            if(dword(record,0)!=expected_disc||dword(record,4)!=expected_id||size!=original.size||offset>payload||size>payload-offset)
+                throw std::runtime_error("Invalid shared disc mapping");
+            if(expected_disc==unsigned(disc)&&expected_id==id){selected_offset=offset;selected_size=size;selected_hash=qword(record,24);}
+        }
+        if(!selected_size)throw std::runtime_error("Missing shared disc entry");
+        std::vector<uint8_t> bytes(size_t(selected_size),uint8_t{});file.seekg(base+selected_offset);
+        if(!file.read(reinterpret_cast<char*>(bytes.data()),std::streamsize(bytes.size())))throw std::runtime_error("Truncated shared disc entry");
+        uint64_t hash=14695981039346656037ull;for(uint8_t byte:bytes)hash=(hash^byte)*1099511628211ull;
+        if(hash!=selected_hash)throw std::runtime_error("Shared disc entry checksum mismatch");
+        return bytes;
+    }
 public:
     explicit OriginalDiscResources(const std::filesystem::path& root):root_(root) {
         std::ifstream file(root_/"SUPERSP.PAL",std::ios::binary);
@@ -76,6 +112,7 @@ public:
     }
     std::vector<uint8_t> dat_entry(OriginalDisc disc,unsigned id)const {
         auto e=entry(disc,id);
+        if(std::filesystem::exists(root_/"SUPERSP.CDS"))return shared_entry(disc,id);
         std::ifstream file(dat_path(disc),std::ios::binary);
         file.seekg(e.offset);
         std::vector<uint8_t> bytes(e.size);

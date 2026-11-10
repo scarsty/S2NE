@@ -2,6 +2,15 @@
 #include "original_events.hpp"
 #include <optional>
 namespace s2ne {
+//4214C1/4214D5: signed word+5 added with native32-bit wrap.
+inline bool original_currency_handler(OriginalEvents& events,size_t event){
+    int condition=events.condition(event);
+    if(events.type(event)!=11||(condition!=11&&condition!=12))return false;
+    if(!events.campaign_currencies)throw std::runtime_error("Original currency baseline unavailable");
+    auto& value=events.campaign_currencies->at(size_t(condition-11));
+    value=int32_t(uint32_t(value)+uint32_t(events.event_word(event,5)));
+    return true;
+}
 // 4211A3 conditions0..6. False predicates remain pending, not consumed.
 inline std::optional<bool> original_role_predicate(const OriginalEvents& events,size_t event){
     if(events.type(event)!=11)return std::nullopt;

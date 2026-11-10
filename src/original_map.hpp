@@ -405,7 +405,7 @@ public:
     const std::vector<uint8_t>& unit_background_bitmap(unsigned id)const{return unit_bitmaps_.at(id).b1;}
     const std::vector<uint8_t>& unit_source_bitmap(unsigned id)const{return unit_bitmaps_.at(id).ad;}
     std::array<int,4> unit_bitmap_bounds(unsigned id)const{const auto& b=unit_bitmaps_.at(id);return {b.left,b.top,int(b.w),int(b.h)};}
-    bool begin_disappearance(const std::vector<OriginalEvents::Unit>& roster,unsigned target,unsigned turn=1,uint64_t elapsed=0){
+    bool begin_disappearance(const std::vector<OriginalEvents::Unit>& roster,unsigned target,    unsigned turn=1,uint64_t elapsed=0,bool death=false){
         if(disappearance_.active())return false;
         auto role=target<roster.size()?roster.begin()+target:roster.end();
         if(role==roster.end()||!role->present(turn)||!(role->status_flags&0x80)||(role->status_flags&0x20)||!role->appearance||role->appearance>word(prg_,group(1)))return false;
@@ -448,16 +448,18 @@ public:
         }
         disappearance_.begin(target,masked,bitmap.b1);
         bitmap.b1=std::move(background);
+        if(death)disappearance_.death_mode();else{disappearance_.frame_count=5;disappearance_.frame_interval=20;disappearance_.first_weight=40;}
         OriginalPalette palette(pal_);disappearance_frames_.clear();
         auto copy=disappearance_;
-        for(unsigned frame=0;frame<5;++frame){copy.frame=frame;disappearance_frames_.push_back(copy.pixels([&](unsigned a,unsigned b,int weight){return palette.blend_index(a,b,weight);}));}
+        if(death){for(auto& color:copy.source)if(color)color=uint8_t(palette.blend_index(color,0x3C,80));}
+        for(unsigned frame=0;frame<copy.frame_count;++frame){copy.frame=frame;disappearance_frames_.push_back(copy.pixels([&](unsigned a,unsigned b,int weight){return palette.blend_index(a,b,weight);}));}
         return true;
     }
     void tick_disappearance(unsigned ms){disappearance_.tick(ms);}
     bool disappearance_active()const{return disappearance_.active();}
     bool disappearance_finished()const{return disappearance_.finished();}
     unsigned disappearance_frame()const{return disappearance_.frame;}
-    const std::vector<uint8_t>& disappearance_pixels()const{return disappearance_frames_.at(std::min(disappearance_.frame,4u));}
+    const std::vector<uint8_t>& disappearance_pixels()const{return disappearance_frames_.at(std::min(disappearance_.frame,disappearance_.frame_count-1));}
     unsigned last_reaction_target()const{return last_reaction_target_;}
     bool last_reaction_left()const{return last_reaction_left_;}
     uint64_t reaction_draws()const{return reaction_draws_;}
