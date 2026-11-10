@@ -4,6 +4,311 @@
 
 自动化启动测试使用隔离写档目录，避免覆盖用户存档。算法测试、实际游戏流程测试和原版画面对照应分别记录，不互相替代。
 
+## 2026-11-10 画面续作：411587原调色板阶梯／撤离普通移动姿态／到达图元
+
+**有限新增已验收，不是本请求全部收口；传送生产dispatcher、特殊移动遮罩及城镇正常探索链仍未实现。未改PROGRESS。**
+
+### 411587双buffer与淡入的实际证据
+
+重新跟到`474A7C`（asm200601）：它只是指定源／目标buffer的全屏memcpy；`474827`仅选择当前绘图buffer，**两者本身没有淡入帧**。411587确实先2→1，再在1画商品静态页，再1→0后画选中动态层。已有缓存对应这一恢复顺序；本轮新增真正淡入调用`4118CB ->472EF1(palette,0,-4)`，不从buffer名字猜动画。
+
+`472EF1`循环DAC强度0,4,...,60（16次），各强度左移2后传`47F5D2`；后者逐通道`(DAC<<2)*intensity/255`整数除法。参数-4意味着步长4且**不调用delay_**，末尾停留60而非自行补63。本轮生产shop启用presentation timing，16次实际present才解输入锁；无固定毫秒猜测，不交易不吞确认。原DAC通道从渲染值反解后执行该整数乘除；原图、缓存及最终商品状态保留。专项与SDL检查16阶／首帧黑／Escape不能打断／SAVE无改。
+
+仍未声称原OS调色板更新与SDL每刷新一帧完全同频；实际SDL以present作为可验证显示边界，原版没有为负参数规定帧延时。
+
+### completion7移动姿态新增与严格边界
+
+原`42B461`只在action_state==4时查询`440F56`。class0/1/2走`4462B6`原PRG角色bitmap，不是新轨迹；**46234F是移镜头后清present，不让角色沿虚构路线走出地图**。本轮开放该普通移动姿态子集，在撤离绘制保留原movement_frame而非恢复默认idle；仍沿既有镜头逐帧ack、原次序、input/save锁、异常基线回滚。受控stage42原表records14/17加入一名class<3的state4/frame1人物，专项／SDL通过；仍不是未经修改原表的自然剧情入口。
+
+class3=`448B99`，class4=`45CA1D ->45CADA`，class5=`45CAA0 ->45CADA`仍拒绝。已核class4的原共享slots23/24（实际ICONSO index22/23）按全局503464交替，class5从4F70FC方向slots取图，45CADA还必须先448B99重建脚下遮罩并叠原角色AD；不能只画图标或只淡出冒充。尚缺448B99中4F70B0脚印mask与5045B8索引变换的共享background合成，及45CADA mode3/4投影叠加，资源存在，并非资源丢失。没有据此伪称这些分支完成。
+
+### 传送到达十帧：确证与已合并图元
+
+准确原调用是`45DB10 ->454ED5(army,role,194,1)`，**不是455048消失**。454ED5每帧从原AD备份恢复，再424873将非透明原PRG像素向palette194混合，权重100,90,...,10，十帧，每次473192等4百分秒后present，结束恢复AD。本轮`OriginalMap::begin_teleport_arrival/tick_teleport_arrival`新增这个真实PRG角色图元：40ms且每帧需ack，十帧后恢复普通绘制；不改角色坐标／库存／存档。`original_teleport_visual_test`验证原角色图变化、十帧、未ack不前进及39/40ms边界。
+
+**该图元尚未连接battle::settle_teleport_pads生产事务**：现侧末传送同步改坐标并立即reset_side；正确接线还需在45DB10的源隐藏→目标镜头→十帧→恢复action_state／4483CB／4465B4完成前挂起侧切换。未以新增未调用API或算法测试声称生产传送完成。起降45DC37还依赖476707路表与status4／方向／12C/12E状态保存，未实现，未套普通移动替代。
+
+### 旅店城镇探索具体原调用与未实现点
+
+410EEE option1调用`414D5B`（不是恢复），入口`415000(1)`从原worldmap偏移4F6170/6174拷640x480→buffer1，`415084(0)`按原城镇表画current/destination标记；其资源由410C86前置加载到4F6160/4F618C，不能用当前战场或旅店背景代替。循环415415读取输入；4157C6更新原world视口并按4F7CF0计时；点击`414F5D`调用下级再重画；退出恢复音乐4。完整正常探索入口链尚未上线，本轮没有删除其原表以作伪自然fixture。
+
+其他旅店未接入口精确为：option5=`44D439(army,0,0,1)`再441143(2)，option7=`44D439(army,1,0,1)`，option8=`43183B(string51,300,200)`确认后返回11。已有2/3/4/6/9/10保留。以上不是“缺资源”而是原worldmap前置解码／视口／下级及军团管理状态机尚未移植；本轮并未完成用户要求的未经删表正常探索链。
+
+### 验收与发布
+
+`out/visual-{Debug,Release}-build.log`均0，Release最后。九个重新编译专项：`original_{events,equipment,shop_menu,inn,save_bridge,ai_special,death_continuation,evacuation,teleport_visual}-visual{,-build}.log`全通过，events完整执行。实际SDL `visual-sdl-{shop,evacuation,auto,auto-alternate}.log`全0；shop含新16阶输入锁，evacuation含受控state4普通移动姿态。共享CDS打包`visual-package.log`保留源资源；独立无DAT解包`out/visual-package-check`，不带两个txt，`visual-package-{verify,smoke-auto,smoke-battle-alternate}.log`。最终根EXE SHA256=`C2BDC2DB2BE07D4087217D0946D9DDA0061221705C71D6608B64B359C8693804`，ZIP=`189401583`字节，根EXE／DLL同步最终Release。没有扩技能或重跑全线。全部验收命令已退出，停写前检查无本工程自启辅助残留。
+
+## 2026-11-10 本轮收口：411587计时缓存与非空completion7挂起恢复
+
+**新增生产实现及回归，不称六类全完成。以下替代旧章“非空completion7未上线”的边界；不是自然全线通关证明。**
+
+### 411587原计时／光标／面板缓存
+
+`47308B`取本地时钟minute/second/hundredth，忽略小时；生产使用相同的每小时360000百分秒计数。`473111(start,10)`和`473192`实际比较abs(start-now)，不是模差；小时回绕不人为补正。鼠标按住水平左右track按10百分秒重复，释放停止，重复只导航不交易。键盘左右和进入／返回商品页请求`438B8F`的原坐标`224+row*54,356`，SDL从640x480渲染坐标转换窗口坐标后warp；鼠标track重复不warp出track。使用已确证原图147/146，未画几何箭头。
+
+报价上层固定面板按首行、类别、钱和库存缓存；选中行／名字／help／框／拇指仍从缓存恢复后绘制，交易变化使缓存失效。专项验证缓存重画相等、warp、9/10百分秒及释放、小时回绕。**这只收口CPU面板缓存与计时／warp；尚未复刻474A7C/474827原双buffer淡入逐帧顺序，不能称411587完整呈现等价。**
+
+### 非空completion7：真实原表、生产continuation及SDL
+
+原链`41FF6E(7) ->46234F ->4391C8(mode2) ->447FC3 ->42ADC7/42B461 ->42927B/47488B ->41756F ->status33&7F`。逐个原敌军按到另一军团最近距离选首个、后续以上一个坐标为起点，严格小于才替换，保留同距列表顺序。保存4F7CF0（SAVE globals偏移32）、置0，全部返回时恢复。死亡Stack增加pending evacuation协议，不把nullopt误当调用栈结束；只在当前对象实际frame_presented后清present，不瞬清集合。镜头依原42B461半格32/16步进、地形高度目标／边界和可见4步提前退出；每个镜头步亦需frame acknowledgement。死亡入口自身completion仍只是原41C02A的flag写，不擅调41FF6E。
+
+**46234F和42B461均没有455048调用。**447FC3保存／恢复runtime DWORD30及临时status22，是原bitmap背景准备，不是455048透明消失动画；本轮未擅自套455048五帧淡出。41756F只轮询Ctrl+C，不是等键，Escape不能跳。生产输入／保存锁维持到外栈恢复；重复advance／取消不会提前结算。异常恢复完整events基线、币值／flags／记录／军团、镜头与控制delay，清锁且不回调resume。尚拒绝action_state4需要440F56分派448B99／45CA1D／45CAA0等移动姿态的分支；该分支未冒充普通站立绘制完成。
+
+新增`tests/original_evacuation_test.cpp`自动定位**真实stage42 role39死亡record14→flag record17 completion7，29原敌军**。其余原记录受控禁用，因此是原表隔离fixture，不是自然可达全关证明。覆盖逐个顺序、未呈现不移除、Escape／保存锁、延迟恢复、一次resume、破坏运行军团触发异常rollback。`--smoke-evacuation`实际SDL事件／纹理／present通过，170 acknowledged frames；仍明确为上述受控fixture。没有扩技能或重跑全路线。
+
+### 六类剩余边界
+
+1. 资源：82项共享CDS及原archive fallback保留；未删除或改写源CD。PRG额外组用途未被推测成生产切盘规则。
+2. 存档／回归：完整events与原档事务回归通过；不能据专项断言所有原脚本handler均已接通。
+3. 画面：本轮新增撤离镜头／呈现门控；传送／起降完整原呈现链仍未补，不以淡出代替，其他原画面未做全量逐像素对照。
+4. 菜单／关间：此前装备购买／复活／捐献、旅店2/3/4/6/9/10保留；旅店1/5/7/8仍在410EEE分支拒绝，城镇探索及其下级状态机未接；原45DDA6关间恢复不是付费住宿，未造休息页。411587淡入／双buffer时序仍如上未完成。
+5. AI：已发布AI6 mode1失败继续40B0BA／40AED5 mode0回退，相关专项继续通过；未据6/7有限目标分支宣称完整技能／全AI决策等价。
+6. 死亡／剧情：本轮非空站立军团completion7已上线；action_state4移动呈现分派及其它被preflight拒绝的generic handler仍未完成。stage42受控SDL不等于自然剧情可达验证。
+
+### 最终验收／发布证据
+
+`out/closure-Debug-build.log`、`closure-Release-build.log`均0，Release最后。九个专项均重新编译再运行：`original_{events,equipment,shop_menu,inn,church,save_bridge,ai_special,death_continuation,evacuation}-closure{,-build}.log`；events为完整执行非抽样。实际SDL：`closure-sdl-{shop,evacuation,auto,auto-alternate}.log`全0。`closure-package.log`重建共享CDS及ZIP；独立解包`out/closure-package-release-check`确认无DAT、无PACKAGE.txt/SHA256SUMS.txt，`closure-package-release-{verify,smoke-auto,smoke-battle-alternate}.log`验证。根EXE/DLL由最终Release同步，原SAVE未覆盖；最终根`S2NE.exe` SHA256=`3823F2271FB71FE5D752BD591CD157CE473C68CF4C6298CE3223C70FC7475126`，`S2NE-game-win64.zip`=`189398995`字节。全部命令退出，项目路径内无运行辅助进程。未修改PROGRESS。
+
+## 2026-11-10 聚焦续作：共享箭头初始化、报价刷新、自动装备及AI6回退
+
+**本次有新的生产实现；仍不称411587逐帧全等价或六类系统全部完成。非空completion7未上线。**
+
+### 原共享箭头已定位，不再是未知资源
+
+此前只搜4F72B0直接写引用遗漏了共享数组初始化。真实入口是`4288A6 ->4262EC`（asm66020..66305），不是只看426CEC：先读iconso count=142和menusp count=653；`loc426598`将iconso指针写入`4F7060+i*4`，`loc4265D3`将menusp前57项接到同一数组。4F7060本身保存分配缓冲指针，不是图0；因此`4F72B0`对应全局索引148、实际menusp第6项即**ID147**；4F72AC为ID146，4F72C8为ID153。公式`(address-4F7060)/4-1`。原资源尺寸实读：146=18x26、147=20x29、148=22x6。不能以相邻ID外形猜映射。本轮替换了旧猜测147拇指为确证146，44EE0E每个有变化属性项在560/y+4绘制原147箭头。无几何替代。
+
+`tests/original_equipment_test.cpp`断言共享映射、原箭头上部20行像素重绘幂等；整29行不可幂等断言，因为后续24px间隔属性项会按原顺序覆盖上一个箭头底部。绘制和实际SDL购换/取消/跨页通过，不冒充原EXE逐像素全屏对照。
+
+### 411587刷新和输入具体新增
+
+生产页增加原报价提示100、251库存字串及原坐标、价格小字体居中/钱不足68色，返回下页后按当前钱/库存重新绘制。鼠标移动即更新选中商品（原x196..<628、y307..379），不再必须单击才刷新；水平滚动x196..625/y382..401，左右边界221/600、track比例349、首行count-8及x571右端选row7按asm411B4A..411BE9。钱不足接原104提示、确证共享153底板及等键返回，不扣钱。专项验证悬停回选、track取消不改原档；实际SDL保留原档购买替换/取消和文件往返。**仍未移植原438B8F光标移动与473111/47308B按住重复计时、原buffer拷贝/淡入时序，因此不是411587完整呈现等价完成**。整页重画不宣称等于其原缓存刷新协议。
+
+### 旅店10自动装备生产闭环
+
+`410EEE option10 ->43183B(string6,x200,y200) ->451ABC ->451B21 ->441143(2)`接通正常原确认/取消/提交/旅店返回；main成功后同步events，后续capture不会覆盖装备。不新增自创人物页。精确复用原卸除/装入属性事务：按军团人物顺序排status70/control1；每人物六槽，库存ID顺序扫描，武器1..6另需440C06(kind技能表)，其余type=slot+6；440A89资格；ITEM+25无符号rank严格大于，保留第一个最高候选。旧装合法且rank严格大于候选才保留，同分仍先退库再装；无候选也可卸除不合规旧装；最后武器type4且第五槽非空则卸第五槽。原clamp99、属性不对称规则保留，全军flag最终重算，钱不变。
+
+440C06资源索引依据427BD5：KIND+1E DWORD是kind技能目录，kind数WORD+16，目录4字节/职业；后接23字节记录，首字段等于武器type+1。不是用一般eligible冒充440C06。
+
+旅店专项增加真实原SAVE取消全档相等、提交与生产事务逐字节相等、排除人物不改、结果资格/武器技能、type4第五槽移除、库存加装备数量不凭空增加及capture往返。SDL使用正常事件进入10、取消、再提交、返回及真实文件往返。确认阴影原palette转换修复为原索引背景，未添加替代图形。存读档/覆盖取消既有回归仍通过。
+
+### AI6实际回退增量及死亡边界
+
+原40D2ED先40D351(mode1)，失败才40AEB3→40B0BA；40B0BA的无攻击候选尾部40AED5又会以mode0尝试特殊目标。因此旧测试“6未精确抵达必须完全不动”错误。生产先按原对象3/5或4/6和原路表尝试精确目标，成功才直接移动；失败继续现有40B0BA攻击候选扫描，再40AED5，不再在尾部错误强制mode1。`original_ai_special_test`受控stage15、无对手fixture验证6/7都能原目标移动，未把此有限分支称所有40B0BA技能决策完整。未扩新技能。
+
+非空completion7本次重核`46234F`的4391C8(mode2)逐个选择→447FC3焦点→42ADC7/42B461镜头→42927B/47488B呈现→41756F轮询→清status80，再恢复4F7CF0。现有`OriginalDeathDispatch::Stack::next`同步调用`events.complete`，没有将这个呈现动作挂起并在frame_presented后恢复原死亡栈的协议。未改成瞬清敌军或空集合，仍严格拒绝。此项没有本轮生产完成证据。
+
+### 统一验收／发布
+
+全部日志在`S2NE\\out`：`focus-{Debug,Release}-build.log`均0，Release最后；`equipment-focus{,-build}.log`原箭头/购换/跨页通过；重新编译`original_{events,inn,church,shop_menu,save_bridge,ai_special,death_continuation}-focus{,-build}.log`均0（events完整）。`focus-sdl-{shop,auto,auto-alternate}.log`均0，shop含新增451ABC正常输入与文件往返。最终共享图元索引校正后重跑equipment及SDL shop均0。
+
+`focus-package.log`最新CDS包；独立`out\\focus-package-check`没有DAT及PACKAGE.txt/SHA256SUMS.txt，`focus-package-{verify,smoke-auto,smoke-battle-alternate}.log`均0。根EXE/DLL已同步，EXE SHA256 `26E3CA521F877C6D90421AFD91B7F7C0A6A0A15AA7E73067D0AD110907E60CAC`，ZIP `189394920`字节。源CD归档不变，用户SAVE未覆盖，无自启游戏/专项残留，PROGRESS未改。
+
+## 2026-11-10 同轮续作：对象跨页与旅店存读档／设置
+
+本次是明确有限增量，**六类未收口，411587／箭头、自动装备10、AI6完整fallback及非空completion7仍未实现**；不得将本章归为全量完成。
+
+- `original_shop_menu.hpp`将4125FC对象首行与选中行拆开。原x239..258、y=top+51..230滚动入口；上箭头到top+74、下箭头自top+207；track top+76..205按`(y-top-76)*count/129`、尾页count-5、top+175划分row0/4。上下移动先走可见行再移动首行，不再以`recipient-4`强制贴尾。此次没有实现按住鼠标的47308B/473192重复计时，也没有虚构滚动图元。保留既有便利键，不声称它们是原4125FC键循环。
+- `original_inn.hpp`将410EEE选项3/4分别接4371E6(1)/437181(1)原204选择页：读档空表门控、原翻页/选择、写档覆盖确认及取消返回、OriginalSaveStore原槽53备份/原档原子落盘。读档交给main用OriginalSaveBridge恢复原档并退出旧旅店上下文；不把战斗菜单返回塞给旅店。专项在out隔离目录复制原资源、写入原SAVE字节并读取逐字节相等，不覆盖用户SAVE。
+- 旅店9接434103(2)原设置页，沿用现有原资源及事件处理；关闭只返回旅店，运行设置/小字与原难度28字节回传，不以mode0覆盖CFG。设置入口、绘制、关闭和不改钱/库存专项通过；SDL正常输入进出设置通过。
+- `tests/original_equipment_test.cpp`和SDL增加12个同一原record的**受控**对象跨页，验证底部first7/index11、上移保持first7/index10、track顶部复位及取消全档无变化；不是自然原档有12个角色的证据。原档购换/确认取消/文件往返仍通过。
+
+验证日志均在`S2NE\\out`：`continuation-{Debug,Release}-build.log`均退出0，Release最后；`equipment-continuation{,-build}.log`、`inn-continuation{,-build}.log`均0。完整`original_events_test-continuation.log`及church/shop/shop_menu/save_bridge/ai_special/death_continuation同后缀日志均0（后七项复用已有专项可执行文件，装备/旅店本轮重新编译）。`continuation-sdl-{shop,auto,auto-alternate}.log`均0，shop含新增跨页和设置实际SDL输入。
+
+具体未接入口与障碍：
+- 411587仍缺自身刷新/光标及完整上级命中状态，不把整页重画称其全部移植；44EE0E读取4F72B0、4125FC读取4F72AC。426CEC证实批量按ID加载原图，但本次未找到这些global的初始化ID表，未上线猜测147/148，更没有几何替代。
+- 旅店1：414D5B→415000/415084/415415/4152FA/414F5D城镇探索脚本/呈现未接；5/7：44D439两种对象装备业务未接；6原名册已接；8原退出确认未接；10：确认6→451ABC→451B21未接。已核自动装备并非逐槽最高普通属性：六槽按ITEM+25严格大于挑选，武器另需440C06遍历kind技能表（4F6F94/98，23字节记录），候选资格440A89；旧装同分也可能退库替换，最后武器type4移除第五槽。这些差异不能用现有购装eligible直接替代。无缺失资源的结论，缺的是其精确算法与生产确认接线。
+- AI6不可达40D2ED→40AEB3实际调用40B0BA完整普通决策，不是mode0接近移动；尚未移植其完整决策，继续拒绝而不伪装验收。AI7已有范围不扩。
+- 非空completion7：46234F暂存4F7CF0置0→4391C8(mode2最近对象)→447FC3→42ADC7/42B461→42927B/47488B→41756F→逐个清status33的80位，最后恢复global。缺跨死亡call stack的可挂起逐帧呈现/平移/输入轮询协议；未瞬清敌军，未拿空分支代替。上述两项本次只有原证据核查，无新生产实现。
+
+发布：`continuation-package.log`生成最新CDS ZIP；独立`out\\continuation-package-check`无DAT、无PACKAGE.txt/SHA256SUMS.txt，`continuation-package-{verify,smoke-auto,smoke-battle-alternate}.log`均0。根EXE SHA256 `F05F6F93ADD31B9746E56A5F111943F947D9384B49D5537E54D8F8194F1B9B03`；ZIP `189389240`字节。根EXE及运行DLL同步，源CD归档不改，PROGRESS不改。
+
+## 2026-11-10 装备购买生产事务与有限原比较页接线
+
+本章替代旧章“装备全部拒绝”的描述。**已形成可合并生产买入／替换闭环，但不是原比较页面全部图元等价完成，不称菜单类收口。**
+
+- 新增`src/original_equipment.hpp`：买入对象实际是`44159E ->440A89 ->443351`；用户提到的440C06为自动装备相关资格，不把它错当此处唯一门控。实现角色专限（ITEM23/24字节对应role ID）、kind+17 mask、role+118位8豁免、性别与属性mask、特殊64对属性加10。排除status33&70、control+8==1。
+- 生产shop前两类按BIN4原town报价进入，原218底板、204“不装备”行、五行35px人物、六槽原图与名字、原44EE0E七类变化项原字串／坐标／颜色，原208报价和96／207两种确认。可只买入库存，或选择人物后买入并替换原槽。鼠标对象选择／确认／取消返回、Tab切换不装备与人物。**上级仍沿现有水平报价页，尚未完整移植411587自身全部绘制差异；44EE0E的4F72B0箭头与4F72AC滚动拇指原资源映射尚未完成，故不能称原比较图全等价**。没有自行绘制几何箭头替代。
+- 提交副本原次序：按原价／flags10h八折扣钱→库存clamp99加一→旧槽退库存（最高99）→新槽扣一→原属性重算及441143(2)全军flags。已逐条核44D11B/44CDB7的相邻WORD sar16、SP分支不对称负值零目标，保留原999／110非对称cap，不用通用clamp冒充。军团装备效果31／58分别flags8／4，保留其他能力flags重算。生产成功同步events，下一次capture不覆盖装备和属性。
+- `tests/original_equipment_test.cpp`从真实SAVE找原town可负担报价与合资格人物，正常生产scan完成取消、不装备买入、人物比较、取消替换、再次提交；独立断言钱、旧装备退库、新槽、攻击／攻击上限计算、全档delta、capture及真实文件往返；受控满99库存、status10/20/40拒绝、钱不足不变。不是完整原版逐像素比较证明。
+- SDL `--smoke-shop`真实SAVE报价**item7、recipient0**，正常SDL事件经过原比较页、确认取消、替换、两级返回，核原事务全档等价并写档往返。原复活／消耗品买入／出售／旅店名册传闻／大小额捐献同次回归通过。无扩新技能或全线重跑。
+- 当前明确缺的函数语义／呈现：`411587`装备上级刷新与原面板保存恢复；`44EE0E`箭头共享图元、`4125FC`原滚动拖动与键盘循环精确行为，及原版画面逐像素对照；不能以本次事务通过推论这些完成。旅店剩余业务、AI6的40AEB3、非空46234F仍未新增；本轮先停在装备原呈现未全收口边界，不越序声称后续完成。
+
+### 最终构建／验证／发行
+
+- `out\\equipment-Debug-build.log`、`equipment-Release-build.log`：统一Debug／Release退出0，Release最后发布根EXE和DLL。
+- 重编并运行`out\\original_{equipment,church,events,save_bridge,shop_menu,shop,ai_special,death_continuation}-equipment{,-build}.log`八专项退出0；events完整两分支，不是抽样。
+- `out\\equipment-sdl-{shop,auto,auto-alternate}.log`全部通过（复活及装备均包含在shop）；`equipment-debug-sdl.log`为之前Debug快照证据。
+- `out\\equipment-package.log`；新独立解包`out\\equipment-package-check`无DAT，`equipment-package-{verify,smoke-auto,smoke-battle-alternate}.log`全部通过；包未带PACKAGE.txt／SHA256SUMS.txt，源CD和原SAVE保留。
+- 根EXE SHA256 **9259D7AEE5B7CE7127E10C943E9C0A2FD0BB0B11A58A3EAAE3A4E13ECFEC0B04**；ZIP **189383773 bytes**。未改PROGRESS。
+
+## 2026-11-10 教会复活生产接线阶段交付（装备与后续仍未收口）
+
+本章为最新实际结果；下方历史章的“教会option2未接”已被本章替代。**不是六类完成，也没有完成用户要求的装备买入、AI6 fallback和非空completion7。**
+
+### 已实现与验收：41430B(0)复活
+
+- 生产教会option2接`441867`死者对象（status33的20位且非10位），不要求present。原217底板、44D675人物大图、职业、属性、十行对象与技能名字来自CEL/PAL、BIN2、KIND及原PRG站立图，不以战场名册替代。上下与鼠标选对象，原106确认（43183B的EBX=1默认为是）、取消回对象、最后对象成功后返回教会。无对象102等键返回；钱不足104等键后仍在对象页，原档不变。
+- `45CFBB(mode0)`原战力费用，难度1除10、2除5、3原值、4乘2、5乘3，最小1。成功仅清该角色status33的20位和扣钱，**不补HP、不改库存或装备**。生产键鼠提交同步events，防下一次原档capture恢复死亡标志。
+- `tests/original_church_test.cpp`真实SAVE派生**受控死者／1000000钱**fixture：对象页面绘制、取消不变、独立原combat_value费用、全档精确delta、capture持久化、真实文件往返；空对象／零钱拒绝和等待返回。不是自然死亡角色进城的完整流程证据。
+- SDL `--smoke-shop`正常SDL事件→教会页scan→原对象绘制→取消／再次确认／返回通过，核全档HP／库存保真与实际扣钱。当前人物侧图采用原PRG站立帧，**尚未对44D675全部像素逐项原版截图等价验收**；滚动条原4F72AC资源映射及441706第三业务也未宣称完成。
+
+### 装备买入：本轮确证调用链，未交付
+
+- 更正前章“440C06”为买入资格的表述：购买对象实际`4125FC ->44159E ->440A89 ->443351`；440C06是自动装备的相关路径。`440A89`先查物品23/24字节职业专限、kind+17职业mask、role+118位8豁免，再检查443351的性别／属性mask；不能只看库存／职业名放行。
+- `411288 ->411587`装备上级不是消耗品411FA1：调用者传原panel给4125FC，后者五行35px对象、456EEA六槽、44EE0E旧新属性比较、两种确认。提交先扣钱／库存加一，选择装备时`44D11B`旧槽退库存→`44D018`新槽／属性→`441143(2)`全军flags重算。44D11B存在按完整DWORD偏移sar16读取相邻WORD的非对称负值钳制，不能以通用stat clamp代替。
+- 曾开始装备实现实验，因尚未完整还原上述原比较页及非对称事务而撤回，**没有启用残缺装备UI或半套装备算法**。当前仍只开放消耗品、出售；源资源不缺，障碍为尚未完成的原411587/4125FC/44EE0E呈现与44D11B/441143事务移植，而非资源无法获取。不能称确定不可实现。
+- 旅店十项具体入口与业务清单沿用紧随其后的表：已接传闻与名册，其余探索、mode1存读档、装备、特选角色、返回标题、设置、自动装备仍未接；**原旅店没有已证付费住宿恢复**。
+- 按用户顺序本轮未越过装备缺口伪做AI6或非空撤离。原40D2ED失败必须40AEB3，当前仍拒绝；46234F必须4391C8逐个选→447FC3/42B461镜头→present→清presence→恢复外栈，当前同步死亡Stack尚未建立此挂起协议，非空仍拒绝。无新技能／全线重跑。
+
+### 最终验证与发布
+
+- `out\\revival-debug-build.log`、`revival-release-build.log`：Debug／Release退出0，Release最后、已发布根EXE/DLL。
+- 重编十专项 `out\\original_{church,events,save_bridge,shop_menu,inn,ai,ai_special,death_special,death_continuation,shared_disc}-revival{,-build}.log`全部通过，events是完整运行非子集；church最后追加空对象／钱不足也重编通过。
+- `out\\revival-sdl-shop.log`（含复活、原买卖、旅店、大小额捐献）、`revival-sdl-auto.log`、`revival-sdl-auto-alternate.log`全部通过。没有声称装备／AI6／非空撤离SDL通过。
+- `out\\revival-package.log`重生成CDS与ZIP，独立`out\\revival-package-check`无DAT、无PACKAGE.txt／SHA256SUMS.txt，`revival-package-{verify,smoke-auto,smoke-battle-alternate}.log`全部通过。源CD、SAVE保留。
+- 根EXE SHA256 **97CEFB81D7221C79E43448D542AEFF3F6794D4ED5BCE781EFC1C1B2DBC8E2410**；`S2NE-game-win64.zip` **189376149 bytes**。末次核查无游戏／专项辅助残留；未改PROGRESS。
+
+## 2026-11-10 同轮菜单／AI续作阶段交付（未全收口）
+
+### 实际新增与修正
+
+- **大额捐献生产接线**：继续读完整`44ACAD`后纠正上一章描述：这里不是随机选择经验奖励；先按难度1..5给基础50/40/30/20/10，再加`(fee-100)/100`、上限150，直接加WORD+113经验、不经过普通战斗经验倍率。每个原军团角色依原status33的E0／10和control+8==1过滤加经验，但全部仍执行999封顶及升级阈值检查。达到阈值调用原`4593CC(mode0)`成长，无升级提示页；复用已核`OriginalProgression::award_native(raw=0)`及原成长／RNG。费用、D6阈值累计、D4 WORD加一、一次捐献flag与成长用副本一次提交，取消不改钱／角色／RNG。生产使用现有Battle共享RNG，经`Prologue::interbattle_random`，无共享上下文则拒绝并给明确诊断；不另造一条随机流。角色同步回events防后续capture覆盖原档成长。
+- **大额验收**：`original_church_test`覆盖难度1..5、受控1000钱fee100、取消、无升级不耗RNG、强制原角色阈值50触发level5→6和原成长耗RNG、encode/decode往返。SDL原键序列走确认／取消／再次确认／结果／返回，检查原事务全档和RNG精确等价。属于原档派生受控fixture，**不是自然合资格大额捐献流程**。小额原测试保持通过。
+- **旅店名册下级生产页**：option6接`43471C(1)`，按`441460(1)`排除status33&70、control WORD+8==1，只取本军团；复用现有原名册资源、角色选择／空格详情／取消回名册／返回旅店。关间定位按原mode1禁用。专项及SDL覆盖真实SAVE来源名册和详情、完整返回、不改原档。并未制造旅店休息。
+- **AI运行时字段错误核正及有限生产实现**：`40AED5`的`mov eax,[role+8];sar eax,10h`读的是**WORD+0Ah**，不是control WORD+8，也不是stage行为／军团阵营。新增`Unit::ai_role10`从原source+20及SAVE+0A恢复／保存，现有阵营保持不变；不再把6/7塞进behavior。`40D351/42D554`按原军团DA选择物件高字节：敌3优先5、友4优先6；逐行扫描、严格距离tie，route marker非0、精确目标优先、否则最近可用原route。kind7可逐边可见移动后结束且不追加接触攻击。kind6的`40D2ED ->40D351(mode1)`只有本回合可精确到达才走此路径；不可达保留拒绝诊断，**尚未接原40AEB3完整fallback**，不能称6全量完成。原stage15受控kind6/7、禁对手fixture验证kind7运动、kind6不能到达时不伪装普通追近。完整events／保存／初始化／低血撤退回归保持通过。
+
+### 原菜单业务清单及具体未接入口
+
+| 原入口 | 当前交付 | 未接部分／下一具体依赖 |
+|---|---|---|
+| 商店410DC0 option1/2→411288→4125FC | 仍拒绝 | 装备对象页、440C06可装备条件、替换原槽／旧装备退库存及能力重算；不能以消耗品购买页替代 |
+| 商店option3→411FA1/41252F | town门控消耗品买入完整页面及原档事务 | 无新增装备开放 |
+| 商店option4→412F1D/413F16 | 原出售页面及原档事务保留 | — |
+| 旅店option1→414D5B | 仍拒绝 | 原城镇探索、415000/415084/415415/4152FA/414F5D场景与NPC脚本 |
+| 旅店option2→414C4A | 原两传闻、等待／返回 | — |
+| 旅店option3/4→4371E6/437181(1) | 旅店未接 | mode1关间存档／读档恢复；不得复用仅支持battle上下文读档假返回 |
+| 旅店option5→44D439(0)/441143 | 未接 | 角色装备／库存与全军能力flags重算 |
+| 旅店option6→43471C(1) | 本次名册／详情／返回接通 | 无关间定位 |
+| 旅店option7→44D439(1) | 未接 | 原特定角色选择条件 |
+| 旅店option8→确认51／返回标题 | 未接 | 现主循环关间同步未建立exit_to_title恢复，不能以关闭游戏冒充 |
+| 旅店option9→434103(2) | 未接 | 原mode2设置子页接回旅店 |
+| 旅店option10→确认6／451ABC／441143 | 未接 | 原自动装备6槽候选、440C06资格／价值／全军重算；**并非休息回血** |
+| 教会option1→413F9B/44ACAD | 小额及本次大额／成长确认事务 | 共享RNG上下文缺失时拒绝；自然大额fixture仍缺 |
+| 教会option2→41430B(0) | 未接 | 441867原死者status20且非10；原217对象页＋44D675人物图／属性／列表，45CFBB价值按难度费用后最小1、确认106，**成功只清status20，不自造满血**；本次已核但未实现UI |
+| 教会option3→41430B(1) | 未接 | 441706资格→45954D业务，不能未经证据称净化或复活 |
+
+### 死亡非空撤离：仍未实现，精确纠正原等待含义
+
+`46234F`逐角色选取并聚焦、绘制、present后清presence是真实顺序，仍不能由空敌军测试代替。新增调查证实：`42ADC7/42B461`是可见范围／镜头平移，不是先前报告猜测的地图占位；`41756F`只是poll可中断输入、检查Ctrl+C，**不是等待任意键确认**，不得添加每角色人为确认。`4391C8(mode2)`初次(0,0)调用军团+282中心距离`4392FF`，后续按上一角色坐标严格最近tie，资格含runtimeAD／动画状态／442B08和mode2活体备选。当前死亡Stack只同步返回对白事件，未提供special completion挂起／逐present栅栏恢复；必须新增专用完成状态机并保持外层call stack，不能把present函数内瞬清全军或插入普通消失动画。该项仍严格拒绝；本阶段没有完成此入口。未再跑全路线或新技能。
+
+### 本阶段最终构建／回归／发行
+
+- `out\closure-debug-build.log`、`closure-release-build.log`：Debug/Release原生构建退出0，Release最后同步根EXE／DLL。
+- `out\original_{events,save_bridge,initialization,retreat,ai,ai_special,church,inn,shop_menu,death_special,death_continuation,shared_disc}-closure.log`及对应`-closure-build.log`全部退出0；完整events两分支、82共享条目等价、原档往返保留。
+- `out\closure-debug-sdl.log`为前一源码快照Debug大额捐献测试；最终Release `closure-sdl-{shop,auto,auto-alternate}.log`通过，包含旅店名册详情、大额捐献受控fixture及原真实town买卖、双线自动回玩家控制。未声称AI6/7或非空撤离已SDL验收。
+- `out\closure-package.log`，独立无DAT解包`out\closure-package-check`，`closure-package-{verify,smoke-auto,smoke-battle-alternate}.log`全部通过；源CD保留，包无两个txt。最新ZIP **189368326 bytes**，根EXE SHA256 **1589CECF9BA6F625EA1407C628E56ED2BF21B666E51B9814AF84D93BBE21E872**。末次核查无本工程游戏／专项辅助进程残留。
+
+## 2026-11-10 同轮续作：消耗品买入、旅店传闻、教会有限捐献生产接线
+
+本次不是六类全量完成，也不是旅店／教会全量完成。没有继续新技能或全路线。源码已停止写入，Release最后构建并同步根EXE／DLL，原SAVE和CD归档保留。
+
+- **商店买入已实现**：`411288`读取BIN4城镇14字节记录及三类WORD报价列表，按原`4F7CE8`低word城镇门控，只开放第3类消耗品；前两类装备必须`4125FC`对象装备页，仍拒绝。`411FA1/41252F`价格原价／army flags10h八折，数量只按钱限制，买入后库存上限99（满库存也按原扣全款，不自创库存拒绝）。原portrait44、title198、数量底图258/413及确认488/416。真实SAVE正常页面输入、取消、精确全档delta、文件往返和SDL全序列均通过。
+- **旅店已实现有限原业务，不冒充住宿恢复**：新增`OriginalInn`并接hub option1，原DAT13、10项原矩形／字串；option2走`4732ED(2) ->414C4A`，按原town城名后跳三类商品WORD表，随机选择两条原传闻，portrait154、title194、149/42六行16列、行距28，输入等待后返回。真实SAVE两条内容及不改任何存档字节专项通过。其余子页保留明确拒绝。核明option9=`434103(2)`设置页；option10=`451ABC`自动装备而非恢复，不能自创付费住宿。`45DDA6`恢复原本在进入关间`44A4A9`路径，现已有对应story转关重置；本次未宣称旅店恢复新增完成。
+- **教会已实现有限原捐献**：新增`OriginalChurch`接hub option3，原DAT15、三项矩形／字串、portrait153/title209及原确认107(200,278)、结果108等待、取消返回。`413F9B/44ACAD`仅支持fee<100确证直接返回分支（当前钱1..99）；扣army+CC、按原阈值增加+D6、WORD+D4加一、globals[27]=1；再次捐献101／零钱104原提示。fee>=100涉及原随机经验收益，明确拒绝，不简化为扣钱。复活／另一对象业务`41430B ->441867/441706`仍拒绝，未伪称全业务。专项为真实SAVE派生受控钱1/9/10/99及100/999/1000/2000拒绝fixture，精确全档delta和encode/decode通过；**不是自然合资格原档捐献证据**。
+- **画面紧耦合修复**：保留PCX原索引，下级`41144E`恢复全局PAL显示后再作原确认阴影。初次教会测试暴露非索引像素异常，已修复并重跑；不是近似RGB混色。
+- **AI6/7与死亡非空撤离没有完成**：`40D351 ->42D554`已核目标物件属性高字节，armyDA0优先4再6、DA1优先3再5及原严格距离tie；但现`Unit::behavior`还承担hostile阵营判定，直接改成6/7会使敌方退出hostile选择，实验未能验收，已撤回全部AI实验源码／测试而非发布未证实实现。后续需分离原runtime kind8与army+DA、核`40AED5/40D2ED`调度／到达`452AD5+44ABD4+453FFF`。非空completion7仍严格拒绝：`46234F`要求`4391C8(mode2)`逐角色最近选择、`447FC3`镜头、`42ADC7/42B461`地图占位、`42927B/47488B`呈现、`41756F`等待后才清presence，不能瞬清全军；本次未完成该同步呈现状态机。原空敌军completion7、真低血撤退保持通过。
+
+### 本次最终验收和发行
+
+- 原生Debug／Release：`out\services-debug-build.log`、`out\services-release-build.log`，退出0，Release最后发布根运行时。
+- 重编专项日志：`out\original_{shop_menu,inn,church,shared_disc,events,retreat,death_special,death_continuation,save_bridge,ai,disappearance}-services.log`及对应`-services-build.log`全部退出0；完整events保留两个原分支并跑至地图1／71，不放宽门控。
+- SDL dummy：`out\services-debug-sdl.log`，最终Release `out\services-sdl-{shop,auto,auto-alternate}.log`全部通过。shop覆盖真实town买卖以及真实town旅店传闻；教会为受控99钱fee9夹具。两线auto真实菜单进入、友军行动、敌军行动、回到玩家控制均通过。历史auto卡住确证为驱动首次右键只取消选择、却过早标记菜单已开；只修驱动，未延长timeout或修改AI规避。
+- `out\services-package.log`重建CDS并逐条等价：82条→40块，原DAT仍保留。最新ZIP **189364890 bytes**，无DAT、无PACKAGE.txt／SHA256SUMS.txt。独立解包`out\services-package-check`后`--verify`、`--smoke-auto`、`--smoke-battle-alternate`通过，证据`out\services-package-{verify,smoke-auto,smoke-battle-alternate}.log`。
+- 根`S2NE.exe` SHA256 **6936C0C340BE2BE820A34D0A0A380CED842DF6EC63CE961CBFF0F21FE384407E**。最后按本工程绝对路径核查无S2NE／专项测试进程残留。
+
+## 2026-11-10 按序系统补全：本轮实际交付与未完成边界
+
+本轮不是六类系统全部完成。没有扩展新技能／剑法，没有重跑两条完整强化路线，没有改写用户存档、原资源或PROGRESS。原32／88／94输入及两结局历史证据保留。以下按资源→存档／回归→画面→菜单／关间→战斗／AI→死亡／剧情记录。
+
+### 1. 资源：共享DAT具体实现及验收完成；PRG固定安装路径不变
+
+- 新 `tools\pack-disc-resources.ps1` 读取两盘原 PAL 索引，以 SHA256 候选分桶后逐字节比较，只对完全相同内容合并；82条映射归并为40个唯一内容块。原条目总计270404582字节，共享载荷180653377字节，节省89751205字节；完整PAL、版本、明确盘号／编号、偏移／大小和每条FNV-1a-64校验和写入 `SUPERSP.CDS`。生成后逐条读回比较，源CD资源不修改、不删除，不采用硬链接压缩归档。
+- `OriginalDiscResources::dat_entry` 有明确CDS运行解析器；存在CDS就严格验证，不能以损坏包偷偷回退DAT。校验版本、原PAL全字节、原条目数量与长度、盘号／编号顺序、载荷精确边界和所读内容校验和。FNV是意外损坏检测，不是攻击者防篡改认证。原DAT解析仍可使用；打包 `-OriginalDiscArchives` 切回传统模式。关间和剧情转场预检已改经 `dat_entry(disc,1)`，不再要求CDS包存在物理DAT。
+- `original_shared_disc_test.cpp` 独立目录只有PAL/CDS，对两盘82条资源与原DAT逐字节比较通过，覆盖版本、PAL、条目盘号、偏移、大小、载荷翻转及文件截断拒绝。`original_disc_test` 重编通过；测试隔离目录由已删除的build改到out，没有改原资源验证门控。
+- `original_prg_layout_test.cpp` 固化实际字节事实：根PRG=CD1；双盘前8组逐字节相同。CD1第9组11086字节与第7组属性完全相同，且恰好到EOF。CD2从100703123到EOF共2778214字节，与第6组完整132地图块逐字节相同，其内部132项索引边界恰好覆盖尾端。因此尾部不是未明填充；但根PAL第9组只声明11086字节，不能把CD2该尾块按根PAL伪称为正常第9组地图入口。
+- 原 `425BF9/425F4F` 按10+条目序号还原PRG索引；`473A55/473B26..56` 在DEVICE非零时固定安装PRG，DAT按 `4FB488` 选择两张不同目录（473B5B..BF0）。检视全部静态 `473A55/473CDB` 调用未发现PRG常量组9调用；这仅是静态调用证据，不证明动态路径绝不引用。保留两PRG原样，不切CD2、不删除其尾部；原制作归档为何追加副本没有可证原注释，不编造用途。
+
+### 2. 存档／回归：完整事件旧fixture修正并全量通过
+
+- 修改前直接运行完整 `original_events_test`，复现：branch0、turn4、expected4、campaign_modal1、defeated0、blocker空。原 `Prologue::tick` 在友方banner结束先调用 `dispatch_campaign`，它扫描原 `turn_trigger` 排入原对白；`advance` 消费原对白后返回原调用阶段。这不是第四回合未恢复缺陷，而是fixture误要求剧情前已到玩家输入。
+- 仅fixture正常调用 `reveal_text/advance/tick/draw` 消费真实第四／第五回合对白，继续断言阶段、回合不变、无modal且恢复原玩家控制。娜线第1回合有既有原动画／脚本阶段，同样逐帧输入至原目标界面；没有改脚本数据、完成旗标、阵营状态或游戏门控，没有移除branch1。之前hidden的branch1目标fixture错误因此也消除。
+- 最新完整 `out\events-full.log` exit0：难度1..5开场、branch0第4／5回合原对白、branch0 stage1 23角色、branch1 stage71 27角色、三张地图均完成。`original_save_store`、`original_save_bridge` 重编通过（原22／42角色逐条往返）；日志 `out\original_save_store-ordered.log` / `out\original_save_bridge-ordered.log`。
+- 仍未完成：全部特殊状态／完整嵌套剧情半事务保存；本轮不开放这些边界。
+
+### 3. 画面：已有专项重新验证；原缺口没有虚报补全
+
+- 重编 `original_ui_timing_test`：9个实际呈现banner姿态／frame fence通过；`original_map_frame_test`：indexed B1反应合成及stage1／71共122帧signed offset（正61／负61）通过。
+- 最新Release SDL dummy娜线stage71实际玩家移动、可见敌方移动与两轮阵营banner通过；共享CDS独立包重复通过。不以dummy测试代替原版真实逐帧手感对照。
+- 仍阻塞／未实现：传送／起降／特殊移动的完整原表现、全部遮挡与特效组合、原淡入淡出。本轮没有以几何图形替代，未将重跑专项记作这些功能完成。
+
+### 4. 菜单／关间：明确生产未接通范围
+
+- 重编 `original_interbattle_test` / `original_menu_test` 通过：PCX17、四个原入口、准确命中矩形、键鼠及callback门控、5难度选择。
+- 原入口地址为旅店410EEE／商店410DC0／教会41115D／出发416333。生产 `main.cpp` 的关间adapter仍对前三项返回unsupported，仅option4在原转关事务中放行。测试验证unsupported拒绝，不是证明三级交易已实现。
+- 因此旅店／商店／教会下级交易仍是**确证未实现**，人物详情与完整菜单树仍未达到逐项验收。没有假回调、跳页或伪交易；本轮不能声称完整关间完成。
+
+### 5. 战斗／AI：已有算法／可见流程验收，不代表整套补全
+
+- `original_ai_test` / `original_combat_test` 重新编译运行exit0；SDL stage71真实两个阵营周期通过。日志 `out\original_ai-ordered.log` / `out\original_combat-ordered.log`；无输出的算法测试以进程退出码为准。
+- 最终追加的 `--smoke-auto` / `--smoke-auto-alternate` 均失败，原诊断仅为 `SDL battle entry timed out`（`out\ordered-sdl-auto.log` / `out\ordered-sdl-auto-alternate.log`）。驱动的smokePhase计数对战场进入后、非computer_actions帧仍累计，缺少此失败点的turn／menu具体状态；该追加失败尚未确证是生产AI还是驱动，不能宣称自动战斗SDL通过。已通过的两轮手动结束回合／可见敌方行动与headless完整事件测试不替代它。本轮不放宽超时或伪造通过。
+- 仍未完成：范围效果、连击／反击／装备触发全部生产交互覆盖，状态回合效果、behavior6／7、完整低血撤退／飞行与脚本寻路逐项实战。不改原规则，不将本轮算法测试提升为完整实战认证。
+
+### 6. 死亡／剧情：保留严格拒绝边界
+
+- 重编 `original_death_continuation_test`：原stage6 role104／stage82 role147同步对白、completion13先置、输入／存档锁与只恢复一次通过；stage1／15不支持generic dispatch仍严格拒绝且无旗标泄漏。
+- `original_campaign_motion_test`：真实NPC移动→轨道／反馈排空→原始保存capture通过。其强制结果为既有隔离时序测试，非自然击杀／真实关卡胜利。
+- 仍阻塞：`OriginalDeathDispatch::continuation` 对type4..16除type9/cond0和已有货币分支仍拒绝，对completion1／3／7仍拒绝；完整通用handler与自然普通击杀正常输入E2E本轮没有新增证明。两路线已有结局证据未重跑，技能94本轮不扩展。
+
+### 同轮继续（2026-11-10 追加，覆盖上面相应旧结论）
+
+- **自动SDL超时已修并通过**：最小复现发现默认选人状态为command，首个正常右键只取消选人，不会打开战场菜单。smoke却立即把autoMenuOpened置true，后续再不发送开菜单右键，卡在idle；不是生产AI超时。驱动现继续正常发送右键，只有真实battleMenu出现后才标记opened，不改AI、时钟／超时阈值或输入门控。Release `--smoke-auto` / `--smoke-auto-alternate` 均exit0，分别1391／1627呈现帧，证明原战场菜单→友军自动→敌军→玩家控制。日志 `out\auto-driver-build.log`、`out\ordered-sdl-auto.log`、`out\ordered-sdl-auto-alternate.log`。
+- **画面新增原消失动画呈现栅栏**：原455048每个原索引混合帧调用呈现，先前普通剧情消失轨道只按tick前进，连续tick而未呈现可吞帧。`Disappearance` 新增逐帧present确认，`Prologue::enable_presentation_timing/frame_presented` 接线到map，重开轨道清除旧present确认；headless显式逻辑时钟不变。`original_disappearance_test` 新测每帧20次超长tick不跳帧、present后才进入下帧和重开不复用确认，原stage155 role22真实图源五帧／AD-B1还原校验保持通过。日志 `out\ordered-disappearance.log`。这是新增生产帧门控，不是全部传送／起降表现完成。
+- **菜单交易新增核心但尚未UI闭环**：`original_shop.hpp` 按412F1D筛选真实背包中数量非零且ITEMSP+1A价格非零项；4138F7／413F16按army+DE低字节10h决定原价50%或70%，提交army+CC dword货币原32位加法和inventory byte扣除，拒绝无货／超量／零量／非法id，装备／角色记录不动。`original_shop_test` 使用现有SAVE原档副本（不写源档）验证真实库存、准确整个原档差异及encode/decode往返、两种售率、拒绝不变。最初fresh无可售物品，改用真实原档，没有注入物品。日志 `out\ordered-ai-shop.log`。**生产商店界面尚未接线，本项不是用户要求的真实键鼠交易闭环**；不以草稿假UI交付，旅店／商店买入／教会仍未完成。
+- **AI新增40CFE3原低血组件权重及生产approach接线**：从原40CFE3逐条恢复45CFBB modes5..8按40／(30或40)／(kind3为25否则15或20)／25加权、dword wrap、有符号除法、HP百分比<=比较。生产以前对所有非urgent低血候选一律unsupported；现真实调用该判定，判为approach者进入既有原select_40D25A，retreat者仍明确拒绝，因为40C425还有原持久behavior转换未接全，不能冒充撤退完整。`original_ai_test` 新边界31/32%、kind3区别、无最大HP／零战力，旧AI测试保持exit0。日志 `out\ordered-ai-shop.log`。behavior6/7仍缺。
+- **死亡嵌套新增原type11/condition0..6身份谓词支持**：`OriginalDeathDispatch::Stack` generic调用帧按已有4211A3原谓词实际值决定是否呈对白／消费；false保持休眠，true后继续原嵌套调用，不预展开。capability允许该明确子集，但completion1/3/7仍拒绝。`original_death_predicate_test` 使用原146 condition2/3两支真实9/10句载荷，隔离调用帧验证两军身份查找／友军缺席、只消费true分支、不吞false；这是无死亡触发的146隔离原handler测试，不是自然击杀E2E。`original_death_continuation_test` 重新编译通过，stage6/82、货币／嵌套、rollback及不支持stage1/15拒绝仍保持。日志 `out\ordered-death-predicate.log`。
+
+### 同轮第三阶段：生产商店／撤退／特殊完成（2026-11-10）
+
+- **商店现已接入生产main关间页面**，不再仅独立事务：原hub option2 pending进入410DC0的PCX DAT14，原4EA618四个命中矩形、4EA638字串93/94/95/199；Tab/左右按原顺序切换，出售进入412F1D原可售库存，413061八列选择，4138F7数量默认1、左右限制1..实际库存，Enter提交413F16，Escape／右键逐页返回hub并解除原pending。购买三页继续failclosed，不假装实现；旅店／教会不变。出售直接更新rawSave的army货币和共享背包，后续capture保留metadata，不把army钱错误覆盖为另一组campaign_currencies。
+- 原图而非自制界面：DAT14原PCX；41144E CEL235(6,8)、212(352,200)、167号商人头像对的group3 index332(居中80,y37)；412F1D出售底图为 **D3h=211**，不是旧调查误记的213；原库存物图id+492，(204+col*54,313)，价格y358；4EA71C thumb213／数量216，4137C8真正数量位置 **(198,413)**（不是底图(4,236)）。原ITEMSP物名、DAT3 ITEMHLSP帮助、字串194/201/203/205/206/110，原选框color60及原边界，Big5使用已有原换行器，避免拆双字节。尚未做人工像素截图逐点比对，不声称全部商店页面视觉完整。
+- `original_shop_menu_test`真实SAVE副本正常页面scan、每页原资源draw、取消不变、确认精确全档delta、encode/decode、正常返回hub通过。生产EXE新增`--smoke-shop`，SDL_PushEvent正常Tab/Enter/Escape事件穿过同一OriginalShopMenu scan/draw，11次呈现，真实物品68售价1330，写`out\shop-sdl-roundtrip.sav`后load精确相同，源SAVE不改。是隔离hub入口的生产页面验收，不是重新通关到hub。日志`out\original_shop_menu-continued.log`和`out\continued-sdl-shop.log`。
+- **低血真正生产撤退**：40D171 retreat接40C425/40C659原候选顺序、每格43948D mode0最近敌人、最大距离、HP<90%优先保留configF0 AP；可见原移动执行器逐边播放，撤退不追加接触攻击。结束按40C548 mode0再判40CFE3，写原runtime+0E=5（独立role WORD，不误改Unit.behavior／阵营）；SaveBridge新增该原字段restore/capture。`original_retreat_test`stage1受控HP=1夹具确认真实生产候选移动及role14持久化、capture/restore通过。不是合法自然低血全局平衡验收；behavior6/7及特殊status38完整控制仍未完成。日志`out\original_retreat-continued.log`。
+- **死亡特殊完成最小可证分支**：核实41FF6E(7)->46234F逐个撤离敌军，空敌军会立即退出且恢复原4F7CF0。现仅允许无present hostile的completion7，非空仍严格拒绝，不跳撤离动画。使用原stage41 event8 role119／四句对白completion7，隔离其它未支持事件并隐藏敌军后，经Prologue生产同步输入正常返回、保留死亡record、save锁正确；非空相同原表拒绝。日志`out\original_death_special-continued.log`。这只是特殊完成7的空集合分支，不是整军撤离或自然击杀E2E；completion1/3仍拒绝。
+- `original_events`完整两分支、旧死亡continuation、AI及SaveBridge两原档22/42人回归重新编译通过，日志`out\original_<名称>-continued.log`。Problems接口无客户端，使用原生构建和专项验证。
+- 自动SDL历史超时仍明确为**输入driver根因**：首右键只取消默认command选择，驱动却提前标记菜单opened而不再发第二右键；改为真实battleMenu出现才置位。未改生产AI或放宽超时，双线正常菜单→友军→敌军→玩家验证保留；最终重跑见下。
+
+### 第三阶段最终发布（以此为最新结果）
+
+原生Debug/Release均exit0，根EXE及四DLL同步为Release；日志`out\continued-debug-build.log`、`out\continued-release-build.log`。最终SDL出售11帧、白线auto1396帧、娜线auto1618帧exit0（`out\continued-sdl-shop.log`、`continued-sdl-auto.log`、`continued-sdl-auto-alternate.log`）。最新ZIP **189351107字节**，根Release SHA256 **CF787D1164CD93AF4B1F36ED182FF9EEBFD230692A33E5250DC01BEB17180EE2**。`out\continued-package`为新独立无DAT解包目录，`--verify`、`--smoke-auto`、`--smoke-battle-alternate`全部exit0，日志`out\continued-package-verify.log`／`continued-package-smoke-auto.log`／`continued-package-smoke-battle-alternate.log`，打包日志`out\continued-package.log`。商店原档不随发行包分发，SDL商店在原资源根真实SAVE副本验收，不宣称无SAVE发行包可执行该测试。调查scratch已清，无S2NE或自启辅助进程。
+
+**剩余边界不撤销**：出售生产页已不再是仅事务；真正撤退已有生产路径和存档，但特殊状态及6/7仍未全接；特殊完成7只允许空敌军原立即返回分支，非空撤离、completion1/3不支持。买入、旅店、教会、全部死亡演出和其它画面缺口仍未完成，不报告六类全量完成。以下两阶段验证为历史，包大小／哈希及“出售未UI接线／真正撤退未接线”的旧结论以本阶段为准。
+
+### 第二阶段最终验证（历史）
+
+- 所有生产源码停写后，原生MSBuild Debug／Release x64均exit0；日志 `out\ordered-debug-build.log`、`out\ordered-release-build.log`。根EXE和四个DLL已由publish同步，最终为Release。
+- 统一重编首次完整事件回归捕获本次AI接线缺陷：新40CFE3传入5..8，但事件combat_value仅接受0..2。现按45CFBB的503468/6C/70/74原组件返回值接5..8；本地重算使用同一当前Unit和原配置，与紧邻mode0计算相同，不引入全局跨单位缓存。修复后完整 `original_events_test` 两分支exit0，日志 `out\original_events-final.log`。未放宽事件门控。
+- 重编并通过 `original_disappearance`、`original_death_predicate`、`original_death_continuation`、`original_ai`、`original_shop`、`original_campaign_motion`，各日志 `out\original_<名称>-final.log`；共享82项和PRG布局再次通过 `out\original_shared_disc-final.log`、`out\original_prg_layout-final.log`。新增专项已注册CMake测试清单；本轮执行使用原生cl而非新建CMake构建目录。
+- 最终Release正常SDL自动输入双线分别1397／1620帧exit0，日志 `out\ordered-sdl-auto.log`／`out\ordered-sdl-auto-alternate.log`。dummy视频／音频，不宣称人工画面观感或音频验收。
+- 最新包 `S2NE-game-win64.zip` **189341196字节**；根Release SHA256 **AE6EB31939E202F2128918068E83E16BFD0C78DBC2FD63F8FB71692D9A600901**。日志 `out\ordered-package-final.log`。保留原CD资源，不含PACKAGE.txt/SHA256SUMS.txt，不含原DAT。
+- 新建独立解包目录 `out\ordered-package-final`，确认无DAT，运行`--verify`、`--smoke-auto`、`--smoke-battle-alternate`全部exit0；原PCX/两段intro解码、白线自动完整控制返回、娜线battle71敌方行动及两次完整side banner通过。日志 `out\ordered-package-verify.log`、`out\ordered-package-auto.log`、`out\ordered-package-alternate.log`。结束检查没有S2NE残留进程，没有常驻辅助服务。
+- **本轮未达到六类全部补完**：资源共享和历史回归已验；画面原消失栅栏、AI低血非撤退路径及死亡嵌套身份谓词是实际生产新增，但仅覆盖明确子集。菜单只有原档出售事务，未接生产商店正常输入／原图UI，不能报真实交易闭环；背景425092负资源14和原菜单几何还需完整核验。购买／旅店／教会、真正撤退behavior转换／6/7、传送到达原10帧和其它死亡特殊completion仍明确缺失。未新增94／剑法或重跑强化全线；未动PROGRESS。上述缺口不是测试已证明不可实现，而是当前交付尚未实现。
+
+### 第一阶段构建／包／独立验证（历史，以上面本次续补最终验证为准）
+
+- 原生MSBuild VS18 Debug/x64全量通过 `out\ordered-debug-build.log`；随后最终Release/x64通过 `out\ordered-release-build.log`，构建后同步根EXE及四DLL。根EXE与Release SHA256同为 `30404489D7B7A8B680FBC98C517C93566A3D63D926C577CDAE5BBABB11D9865E`。
+- `S2NE-game-win64.zip` 最新189338224字节（约180.6MiB），15运行／资源文件+启动器；无PACKAGE.txt／SHA256SUMS.txt，无个人SAVE。保留CD2 PRG，不含两份DAT，以CDS运行。
+- 独立解压 `out\shared-package-acceptance`，确认无DAT，运行 `--verify`、`--smoke-opening-right-skip`、`--smoke-battle-alternate` 全exit0；stage71玩家移动／可见敌方移动／两个阵营周期通过。验收目录已移除，所有本轮启动程序正常退出，没有留后台辅助进程。仅本机无DAT独立包验证，不是全新无开发环境机器VC运行库认证，也不是六类全完成。
+
 ### 连续流程出口输入验证
 
 `--smoke-campaign-strengthened` 仅用于强化友军、隔离存档的流程验收，不代表原版平衡或正常通关。连续 smoke 对原关卡中单独使用条件31的胜利组，在真实 flag1 就绪后读取原地图 object6 出口，通过既有合法鼠标输入与 BFS 寻路；第10关保留清敌后再寻出口的策略，第16关无需先清敌。若没有合法空闲路径，立即将真实断点写入隔离验收目录并报告阻塞，不传送、不置旗、不强制胜利。
@@ -707,3 +1012,19 @@ OriginalDeathDispatch::Stack现在保存death/41FF30-repeat/41C33E-flags/41B9A3-
 ## 2026-11-10 包内容精简
 
 按用户要求，package-game.ps1不再生成或打入PACKAGE.txt、SHA256SUMS.txt，已重建资源根S2NE-game-win64.zip并检查ZIP目录：16个运行/资源文件加run-game.cmd，共17项，无上述两个TXT。其余资源与程序清单不变；上文含说明/哈希清单的包记录为历史。
+
+## 2026-11-10 构建目录清理
+
+检查无活跃MSBuild/cl/link/游戏进程后，仅清理可再生及明显重复产物：旧CMake build整个目录（当前原生sln不依赖它）、out/obj中间目录、out根82个obj，以及out/x64两配置旧envoy-opening产物、重复旧测试EXE/PDB和ILK。共535文件，回收554.12MiB。保留当前S2NE.exe/PDB与四运行DLL、out根专项测试EXE、全部日志/截图/序列CSV/存档及战役/技能证据；未删SAVE、源码、原资源或游戏包。
+
+清理后资源根S2NE.exe --verify退出0，原标题与两开场解码成功。Release与根EXE哈希仍一致，Debug/Release及两结局、94实际输入与88正疗伤关键存档存在核对通过。下次构建需重建obj；旧build如需备用CMake可重新配置生成，未改IDE配置或工程源码。
+
+## 2026-11-10 18:02 暂停补全：main职责重构／格式／无模态诊断
+
+main拆为app_options.cpp/hpp（参数与资源根）、app_campaign.cpp/hpp（原档盘号、关间adapter和转职）、app_smoke.cpp/hpp（驱动状态与前后输入），原生vcxproj/filters与CMake同步。相同格式基线4250行→2478行，约42%；压缩旧源1467行与格式化新行数不可直接比较。agent词法对照smoke/转职提取保持等价。所有9个本次C++文件clang-format --dry-run --Werror通过，父已复核；新增format-code.ps1及VS Code C/C++保存格式设置，沿原_clang-format，不批量改无关代码。
+
+runtime_diagnostics.hpp在main首行调用：CRT debug报告file/stderr，SetErrorMode抑制系统错误窗、abort/参数/terminate/purecall/SEH给stderr并致命退出。tests/runtime_diagnostics_test.cpp Debug独立编译，crt report退出0，assert/abort/parameter退出1，未处理C++/SEH非零，均无等待窗口且有stderr。一次Start-Process初始化abort进程返回0xC0000142无日志，直接运行与后续子进程通过；未隐瞒该系统初始化异常。诊断日志out/runtime-diagnostics-*.log；不承诺能拦截外部调试器或第三方显式MessageBox。
+
+Release/Debug MSBuild exit0，日志out/refactor-{release,debug}-build.log。Release verify/menu/new-game/battle/shop/promotion通过；Debug verify/menu通过。Debug battle/shop触发MSVC span下标越界stderr断言；旧main独立对照同点复现（out/refactor-baseline-smoke-{battle,shop}.err与新debug对应.err），不是重构引入证据，但仍是未修缺陷，不能列全绿。断言现在终端退出，不忽略继续执行。未重跑完整战役或技能专项。
+
+最终根Release SHA256=9DED3DCC606E3FA740AA9392EFD8C1B98AF193C7C3BC3ABB08B9E4A419BFC916，与out/x64/Release/S2NE.exe一致；父重打共享资源ZIP189423232字节，独立临时解包--verify及--smoke-opening-right-skip通过，104帧，非零混音361650；临时目录清理。包不附两个TXT。补全任务暂停，原档与旧证据未撤销。CDS仍为82映射40块去重内容，无须用户手工执行。

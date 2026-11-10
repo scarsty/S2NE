@@ -1,4 +1,5 @@
 #pragma once
+#include "runtime_error.hpp"
 #include "original_campaign.hpp"
 #include "original_map.hpp"
 #include "battle.hpp"
@@ -99,7 +100,7 @@ inline std::vector<std::pair<int,int>> cells(const std::filesystem::path& root,c
     OriginalCampaign campaign(root);OriginalMap map(root);map.load(events.map_id);
     auto probe=events;unsigned id=protagonist(events);
     auto role=std::find_if(probe.units.begin(),probe.units.end(),[&](const auto& u){return !u.hostile()&&u.id==id&&OriginalCampaign::living(u);});
-    if(role==probe.units.end())throw std::runtime_error("Exit protagonist unavailable");
+    if(role==probe.units.end())s2ne::fatal("Exit protagonist unavailable");
     std::vector<std::pair<int,int>> result;
     for(unsigned y=0;y<map.height*2;++y)for(unsigned x=0;x<map.width-(y&1);++x){
         role->x=int(x);role->y=int(y);

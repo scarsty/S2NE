@@ -2,7 +2,7 @@
 #include <array>
 #include <cstdint>
 #include <vector>
-#include <stdexcept>
+#include "runtime_error.hpp"
 #include <algorithm>
 #include <unordered_map>
 
@@ -40,14 +40,14 @@ class OriginalPalette {
     }
 public:
     uint8_t blend_index(unsigned from,unsigned to,int amount)const{
-        if(from>255||to>255)throw std::invalid_argument("Original palette blend index");
+        if(from>255||to>255)fatal("Original palette blend index");
         if(amount<=0)return uint8_t(from);
         if(amount>=100)return uint8_t(to);
         int rgb[3];for(unsigned k=0;k<3;++k)rgb[k]=(int(palette_[from*3+k])*(100-amount)+int(palette_[to*3+k])*amount)/100;
         return uint8_t(nearest(rgb[0],rgb[1],rgb[2]));
     }
     explicit OriginalPalette(const std::vector<uint8_t>& palette):palette_(palette){
-        if(palette.size()<768)throw std::runtime_error("Missing original palette");
+        if(palette.size()<768)fatal("Missing original palette");
         // sub_46340F / sub_462ECB: center-nearest entry first, descending then ascending insertion.
         int center=0,distance=512;
         for(int c=0;c<256;++c){int d=0;for(int k=0;k<3;++k){int v=int(palette[c*3+k])-31;d+=v*v;}if(d<distance){distance=d;center=c;}}
@@ -66,7 +66,7 @@ public:
                 if(!amount){maps_[table][c]=uint8_t(c);continue;}
                 int rgb[3];for(unsigned k=0;k<3;++k)rgb[k]=(int(palette[c*3+k])*(100-amount)+int(palette[target*3+k])*amount)/100;
                 int mapped=nearest(rgb[0],rgb[1],rgb[2]);
-                if(mapped<0||mapped>255)throw std::runtime_error("Original palette search failed");
+                if(mapped<0||mapped>255)fatal("Original palette search failed");
                 maps_[table][c]=uint8_t(mapped);
             }
         };
@@ -95,7 +95,9 @@ public:
     void transform(std::vector<uint8_t>& image,int first_row,int row_count,unsigned table)const{
         transform_rect(image,0,first_row,640,row_count,table);
     }
-    void transform_rect(std::vector<uint8_t>& image,int left,int top,int width,int height,unsigned table)const{
+    Result<bool> try_transform_rect(std::vector<uint8_t>& destination,int left,int top,int width,int height,unsigned table)const{
+        if(destination.size()!=640*480*4||table>=maps_.size())return Result<bool>::failure(make_error("Invalid palette effect framebuffer or table"));
+        auto image=destination;
         std::array<uint32_t,256> rgba{};
         for(unsigned c=0;c<256;++c){for(unsigned k=0;k<3;++k)rgba[c]|=uint32_t(unsigned(palette_[c*3+k])*255/63)<<(k*8);}
         std::unordered_map<uint32_t,unsigned> indices;
@@ -103,10 +105,12 @@ public:
         for(int y=std::max(0,top);y<std::min(480,top+height);++y)for(int x=std::max(0,left);x<std::min(640,left+width);++x){
             size_t p=(size_t(y)*640+x)*4;uint32_t pixel=image[p]|uint32_t(image[p+1])<<8|uint32_t(image[p+2])<<16;
             auto found=indices.find(pixel);
-            if(found==indices.end())throw std::runtime_error("Non-indexed pixel in original palette effect");
+            if(found==indices.end())return Result<bool>::failure(make_error("Non-indexed pixel in original palette effect"));
             unsigned color=map(table,found->second);
             for(unsigned k=0;k<3;++k)image[p+k]=uint8_t(unsigned(palette_[color*3+k])*255/63);
         }
+        destination.swap(image);return Result<bool>::success(true);
     }
+    void transform_rect(std::vector<uint8_t>& image,int left,int top,int width,int height,unsigned table)const{auto result=try_transform_rect(image,left,top,width,height,table);if(!result)fatal(result.error());}
 };
 }

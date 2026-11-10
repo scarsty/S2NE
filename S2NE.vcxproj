@@ -37,7 +37,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -55,6 +55,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\app_runtime.cpp" />
+    <ClCompile Include="src\app_sdl.cpp" />
+    <ClCompile Include="src\app_options.cpp" />
+    <ClCompile Include="src\app_campaign.cpp" />
+    <ClCompile Include="src\app_smoke.cpp" />
     <ClCompile Include="src\generated\functions.cpp" />
     <ClInclude Include="src\*.hpp" />
     <ClInclude Include="src\generated\functions.hpp" />

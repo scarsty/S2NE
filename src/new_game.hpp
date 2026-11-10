@@ -7,33 +7,37 @@ class NewGameSetup {
     size_t group{};
     static unsigned word(const auto& b,size_t p){return b.at(p)|(unsigned(b.at(p+1))<<8);}
     static unsigned dword(const auto& b,size_t p){return word(b,p)|(word(b,p+2)<<16);}
-    void sprite(std::vector<uint8_t>& image,unsigned id,int left,int top)const {
+    Result<bool> try_sprite(std::vector<uint8_t>& image,unsigned id,int left,int top)const {
+        if(id<1||dat.size()<2||id>word(dat,0)||group+2+size_t(id)*8>dat.size())return Result<bool>::failure(make_error("Invalid setup sprite directory"));
         size_t offset=group+dword(dat,group+2+(id-1)*8), size=dword(dat,group+6+(id-1)*8);
-        if(offset>dat.size()||size>dat.size()-offset||size<5)throw std::runtime_error("Invalid setup sprite");
+        if(offset>dat.size()||size>dat.size()-offset||size<5)return Result<bool>::failure(make_error("Invalid setup sprite"));
         int w=word(dat,offset+1)+1,h=word(dat,offset+3)+1;
         size_t p=offset+5,end=offset+size;
-        if(dat.at(offset)!=0)throw std::runtime_error("Unsupported setup sprite encoding");
-        for(int y=0;y<h;++y){int x=0;while(x<w){if(p>=end)throw std::runtime_error("Truncated setup sprite");unsigned code=dat.at(p++),n=code&127;
-            if(!code){++x;continue;}if(!n||n>unsigned(w-x))throw std::runtime_error("Invalid setup run");
-            unsigned repeat=0;if(!(code&128)){if(p>=end)throw std::runtime_error("Truncated setup repeat");repeat=dat.at(p++);}
-            while(n--){if((code&128)&&p>=end)throw std::runtime_error("Truncated setup literal");unsigned color=(code&128)?dat.at(p++):repeat;
+        if(dat.at(offset)!=0)return Result<bool>::failure(make_error("Unsupported setup sprite encoding"));
+        for(int y=0;y<h;++y){int x=0;while(x<w){if(p>=end)return Result<bool>::failure(make_error("Truncated setup sprite"));unsigned code=dat.at(p++),n=code&127;
+            if(!code){++x;continue;}if(!n||n>unsigned(w-x))return Result<bool>::failure(make_error("Invalid setup run"));
+            unsigned repeat=0;if(!(code&128)){if(p>=end)return Result<bool>::failure(make_error("Truncated setup repeat"));repeat=dat.at(p++);}
+            while(n--){if((code&128)&&p>=end)return Result<bool>::failure(make_error("Truncated setup literal"));unsigned color=(code&128)?dat.at(p++):repeat;
                 int dx=left+x++,dy=top+y;if(dx<0||dx>=640||dy<0||dy>=480)continue;size_t dst=(size_t(dy)*640+dx)*4;
                 // Only zero repeat runs are transparent; literal runs copy palette index zero.
                 if(!(code&128)&&!color)continue;
                 for(unsigned c=0;c<3;++c)image.at(dst+c)=uint8_t(std::min(255u,unsigned(pal.at(color*3+c))*255/63));image.at(dst+3)=255;}
         }}
+    return Result<bool>::success(true);
     }
+    void sprite(std::vector<uint8_t>& image,unsigned id,int left,int top)const{auto result=try_sprite(image,id,left,top);if(!result)fatal(result.error());}
 public:
     int difficulty=2;
     unsigned confirmed=0;
-    explicit NewGameSetup(const std::filesystem::path& root){
-        auto read=[](auto p){std::ifstream f(p,std::ios::binary);if(!f)throw std::runtime_error("Missing setup resource");return std::vector<uint8_t>(std::istreambuf_iterator<char>(f),{});};
-        dat=OriginalDiscResources(root).dat_entry(OriginalDisc::one,7);pal=read(root/"SUPERSP.PAL");
-        // 425FE5 forces the global transparent/black entry to zero.
-        pal.at(0)=pal.at(1)=pal.at(2)=0;
-        group=0;
-        backdrop_=load_title(root,20,false);
+    NewGameSetup()=default;
+    static Result<NewGameSetup> create(const std::filesystem::path& root){
+        NewGameSetup result;auto dat=OriginalDiscResources(root).try_dat_entry(OriginalDisc::one,7);if(!dat)return Result<NewGameSetup>::failure(dat.error());auto pal=read_resource(root/"SUPERSP.PAL");if(!pal)return Result<NewGameSetup>::failure(pal.error());
+        result.dat=std::move(dat).value();result.pal=std::move(pal).value();if(result.pal.size()<768)return Result<NewGameSetup>::failure(make_error("Truncated setup palette"));result.pal[0]=result.pal[1]=result.pal[2]=0;
+        auto backdrop=try_load_title(root,20,false);if(!backdrop)return Result<NewGameSetup>::failure(backdrop.error());result.backdrop_=std::move(backdrop).value();
+        std::vector<uint8_t> image(640*480*4);for(unsigned id:{3u,4u}){auto sprite=result.try_sprite(image,id,0,0);if(!sprite)return Result<NewGameSetup>::failure(sprite.error());}
+        return Result<NewGameSetup>::success(std::move(result));
     }
+    explicit NewGameSetup(const std::filesystem::path& root){auto result=create(root);if(!result)fatal(result.error());*this=std::move(result).value();}
     void move(int d){difficulty=std::clamp(difficulty+d,0,4);}
     bool mouse(float x,float y,bool left_click){
         if(!left_click)return false;
