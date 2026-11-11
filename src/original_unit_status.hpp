@@ -1,6 +1,7 @@
 #pragma once
 #include "original_events.hpp"
 #include "original_menu.hpp"
+#include "original_sprite.hpp"
 #include <memory>
 #include <string>
 
@@ -46,52 +47,9 @@ class OriginalUnitStatus
         }
         // 4461D5/445D38 select the second (small) image of each portrait pair.
         size_t p = heads_ + dword(cel_, heads_ + 2 + (size_t(id) * 2 - 1) * 8);
-        unsigned type = cel_.at(p++), w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
-        p += 4;
-        if (w > 640 || h > 480 || type > 1)
-        {
-            return s2ne::Result<bool>::failure(make_error("Invalid original status portrait"));
-        }
-        for (unsigned yy = 0; yy < h; ++yy)
-        {
-            unsigned x = 0;
-            while (x < w)
-            {
-                if (type)
-                {
-                    unsigned c = cel_.at(p++);
-                    if (c)
-                    {
-                        pixel(image, 7 + int(x), y + int(yy), c);
-                    }
-                    ++x;
-                    continue;
-                }
-                unsigned code = cel_.at(p++), n = code & 127;
-                if (!code)
-                {
-                    ++x;
-                    continue;
-                }
-                if (!n || n > w - x)
-                {
-                    return s2ne::Result<bool>::failure(make_error("Invalid original portrait run"));
-                }
-                unsigned repeat = code & 128 ? 0 : cel_.at(p++);
-                while (n--)
-                {
-                    unsigned c = code & 128 ? cel_.at(p++) : repeat;
-                    if (c || (code & 128))
-                    {
-                        pixel(image, 7 + int(x), y + int(yy), c);
-                    }
-                    ++x;
-                }
-            }
-        }
-
-        return s2ne::Result<bool>::success(true);
+        return draw_original_sprite(image, cel_, pal_, p, true, 7, y, OriginalZeroRun::transparent);
     }
+
     void portrait(std::vector<uint8_t>& image, unsigned id, int y) const
     {
         auto result = try_portrait(image, id, y);
@@ -208,8 +166,14 @@ public:
         {
             int x = i < 3 ? 371 : 436, y = 42 + int(i % 3) * 22;
             small(font.text_bytes(label[i]), x, panel_y + y, 54);
-            number(value[i], i < 3 ? 409 : 475, y + (i % 3 == 2 ? -1 : i % 3 == 0 ? 1 :
-                                                                                    0),
+            int numberOffset;
+            if (i % 3 == 2) { numberOffset = -1; }
+            else if (i % 3 == 0) { numberOffset = 1; }
+            else
+            {
+                numberOffset = 0;
+            }
+            number(value[i], i < 3 ? 409 : 475, y + (numberOffset),
                 202);
         }
         return s2ne::Result<bool>::success(true);

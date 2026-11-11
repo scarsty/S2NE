@@ -506,8 +506,15 @@ public:
             event.type = left || right ? 0x20 : 8;
             event.x = x;
             event.y = y;
-            event.buttons = left ? 1 : right ? 2 :
-                                               0;
+            int mouseButtons;
+            if (left) { mouseButtons = 1; }
+            else if (right) { mouseButtons = 2; }
+            else
+            {
+                mouseButtons = 0;
+            }
+
+            event.buttons = mouseButtons;
             save_event(event, state);
             return;
         }
@@ -517,8 +524,15 @@ public:
             event.type = left || right ? 0x20 : 8;
             event.x = x;
             event.y = y;
-            event.buttons = left ? 1 : right ? 2 :
-                                               0;
+            int mouseButtons;
+            if (left) { mouseButtons = 1; }
+            else if (right) { mouseButtons = 2; }
+            else
+            {
+                mouseButtons = 0;
+            }
+
+            event.buttons = mouseButtons;
             settings_event(event);
             return;
         }
@@ -535,8 +549,15 @@ public:
             event.type = left || right ? 0x20 : 8;
             event.x = x;
             event.y = y;
-            event.buttons = left ? 1 : right ? 2 :
-                                               0;
+            int mouseButtons;
+            if (left) { mouseButtons = 1; }
+            else if (right) { mouseButtons = 2; }
+            else
+            {
+                mouseButtons = 0;
+            }
+
+            event.buttons = mouseButtons;
             roster_->event(event);
             if (roster_->page() == OriginalBattleReports::Page::closed)
             {

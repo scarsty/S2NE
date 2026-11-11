@@ -2,6 +2,7 @@
 #include "original_events.hpp"
 #include "original_menu.hpp"
 #include "original_script_predicates.hpp"
+#include "original_sprite.hpp"
 #include <functional>
 #include <optional>
 
@@ -45,35 +46,7 @@ class OriginalCampaign
     }
     s2ne::Result<bool> try_sprite_validated(std::vector<uint8_t>& image, unsigned id, int left, int top) const
     {
-        size_t g = dword(pal_, 816) - 57, p = g + dword(cel_, g + 2 + (id - 142) * 8);
-        unsigned w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
-        p += 4;
-        for (unsigned y = 0; y < h; ++y)
-        {
-            for (unsigned x = 0; x < w;)
-            {
-                unsigned op = cel_.at(p++), n = op ? op & 127 : 1, c = 0;
-                if (!n || n > w - x)
-                {
-                    return s2ne::Result<bool>::failure(make_error("Invalid campaign sprite"));
-                }
-                if (op && !(op & 128))
-                {
-                    c = cel_.at(p++);
-                }
-                while (n--)
-                {
-                    unsigned ink = op & 128 ? cel_.at(p++) : c;
-                    if ((op & 128) || ink)
-                    {
-                        pixel(image, left + int(x), top + int(y), ink);
-                    }
-                    ++x;
-                }
-            }
-        }
-
-        return s2ne::Result<bool>::success(true);
+        return draw_original_cel(image, cel_, pal_, id, left, top, OriginalZeroRun::transparent);
     }
     s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
     {
@@ -650,9 +623,15 @@ public:
             bool all = true;
             for (int c : s.victory[k])
             {
-                bool satisfied = c == 0 ? absent(enemies, 0) : c == 33 ? absent(enemies, -2) :
-                    c == 34                                            ? absent(enemies, -3) :
-                                                                         ((c >= 1 && c <= 20) || c == 31 || c == 32) && rt.special_condition && rt.special_condition(c);
+                bool satisfied;
+                if (c == 0) { satisfied = absent(enemies, 0); }
+                else if (c == 33) { satisfied = absent(enemies, -2); }
+                else if (c == 34) { satisfied = absent(enemies, -3); }
+                else
+                {
+                    satisfied = ((c >= 1 && c <= 20) || c == 31 || c == 32) && rt.special_condition && rt.special_condition(c);
+                }
+
                 if (!satisfied)
                 {
                     all = false;

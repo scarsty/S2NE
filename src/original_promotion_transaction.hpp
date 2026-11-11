@@ -118,15 +118,27 @@ private:
         {
             return false;
         }
-        unsigned category_mask = category == 0 ? 8 : category == 1 ? 16 :
-                                                                     32;
+        int category_mask;
+        if (category == 0) { category_mask = 8; }
+        else if (category == 1) { category_mask = 16; }
+        else
+        {
+            category_mask = 32;
+        }
+
         if (!(flags & category_mask))
         {
             return false;
         }
         unsigned attribute = u.kind_attribute + (special(u, 0x40) ? 10 : 0);
-        return override || (flags & (attribute <= 30 ? 1u : attribute < 70 ? 2u :
-                                                                             4u));
+        unsigned int moralMask;
+        if (attribute <= 30) { moralMask = 1u; }
+        else if (attribute < 70) { moralMask = 2u; }
+        else
+        {
+            moralMask = 4u;
+        }
+        return override || (flags & (moralMask));
     }
     bool weapon(const Unit& u, unsigned id) const
     {

@@ -67,14 +67,28 @@ class OriginalWorldmap
     }
     void scroll(int dx, int dy)
     {
-        x_ += dx < 0 && x_ > 0 ? dx : dx > 0 && x_ < int(width_) - 640 ? dx :
-                                                                         0;
-        y_ += dy < 0 && y_ > 0 ? dy : dy > 0 && y_ < int(height_) - 480 ? dy :
-                                                                          0;
-        x_ = x_ < 0 ? 0 : x_ >= int(width_) - 640 ? std::max(0, int(width_) - 641) :
-                                                    x_;
-        y_ = y_ < 0 ? 0 : y_ >= int(height_) - 480 ? std::max(0, int(height_) - 481) :
-                                                     y_;
+        int panX;
+        if (dx < 0 && x_ > 0) { panX = dx; }
+        else if (dx > 0 && x_ < int(width_) - 640) { panX = dx; }
+        else
+        {
+            panX = 0;
+        }
+
+        x_ += panX;
+        int panY;
+        if (dy < 0 && y_ > 0) { panY = dy; }
+        else if (dy > 0 && y_ < int(height_) - 480) { panY = dy; }
+        else
+        {
+            panY = 0;
+        }
+
+        y_ += panY;
+        if (x_ < 0) { x_ = 0; }
+        else if (x_ >= int(width_) - 640) { x_ = std::max(0, int(width_) - 641); }
+        if (y_ < 0) { y_ = 0; }
+        else if (y_ >= int(height_) - 480) { y_ = std::max(0, int(height_) - 481); }
         hovered_ = 0;
     }
 
@@ -258,10 +272,22 @@ public:
             return;
         }
         waiting_ = false;
-        int dx = pointer_x_ < 5 ? -4 : pointer_x_ > 635 ? 4 :
-                                                          0;
-        int dy = pointer_y_ < 5 ? -4 : pointer_y_ > 475 ? 4 :
-                                                          0;
+        int dx;
+        if (pointer_x_ < 5) { dx = -4; }
+        else if (pointer_x_ > 635) { dx = 4; }
+        else
+        {
+            dx = 0;
+        }
+
+        int dy;
+        if (pointer_y_ < 5) { dy = -4; }
+        else if (pointer_y_ > 475) { dy = 4; }
+        else
+        {
+            dy = 0;
+        }
+
         if (pending_scroll_)
         {
             dx = pending_scroll_->first;

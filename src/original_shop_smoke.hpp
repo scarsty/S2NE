@@ -44,8 +44,15 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
         }
         SDL_Event injected{ };
         injected.type = SDL_EVENT_KEY_DOWN;
-        injected.key.key = phase == 0 || phase == 2 || phase == 3 || phase == 4 ? SDLK_TAB : phase >= 8 ? SDLK_ESCAPE :
-                                                                                                          SDLK_RETURN;
+        if (phase == 0 || phase == 2 || phase == 3 || phase == 4) { injected.key.key = SDLK_TAB; }
+        else
+        {
+            if (phase >= 8) { injected.key.key = SDLK_ESCAPE; }
+            else
+            {
+                injected.key.key = SDLK_RETURN;
+            }
+        }
         if (!SDL_PushEvent(&injected))
         {
             s2ne::fatal(SDL_GetError());
@@ -56,8 +63,14 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
         {
             if (event.type == SDL_EVENT_KEY_DOWN)
             {
-                unsigned code = event.key.key == SDLK_TAB ? 0x0F : event.key.key == SDLK_ESCAPE ? 1 :
-                                                                                                  0x1C;
+                int code;
+                if (event.key.key == SDLK_TAB) { code = 0x0F; }
+                else if (event.key.key == SDLK_ESCAPE) { code = 1; }
+                else
+                {
+                    code = 0x1C;
+                }
+
                 if (page)
                 {
                     if (page->page() == OriginalShopMenu::Page::quantity && code == 0x1C)
@@ -200,8 +213,14 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
             {
                 if (event.type == SDL_EVENT_KEY_DOWN)
                 {
-                    unsigned code = event.key.key == SDLK_TAB ? 0x0F : event.key.key == SDLK_ESCAPE ? 1 :
-                                                                                                      0x1C;
+                    int code;
+                    if (event.key.key == SDLK_TAB) { code = 0x0F; }
+                    else if (event.key.key == SDLK_ESCAPE) { code = 1; }
+                    else
+                    {
+                        code = 0x1C;
+                    }
+
                     live.scan(code, candidate);
                 }
             }
@@ -251,9 +270,15 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
         {
             if (event.type == SDL_EVENT_KEY_DOWN)
             {
-                service.scan(event.key.key == SDLK_ESCAPE ? 1 : event.key.key == SDLK_TAB ? 0x0F :
-                        event.key.key == SDLK_SPACE                                       ? 0x39 :
-                                                                                            0x1C,
+                int scanCode;
+                if (event.key.key == SDLK_ESCAPE) { scanCode = 1; }
+                else if (event.key.key == SDLK_TAB) { scanCode = 0x0F; }
+                else if (event.key.key == SDLK_SPACE) { scanCode = 0x39; }
+                else
+                {
+                    scanCode = 0x1C;
+                }
+                service.scan(scanCode,
                     save);
             }
         }

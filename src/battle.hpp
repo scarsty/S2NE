@@ -90,6 +90,9 @@ private:
     bool curse33_feedback_{ };
     bool skill94_feedback_{ }, skill94_feedback_presented_{ }, skill94_death_lock_{ };
     std::function<void()> skill94_feedback_commit_;
+    std::vector<std::pair<size_t, bool>> status_feedback_targets_;
+    size_t status_feedback_actor_{ }, status_feedback_cursor_{ };
+    std::function<void()> status_feedback_commit_;
     std::optional<OriginalEvents::Unit> reaction_pose_;
     std::function<void(std::vector<OriginalEvents::Unit>&, size_t, size_t)> death_settlement_;
 
@@ -498,6 +501,12 @@ public:
     }
     bool valid(Point p) const { return p.x >= 0 && p.y >= 0 && p.y < int(height_) && p.x < int(width_) - (p.y & 1); }
     Cell cell(Point p) const { return valid(p) ? cells_.at(size_t(p.y) * width_ + p.x) : Cell{ }; }
+    bool skill_area_cell(Point p) const
+    {
+        if (!valid(p) || cell(p).ground <= 1) { return false; }
+        const auto object = cell(p).object;
+        return object <= 0 || size_t(object) > object_attributes_.size() || !(object_attributes_[size_t(object) - 1] & 0x8000);
+    }
     void clear_runtime_object(Point p)
     {
         if (valid(p))
@@ -865,10 +874,42 @@ public:
             return 1;
         }
         bool left = (attacker.y & 1) ? attacker.x < defender.x : attacker.x <= defender.x;
-        unsigned rear = left ? (attacker.y > defender.y ? 2u : 1u) : (attacker.y > defender.y ? 3u : 0u);
-        unsigned front = left ? (attacker.y > defender.y ? 0u : 3u) : (attacker.y > defender.y ? 1u : 2u);
-        return defender_direction == rear ? 3 : defender_direction == front ? 1 :
-                                                                              2;
+        unsigned int rear;
+        if (left)
+        {
+            if (attacker.y > defender.y) { rear = 2u; }
+            else
+            {
+                rear = 1u;
+            }
+        }
+        else if (attacker.y > defender.y) { rear = 3u; }
+        else
+        {
+            rear = 0u;
+        }
+
+        unsigned int front;
+        if (left)
+        {
+            if (attacker.y > defender.y) { front = 0u; }
+            else
+            {
+                front = 3u;
+            }
+        }
+        else if (attacker.y > defender.y) { front = 1u; }
+        else
+        {
+            front = 2u;
+        }
+
+        if (defender_direction == rear) { return 3; }
+        else if (defender_direction == front) { return 1; }
+        else
+        {
+            return 2;
+        }
     }
     struct ActionTarget
     {
@@ -1091,11 +1132,17 @@ public:
             {
                 continue;
             }
-            unsigned slot = type == 5 ? 1 : type >= 1 && type <= 7 ? 0 :
-                type == 23                                         ? 6 :
-                type == 32                                         ? 5 :
-                type == 36                                         ? 4 :
-                                                                     7;
+            int slot;
+            if (type == 5) { slot = 1; }
+            else if (type >= 1 && type <= 7) { slot = 0; }
+            else if (type == 23) { slot = 6; }
+            else if (type == 32) { slot = 5; }
+            else if (type == 36) { slot = 4; }
+            else
+            {
+                slot = 7;
+            }
+
             result.mask |= attack_masks[slot];
             result.actions[slot] = int(action.index);
         }
@@ -1499,6 +1546,17 @@ public:
         skill94_feedback_commit_ = std::move(commit);
         return true;
     }
+    bool begin_healing_feedback(size_t actor, size_t target, int hp, int healing, std::function<void()> commit)
+    {
+        if (combat_feedback_active() || !commit || healing < 0) { return false; }
+        combat_feedback_.begin(actor, target, hp, -healing, healing == 0, false, hp + healing);
+        combat_feedback_.phase = original_combat::Feedback::Phase::numbers;
+        combat_feedback_.consume();
+        skill94_feedback_ = true;
+        skill94_feedback_presented_ = false;
+        skill94_feedback_commit_ = std::move(commit);
+        return true;
+    }
     bool begin_curse33_feedback(size_t actor, size_t target, int hp, bool hit, std::function<void()> commit)
     {
         if (!begin_skill94_feedback(actor, target, hp, 0, std::move(commit))) { return false; }
@@ -1506,6 +1564,54 @@ public:
         curse33_feedback_ = hit;
         if (hit) { combat_feedback_.phase = original_combat::Feedback::Phase::flash; }
         return true;
+    }
+    bool begin_status_area_feedback(size_t actor, std::vector<std::pair<size_t, bool>> targets,
+        const std::vector<OriginalEvents::Unit>& units, std::function<void()> commit, bool blessing3 = false, std::vector<int> amounts = { }, bool healing = false)
+    {
+        status_feedback_healing_ = healing;
+        status_feedback_amounts_ = std::move(amounts);
+        status_feedback_blessing3_ = blessing3;
+        if (combat_feedback_active() || targets.empty() || !commit) { return false; }
+        for (auto [i, hit] : targets)
+        {
+            if (i >= units.size()) { return false; }
+        }
+        status_feedback_actor_ = actor;
+        status_feedback_cursor_ = 0;
+        status_feedback_targets_ = std::move(targets);
+        status_feedback_commit_ = std::move(commit);
+        return next_status_feedback(units);
+    }
+    bool status_feedback_blessing3_{ }, status_feedback_healing_{ };
+    std::vector<int> status_feedback_amounts_;
+    bool next_status_feedback(const std::vector<OriginalEvents::Unit>& units)
+    {
+        auto [target, hit] = status_feedback_targets_[status_feedback_cursor_++];
+        auto commit = [this, &units]
+        {
+            if (status_feedback_cursor_ < status_feedback_targets_.size())
+            {
+                next_status_feedback(units);
+                return;
+            }
+            status_feedback_targets_.clear();
+            status_feedback_cursor_ = 0;
+            auto commit = std::move(status_feedback_commit_);
+            commit();
+        };
+        if (status_feedback_blessing3_)
+        {
+            //46643F: an existing status extends its timer without feedback.
+            if (!hit)
+            {
+                commit();
+                return true;
+            }
+            if (!begin_healing_feedback(status_feedback_actor_, target, units[target].hp, status_feedback_amounts_.empty() ? 10 : status_feedback_amounts_.at(status_feedback_cursor_ - 1), std::move(commit))) { return false; }
+            if (!status_feedback_healing_) { combat_feedback_.hp_after = units[target].hp; }
+            return true;
+        }
+        return begin_curse33_feedback(status_feedback_actor_, target, units[target].hp, hit, std::move(commit));
     }
     template <class ScreenPosition, class Silhouette, class Text>
     void render_combat_feedback(const std::vector<OriginalEvents::Unit>& units, ScreenPosition screen_position, Silhouette silhouette, Text text) const
@@ -1580,7 +1686,15 @@ private:
         auto& target = units[b];
         original_combat::ActionStatusInput input{ };
         input.result = result;
-        input.roll = status_roll ? *status_roll : (result > 0 ? percent() : 100);
+        int statusRoll;
+        if (status_roll) { statusRoll = *status_roll; }
+        else if (result > 0) { statusRoll = percent(); }
+        else
+        {
+            statusRoll = 100;
+        }
+
+        input.roll = statusRoll;
         input.target_kind17 = hostile_resources_ ? hostile_resources_->action_status_kind(target) : 0;
         input.target_equipment14 = hostile_resources_ && hostile_resources_->equipment_special(target, 14);
         if (!target.action_status_runtime)
@@ -1781,8 +1895,14 @@ public:
                 commit();
                 return;
             }
-            unsigned interval = feedback.step < 3 ? 30u : feedback.step < 4 ? 20u :
-                                                                              10u;
+            unsigned int interval;
+            if (feedback.step < 3) { interval = 30u; }
+            else if (feedback.step < 4) { interval = 20u; }
+            else
+            {
+                interval = 10u;
+            }
+
             // 468F5A waits only for steps0..5, for both damage and MISS.
             if (!skill94_feedback_presented_ || (feedback.step < 6 && feedback.elapsed < interval))
             {
@@ -2005,7 +2125,21 @@ public:
             int right = ((2 * my - mx + 608) / 64) * 64 - 608;
             int anchor_x = (-left - right) / 2, anchor_y = (right - left) / 4;
             int local_x = mx - anchor_x + 32, local_y = my - anchor_y;
-            int quadrant = 2 * local_y + local_x < 64 ? (local_x - 2 * local_y < 0 ? 3 : 1) : (local_x - 2 * local_y < 0 ? 2 : 4);
+            int quadrant;
+            if (2 * local_y + local_x < 64)
+            {
+                if (local_x - 2 * local_y < 0) { quadrant = 3; }
+                else
+                {
+                    quadrant = 1;
+                }
+            }
+            else if (local_x - 2 * local_y < 0) { quadrant = 2; }
+            else
+            {
+                quadrant = 4;
+            }
+
             int col = (anchor_x - 32) / 64 + half / 2;
             if (anchor_x == 0 && !(half & 1))
             {
@@ -2235,9 +2369,13 @@ public:
         static constexpr std::array<int, 23> supported{ 40, -84, 114, -92, 98, 0, 0, 0, 0, 0, 3, 9, 90, 0, 0, 116, 0, 1, 65, 4, 0, 0, 1 };
         static constexpr std::array<int, 23> alternate{ 40, -74, 87, -76, -25, 0, 0, 0, 0, 0, 4, 8, 70, 0, 2, -96, 0, 9, 50, 0, 0, 125, 1 };
         static constexpr std::array<int, 23> ranged{ 40, -91, -49, -92, -30, -67, 98, 0, 0, 0, 3, 6, 70, 2, 6, 119, 0, 0, 0, 0, 2, 0, 2 };
-        return type == 5 ? 1 : type >= 1 && type <= 7                                                                                                                      ? 0 :
-            (action.index == 163 && action.fields == supported) || (action.index == 130 && action.fields == alternate) || (action.index == 160 && action.fields == ranged) ? 7 :
-                                                                                                                                                                             -1;
+        if (type == 5) { return 1; }
+        else if (type >= 1 && type <= 7) { return 0; }
+        else if ((action.index == 163 && action.fields == supported) || (action.index == 130 && action.fields == alternate) || (action.index == 160 && action.fields == ranged)) { return 7; }
+        else
+        {
+            return -1;
+        }
     }
     std::optional<OriginalEvents::ActionRecord> executable_action(const std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, int slot = -1) const
     {
@@ -2798,7 +2936,19 @@ public:
             return current;
         }
         bool right = (from.y & 1) ? from.x < to.x : from.x <= to.x;
-        return right ? (from.y > to.y ? 2u : 1u) : (from.y > to.y ? 3u : 0u);
+        if (right)
+        {
+            if (from.y > to.y) { return 2u; }
+            else
+            {
+                return 1u;
+            }
+        }
+        else if (from.y > to.y) { return 3u; }
+        else
+        {
+            return 0u;
+        }
     }
     bool step(std::vector<OriginalEvents::Unit>& units, size_t index, Point to, bool allied_transit = false)
     {
@@ -2881,7 +3031,22 @@ public:
         if (actor.x != destination.x || actor.y != destination.y)
         {
             bool right = (actor.y & 1) ? actor.x < destination.x : actor.x <= destination.x;
-            facing = right ? (actor.y > destination.y ? 2u : 1u) : (actor.y > destination.y ? 3u : 0u);
+            unsigned int destinationFacing;
+            if (right)
+            {
+                if (actor.y > destination.y) { destinationFacing = 2u; }
+                else
+                {
+                    destinationFacing = 1u;
+                }
+            }
+            else if (actor.y > destination.y) { destinationFacing = 3u; }
+            else
+            {
+                destinationFacing = 0u;
+            }
+
+            facing = destinationFacing;
         }
         unsigned sequence = unsigned(offset) + facing;
         const auto& frames = action_sequences_[actor.appearance - 1][sequence];
@@ -2940,10 +3105,24 @@ public:
         in.counter_fixed_damage = counter && (actor.abilities & 0x400);
         in.counter_fixed_value = actor.strikeback;
         in.counter_equipment_30 = counter && resources.equipment_special(actor, 30);
-        in.mode_bonus = counter ? (counter_mode == 3 ? -3 : counter_mode == 2 ? -2 :
-                                                                                0) :
-                                  (mode == 3 ? 6 : mode == 2 ? 3 :
-                                                               0);
+        int modeBonus;
+        if (counter)
+        {
+            if (counter_mode == 3) { modeBonus = -3; }
+            else if (counter_mode == 2) { modeBonus = -2; }
+            else
+            {
+                modeBonus = 0;
+            }
+        }
+        else if (mode == 3) { modeBonus = 6; }
+        else if (mode == 2) { modeBonus = 3; }
+        else
+        {
+            modeBonus = 0;
+        }
+
+        in.mode_bonus = modeBonus;
         in.modifiers.class_matchup = resources.class_matchup(actor, defender);
         in.modifiers.action_coefficient = action.fields[11];
         in.modifiers.combat_value = resources.combat_value(actor);
@@ -3122,8 +3301,14 @@ public:
         while (hostile_cursor_ < units.size())
         {
             size_t index = hostile_cursor_++;
-            bool eligible = controller_hostile_ ? units[index].hostile() : npc_controller_ ? !units[index].hostile() && units[index].behavior == 1 :
-                                                                                             units[index].controllable();
+            bool eligible;
+            if (controller_hostile_) { eligible = units[index].hostile(); }
+            else if (npc_controller_) { eligible = !units[index].hostile() && units[index].behavior == 1; }
+            else
+            {
+                eligible = units[index].controllable();
+            }
+
             if (!eligible || !units[index].present(turn_) || units[index].action_state != 0)
             {
                 continue;
@@ -3235,7 +3420,14 @@ private:
         actor.direction = facing({ actor.x, actor.y }, to, actor.direction);
         actor.x = to.x;
         actor.y = to.y;
-        actor.movement_frame = saved.direction == actor.direction ? saved.movement_frame + (movement_class == 4 || movement_class == 5 ? 0 : 1) : 0;
+        unsigned int movementFrame = 0;
+        if (saved.direction == actor.direction)
+        {
+            movementFrame = saved.movement_frame;
+            if (movement_class != 4 && movement_class != 5) { ++movementFrame; }
+        }
+
+        actor.movement_frame = movementFrame;
         actor.action_state = 3;
         actor.status34 |= 1;
         actor.movement_pose = false;
@@ -3772,6 +3964,10 @@ public:
                 auto& bytes = *unit.action_status_runtime;
                 bytes[0x33] = uint8_t(unit.status_flags);
                 original_combat::tick_status_durations(bytes);
+                unit.sp = int(int16_t(unsigned(bytes[0x12A]) | (unsigned(bytes[0x12B]) << 8)));
+                unit.max_action_points = int(int16_t(unsigned(bytes[0x12C]) | (unsigned(bytes[0x12D]) << 8)));
+                unit.status39 = bytes[0x39];
+                unit.status3c = bytes[0x3C];
                 unit.attack = int(int16_t(unsigned(bytes[0x134]) | (unsigned(bytes[0x135]) << 8)));
                 unit.defense = int(int16_t(unsigned(bytes[0x136]) | (unsigned(bytes[0x137]) << 8)));
             }
@@ -3976,10 +4172,10 @@ public:
                 hit.defender_status3c_dword |= uint32_t((*defender.action_status_runtime)[0x3C + i]) << (8 * i);
             }
         }
-        last_physical_diagnostic_ = PhysicalDiagnostic{ a, b, std::clamp(attacker.tactics - defender.strikeback + (attack_style == 3 ? 5 : attack_style == 2 ? 3 :
-                                                                                                                                                               0),
-                                                                  1, 100)
-                * 12 / 10,
+        int hitBonus = 0;
+        if (attack_style == 3) { hitBonus = 5; }
+        else if (attack_style == 2) { hitBonus = 3; }
+        last_physical_diagnostic_ = PhysicalDiagnostic{ a, b, std::clamp(attacker.tactics - defender.strikeback + hitBonus, 1, 100) * 12 / 10,
             hit_chance(hit), hit.modifiers.action_bonus, height, attack_style };
         if (!hit_succeeds(hit, percent())) { return 0; }
         PhysicalDamageInput damage{ };
@@ -4494,8 +4690,14 @@ public:
             message_ = "Original physical action: -" + std::to_string(dealt) + " HP; target HP " + std::to_string(defender.hp);
             return true;
         }
-        int hit = std::clamp(attacker.tactics - defender.strikeback + (attack_style == 3 ? 5 : attack_style == 2 ? 3 :
-                                                                                                                   0),
+        int hitBonus;
+        if (attack_style == 3) { hitBonus = 5; }
+        else if (attack_style == 2) { hitBonus = 3; }
+        else
+        {
+            hitBonus = 0;
+        }
+        int hit = std::clamp(attacker.tactics - defender.strikeback + (hitBonus),
                       1, 100)
             * 12 / 10;
         if (percent() > hit)
@@ -4507,8 +4709,14 @@ public:
         int chance = percent(), jitter = roll(10);
         int divisor = original_combat::damage_divisor(chance, jitter);
         int minimum_roll = (attacker.attack - defender.defense) * 100 / divisor < 3 ? percent() : 0;
-        int damage = ordinary_damage(attacker.attack + (attack_style == 3 ? 10 : attack_style == 2 ? 5 :
-                                                                                                     0),
+        int attackBonus;
+        if (attack_style == 3) { attackBonus = 10; }
+        else if (attack_style == 2) { attackBonus = 5; }
+        else
+        {
+            attackBonus = 0;
+        }
+        int damage = ordinary_damage(attacker.attack + (attackBonus),
             defender.defense, divisor, minimum_roll);
         physical_feedback(units, a, b, damage);
         message_ = "Ordinary melee: -" + std::to_string(damage) + " HP; target HP " + std::to_string(defender.hp);
@@ -4563,7 +4771,14 @@ public:
                     pose.movement_camera_pose = true;
                 }
                 const auto& previous_pose = movement_poses_.empty() ? saved : movement_poses_.back();
-                pose.movement_frame = previous_pose.direction != pose.direction ? 0 : previous_pose.movement_frame + (movement_class == 4 || movement_class == 5 ? 0 : 1);
+                unsigned int movementFrame = 0;
+                if (previous_pose.direction == pose.direction)
+                {
+                    movementFrame = previous_pose.movement_frame;
+                    if (movement_class != 4 && movement_class != 5) { ++movementFrame; }
+                }
+
+                pose.movement_frame = movementFrame;
                 movement_poses_.push_back(std::move(pose));
             }
             if (!movement_poses_.empty())

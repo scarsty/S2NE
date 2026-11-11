@@ -1,5 +1,6 @@
 #pragma once
 #include "original_menu.hpp"
+#include "original_sprite.hpp"
 #include "title_image.hpp"
 namespace s2ne
 {
@@ -20,68 +21,9 @@ class NewGameSetup
         {
             return Result<bool>::failure(make_error("Invalid setup sprite"));
         }
-        int w = word(dat, offset + 1) + 1, h = word(dat, offset + 3) + 1;
-        size_t p = offset + 5, end = offset + size;
-        if (dat.at(offset) != 0)
-        {
-            return Result<bool>::failure(make_error("Unsupported setup sprite encoding"));
-        }
-        for (int y = 0; y < h; ++y)
-        {
-            int x = 0;
-            while (x < w)
-            {
-                if (p >= end)
-                {
-                    return Result<bool>::failure(make_error("Truncated setup sprite"));
-                }
-                unsigned code = dat.at(p++), n = code & 127;
-                if (!code)
-                {
-                    ++x;
-                    continue;
-                }
-                if (!n || n > unsigned(w - x))
-                {
-                    return Result<bool>::failure(make_error("Invalid setup run"));
-                }
-                unsigned repeat = 0;
-                if (!(code & 128))
-                {
-                    if (p >= end)
-                    {
-                        return Result<bool>::failure(make_error("Truncated setup repeat"));
-                    }
-                    repeat = dat.at(p++);
-                }
-                while (n--)
-                {
-                    if ((code & 128) && p >= end)
-                    {
-                        return Result<bool>::failure(make_error("Truncated setup literal"));
-                    }
-                    unsigned color = (code & 128) ? dat.at(p++) : repeat;
-                    int dx = left + x++, dy = top + y;
-                    if (dx < 0 || dx >= 640 || dy < 0 || dy >= 480)
-                    {
-                        continue;
-                    }
-                    size_t dst = (size_t(dy) * 640 + dx) * 4;
-                    // Only zero repeat runs are transparent; literal runs copy palette index zero.
-                    if (!(code & 128) && !color)
-                    {
-                        continue;
-                    }
-                    for (unsigned c = 0; c < 3; ++c)
-                    {
-                        image.at(dst + c) = uint8_t(std::min(255u, unsigned(pal.at(color * 3 + c)) * 255 / 63));
-                    }
-                    image.at(dst + 3) = 255;
-                }
-            }
-        }
-        return Result<bool>::success(true);
+        return draw_original_sprite(image, std::span<const uint8_t>(dat).subspan(offset, size), pal, 0, true, left, top, OriginalZeroRun::transparent);
     }
+
     void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
     {
         auto result = try_sprite(image, id, left, top);

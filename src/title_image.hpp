@@ -94,7 +94,10 @@ inline Result<std::vector<uint8_t>> try_load_title(const std::filesystem::path& 
             size_t dest = (y * 640 + x) * 4;
             for (unsigned c = 0; c < 3; ++c)
             {
-                const auto dac = resource == 19 ? uint8_t(palette.at(colors + value * 3 + c) >> 2) : uint8_t(value == 0 ? 0 : palette.at(value * 3 + c));
+                uint8_t dac = 0;
+                if (resource == 19) { dac = uint8_t(palette.at(colors + value * 3 + c) >> 2); }
+                else if (value != 0) { dac = uint8_t(palette.at(value * 3 + c)); }
+
                 image[dest + c] = display_palette ? opening_palette_channel(dac) : uint8_t(unsigned(dac) * 255 / 63);
             }
             image[dest + 3] = 255;

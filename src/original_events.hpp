@@ -166,8 +166,14 @@ public:
             }
         }
         unsigned begin = mode == 2 ? first_ability_count : 0;
-        unsigned end = mode == 1 ? first_ability_count : mode == 2 ? first_ability_count + second_ability_count :
-                                                                     learned_ability_count;
+        unsigned int end;
+        if (mode == 1) { end = first_ability_count; }
+        else if (mode == 2) { end = first_ability_count + second_ability_count; }
+        else
+        {
+            end = learned_ability_count;
+        }
+
         for (size_t i = begin; i < std::min(size_t(end), unit.learned.size()); ++i)
         {
             if (unit.learned[i])
@@ -403,8 +409,15 @@ public:
         {
             return Result<int>::failure(make_error("Original runtime132 settlement snapshot unavailable"));
         }
-        in.value18 = mode == 2 ? unit.max_hp : mode == 1 ? *unit.ending_combat_value :
-                                                           unit.hp;
+        const int* combatValue;
+        if (mode == 2) { combatValue = &(unit.max_hp); }
+        else if (mode == 1) { combatValue = &(*unit.ending_combat_value); }
+        else
+        {
+            combatValue = &(unit.hp);
+        }
+
+        in.value18 = (*combatValue);
         in.value14 = mode == 2 ? unit.max_sp : unit.sp;
         in.value10 = mode == 2 ? unit.max_mp : unit.mp;
         in.valueC = mode == 2 ? unit.max_st : unit.st;
@@ -477,8 +490,15 @@ public:
             size_t p = 2 + size_t(weapon - 1) * 38;
             int encoded = int(int8_t(items_.at(p + 16)));
             range.maximum = encoded % 10;
-            range.minimum = encoded == 1 ? 1 : encoded < 10 ? 2 :
-                                                              1;
+            int minimumRange;
+            if (encoded == 1) { minimumRange = 1; }
+            else if (encoded < 10) { minimumRange = 2; }
+            else
+            {
+                minimumRange = 1;
+            }
+
+            range.minimum = minimumRange;
             int shape = int(int8_t(items_.at(p + 30)));
             if (shape > 0)
             {
@@ -575,8 +595,14 @@ public:
         {
             return source_y > target_y ? 0 : 8;
         }
-        unsigned offset = slope < 30 ? 3 : slope < 83 ? 2 :
-                                                        1;
+        int offset;
+        if (slope < 30) { offset = 3; }
+        else if (slope < 83) { offset = 2; }
+        else
+        {
+            offset = 1;
+        }
+
         if (source_x < target_x)
         {
             return source_y > target_y ? offset : 8 - offset;
@@ -591,8 +617,15 @@ public:
     static EffectFlight effect_flight(int source_x, int source_y, int target_x, int target_y, unsigned mode)
     {
         EffectFlight flight{ source_x + 32, source_y - 32, target_x + 32, target_y - 32 };
-        flight.axis = source_x == target_x ? 1 : source_y == target_y ? 2 :
-                                                                        3;
+        int flightAxis;
+        if (source_x == target_x) { flightAxis = 1; }
+        else if (source_y == target_y) { flightAxis = 2; }
+        else
+        {
+            flightAxis = 3;
+        }
+
+        flight.axis = flightAxis;
         if (flight.axis == 3)
         {
             int dx = source_x - target_x, dy = source_y - target_y;
@@ -1244,8 +1277,15 @@ public:
             }
             unit.behavior = int(int8_t(bin_.at(p + 49)));
             unit.ai_role10 = int(int8_t(bin_.at(p + 20)));
-            unit.runtime_role_selector = unit.behavior == 3 || unit.behavior == 9 ? 1u : unit.behavior == 8 || unit.behavior == 10 ? 2u :
-                                                                                                                                     0u;
+            unsigned int roleSelector;
+            if (unit.behavior == 3 || unit.behavior == 9) { roleSelector = 1u; }
+            else if (unit.behavior == 8 || unit.behavior == 10) { roleSelector = 2u; }
+            else
+            {
+                roleSelector = 0u;
+            }
+
+            unit.runtime_role_selector = roleSelector;
             // 4274B5 partitions contexts at the first behavior 2/3/8, not at hostile().
             enemy_context = enemy_context || unit.behavior == 2 || unit.behavior == 3 || unit.behavior == 8;
             if (bin_.at(header + 21) != 3 && (enemy_context || unit.npc_class()))

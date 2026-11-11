@@ -1,9 +1,15 @@
 #pragma once
+#include "native_ability_buffs.hpp"
 #include "native_effect55.hpp"
+#include "native_hostile_status.hpp"
+#include "native_sleep2.hpp"
+#include "native_special_status.hpp"
+#include "native_timed_buffs.hpp"
 #include "original_combat.hpp"
 #include "original_events.hpp"
 #include "original_menu.hpp"
 #include "original_promotion_transaction.hpp"
+#include "original_sprite.hpp"
 #include <functional>
 #include <optional>
 
@@ -91,6 +97,7 @@ private:
     std::array<int, 256> config_{ };
     unsigned owner_id_{ }, owner_appearance_{ };
     Context context_;
+    std::pair<int, int> area_camera_{ };
     Page page_{ Page::closed };
     size_t group_{ }, skill_{ };
     std::optional<Request> request_;
@@ -108,40 +115,7 @@ private:
     }
     s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned index, int left, int top) const
     {
-        size_t g = dword(pal_, 816) - 57, p = g + dword(cel_, g + 2 + index * 8);
-        unsigned w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
-        p += 4;
-        for (unsigned y = 0; y < h; ++y)
-        {
-            for (unsigned x = 0; x < w;)
-            {
-                unsigned op = cel_.at(p++), n = op ? op & 127 : 1, c = 0;
-                if (!n || n > w - x)
-                {
-                    return s2ne::Result<bool>::failure(make_error("Invalid skill sprite"));
-                }
-                if (op && !(op & 128))
-                {
-                    c = cel_.at(p++);
-                }
-                while (n--)
-                {
-                    unsigned ink = op & 128 ? cel_.at(p++) : c;
-                    int dx = left + int(x++), dy = top + int(y);
-                    if (!ink || dx < 0 || dx >= 640 || dy < 0 || dy >= 480)
-                    {
-                        continue;
-                    }
-                    size_t dst = (size_t(dy) * 640 + dx) * 4;
-                    for (unsigned k = 0; k < 3; ++k)
-                    {
-                        image.at(dst + k) = uint8_t(unsigned(pal_.at(ink * 3 + k)) * 255 / 63);
-                    }
-                    image.at(dst + 3) = 255;
-                }
-            }
-        }
-        return s2ne::Result<bool>::success(true);
+        return draw_original_cel(image, cel_, pal_, index + 142, left, top, OriginalZeroRun::opaque);
     }
 
 public:
@@ -367,81 +341,48 @@ public:
     unsigned initial_payment_state(unsigned id) const { return try_initial_payment_state(id).value(); }
     bool effect_supported(const Record& record) const
     {
-        // Narrow to the installed self-heal, not every effect18/formula41 record.
+        // Exact installed healing records only; other effect18 formulas remain unavailable.
         static constexpr std::array<uint8_t, 24> tail{ 25, 0, 90, 0, 0, 1, 18, 41, 120, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 66, 0, 0, 0 };
-        return record.id == 88 && record.group == 8 && record.bit == 5 && std::equal(tail.begin(), tail.end(), record.raw.begin() + 13);
+        static constexpr std::array<uint8_t, 24> heal{ 8, 0, 0, 0, 5, 1, 18, 1, 60, 0, 100, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0 };
+        return (record.id == 88 && record.group == 8 && record.bit == 5 && std::equal(tail.begin(), tail.end(), record.raw.begin() + 13))
+            || (record.id == 1 && record.group == 0 && record.bit == 0 && std::equal(heal.begin(), heal.end(), record.raw.begin() + 13));
     }
     bool executable_available(const OriginalEvents::Unit& unit, Context context, bool award_bridge_ready) const
     {
-        return award_bridge_ready && entry_available(unit, context) && (context.second ? ((unit.learned[8] & (1u << 5)) || (unit.learned[9] & 1)) : (unit.learned[2] & 0x800) || (unit.learned[3] & 1));
+        if (!award_bridge_ready || !entry_available(unit, context)) { return false; }
+        auto probe = *this;
+        probe.open(unit, context);
+        for (const auto& g : probe.groups_)
+        {
+            for (const auto& r : g.records)
+            {
+                probe.group_ = size_t(&g - probe.groups_.data());
+                probe.skill_ = size_t(&r - g.records.data());
+                if (probe.pipeline_supported()) { return true; }
+            }
+        }
+        return false;
     }
     Result execute(OriginalEvents::Unit&) const { return { false, Failure::unsupported_execution }; }
     Result execute(OriginalEvents::Unit& unit, const OriginalEvents::Unit& target, const OriginalEvents& events,
-        original_combat::Random& random, ExecutionContext execution, const AwardAdapter& award)
+        original_combat::Random& random, ExecutionContext context, const AwardAdapter& award)
     {
-        if (page_ != Page::requested || !request_ || !effect_supported(selected()) || !award)
-        {
-            return { false, Failure::unsupported_execution };
-        }
-        const auto request = *request_;
-        if (unit.id != request.unit_id || unit.appearance != request.appearance || !(unit.learned.at(request.group) & (1u << request.bit)))
-        {
-            return { false, Failure::stale_unit };
-        }
-        // Range0 origin + targetmode1; accept the actual actor reference only.
-        if (&unit != &target || unit.hp <= 0 || unit.max_hp < unit.hp || execution.difficulty < 1 || execution.difficulty > 5 || !execution.friendly_army || execution.conditions_mode || (execution.status3c & 255) != unit.status3c || !entry_available(unit, context_))
-        {
-            return { false, Failure::world_unresolved };
-        }
-        if (auto failure = resource_failure(unit, selected()); failure != Failure::none)
-        {
-            return { false, failure };
-        }
-        auto staged = unit;
-        auto rng = random;
-        const auto& record = selected();
-        int amount = 0;
-        if (!(execution.status3c & 0x10000))
-        {
-            int fencing = std::max(1, unit.fencing);
-            amount = fencing * config_[0x8E] / config_[0x8F] - fencing * config_[0x90] / config_[0x91] + record.word(21);
-            if (events.equipment_special(unit, 19))
-            {
-                amount *= 2;
-            }
-            amount = std::max(1, amount * (config_[12] + rng.bounded(config_[13] + 3, execution.seconds)) / 10);
-        }
-        int healed = 0, experience = 0;
-        if (unit.hp < unit.max_hp)
-        {
-            amount = std::min(amount, unit.max_hp - unit.hp);
-            if (rng.percent(execution.seconds) <= record.word(23))
-            {
-                healed = amount;
-            }
-            staged.hp += healed;
-            experience = std::max(1, std::min(60, healed / config_[0xE3]));
-        }
-        int proficiency = (6 + (healed > 0 ? 1 : 0) - int(execution.difficulty)) * 5 + 10;
-        // The bridge includes native proficiency/learning, XP multipliers, level-up
-        // RNG and stat reinitialization. Rejection discards every staged mutation.
-        if (!award(staged, rng, experience, proficiency, request.group))
-        {
-            return { false, Failure::world_unresolved };
-        }
-        unsigned mask = request.second ? 8 : 4;
-        staged.action_points -= ap_base_ + ((staged.status34 & mask) ? ap_repeat_ : 0);
-        staged.status34 |= uint8_t(mask);
-        staged.carry_points = std::min(staged.carry_points, staged.action_points);
-        if (execution.skill_payment_state != 2)
-        {
-            staged.st -= record.word(13);
-        }
-        unit = std::move(staged);
-        random = rng;
-        request_.reset();
-        page_ = Page::closed;
-        return { true, Failure::none, healed, experience, proficiency };
+        if (&unit != &target || selected().id != 88 || (context.status3c & 255) != unit.status3c) { return { false, Failure::world_unresolved }; }
+        if (!request_ || unit.id != request_->unit_id || unit.appearance != request_->appearance || !(unit.learned[request_->group] & (1u << request_->bit))) { return { false, Failure::stale_unit }; }
+        if (auto failure = resource_failure(unit, selected()); failure != Failure::none) { return { false, failure }; }
+        return execute_single_healing(unit, unit, events, random, context, award);
+    }
+    bool healing1_supported() const { return page_ != Page::closed && selected().id == 1 && effect_supported(selected()); }
+    bool healing1_in_range(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& target) const
+    {
+        int dx = 2 * (target.x - actor.x) + int(target.y & 1) - int(actor.y & 1), dy = target.y - actor.y;
+        return healing1_supported() && actor.hostile() == target.hostile() && target.hp > 0 && (target.status_flags & 0x80) && !(target.status_flags & 0x20) && std::max(std::abs(dx), std::abs(dy)) <= 5;
+    }
+    Result execute_healing1(OriginalEvents::Unit& actor, OriginalEvents::Unit& target, const OriginalEvents& events,
+        original_combat::Random& random, ExecutionContext context, const AwardAdapter& award)
+    {
+        if (!healing1_supported()) { return { false, Failure::unsupported_execution }; }
+        return execute_single_healing(actor, target, events, random, context, award);
     }
     struct HostileResult
     {
@@ -449,14 +390,203 @@ public:
         unsigned removed{ }, slot{ };
         int chance{ }, roll{ };
         Failure failure{ Failure::none };
+        std::vector<bool> target_hits;
+        std::vector<int> target_amounts;
+        int raw_xp{ }, proficiency{ };
     };
     bool sword94_supported() const { return page_ != Page::closed && selected().id == 94 && selected().group == 9 && selected().bit == 0 && selected().effect() == 1 && selected().raw[20] == 44 && selected().raw[33] == 194; }
     bool curse33_supported() const { return page_ != Page::closed && selected().id == 33 && selected().group == 3 && selected().bit == 0 && selected().effect() == 55 && selected().raw[31] == 2; }
+    bool sleep2_supported() const
+    {
+        constexpr std::array<uint8_t, 24> tail{ 18, 0, 10, 0, 3, 2, 61, 0, 0, 0, 40, 0, 2, 0, 0, 0, 2, 0, 2, 0, 1, 38, 38, 0 };
+        return page_ != Page::closed && selected().id == 2 && selected().group == 0 && selected().bit == 1 && std::equal(tail.begin(), tail.end(), selected().raw.begin() + 13);
+    }
+    bool hostile_stat_supported() const
+    {
+        if (page_ == Page::closed) { return false; }
+        constexpr std::array<unsigned, 4> ids{ 17, 25, 52, 61 };
+        constexpr std::array<std::array<uint8_t, 24>, 4> tails{ { { 25, 0, 128, 0, 4, 1, 16, 0, 0, 0, 70, 0, 5, 0, 0, 0, 2, 0, 2, 0, 1, 7, 11, 0 },
+            { 25, 0, 50, 0, 3, 2, 46, 16, 10, 0, 65, 0, 3, 0, 0, 0, 128, 0, 2, 0, 1, 12, 9, 0 },
+            { 45, 0, 24, 1, 4, 1, 15, 29, 40, 0, 60, 0, 4, 0, 0, 0, 2, 0, 2, 0, 1, 33, 100, 0 },
+            { 40, 0, 230, 0, 0, 7, 46, 16, 12, 0, 50, 0, 3, 0, 0, 0, 129, 0, 2, 0, 1, 44, 29, 0 } } };
+        constexpr std::array<unsigned, 4> groups{ 1, 2, 4, 5 }, bits{ 6, 4, 9, 8 };
+        for (size_t i = 0; i < ids.size(); ++i)
+        {
+            if (selected().id == ids[i] && selected().group == groups[i] && selected().bit == bits[i] && std::equal(tails[i].begin(), tails[i].end(), selected().raw.begin() + 13)) { return true; }
+        }
+        return false;
+    }
+    bool special_status_supported() const
+    {
+        if (page_ == Page::closed) { return false; }
+        constexpr std::array<unsigned, 7> ids{ 8, 12, 35, 48, 60, 39, 56 };
+        constexpr std::array<unsigned, 7> groups{ 0, 1, 3, 4, 5, 3, 5 }, bits{ 7, 1, 2, 5, 7, 6, 3 };
+        constexpr std::array<std::array<uint8_t, 24>, 7> tails{ { { 20, 0, 170, 0, 4, 1, 20, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 37, 45, 0 },
+            { 13, 0, 10, 0, 3, 1, 56, 0, 0, 0, 40, 0, 210, 0, 0, 0, 2, 0, 2, 0, 1, 8, 10, 0 },
+            { 20, 0, 20, 0, 4, 1, 40, 0, 0, 0, 70, 0, 3, 0, 0, 0, 2, 0, 3, 0, 1, 15, 5, 0 },
+            { 30, 0, 90, 0, 5, 3, 47, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 42, 31, 0 },
+            { 30, 0, 180, 0, 3, 1, 5, 0, 0, 0, 35, 0, 0, 0, 0, 0, 2, 0, 2, 0, 1, 50, 16, 0 },
+            { 25, 0, 128, 0, 4, 2, 58, 22, 20, 0, 70, 0, 3, 0, 0, 0, 128, 0, 3, 0, 1, 0, 0, 0 },
+            { 20, 0, 32, 0, 5, 1, 74, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 41, 32, 0 } } };
+        for (size_t i = 0; i < ids.size(); ++i)
+        {
+            if (selected().id == ids[i] && selected().group == groups[i] && selected().bit == bits[i] && std::equal(tails[i].begin(), tails[i].end(), selected().raw.begin() + 13)) { return true; }
+        }
+        return false;
+    }
+    bool hostile_status_supported() const
+    {
+        if (hostile_stat_supported()) { return true; }
+        if (page_ == Page::closed) { return false; }
+        constexpr std::array<std::array<uint8_t, 24>, 7> tails{ { { 15, 0, 20, 0, 4, 1, 69, 0, 0, 0, 65, 0, 4, 0, 0, 0, 0, 0, 2, 0, 1, 11, 9, 0 },
+            { 30, 0, 56, 0, 4, 1, 67, 0, 0, 0, 60, 0, 4, 0, 0, 0, 2, 0, 2, 0, 1, 5, 13, 0 },
+            { 15, 0, 0, 0, 4, 2, 8, 0, 0, 0, 40, 0, 3, 0, 8, 0, 34, 0, 2, 0, 1, 40, 34, 0 },
+            { 13, 0, 10, 0, 3, 1, 43, 0, 0, 0, 50, 0, 3, 0, 0, 0, 2, 0, 2, 0, 1, 14, 6, 0 },
+            { 20, 0, 90, 0, 5, 1, 17, 0, 0, 0, 60, 0, 4, 0, 0, 0, 2, 0, 2, 0, 1, 6, 12, 0 },
+            { 20, 0, 10, 0, 5, 1, 13, 0, 0, 0, 45, 0, 4, 0, 0, 0, 34, 0, 2, 0, 1, 35, 80, 0 }, { 15, 0, 20, 0, 3, 1, 43, 0, 0, 0, 40, 0, 3, 0, 0, 0, 0, 0, 2, 0, 194, 10, 10, 0 } } };
+        const auto& r = selected();
+        unsigned i = 5;
+        switch (r.id)
+        {
+        case 13: i = 0; break;
+        case 15: i = 1; break;
+        case 53: i = 2; break;
+        case 34: i = 3; break;
+        case 38: i = 4; break;
+        case 96: i = 6; break;
+        default: break;
+        }
+        return ((r.id == 13 && r.group == 1 && r.bit == 2) || (r.id == 15 && r.group == 1 && r.bit == 4) || (r.id == 53 && r.group == 5 && r.bit == 0) || (r.id == 34 && r.group == 3 && r.bit == 1) || (r.id == 38 && r.group == 3 && r.bit == 5) || (r.id == 54 && r.group == 5 && r.bit == 1) || (r.id == 96 && r.group == 9 && r.bit == 2))
+            && std::equal(tails[i].begin(), tails[i].end(), r.raw.begin() + 13);
+    }
+    bool blessing3_supported() const
+    {
+        constexpr std::array<uint8_t, 24> tail{ 12, 0, 20, 0, 4, 2, 19, 2, 10, 0, 100, 0, 4, 0, 0, 0, 0, 0, 1, 0, 1, 54, 12, 0 };
+        return page_ != Page::closed && selected().id == 3 && selected().group == 0 && selected().bit == 2 && std::equal(tail.begin(), tail.end(), selected().raw.begin() + 13);
+    }
+    bool strengthening4_supported() const
+    {
+        constexpr std::array<uint8_t, 24> tail{ 20, 0, 32, 0, 3, 2, 9, 3, 15, 0, 100, 0, 3, 0, 0, 0, 0, 0, 1, 0, 1, 55, 10, 0 };
+        return page_ != Page::closed && selected().id == 4 && selected().group == 0 && selected().bit == 3 && std::equal(tail.begin(), tail.end(), selected().raw.begin() + 13);
+    }
+    bool protection5_supported() const
+    {
+        constexpr std::array<uint8_t, 24> tail{ 30, 0, 54, 0, 3, 1, 44, 0, 150, 0, 100, 0, 2, 0, 0, 0, 0, 0, 1, 0, 1, 39, 35, 0 };
+        return page_ != Page::closed && selected().id == 5 && selected().group == 0 && selected().bit == 4 && std::equal(tail.begin(), tail.end(), selected().raw.begin() + 13);
+    }
+    bool restoration_supported() const
+    {
+        if (page_ == Page::closed || selected().group != 0) { return false; }
+        static constexpr std::array<std::array<uint8_t, 24>, 3> tails{ { { 32, 0, 85, 0, 3, 3, 18, 4, 120, 0, 100, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0 },
+            { 40, 0, 214, 0, 3, 2, 18, 6, 244, 1, 100, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0 },
+            { 55, 0, 4, 1, 5, 1, 65, 0, 180, 0, 100, 0, 2, 0, 0, 0, 0, 0, 1, 0, 1, 36, 60, 0 } } };
+        const unsigned id = selected().id;
+        unsigned index = 2;
+        if (id == 6) { index = 0; }
+        else if (id == 9) { index = 1; }
+        return (id == 6 || id == 9 || id == 10) && selected().bit == id - 1 && std::equal(tails[index].begin(), tails[index].end(), selected().raw.begin() + 13);
+    }
+    bool area_healing_supported() const { return (restoration_supported() && selected().effect() == 18) || (ability_buff_supported() && selected().effect() == 90); }
+    bool timed_buff_supported() const
+    {
+        if (page_ == Page::closed) { return false; }
+        const auto* o = NativeTimedBuffs::find(selected().id);
+        return o && selected().group == o->group && selected().bit == o->bit && std::equal(o->tail.begin(), o->tail.end(), selected().raw.begin() + 13);
+    }
+    bool ability_buff_supported() const
+    {
+        if (page_ == Page::closed) { return false; }
+        const auto* o = NativeAbilityBuffs::find(selected().id);
+        if (selected().id == 47 || selected().id == 76 || selected().id == 78 || selected().id == 79) { return false; }
+        return o && selected().group == o->group && selected().bit == o->bit && std::equal(o->tail.begin(), o->tail.end(), selected().raw.begin() + 13);
+    }
+    bool friendly_status_supported() const { return ability_buff_supported() || timed_buff_supported() || blessing3_supported() || strengthening4_supported() || protection5_supported() || restoration_supported(); }
+    void pay_staged(OriginalEvents::Unit& actor, ExecutionContext context, uint32_t payment_abilities) const
+    {
+        const unsigned mask = request_->second ? 8 : 4;
+        actor.action_points -= ap_base_ + ((actor.status34 & mask) ? ap_repeat_ : 0);
+        actor.status34 |= uint8_t(mask);
+        actor.carry_points = std::min(actor.carry_points, actor.action_points);
+        if (context.skill_payment_state == 2) { return; }
+        const int cost = selected().word(13);
+        if (selected().raw[33] & 1) { actor.mp -= (payment_abilities & 0x20) ? cost / 2 : cost; }
+        if (selected().raw[33] & 2) { actor.st -= cost; }
+        if (selected().raw[33] & 4) { actor.hp = std::max(1, actor.hp - cost); }
+    }
+    bool status_area_supported() const { return special_status_supported() || sleep2_supported() || hostile_status_supported() || friendly_status_supported(); }
+    bool status_area_target(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& target) const
+    {
+        return status_area_supported() && (selected().raw[31] == 3 || selected().raw[31] == 0 || ((target.hostile() == actor.hostile()) == (selected().raw[31] == 1)));
+    }
+    bool sleep2_center_in_range(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& center) const
+    {
+        int dx = 2 * (center.x - actor.x) + int(center.y & 1) - int(actor.y & 1), dy = center.y - actor.y;
+        return status_area_supported() && std::max(std::abs(dx), std::abs(dy)) <= int(selected().raw[17]);
+    }
+    void set_area_camera(std::pair<int, int> camera) { area_camera_ = camera; }
+    bool viewport_area_cell(int x, int y) const
+    {
+        // 4028DC -> 403717: mode7 enumerates the original camera's 19x36 staggered viewport, not radius7.
+        const int column = area_camera_.first / 32, row = area_camera_.second / 16;
+        const bool same = (column & 1) == (row & 1);
+        const int leftEven = column / 2 + (same ? 0 : (column & 1));
+        int oddOffset = row & 1;
+        if (!same) { oddOffset = (column & 1) - ((row & 1) ? 0 : 1); }
+        const int leftOdd = column / 2 + oddOffset;
+        const int dy = y - row;
+        if (dy < 0 || dy >= 36) { return false; }
+        const int left = (dy & 1) ? leftOdd : leftEven;
+        int count = same ? 10 : 9;
+        if (dy & 1) { count = same ? 9 : 10; }
+        return x >= left && x < left + count;
+    }
+    bool sleep2_area(const OriginalEvents::Unit& center, const OriginalEvents::Unit& target) const
+    {
+        if (selected().raw[18] == 7) { return viewport_area_cell(target.x, target.y); }
+        // 402701: modes1/2/3 enumerate 1/3/5 staggered rows.
+        const int side = 2 * int(selected().raw[18]) - 1;
+        int startY = center.y - side + 1, startX = center.x;
+        for (int row = 0; row < side; ++row)
+        {
+            int x = startX, y = startY;
+            for (int col = 0; col < side; ++col)
+            {
+                if (x == target.x && y == target.y) { return true; }
+                if (y & 1) { ++x; }
+                ++y;
+            }
+            if (!(startY & 1)) { --startX; }
+            ++startY;
+        }
+        return false;
+    }
+    s2ne::Result<HostileResult> execute_sleep2(OriginalEvents::Unit& actor, std::vector<OriginalEvents::Unit>& targets,
+        const OriginalEvents::Unit& center, original_combat::Random& random, ExecutionContext context, const AwardAdapter& award)
+    {
+        return execute_pipeline(actor, targets, center, nullptr, nullptr, random, context, award);
+    }
+    s2ne::Result<HostileResult> execute_blessing3(OriginalEvents::Unit& actor, std::vector<OriginalEvents::Unit>& targets,
+        const OriginalEvents::Unit& center, original_combat::Random& random, ExecutionContext context, const AwardAdapter& award)
+    {
+        return execute_pipeline(actor, targets, center, nullptr, nullptr, random, context, award);
+    }
+    s2ne::Result<HostileResult> execute_strengthening_status(OriginalEvents::Unit& actor, std::vector<OriginalEvents::Unit>& targets,
+        const OriginalEvents::Unit& center, const OriginalEvents& events, original_combat::Random& random, ExecutionContext context, const AwardAdapter& award)
+    {
+        return execute_pipeline(actor, targets, center, &events, nullptr, random, context, award);
+    }
+    s2ne::Result<HostileResult> execute_restoration(OriginalEvents::Unit& actor, std::vector<OriginalEvents::Unit>& targets,
+        const OriginalEvents::Unit& center, const OriginalEvents& events, original_combat::Random& random, ExecutionContext context, const AwardAdapter& award)
+    {
+        return execute_pipeline(actor, targets, center, &events, nullptr, random, context, award);
+    }
     bool hostile_supported() const { return page_ != Page::closed && selected().id == 32 && selected().group == 2 && selected().bit == 11 && selected().effect() == 34; }
     // 401146 builds concentric diamond rings; record17 is the radius, not AP.
     bool hostile_in_range(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& target) const
     {
-        if ((!hostile_supported() && !sword94_supported() && !curse33_supported()) || actor.hostile() == target.hostile() || target.hp <= 0 || !(target.status_flags & 0x80) || (target.status_flags & 0x20))
+        if (hostile_stat_supported() && selected().raw[18] == 7) { return status_area_target(actor, target) && target.hp > 0 && (target.status_flags & 0x80) && !(target.status_flags & 0x20) && sleep2_area(actor, target); }
+        if (special_status_supported() || friendly_status_supported()) { return status_area_target(actor, target) && target.hp > 0 && (target.status_flags & 0x80) && !(target.status_flags & 0x20) && sleep2_center_in_range(actor, target); }
+        if ((!hostile_supported() && !sword94_supported() && !curse33_supported() && !sleep2_supported() && !hostile_status_supported()) || actor.hostile() == target.hostile() || target.hp <= 0 || !(target.status_flags & 0x80) || (target.status_flags & 0x20))
         {
             return false;
         }
@@ -466,141 +596,401 @@ public:
     HostileResult execute_hostile(OriginalEvents::Unit& actor, OriginalEvents::Unit& target,
         original_combat::Random& random, ExecutionContext context, const OriginalPromotionTransaction& equipment, const AwardAdapter& award)
     {
-        HostileResult result;
-        if (curse33_supported())
+        std::vector<OriginalEvents::Unit> targets{ target };
+        auto packet = execute_pipeline(actor, targets, target, nullptr, &equipment, random, context, award);
+        if (!packet)
         {
-            auto outcome = execute_curse33(actor, target, random, context, award);
-            if (!outcome)
-            {
-                report_error(outcome.error());
-                result.failure = Failure::world_unresolved;
-                return result;
-            }
-            return outcome.value();
+            HostileResult out;
+            out.failure = Failure::world_unresolved;
+            return out;
         }
-        if (page_ != Page::requested || !request_ || !hostile_supported())
-        {
-            result.failure = Failure::unsupported_execution;
-            return result;
-        }
-        if (actor.id != request_->unit_id || actor.appearance != request_->appearance || !(actor.learned[2] & 0x800))
-        {
-            result.failure = Failure::stale_unit;
-            return result;
-        }
-        if (context.difficulty < 1 || context.difficulty > 5 || !hostile_in_range(actor, target) || !entry_available(actor, context_) || !award)
-        {
-            result.failure = Failure::world_unresolved;
-            return result;
-        }
-        if (auto failure = resource_failure(actor, selected()); failure != Failure::none)
-        {
-            result.failure = failure;
-            return result;
-        }
-        auto stagedActor = actor, stagedTarget = target;
-        auto rng = random;
-        std::vector<unsigned> slots;
-        for (unsigned i = 1; i < 6; ++i)
-        {
-            if (target.equipment[i])
-            {
-                slots.push_back(i);
-            }
-        }
-        int defense = 0;
-        if (!slots.empty())
-        {
-            result.slot = slots[size_t(rng.bounded(int(slots.size()), context.seconds))];
-            defense = equipment.item_defense(target.equipment[result.slot]);
-        }
-        // 46D874 ->407E2D modifies resistance first;46D496 adds its minimum5.
-        int resistance = (actor.st - defense) / 2;
-        resistance = resistance * (config_[10] + rng.bounded(config_[11] + 3, context.seconds)) / 10;
-        if (context.friendly_army && !context.conditions_mode)
-        {
-            resistance = resistance * (100 + config_[0xF3 + context.difficulty]) / 100;
-        }
-        result.chance = std::clamp(5 + std::clamp(resistance, 1, 99), 1, 99);
-        result.roll = rng.percent(context.seconds);
-        result.hit = result.roll <= result.chance;
-        unsigned status3e = target.action_status_runtime ? target.action_status_runtime->at(0x3E) : target.status3e;
-        result.immune = (status3e & 0x10) || (target.abilities & 0x4000);
-        if (result.hit)
-        {
-            stagedTarget.status3e = uint8_t(status3e & ~2u);
-            if (stagedTarget.action_status_runtime)
-            {
-                (*stagedTarget.action_status_runtime)[0x3E] &= uint8_t(~2u);
-            }
-            if (!result.immune && !slots.empty())
-            {
-                OriginalPromotionTransaction::State state{ stagedTarget, std::vector<uint8_t>(equipment.item_count()), OriginalRandom({ 1, 0 }) };
-                result.removed = target.equipment[result.slot];
-                equipment.remove_equipment(state, result.slot, true);
-                stagedTarget = std::move(state.unit);
-            }
-        }
-        int proficiency = (selected().word(13) + 6 - int(context.difficulty)) * 5 / 2 + 10;
-        if (!award(stagedActor, rng, 5, proficiency, 2))
-        {
-            result.failure = Failure::world_unresolved;
-            return result;
-        }
-        unsigned mask = 4;
-        stagedActor.action_points -= ap_base_ + ((stagedActor.status34 & mask) ? ap_repeat_ : 0);
-        stagedActor.status34 |= mask;
-        stagedActor.carry_points = std::min(stagedActor.carry_points, stagedActor.action_points);
-        if (context.skill_payment_state != 2)
-        {
-            stagedActor.mp -= ((actor.abilities & 0x20) ? selected().word(13) / 2 : selected().word(13));
-        }
-        actor = std::move(stagedActor);
-        target = std::move(stagedTarget);
-        random = rng;
-        result.applied = true;
-        request_.reset();
-        page_ = Page::closed;
-        return result;
+        target = std::move(targets.front());
+        return packet.value();
     }
     s2ne::Result<HostileResult> execute_curse33(OriginalEvents::Unit& actor, OriginalEvents::Unit& target,
         original_combat::Random& random, ExecutionContext context, const AwardAdapter& award)
     {
-        auto fail = [](const char* message)
+        std::vector<OriginalEvents::Unit> targets{ target };
+        auto packet = execute_pipeline(actor, targets, target, nullptr, nullptr, random, context, award);
+        if (packet) { target = std::move(targets.front()); }
+        return packet;
+    }
+    enum class Handler
+    {
+        unavailable,
+        healing465C14,
+        status4668F0,
+        hostile467625,
+        equipment467625,
+        specialStatus
+    };
+    Handler handler() const
+    {
+        if (page_ == Page::closed) { return Handler::unavailable; }
+        if (special_status_supported()) { return Handler::specialStatus; }
+        if (effect_supported(selected()) || area_healing_supported()) { return Handler::healing465C14; }
+        if (friendly_status_supported()) { return Handler::status4668F0; }
+        if (sleep2_supported() || curse33_supported() || hostile_status_supported()) { return Handler::hostile467625; }
+        if (hostile_supported()) { return Handler::equipment467625; }
+        return Handler::unavailable;
+    }
+    bool pipeline_supported() const { return handler() != Handler::unavailable; }
+    template <class ValidCell>
+    std::vector<size_t> collect_targets(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& center,
+        const std::vector<OriginalEvents::Unit>& units, unsigned turn, ValidCell valid) const
+    {
+        std::vector<size_t> out;
+        if (selected().raw[18] == 7)
         {
-            return s2ne::Result<HostileResult>::failure(make_error(message));
+            const int firstRow = area_camera_.second / 16;
+            for (int y = firstRow; y < firstRow + 36; ++y)
+            {
+                for (int x = area_camera_.first / 64 - 1; x <= area_camera_.first / 64 + 11; ++x)
+                {
+                    if (!viewport_area_cell(x, y) || !valid(x, y)) { continue; }
+                    for (size_t n = 0; n < units.size(); ++n)
+                    {
+                        const auto& u = units[n];
+                        if (u.x == x && u.y == y && u.present(turn) && u.hp > 0 && (u.status_flags & 0x80) && !(u.status_flags & 0x20) && status_area_target(actor, u)) { out.push_back(n); }
+                    }
+                }
+            }
+            return out;
+        }
+        const int side = 2 * int(selected().raw[18]) - 1;
+        int startX = center.x, startY = center.y - side + 1;
+        for (int row = 0; row < side; ++row)
+        {
+            int x = startX, y = startY;
+            for (int col = 0; col < side; ++col)
+            {
+                if (valid(x, y))
+                {
+                    for (size_t n = 0; n < units.size(); ++n)
+                    {
+                        const auto& u = units[n];
+                        const bool friendly = selected().raw[31] != 2;
+                        const bool self = selected().id != 88 || (u.id == actor.id && u.appearance == actor.appearance);
+                        if (u.x == x && u.y == y && u.present(turn) && u.hp > 0 && (u.status_flags & 0x80) && !(u.status_flags & 0x20) && self && (selected().raw[31] == 0 || selected().raw[31] == 3 || ((u.hostile() == actor.hostile()) == friendly))) { out.push_back(n); }
+                    }
+                }
+                if (y & 1) { ++x; }
+                ++y;
+            }
+            if (!(startY & 1)) { --startX; }
+            ++startY;
+        }
+        return out;
+    }
+    Result execute_single_healing(OriginalEvents::Unit& actor, OriginalEvents::Unit& target, const OriginalEvents& events,
+        original_combat::Random& random, ExecutionContext context, const AwardAdapter& award)
+    {
+        std::vector<OriginalEvents::Unit> targets{ target };
+        auto packet = execute_pipeline(actor, targets, target, &events, nullptr, random, context, award);
+        if (!packet) { return { false, Failure::world_unresolved }; }
+        if (&actor != &target) { target = std::move(targets.front()); }
+        return { true, Failure::none, packet.value().target_amounts.front(), packet.value().raw_xp, packet.value().proficiency };
+    }
+    s2ne::Result<HostileResult> execute_pipeline(OriginalEvents::Unit& actor, std::vector<OriginalEvents::Unit>& targets,
+        const OriginalEvents::Unit& center, const OriginalEvents* events, const OriginalPromotionTransaction* equipment,
+        original_combat::Random& random, ExecutionContext context, const AwardAdapter& award)
+    {
+        auto fail = []
+        {
+            return s2ne::Result<HostileResult>::failure(make_error("Original cast pipeline rejected request/target/resources/adapter"));
         };
-        if (page_ != Page::requested || !request_ || !curse33_supported() || !award)
+        const auto kind = handler();
+        if (kind == Handler::unavailable || page_ != Page::requested || !request_ || request_->unit_id != actor.id || request_->appearance != actor.appearance || !(actor.learned[request_->group] & (1u << request_->bit)) || !entry_available(actor, context_) || resource_failure(actor, selected()) != Failure::none || !context.friendly_army || context.difficulty < 1 || context.difficulty > 5 || !award || targets.empty()) { return fail(); }
+        if (context.conditions_mode && (kind == Handler::healing465C14 || kind == Handler::status4668F0)) { return fail(); }
+        if ((kind == Handler::healing465C14 || strengthening4_supported() || ability_buff_supported()) && !events) { return fail(); }
+        if (kind == Handler::equipment467625 && !equipment) { return fail(); }
+        const unsigned group = request_->group;
+        auto a = actor;
+        auto staged = targets;
+        auto stream = random;
+        HostileResult out;
+        int successes = 0;
+        for (size_t i = 0; i < staged.size(); ++i)
         {
-            return fail("Curse33 request unavailable");
+            auto& t = staged[i];
+            for (size_t n = 0; n < i; ++n)
+            {
+                if (staged[n].id == t.id && staged[n].appearance == t.appearance) { return fail(); }
+            }
+            if (t.hp <= 0 || !(t.status_flags & 0x80) || (t.status_flags & 0x20)) { return fail(); }
+            if (status_area_supported())
+            {
+                if (!sleep2_center_in_range(actor, center) || !sleep2_area(center, t) || !status_area_target(actor, t)) { return fail(); }
+            }
+            else if (kind == Handler::healing465C14)
+            {
+                if (selected().id == 88)
+                {
+                    if (t.id != actor.id || t.appearance != actor.appearance || t.x != actor.x || t.y != actor.y || targets.size() != 1) { return fail(); }
+                }
+                else if (!healing1_in_range(actor, t)) { return fail(); }
+            }
+            else if (!hostile_in_range(actor, t) || targets.size() != 1) { return fail(); }
+            if (kind == Handler::healing465C14)
+            {
+                if (t.hp > t.max_hp) { return fail(); }
+                if (selected().effect() == 90)
+                {
+                    if (!t.action_status_runtime) { return fail(); }
+                    auto& r = *t.action_status_runtime;
+                    r[0x38] &= 0x74;
+                    r[0x39] &= 0xB9;
+                    r[0x3D] &= 0x0F;
+                    r[0x3E] &= 0xF0;
+                    r[0x3F] &= 0xFE;
+                    auto rebuilt = original_combat::try_recalculate_status_stats(r);
+                    if (!rebuilt) { return fail(); }
+                    auto word = [&](size_t p)
+                    {
+                        return int(int16_t(unsigned(r[p]) | (unsigned(r[p + 1]) << 8)));
+                    };
+                    t.sp = word(0x12A);
+                    t.max_action_points = word(0x12C);
+                    t.attack = word(0x134);
+                    t.defense = word(0x136);
+                    t.tactics = word(0x138);
+                    t.status39 = r[0x39];
+                    t.status3c = r[0x3C];
+                    t.status3d = r[0x3D];
+                    t.status3e = r[0x3E];
+                    t.status3f = r[0x3F];
+                }
+                bool blocked = (context.status3c & 0x10000) != 0;
+                if (selected().id != 88)
+                {
+                    const unsigned status = t.action_status_runtime ? t.action_status_runtime->at(0x3E) : t.status3e;
+                    blocked = (status & 1) != 0;
+                }
+                int amount = 0;
+                if (!blocked)
+                {
+                    if (selected().raw[20] == 41)
+                    {
+                        const int fencing = std::max(1, actor.fencing);
+                        amount = fencing * config_[0x8E] / config_[0x8F] - fencing * config_[0x90] / config_[0x91] + selected().word(21);
+                    }
+                    else if (selected().effect() == 90) { amount = selected().word(21); }
+                    else
+                    {
+                        unsigned offset = 0x1F;
+                        if (selected().raw[20] == 1) { offset = 0x12; }
+                        else if (selected().raw[20] == 4) { offset = 0x19; }
+                        if (config_[offset] <= 0) { return fail(); }
+                        const int st = actor.st + (events->equipment_special(actor, 18) ? actor.st / 5 : 0);
+                        amount = st * config_[offset - 1] / config_[offset] + selected().word(21);
+                    }
+                    if (events->equipment_special(t, 19)) { amount *= 2; }
+                    amount = std::max(1, amount * (config_[12] + stream.bounded(config_[13] + 3, context.seconds)) / 10);
+                }
+                const bool feedback = t.hp < t.max_hp;
+                int healed = 0;
+                if (feedback)
+                {
+                    const int chance = blocked && selected().id != 88 ? 0 : selected().word(23);
+                    if (stream.percent(context.seconds) <= chance) { healed = std::min(amount, t.max_hp - t.hp); }
+                    t.hp += healed;
+                    out.raw_xp += std::clamp(healed / config_[0xE3], 1, 60);
+                    successes += healed > 0;
+                }
+                // Existing single-target animations also presented zero at full HP.
+                out.target_hits.push_back(feedback || selected().id == 1 || selected().id == 88);
+                out.target_amounts.push_back(healed);
+                out.hit |= healed > 0;
+            }
+            else if (kind == Handler::status4668F0)
+            {
+                const bool strengthening = strengthening4_supported();
+                if (!t.action_status_runtime)
+                {
+                    t.action_status_runtime.emplace();
+                    auto& r = *t.action_status_runtime;
+                    r[0x3C] = t.status3c;
+                    r[0x3D] = t.status3d;
+                    r[0x3E] = t.status3e;
+                    r[0x3F] = t.status3f;
+                }
+                int power = selected().word(21);
+                if (strengthening || (ability_buff_supported() && (selected().effect() == 2 || selected().effect() == 6 || selected().effect() == 10)))
+                {
+                    const int st = actor.st + (events->equipment_special(actor, 18) ? actor.st / 5 : 0);
+                    const unsigned formula = selected().raw[20];
+                    unsigned numerator = 0x6E;
+                    if (strengthening) { numerator = 0x16; }
+                    else if (formula == 13) { numerator = 0x38; }
+                    else if (formula == 14) { numerator = 0x3A; }
+                    if (config_[numerator + 1] <= 0 || (formula == 31 && config_[0x71] <= 0)) { return fail(); }
+                    power += st * config_[numerator] / config_[numerator + 1];
+                    if (formula == 31)
+                    {
+                        const int targetST = t.st + (events->equipment_special(t, 18) ? t.st / 5 : 0);
+                        power -= targetST * config_[0x70] / config_[0x71];
+                    }
+                    const unsigned randomBase = 8;
+                    if (config_[randomBase + 1] + 3 <= 0) { return fail(); }
+                    power = std::max(1, power * (config_[randomBase] + stream.bounded(config_[randomBase + 1] + 3, context.seconds)) / 10);
+                }
+                out.chance = 99;
+                out.roll = stream.percent(context.seconds);
+                const bool hit = out.roll <= 99;
+                out.hit |= hit;
+                out.target_hits.push_back(false);
+                out.target_amounts.push_back(0);
+                if (hit)
+                {
+                    auto& r = *t.action_status_runtime;
+                    bool changed = false;
+                    if (ability_buff_supported())
+                    {
+                        int duration = selected().word(25);
+                        if (duration > 100 && duration <= 200) { duration = std::max(1, actor.st / (duration - 100)); }
+                        else if (duration > 200 && duration < 255) { duration = std::max(1, (actor.st - t.st) / (duration - 200)); }
+                        else if (duration >= 255) { duration = -1; }
+                        if (context_.army_da_nonzero) { ++duration; }
+                        auto applied = NativeAbilityBuffs::apply(t, actor, selected().effect(), power, duration, config_);
+                        if (!applied) { return fail(); }
+                        changed = applied.value();
+                    }
+                    else if (strengthening)
+                    {
+                        changed = !(r[0x38] & 0x20);
+                        if (changed)
+                        {
+                            r[0x38] |= 0x20;
+                            r[0x58] = uint8_t(power);
+                            r[0x59] = uint8_t(unsigned(power) >> 8);
+                            t.sp = int(int16_t(t.sp + power));
+                            r[0x12A] = uint8_t(t.sp);
+                            r[0x12B] = uint8_t(unsigned(t.sp) >> 8);
+                        }
+                        if (changed || (int8_t(r[0x57]) != -1 && int8_t(r[0x57]) < selected().word(25))) { r[0x57] = uint8_t(selected().word(25)); }
+                    }
+                    else
+                    {
+                        const auto* buff = timed_buff_supported() ? NativeTimedBuffs::find(selected().id) : nullptr;
+                        uint32_t mask = 0x20;
+                        if (buff) { mask = buff->mask; }
+                        else if (selected().effect() == 19) { mask = 0x4000000; }
+                        else if (selected().effect() == 65) { mask = 0x40; }
+                        int duration = selected().word(25);
+                        if (buff && duration > 100 && duration <= 200) { duration = std::max(1, actor.st / (duration - 100)); }
+                        auto applied = original_combat::try_apply_timed_status(r, mask, duration);
+                        if (!applied) { return fail(); }
+                        changed = applied.value();
+                        t.status3c = r[0x3C];
+                        t.status3f = r[0x3F];
+                    }
+                    out.target_hits.back() = changed;
+                    if (changed) { out.target_amounts.back() = power; }
+                }
+            }
+            else if (kind == Handler::specialStatus)
+            {
+                int duration = selected().word(25);
+                if (duration > 200 && duration < 255) { duration = std::max(1, (actor.st - t.st) / (duration - 200)); }
+                auto packet = NativeSpecialStatus::resolve(t, actor, stream, config_, context.difficulty, context.seconds, context.conditions_mode, selected().id, selected().effect(), selected().raw[29], duration);
+                if (!packet) { return fail(); }
+                out.hit |= packet.value().hit;
+                out.immune |= packet.value().immune;
+                out.chance = packet.value().chance;
+                out.roll = packet.value().roll;
+                out.target_hits.push_back(packet.value().hit);
+                out.target_amounts.push_back(0);
+            }
+            else if (kind == Handler::hostile467625)
+            {
+                const int duration = curse33_supported() ? std::max(1, (actor.st - t.st) / 10) : selected().word(25);
+                int power = 0;
+                if (hostile_stat_supported())
+                {
+                    if (!t.action_status_runtime) { return fail(); }
+                    auto& r = *t.action_status_runtime;
+                    auto put = [&](size_t p, int v)
+                    {
+                        r[p] = uint8_t(v);
+                        r[p + 1] = uint8_t(unsigned(v) >> 8);
+                    };
+                    put(0x134, t.attack);
+                    put(0x136, t.defense);
+                    put(0x12C, t.max_action_points);
+                    put(0x12E, t.action_points);
+                    put(0x130, t.carry_points);
+                    if (selected().effect() != 16)
+                    {
+                        // 46E058 default46E1D0 returns WORD21, discarding46E858's formula16/29 result.
+                        power = selected().word(21);
+                    }
+                }
+                auto packet = NativeHostileStatus::resolve(t, actor, stream, config_, context.difficulty, context.seconds, context.conditions_mode, selected().effect(), selected().raw[29], duration, power, hostile_stat_supported() ? selected().word(21) : 0, hostile_stat_supported() && (selected().raw[29] & 1) && events && events->movement_class(t) != 0);
+                if (!packet) { return fail(); }
+                const auto& p = packet.value();
+                out.hit |= p.hit;
+                out.immune |= p.immune;
+                out.chance = p.chance;
+                out.roll = p.roll;
+                out.target_hits.push_back(p.hit);
+                out.target_amounts.push_back(0);
+            }
+            else
+            {
+                std::vector<unsigned> slots;
+                for (unsigned n = 1; n < 6; ++n)
+                {
+                    if (t.equipment[n]) { slots.push_back(n); }
+                }
+                int defense = 0;
+                if (!slots.empty())
+                {
+                    out.slot = slots[size_t(stream.bounded(int(slots.size()), context.seconds))];
+                    defense = equipment->item_defense(t.equipment[out.slot]);
+                }
+                int resistance = (actor.st - defense) / 2;
+                resistance = resistance * (config_[10] + stream.bounded(config_[11] + 3, context.seconds)) / 10;
+                if (!context.conditions_mode) { resistance = resistance * (100 + config_[0xF3 + context.difficulty]) / 100; }
+                out.chance = std::clamp(5 + std::clamp(resistance, 1, 99), 1, 99);
+                out.roll = stream.percent(context.seconds);
+                out.hit = out.roll <= out.chance;
+                unsigned status = t.action_status_runtime ? t.action_status_runtime->at(0x3E) : t.status3e;
+                out.immune = (status & 0x10) || (t.abilities & 0x4000);
+                if (out.hit)
+                {
+                    t.status3e = uint8_t(status & ~2u);
+                    if (t.action_status_runtime) { t.action_status_runtime->at(0x3E) &= uint8_t(~2u); }
+                    if (!out.immune && !slots.empty())
+                    {
+                        OriginalPromotionTransaction::State state{ t, std::vector<uint8_t>(equipment->item_count()), OriginalRandom({ 1, 0 }) };
+                        out.removed = t.equipment[out.slot];
+                        equipment->remove_equipment(state, out.slot, true);
+                        t = std::move(state.unit);
+                    }
+                }
+                out.target_hits.push_back(out.hit);
+                out.target_amounts.push_back(0);
+            }
+            if (t.id == actor.id && t.appearance == actor.appearance) { a = t; }
         }
-        constexpr std::array<uint8_t, 24> tail{ 7, 0, 0, 0, 4, 1, 55, 0, 0, 0, 55, 0, 210, 0, 0, 0, 0, 0, 2, 0, 1, 9, 10, 0 };
-        if (!std::equal(tail.begin(), tail.end(), selected().raw.begin() + 13) || request_->second || request_->unit_id != actor.id || request_->appearance != actor.appearance || !(actor.learned[3] & 1) || !entry_available(actor, context_) || !hostile_in_range(actor, target) || !context.friendly_army || resource_failure(actor, selected()) != Failure::none)
+        if (kind == Handler::healing465C14) { out.proficiency = (successes + 6 - int(context.difficulty)) * 5 + 10; }
+        else
         {
-            return fail("Curse33 stale/invalid target or resources");
+            out.raw_xp = 5;
+            out.proficiency = (selected().word(13) + 6 - int(context.difficulty)) * 5 / 2 + 10;
         }
-        auto a = actor, t = target;
-        auto rng = random;
-        auto packet = NativeEffect55::resolve(t, a, rng, config_, context.difficulty, context.seconds, context.conditions_mode);
-        if (!packet) { return s2ne::Result<HostileResult>::failure(packet.error()); }
-        // 466544 starts XP at5 and proficiency at (MP+6-difficulty)*5/2+10.
-        int proficiency = (7 + 6 - int(context.difficulty)) * 5 / 2 + 10;
-        if (!award(a, rng, 5, proficiency, 3)) { return fail("Curse33 award rejected"); }
-        a.action_points -= ap_base_ + ((a.status34 & 4) ? ap_repeat_ : 0);
-        a.status34 |= 4;
-        a.carry_points = std::min(a.carry_points, a.action_points);
-        if (context.skill_payment_state != 2) { a.mp -= (actor.abilities & 0x20) ? 3 : 7; }
+        if (!award(a, stream, out.raw_xp, out.proficiency, group)) { return fail(); }
+        pay_staged(a, context, actor.abilities);
+        for (auto& t : staged)
+        {
+            if (t.id == actor.id && t.appearance == actor.appearance) { t = a; }
+        }
         actor = std::move(a);
-        target = std::move(t);
-        random = rng;
+        targets = std::move(staged);
+        random = stream;
         request_.reset();
         page_ = Page::closed;
-        HostileResult out;
         out.applied = true;
-        out.hit = packet.value().hit;
-        out.immune = packet.value().immune;
-        out.chance = packet.value().chance;
-        out.roll = packet.value().roll;
         return s2ne::Result<HostileResult>::success(out);
     }
     void resume()

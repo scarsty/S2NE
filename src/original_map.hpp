@@ -493,8 +493,10 @@ public:
             {
                 unsigned code = prg_.at(p++), count = code ? code & 127 : 1;
                 if (count > size_t(w) * h - offset) { return Result<bool>::failure(make_error("Invalid selection unit mask run")); }
-                const unsigned source = code & 128 ? count : code ? 1 :
-                                                                    0;
+                unsigned source = 0;
+                if (code & 128) { source = count; }
+                else if (code) { source = 1; }
+
                 if (source > end - p) { return Result<bool>::failure(make_error("Truncated selection unit mask run")); }
                 unsigned repeated = code && !(code & 128) ? prg_.at(p++) : 0;
                 while (count--)
@@ -1037,7 +1039,9 @@ public:
                     continue;
                 }
                 int phase = depth ? depth - i : i;
-                int start = (phase & 1) ? sx - ((row & 1) ? 0 : 1) : sx - 1;
+                int start = sx - 1;
+                if ((phase & 1) && (row & 1)) { start = sx; }
+
                 for (int j = 0; j < columns; ++j)
                 {
                     int x = start + j;
@@ -2051,7 +2055,7 @@ public:
         }
         return image;
     }
-    std::vector<uint8_t> skill88_background(const std::vector<OriginalEvents::Unit>& units, unsigned turn, unsigned caster) const
+    std::vector<uint8_t> skill88_background(const std::vector<OriginalEvents::Unit>& units, unsigned turn, unsigned caster, unsigned tint_amount = 50, unsigned tint_source = 233) const
     {
         auto image = draw();
         std::vector<uint8_t> indexed(640 * 480);
@@ -2069,7 +2073,7 @@ public:
             unsigned c = indexed[p];
             if (c)
             {
-                c = palette.blend_index(c, 233, 50);
+                c = palette.blend_index(c, tint_source, tint_amount);
             }
             indexed[p] = uint8_t(c);
             for (unsigned k = 0; k < 3; ++k)
@@ -2086,7 +2090,7 @@ public:
         auto image = background;
         const auto& frame = visual.current();
         OriginalPalette palette(pal_);
-        int left = actor.x * 64 + (actor.y & 1) * 32 - camera_x + 32 - 89, top = actor.y * 16 - camera_y + 32 - 124;
+        int left = actor.x * 64 + (actor.y & 1) * 32 - camera_x + 32 - visual.anchor_x(), top = actor.y * 16 - camera_y + 32 - visual.anchor_y();
         int elevation = prg_.at(item(6, map_id - 1) + 28 + (size_t(actor.y) * width + actor.x) * 5);
         top -= std::max(0, elevation - 1) * 16;
         for (unsigned y = 0; y < frame.height; ++y)
@@ -2125,10 +2129,17 @@ public:
         }
         // 4307E8: strict ten-pixel edges; 42BACD: one half-column / two rows.
         int before_x = camera_x, before_y = camera_y;
-        pan(x < 10 ? -32 : x > 630 ? 32 :
-                                     0,
-            y < 10 ? -32 : y > 470 ? 32 :
-                                     0);
+        int panX;
+        if (x < 10) { panX = -32; }
+        else if (x > 630) { panX = 32; }
+        else
+        {
+            panX = 0;
+        }
+        int panY = 0;
+        if (y < 10) { panY = -32; }
+        else if (y > 470) { panY = 32; }
+        pan(panX, panY);
         return camera_x != before_x || camera_y != before_y;
     }
     bool evacuation_visible(int x, int y) const

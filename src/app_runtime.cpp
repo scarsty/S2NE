@@ -235,6 +235,7 @@ int s2ne::run_application(int argc, char** argv)
         std::optional<s2ne::OriginalSkills> skillMenu;
         std::optional<size_t> skillTarget;
         std::optional<size_t> pendingSkillTarget;
+        std::optional<s2ne::Battle::Point> sleepCenter;
         bool pendingSkillVisualStarted = false;
         bool skillCastVerified = false;
         s2ne::OriginalSkills skillRules(root);
@@ -314,7 +315,62 @@ int s2ne::run_application(int argc, char** argv)
                 return EXIT_FAILURE;
             }
             prologue->set_resource_domain(domain.value());
-            prologue->restore_battle(std::move(restored.events), restored.turn);
+            const bool controlledHostileStatus = !options.skillControl.empty() && (NativeAbilityBuffs::find(options.inputSkill) || NativeTimedBuffs::find(options.inputSkill) || options.inputSkill == 8 || options.inputSkill == 12 || options.inputSkill == 35 || options.inputSkill == 39 || options.inputSkill == 48 || options.inputSkill == 56 || options.inputSkill == 60 || options.inputSkill == 17 || options.inputSkill == 25 || options.inputSkill == 52 || options.inputSkill == 61 || options.inputSkill == 13 || options.inputSkill == 15 || options.inputSkill == 53 || options.inputSkill == 34 || options.inputSkill == 38 || options.inputSkill == 54 || options.inputSkill == 96 || NativeTimedBuffs::find(options.inputSkill));
+            if (controlledHostileStatus)
+            {
+                auto actor = std::find_if(restored.events.units.begin(), restored.events.units.end(), [](const auto& u)
+                    {
+                        return u.id == 1;
+                    });
+                if (actor == restored.events.units.end()) { fatal("Controlled053 source actor missing"); }
+                unsigned int group;
+                if (NativeAbilityBuffs::find(options.inputSkill)) { group = NativeAbilityBuffs::find(options.inputSkill)->group; }
+                else if (NativeTimedBuffs::find(options.inputSkill)) { group = NativeTimedBuffs::find(options.inputSkill)->group; }
+                else if (options.inputSkill == 8) { group = 0; }
+                else if (options.inputSkill == 12) { group = 1; }
+                else if (options.inputSkill == 35 || options.inputSkill == 39) { group = 3; }
+                else if (options.inputSkill == 48) { group = 4; }
+                else if (options.inputSkill == 56 || options.inputSkill == 60) { group = 5; }
+                else if (options.inputSkill == 17) { group = 1; }
+                else if (options.inputSkill == 25) { group = 2; }
+                else if (options.inputSkill == 52) { group = 4; }
+                else if (options.inputSkill == 61) { group = 5; }
+                else if (options.inputSkill == 96) { group = 9; }
+                else if (options.inputSkill == 53 || options.inputSkill == 54) { group = 5; }
+                else if (options.inputSkill == 34 || options.inputSkill == 38) { group = 3; }
+                else
+                {
+                    group = 1;
+                }
+
+                unsigned int bit;
+                if (NativeAbilityBuffs::find(options.inputSkill)) { bit = NativeAbilityBuffs::find(options.inputSkill)->bit; }
+                else if (NativeTimedBuffs::find(options.inputSkill)) { bit = NativeTimedBuffs::find(options.inputSkill)->bit; }
+                else if (options.inputSkill == 8 || options.inputSkill == 60) { bit = 7; }
+                else if (options.inputSkill == 12) { bit = 1; }
+                else if (options.inputSkill == 35) { bit = 2; }
+                else if (options.inputSkill == 39) { bit = 6; }
+                else if (options.inputSkill == 48) { bit = 5; }
+                else if (options.inputSkill == 56) { bit = 3; }
+                else if (options.inputSkill == 17) { bit = 6; }
+                else if (options.inputSkill == 25) { bit = 4; }
+                else if (options.inputSkill == 52) { bit = 9; }
+                else if (options.inputSkill == 61) { bit = 8; }
+                else if (options.inputSkill == 96) { bit = 2; }
+                else if (options.inputSkill == 34 || options.inputSkill == 54) { bit = 1; }
+                else if (options.inputSkill == 38) { bit = 5; }
+                else if (options.inputSkill == 53) { bit = 0; }
+                else if (options.inputSkill == 13) { bit = 2; }
+                else
+                {
+                    bit = 4;
+                }
+
+                actor->learned[group] |= uint16_t(1u << bit);
+                std::cout << "CONTROLLED hostile status explicit learned bit injection on actor1; NOT natural learning; source SAVE read-only\n";
+            }
+            prologue->restore_battle(std::move(restored.events), restored.turn, !controlledHostileStatus);
+            if (controlledHostileStatus) { std::cout << "CONTROLLED hostile status battle-only restore: story-stage continuation suppressed; NOT natural campaign entry\n"; }
             rawSave = std::move(restored.raw);
             paused = true;
             std::filesystem::create_directories(root / "S2NE" / "out" / options.inputFolder);
@@ -438,9 +494,15 @@ int s2ne::run_application(int argc, char** argv)
                     }
                 }
             }
-            auto image = innMenu && rawSave ? innMenu->draw(*rawSave) : churchMenu && rawSave ? churchMenu->draw(*rawSave) :
-                shopMenu && rawSave                                                           ? shopMenu->draw(*rawSave) :
-                                                                                                prologue->draw(menu);
+            std::vector<uint8_t> image;
+            if (innMenu && rawSave) { image = innMenu->draw(*rawSave); }
+            else if (churchMenu && rawSave) { image = churchMenu->draw(*rawSave); }
+            else if (shopMenu && rawSave) { image = shopMenu->draw(*rawSave); }
+            else
+            {
+                image = prologue->draw(menu);
+            }
+
             if (options.skillInputSmoke)
             {
                 smokeDriver.state.skillInputImageHash = 1469598103934665603ull;
@@ -449,8 +511,14 @@ int s2ne::run_application(int argc, char** argv)
                     smokeDriver.state.skillInputImageHash ^= c;
                     smokeDriver.state.skillInputImageHash *= 1099511628211ull;
                 }
-                int frame = (options.skill94Input ? prologue->skill94_visual_frame() : options.skill88Input ? prologue->skill88_visual_frame() :
-                                                                                                              prologue->skill32_visual_frame());
+                int visualFrame;
+                if (options.skill94Input) { visualFrame = prologue->skill94_visual_frame(); }
+                else if ((options.skill88Input || options.inputSkill == 1 || (NativeAbilityBuffs::find(options.inputSkill) || NativeTimedBuffs::find(options.inputSkill) || (options.inputSkill >= 2 && options.inputSkill <= 10) || options.inputSkill == 8 || options.inputSkill == 12 || options.inputSkill == 35 || options.inputSkill == 39 || options.inputSkill == 48 || options.inputSkill == 56 || options.inputSkill == 60 || options.inputSkill == 17 || options.inputSkill == 25 || options.inputSkill == 52 || options.inputSkill == 61 || options.inputSkill == 13 || options.inputSkill == 15 || options.inputSkill == 53 || options.inputSkill == 34 || options.inputSkill == 38 || options.inputSkill == 54 || options.inputSkill == 96 || NativeTimedBuffs::find(options.inputSkill)))) { visualFrame = prologue->skill88_visual_frame(); }
+                else
+                {
+                    visualFrame = prologue->skill32_visual_frame();
+                }
+                int frame = (visualFrame);
                 static int saved = -1;
                 if (frame >= 0 && frame != saved)
                 {
@@ -771,9 +839,15 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 if (!battleMenu && !battleReports && !promotionMenu && !itemMenu && (!skillMenu || pendingSkillTarget))
                 {
-                    prologue->tick(prologue->ending_active() ? unsigned(nowUi - lastUiTick) : options.clearSmoke ? 120u :
-                            options.feedbackSmoke                                                                ? std::max(30u, unsigned(nowUi - lastUiTick)) :
-                                                                                                                   unsigned(nowUi - lastUiTick));
+                    unsigned int tickMilliseconds;
+                    if (prologue->ending_active()) { tickMilliseconds = unsigned(nowUi - lastUiTick); }
+                    else if (options.clearSmoke) { tickMilliseconds = 120u; }
+                    else if (options.feedbackSmoke) { tickMilliseconds = std::max(30u, unsigned(nowUi - lastUiTick)); }
+                    else
+                    {
+                        tickMilliseconds = unsigned(nowUi - lastUiTick);
+                    }
+                    prologue->tick(tickMilliseconds);
                 }
                 if (prologue->ending_active())
                 {
@@ -824,8 +898,22 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 if (skillMenu && pendingSkillTarget && !prologue->battle().animating_movement() && !pendingSkillVisualStarted)
                 {
-                    pendingSkillVisualStarted = skillMenu->selected().id == 94 ? prologue->begin_skill94_visual(unsigned(prologue->battle_selected()), unsigned(*pendingSkillTarget)) : skillMenu->selected().id == 88 ? prologue->begin_skill88_visual(unsigned(prologue->battle_selected())) :
-                                                                                                                                                                                                                         prologue->begin_skill32_visual(unsigned(prologue->battle_selected()), unsigned(*pendingSkillTarget), skillMenu->selected().id == 33);
+                    bool visualStarted;
+                    if (skillMenu->selected().id == 94) { visualStarted = prologue->begin_skill94_visual(unsigned(prologue->battle_selected()), unsigned(*pendingSkillTarget)); }
+                    else if (skillMenu->selected().id == 88 || skillMenu->selected().id == 1 || skillMenu->status_area_supported())
+                    {
+                        unsigned visual_target = unsigned(prologue->battle_selected());
+                        if (skillMenu->selected().id != 88) { visual_target = unsigned(*pendingSkillTarget); }
+                        unsigned status_skill = 0;
+                        if (skillMenu->selected().id >= 4 && skillMenu->status_area_supported()) { status_skill = skillMenu->selected().id; }
+                        visualStarted = prologue->begin_skill88_visual(visual_target, skillMenu->selected().id == 1, skillMenu->selected().id == 2, sleepCenter, skillMenu->selected().id == 3, status_skill);
+                    }
+                    else
+                    {
+                        visualStarted = prologue->begin_skill32_visual(unsigned(prologue->battle_selected()), unsigned(*pendingSkillTarget), skillMenu->selected().id == 33);
+                    }
+
+                    pendingSkillVisualStarted = visualStarted;
                     if (pendingSkillVisualStarted)
                     {
                         nowUi = SDL_GetTicks();
@@ -855,6 +943,7 @@ int s2ne::run_application(int argc, char** argv)
                             context.skill_payment_state = skillMenu->initial_payment_state(skillMenu->selected().id);
                             auto award = [&](auto& unit, auto& stream, int xp, int proficiency, unsigned group)
                             {
+                                if (options.skillControl == "rollback") { return false; }
                                 // 4659BD skips capped proficiency, not the remaining XP/payment transaction.
                                 promotionTransaction.award_proficiency(unit, 6 + group, unsigned(proficiency));
                                 s2ne::OriginalRandom native({ stream.seed_state(), stream.draw_count() });
@@ -876,17 +965,6 @@ int s2ne::run_application(int argc, char** argv)
                                 stream.restore_stream(state.seed, state.calls);
                                 return true;
                             };
-                            if (skillMenu->selected().id == 88)
-                            {
-                                auto& actor = prologue->events.units.at(size_t(selected));
-                                context.status3c = actor.action_status_runtime ? (uint32_t(actor.action_status_runtime->at(0x3C)) | uint32_t(actor.action_status_runtime->at(0x3D)) << 8 | uint32_t(actor.action_status_runtime->at(0x3E)) << 16 | uint32_t(actor.action_status_runtime->at(0x3F)) << 24) : uint32_t(actor.status3c) | uint32_t(actor.status3d) << 8 | uint32_t(actor.status3e) << 16;
-                                std::cout << "88 context difficulty=" << context.difficulty << " runtime3c=" << context.status3c << " cached3c=" << unsigned(actor.status3c) << " entry=" << skillRules.entry_available(actor, s2ne::OriginalSkills::Context{ .second = true }) << " xp=" << actor.experience << " threshold=" << actor.experience_threshold << '\n';
-                                auto heal = skillMenu->execute(actor, actor, prologue->events, rng, context, award);
-                                result.applied = heal.applied;
-                                result.failure = heal.failure;
-                                std::cout << "Original88 self heal=" << heal.healing << " xp=" << heal.experience_award << " proficiency=" << heal.proficiency_award << '\n';
-                                return heal.applied;
-                            }
                             if (skillMenu->selected().id == 94)
                             {
                                 auto& actor = prologue->events.units.at(size_t(selected));
@@ -931,7 +1009,7 @@ int s2ne::run_application(int argc, char** argv)
                                     auto finalVictim = std::make_shared<s2ne::OriginalEvents::Unit>(std::move(stagedVictim));
                                     auto inventory = std::make_shared<std::vector<uint8_t>>(std::move(stagedInventory));
                                     auto seed = stagedRandom.seed_state(), calls = stagedRandom.draw_count();
-                                    swordFeedbackPending = prologue->battle().begin_skill94_feedback(size_t(selected), target, victim.hp, outcome.damage, [&, selected, target, finalActor, finalVictim, inventory, seed, calls]()
+                                    swordFeedbackPending = prologue->battle().begin_skill94_feedback(size_t(selected), target, victim.hp, outcome.damage, [&, selected, target, finalActor, finalVictim, inventory, seed, calls, outcome]()
                                         {
                                             auto publish = [&, selected, target, finalActor, finalVictim, inventory, seed, calls]()
                                             {
@@ -957,10 +1035,20 @@ int s2ne::run_application(int argc, char** argv)
                                                         s2ne::fatal("Original94 death presentation rejected before settlement");
                                                     }
                                                 };
-                                                if (!prologue->begin_synchronous_death(finalVictim->id, std::move(death)))
+                                                if (!prologue->begin_synchronous_death(finalVictim->id, std::move(death), finalVictim.get()))
                                                 {
                                                     s2ne::fatal("Original94 synchronous death rejected before settlement");
                                                 }
+                                            }
+                                            else if (outcome.revived || outcome.reverse_heal)
+                                            {
+                                                const int hp = outcome.revived ? 0 : outcome.hp_snapshot;
+                                                const int healing = outcome.revived ? finalVictim->max_hp : outcome.healed;
+                                                if (!prologue->battle().begin_healing_feedback(size_t(selected), target, hp, healing, std::move(publish)))
+                                                {
+                                                    s2ne::fatal("Original94 secondary468BAC feedback rejected before settlement");
+                                                }
+                                                std::cout << "Original94 secondary468BAC revived=" << outcome.revived << " reverse=" << outcome.reverse_heal << " consumed=" << outcome.consumed_item << " healing=" << healing << '\n';
                                             }
                                             else
                                             {
@@ -983,41 +1071,56 @@ int s2ne::run_application(int argc, char** argv)
                                 std::cout << "Original94 damage=" << outcome.damage << " xp=" << outcome.raw_xp << " proficiency=" << outcome.proficiency << " runtime39=" << sword.damage.target_status39 << " masks=" << masks[0] << ',' << masks[1] << " failure=" << int(outcome.failure) << '\n';
                                 return false;
                             }
-                            if (skillMenu->selected().id == 33)
+                            if (!skillMenu->pipeline_supported()) { return false; }
+                            auto a = prologue->events.units.at(size_t(selected));
+                            auto center = prologue->events.units.at(target);
+                            if (sleepCenter)
                             {
-                                auto stagedActor = prologue->events.units.at(size_t(selected));
-                                auto stagedTarget = prologue->events.units.at(target);
-                                auto stagedMenu = *skillMenu;
-                                auto stream = rng;
-                                auto outcome = stagedMenu.execute_curse33(stagedActor, stagedTarget, stream, context, award);
-                                if (!outcome)
+                                center.x = sleepCenter->x;
+                                center.y = sleepCenter->y;
+                            }
+                            context.status3c = a.action_status_runtime ? uint32_t(a.action_status_runtime->at(0x3C)) | uint32_t(a.action_status_runtime->at(0x3D)) << 8 | uint32_t(a.action_status_runtime->at(0x3E)) << 16 | uint32_t(a.action_status_runtime->at(0x3F)) << 24 : uint32_t(a.status3c) | uint32_t(a.status3d) << 8 | uint32_t(a.status3e) << 16 | uint32_t(a.status3f) << 24;
+                            auto menu = *skillMenu;
+                            menu.set_area_camera(prologue->camera());
+                            auto stream = rng;
+                            const auto handler = menu.handler();
+                            const bool healing = handler == s2ne::OriginalSkills::Handler::healing465C14;
+                            const bool status = handler == s2ne::OriginalSkills::Handler::status4668F0;
+                            auto indices = menu.collect_targets(a, center, prologue->events.units, prologue->battle_turn(), [&](int x, int y)
                                 {
-                                    s2ne::report_error(outcome.error());
-                                    return false;
-                                }
-                                result = outcome.value();
-                                auto seed = stream.seed_state(), calls = stream.draw_count();
-                                swordFeedbackPending = prologue->battle().begin_curse33_feedback(size_t(selected), target,
-                                    prologue->events.units.at(target).hp, result.hit,
-                                    [&, selected, target, stagedActor = std::move(stagedActor), stagedTarget = std::move(stagedTarget), seed, calls]() mutable
-                                    {
-                                        prologue->events.units.at(size_t(selected)) = std::move(stagedActor);
-                                        prologue->events.units.at(target) = std::move(stagedTarget);
-                                        prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
-                                            {
-                                                live.restore_stream(seed, calls);
-                                                return true;
-                                            });
-                                        prologue->battle().commit_external_action();
-                                        skillCastVerified = true;
-                                        *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-                                        std::cout << "Original33 feedback complete; curse/timer/MP/AP/reward/RNG published once\n";
-                                    });
-                                if (!swordFeedbackPending) { result.applied = false; }
+                                    return prologue->battle().skill_area_cell({ x, y });
+                                });
+                            std::vector<s2ne::OriginalEvents::Unit> victims;
+                            for (auto i : indices) { victims.push_back(prologue->events.units[i]); }
+                            auto packet = menu.execute_pipeline(a, victims, center, &prologue->events, &promotionTransaction, stream, context, award);
+                            if (!packet)
+                            {
+                                s2ne::report_error(packet.error());
                                 return false;
                             }
-                            result = skillMenu->execute_hostile(prologue->events.units.at(size_t(selected)), prologue->events.units.at(target), rng, context, promotionTransaction, award);
-                            return result.applied;
+                            result = packet.value();
+                            std::cout << "AREA production skill=" << skillMenu->selected().id << " center=" << center.x << "," << center.y << " targets=" << indices.size() << " stagedRNG=" << stream.draw_count() - rng.draw_count() << " unpublished=1\n";
+                            for (size_t n = 0; n < indices.size(); ++n) { std::cout << "AREA target=" << victims[n].id << " xy=" << victims[n].x << "," << victims[n].y << " feedback=" << int(result.target_hits[n]) << " status3e=" << unsigned(victims[n].status3e) << " status3f=" << unsigned(victims[n].status3f) << '\n'; }
+                            std::vector<std::pair<size_t, bool>> feedback;
+                            for (size_t i = 0; i < indices.size(); ++i) { feedback.emplace_back(indices[i], result.target_hits[i]); }
+                            auto seed = stream.seed_state(), calls = stream.draw_count();
+                            swordFeedbackPending = prologue->battle().begin_status_area_feedback(size_t(selected), std::move(feedback), prologue->events.units, [&, selected, a = std::move(a), victims = std::move(victims), indices, seed, calls, pendingMpGrowth]() mutable
+                                {
+                                    smokeDriver.state.skillInputMpGrowth += pendingMpGrowth;
+                                    prologue->events.units.at(size_t(selected)) = std::move(a);
+                                    for (size_t i = 0; i < indices.size(); ++i) { prologue->events.units.at(indices[i]) = std::move(victims[i]); }
+                                    prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
+                                        {
+                                            live.restore_stream(seed, calls);
+                                            return true;
+                                        });
+                                    prologue->battle().commit_external_action();
+                                    skillCastVerified = true;
+                                    *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                    std::cout << "Original area feedback complete; all statuses/timers/payment/reward/RNG published once targets=" << indices.size() << '\n';
+                                },
+                                healing || status, result.target_amounts, healing);
+                            return false;
                         });
                     std::cout << "Original skill" << skillMenu->selected().id << " target=" << prologue->events.units.at(target).id << " applied=" << applied << " hit=" << result.hit << " immune=" << result.immune << " chance=" << result.chance << " roll=" << result.roll << " removed=" << result.removed << " failure=" << int(result.failure) << '\n';
                     if (applied)
@@ -1044,6 +1147,7 @@ int s2ne::run_application(int argc, char** argv)
                         *rawSave = std::move(snapshot);
                     }
                     skillMenu.reset();
+                    sleepCenter.reset();
                     skillTarget.reset();
                     showPrologue();
                 }
@@ -1371,19 +1475,27 @@ int s2ne::run_application(int argc, char** argv)
                         if (event.key.key == SDLK_ESCAPE)
                         {
                             skillMenu.reset();
+                            sleepCenter.reset();
                             skillTarget.reset();
                             showPrologue();
                             continue;
                         }
                         if (skillMenu->page() == s2ne::OriginalSkills::Page::list)
                         {
-                            unsigned scan = event.key.key == SDLK_LEFT ? 0x4B : event.key.key == SDLK_RIGHT ? 0x4D :
-                                event.key.key == SDLK_UP                                                    ? 0x48 :
-                                event.key.key == SDLK_DOWN                                                  ? 0x50 :
-                                                                                                              0;
+                            int scan;
+                            if (event.key.key == SDLK_LEFT) { scan = 0x4B; }
+                            else if (event.key.key == SDLK_RIGHT) { scan = 0x4D; }
+                            else if (event.key.key == SDLK_UP) { scan = 0x48; }
+                            else if (event.key.key == SDLK_DOWN) { scan = 0x50; }
+                            else
+                            {
+                                scan = 0;
+                            }
+
                             if (scan)
                             {
                                 skillMenu->navigate(scan);
+                                sleepCenter.reset();
                             }
                         }
                         if (event.key.key == SDLK_RETURN || event.key.key == SDLK_SPACE)
@@ -1395,9 +1507,10 @@ int s2ne::run_application(int argc, char** argv)
                             for (size_t n = 1; n <= prologue->events.units.size(); ++n)
                             {
                                 size_t i = (skillTarget.value_or(0) + n) % prologue->events.units.size();
-                                if (skillMenu->hostile_in_range(prologue->events.units.at(size_t(selected)), prologue->events.units[i]))
+                                if ((skillMenu->healing1_in_range(prologue->events.units.at(size_t(selected)), prologue->events.units[i])) || skillMenu->hostile_in_range(prologue->events.units.at(size_t(selected)), prologue->events.units[i]))
                                 {
                                     skillTarget = i;
+                                    sleepCenter.reset();
                                     break;
                                 }
                             }
@@ -1410,6 +1523,7 @@ int s2ne::run_application(int argc, char** argv)
                         if (click && event.button.button == SDL_BUTTON_RIGHT)
                         {
                             skillMenu.reset();
+                            sleepCenter.reset();
                             skillTarget.reset();
                             showPrologue();
                             continue;
@@ -1424,7 +1538,27 @@ int s2ne::run_application(int argc, char** argv)
                             auto camera = prologue->camera();
                             auto cell = prologue->battle().pick_surface(float(x), float(y), camera.first, camera.second);
                             int target = prologue->battle().occupant(prologue->events.units, cell);
-                            if (target >= 0 && ((skillMenu->selected().id == 88 && target == selected) || skillMenu->hostile_in_range(prologue->events.units.at(size_t(selected)), prologue->events.units[size_t(target)])))
+                            if (skillMenu->status_area_supported())
+                            {
+                                auto center = prologue->events.units.at(size_t(selected));
+                                center.x = cell.x;
+                                center.y = cell.y;
+                                if (skillMenu->sleep2_center_in_range(prologue->events.units.at(size_t(selected)), center))
+                                {
+                                    for (size_t i = 0; i < prologue->events.units.size(); ++i)
+                                    {
+                                        const auto& u = prologue->events.units[i];
+                                        if (skillMenu->status_area_target(center, u) && u.present(prologue->battle_turn()) && skillMenu->sleep2_area(center, u) && prologue->battle().skill_area_cell({ u.x, u.y }) && prologue->battle().target_visible(u, std::span(&center, 1), 0))
+                                        {
+                                            sleepCenter = cell;
+                                            skillTarget = i;
+                                            confirm = click && event.button.button == SDL_BUTTON_LEFT;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else if (target >= 0 && ((skillMenu->selected().id == 88 && target == selected) || skillMenu->healing1_in_range(prologue->events.units.at(size_t(selected)), prologue->events.units[size_t(target)]) || skillMenu->hostile_in_range(prologue->events.units.at(size_t(selected)), prologue->events.units[size_t(target)])))
                             {
                                 skillTarget = size_t(target);
                                 confirm = click && event.button.button == SDL_BUTTON_LEFT;
@@ -1451,7 +1585,7 @@ int s2ne::run_application(int argc, char** argv)
                                     s2ne::fatal("Final quest normal-input cast blocked: reason=" + std::to_string(int(failure)) + " MP=" + std::to_string(actor.mp) + " ST=" + std::to_string(actor.st) + " checkpoint=" + path.string());
                                 }
                             }
-                            else if (!skillMenu->hostile_supported() && !skillMenu->sword94_supported() && !skillMenu->curse33_supported() && !skillMenu->effect_supported(skillMenu->selected()))
+                            else if (!skillMenu->hostile_supported() && !skillMenu->sword94_supported() && !skillMenu->curse33_supported() && !skillMenu->status_area_supported() && !skillMenu->effect_supported(skillMenu->selected()))
                             {
                                 std::cout << "Original selected spell executor unavailable id=" << skillMenu->selected().id << '\n';
                                 skillMenu->resume();
@@ -1465,7 +1599,7 @@ int s2ne::run_application(int argc, char** argv)
                                 skillTarget.reset();
                                 for (size_t i = 0; i < prologue->events.units.size(); ++i)
                                 {
-                                    if (skillMenu->hostile_in_range(prologue->events.units.at(size_t(selected)), prologue->events.units[i]))
+                                    if ((skillMenu->healing1_in_range(prologue->events.units.at(size_t(selected)), prologue->events.units[i])) || skillMenu->hostile_in_range(prologue->events.units.at(size_t(selected)), prologue->events.units[i]))
                                     {
                                         skillTarget = i;
                                         break;
@@ -1493,6 +1627,7 @@ int s2ne::run_application(int argc, char** argv)
                                 std::cout << "Original46C078 spell32 preparation unavailable\n";
                                 continue;
                             }
+                            if (skillMenu->status_area_supported() && !sleepCenter) { sleepCenter = skillMenu->selected().raw[18] == 7 ? s2ne::Battle::Point{ caster.x, caster.y } : s2ne::Battle::Point{ target.x, target.y }; }
                             pendingSkillTarget = skillTarget;
                             skillTarget.reset();
                         }
@@ -1625,8 +1760,15 @@ int s2ne::run_application(int argc, char** argv)
                         input.type = 0x20;
                         input.x = int(event.button.x);
                         input.y = int(event.button.y);
-                        input.buttons = event.button.button == SDL_BUTTON_LEFT ? 1 : event.button.button == SDL_BUTTON_RIGHT ? 2 :
-                                                                                                                               0;
+                        int mouseButtons;
+                        if (event.button.button == SDL_BUTTON_LEFT) { mouseButtons = 1; }
+                        else if (event.button.button == SDL_BUTTON_RIGHT) { mouseButtons = 2; }
+                        else
+                        {
+                            mouseButtons = 0;
+                        }
+
+                        input.buttons = mouseButtons;
                     }
                     auto result = settings->event(input);
                     if (result.closed)
@@ -1757,9 +1899,22 @@ int s2ne::run_application(int argc, char** argv)
                         input.type = down ? 0x20 : 8;
                         input.x = int(down ? event.button.x : event.motion.x);
                         input.y = int(down ? event.button.y : event.motion.y);
-                        input.buttons = down ? (event.button.button == SDL_BUTTON_LEFT ? 1 : event.button.button == SDL_BUTTON_RIGHT ? 2 :
-                                                                                                                                       0) :
-                                               0;
+                        int mouseButtons;
+                        if (down)
+                        {
+                            if (event.button.button == SDL_BUTTON_LEFT) { mouseButtons = 1; }
+                            else if (event.button.button == SDL_BUTTON_RIGHT) { mouseButtons = 2; }
+                            else
+                            {
+                                mouseButtons = 0;
+                            }
+                        }
+                        else
+                        {
+                            mouseButtons = 0;
+                        }
+
+                        input.buttons = mouseButtons;
                     }
                     if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_RETURN)
                     {
@@ -1848,9 +2003,22 @@ int s2ne::run_application(int argc, char** argv)
                         input.type = down ? 0x20 : 8;
                         input.x = int(down ? event.button.x : event.motion.x);
                         input.y = int(down ? event.button.y : event.motion.y);
-                        input.buttons = down ? (event.button.button == SDL_BUTTON_LEFT ? 1 : event.button.button == SDL_BUTTON_RIGHT ? 2 :
-                                                                                                                                       0) :
-                                               0;
+                        int mouseButtons;
+                        if (down)
+                        {
+                            if (event.button.button == SDL_BUTTON_LEFT) { mouseButtons = 1; }
+                            else if (event.button.button == SDL_BUTTON_RIGHT) { mouseButtons = 2; }
+                            else
+                            {
+                                mouseButtons = 0;
+                            }
+                        }
+                        else
+                        {
+                            mouseButtons = 0;
+                        }
+
+                        input.buttons = mouseButtons;
                     }
                     battleReports->event(input);
                     if (battleReports->page() == s2ne::OriginalBattleReports::Page::closed)
@@ -1885,9 +2053,22 @@ int s2ne::run_application(int argc, char** argv)
                         input.type = down ? 0x20 : 8;
                         input.x = int(down ? event.button.x : event.motion.x);
                         input.y = int(down ? event.button.y : event.motion.y);
-                        input.buttons = down ? (event.button.button == SDL_BUTTON_LEFT ? 1 : event.button.button == SDL_BUTTON_RIGHT ? 2 :
-                                                                                                                                       0) :
-                                               0;
+                        int mouseButtons;
+                        if (down)
+                        {
+                            if (event.button.button == SDL_BUTTON_LEFT) { mouseButtons = 1; }
+                            else if (event.button.button == SDL_BUTTON_RIGHT) { mouseButtons = 2; }
+                            else
+                            {
+                                mouseButtons = 0;
+                            }
+                        }
+                        else
+                        {
+                            mouseButtons = 0;
+                        }
+
+                        input.buttons = mouseButtons;
                     }
                     promotionMenu->event(input);
                     if (promotionMenu->page() == s2ne::OriginalPromotion::Page::closed)
@@ -1921,9 +2102,22 @@ int s2ne::run_application(int argc, char** argv)
                         input.type = down ? 0x20 : 8;
                         input.x = int(down ? event.button.x : event.motion.x);
                         input.y = int(down ? event.button.y : event.motion.y);
-                        input.buttons = down ? (event.button.button == SDL_BUTTON_LEFT ? 1 : event.button.button == SDL_BUTTON_RIGHT ? 2 :
-                                                                                                                                       0) :
-                                               0;
+                        int mouseButtons;
+                        if (down)
+                        {
+                            if (event.button.button == SDL_BUTTON_LEFT) { mouseButtons = 1; }
+                            else if (event.button.button == SDL_BUTTON_RIGHT) { mouseButtons = 2; }
+                            else
+                            {
+                                mouseButtons = 0;
+                            }
+                        }
+                        else
+                        {
+                            mouseButtons = 0;
+                        }
+
+                        input.buttons = mouseButtons;
                     }
                     if (saveMenu)
                     {
@@ -2053,8 +2247,14 @@ int s2ne::run_application(int argc, char** argv)
                                 entries.push_back({ unit, unit.hostile(), unit.npc_class() ? 1 : 0, false });
                             }
                         }
-                        auto page = request.action == s2ne::OriginalBattleMenu::Action::conditions ? s2ne::OriginalBattleReports::Page::conditions : request.action == s2ne::OriginalBattleMenu::Action::inspect_map ? s2ne::OriginalBattleReports::Page::map :
-                                                                                                                                                                                                                       s2ne::OriginalBattleReports::Page::roster;
+                        s2ne::OriginalBattleReports::Page page;
+                        if (request.action == s2ne::OriginalBattleMenu::Action::conditions) { page = s2ne::OriginalBattleReports::Page::conditions; }
+                        else if (request.action == s2ne::OriginalBattleMenu::Action::inspect_map) { page = s2ne::OriginalBattleReports::Page::map; }
+                        else
+                        {
+                            page = s2ne::OriginalBattleReports::Page::roster;
+                        }
+
                         s2ne::OriginalMap overview(root);
                         overview.set_dynamic_object_chains(prologue->events.dynamic_object_chains);
                         overview.set_event_flags(prologue->events.flags);
@@ -2612,6 +2812,7 @@ int s2ne::run_application(int argc, char** argv)
                 context.second = prologue->battle_requested_command() == 7;
                 prologue->clear_battle_requested_command();
                 skillMenu.emplace(root);
+                skillMenu->set_area_camera(prologue->camera());
                 skillMenu->open(prologue->events.units.at(size_t(prologue->battle_selected())), context);
                 if (skillMenu->page() == s2ne::OriginalSkills::Page::closed)
                 {
@@ -2700,13 +2901,28 @@ int s2ne::run_application(int argc, char** argv)
                 if (options.skillInputSmoke)
                 {
                     static int previous = -1;
-                    int frame = (options.skill94Input ? prologue->skill94_visual_frame() : options.skill88Input ? prologue->skill88_visual_frame() :
-                                                                                                                  prologue->skill32_visual_frame());
+                    int visualFrame;
+                    if (options.skill94Input) { visualFrame = prologue->skill94_visual_frame(); }
+                    else if ((options.skill88Input || options.inputSkill == 1 || (NativeAbilityBuffs::find(options.inputSkill) || NativeTimedBuffs::find(options.inputSkill) || (options.inputSkill >= 2 && options.inputSkill <= 10) || options.inputSkill == 8 || options.inputSkill == 12 || options.inputSkill == 35 || options.inputSkill == 39 || options.inputSkill == 48 || options.inputSkill == 56 || options.inputSkill == 60 || options.inputSkill == 17 || options.inputSkill == 25 || options.inputSkill == 52 || options.inputSkill == 61 || options.inputSkill == 13 || options.inputSkill == 15 || options.inputSkill == 53 || options.inputSkill == 34 || options.inputSkill == 38 || options.inputSkill == 54 || options.inputSkill == 96 || NativeTimedBuffs::find(options.inputSkill)))) { visualFrame = prologue->skill88_visual_frame(); }
+                    else
+                    {
+                        visualFrame = prologue->skill32_visual_frame();
+                    }
+                    int frame = (visualFrame);
                     if (frame >= 0 && frame != previous)
                     {
                         ++smokeDriver.state.skillInputFrames;
-                        std::cout << "SDL SPELLSP" << (options.skill94Input ? 85 : options.skill88Input ? 79 :
-                                                                                                          33)
+                        int visualResource;
+                        if (options.skill94Input) { visualResource = 85; }
+                        else if (options.skill88Input) { visualResource = 79; }
+                        else if ((NativeAbilityBuffs::find(options.inputSkill) || NativeTimedBuffs::find(options.inputSkill) || (options.inputSkill >= 2 && options.inputSkill <= 10) || options.inputSkill == 8 || options.inputSkill == 12 || options.inputSkill == 35 || options.inputSkill == 39 || options.inputSkill == 48 || options.inputSkill == 56 || options.inputSkill == 60 || options.inputSkill == 17 || options.inputSkill == 25 || options.inputSkill == 52 || options.inputSkill == 61 || options.inputSkill == 13 || options.inputSkill == 15 || options.inputSkill == 53 || options.inputSkill == 34 || options.inputSkill == 38 || options.inputSkill == 54 || options.inputSkill == 96 || NativeTimedBuffs::find(options.inputSkill))) { visualResource = 3; }
+                        else if (options.inputSkill == 1) { visualResource = 2; }
+                        else if (options.inputSkill == 33) { visualResource = 34; }
+                        else
+                        {
+                            visualResource = 33;
+                        }
+                        std::cout << "SDL SPELLSP" << (visualResource)
                                   << " frame=" << frame << " ticks=" << SDL_GetTicks() << '\n';
                     }
                     previous = frame;

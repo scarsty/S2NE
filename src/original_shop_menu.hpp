@@ -3,6 +3,7 @@
 #include "original_equipment.hpp"
 #include "original_interbattle.hpp"
 #include "original_shop.hpp"
+#include "original_sprite.hpp"
 #include <chrono>
 #include <ctime>
 #include <memory>
@@ -141,46 +142,13 @@ private:
     static std::vector<uint8_t> read(const std::filesystem::path& path) { return try_read(path).value(); }
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
+    s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, OriginalZeroRun zero) const
     {
-        size_t g = dword(pal_, 816) - 57, p = g + dword(cel_, g + 2 + (id - 142) * 8);
-        unsigned w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
-        p += 4;
-        for (unsigned y = 0; y < h; ++y)
-        {
-            for (unsigned x = 0; x < w;)
-            {
-                unsigned op = cel_.at(p++), n = op ? op & 127 : 1, c = 0;
-                if (!n || n > w - x)
-                {
-                    return s2ne::Result<bool>::failure(make_error("Invalid original shop sprite"));
-                }
-                if (op && !(op & 128))
-                {
-                    c = cel_.at(p++);
-                }
-                while (n--)
-                {
-                    unsigned ink = op & 128 ? cel_.at(p++) : c;
-                    int xx = left + int(x++), yy = top + int(y);
-                    if (ink && xx >= 0 && xx < 640 && yy >= 0 && yy < 480)
-                    {
-                        size_t q = (size_t(yy) * 640 + xx) * 4;
-                        for (unsigned k = 0; k < 3; ++k)
-                        {
-                            image.at(q + k) = uint8_t(unsigned(pal_.at(ink * 3 + k)) * 255 / 63);
-                        }
-                        image.at(q + 3) = 255;
-                    }
-                }
-            }
-        }
-
-        return s2ne::Result<bool>::success(true);
+        return draw_original_cel(image, cel_, pal_, id, left, top, zero);
     }
-    void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
+    void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, OriginalZeroRun zero) const
     {
-        auto result = try_sprite(image, id, left, top);
+        auto result = try_sprite(image, id, left, top, zero);
         if (!result)
         {
             report_error(result.error());
@@ -188,49 +156,15 @@ private:
     }
     s2ne::Result<bool> try_merchant(std::vector<uint8_t>& image, unsigned portrait = 0) const
     {
+        unsigned portrait_index = 332;
+        if (portrait) { portrait_index = portrait * 2 - 2; }
+        else if (buying_) { portrait_index = 86; }
         // 41144E ->426728(167,0): CEL group3 portrait pair, index332.
-        size_t g = dword(pal_, 824) - 58, p = g + dword(cel_, g + 2 + (portrait ? portrait * 2 - 2 : buying_ ? 86 :
-                                                                                                               332)
-                                                          * 8);
-        unsigned type = cel_.at(p++), w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
-        p += 4;
-        if (type > 1 || w > 640 || h > 480)
-        {
-            return s2ne::Result<bool>::failure(make_error("Original merchant portrait framing"));
-        }
-        int left = 80 - int(w) / 2;
-        for (unsigned y = 0; y < h; ++y)
-        {
-            for (unsigned x = 0; x < w;)
-            {
-                unsigned op = type ? 0x81 : cel_.at(p++), n = op ? op & 127 : 1, c = 0;
-                if (!n || n > w - x)
-                {
-                    return s2ne::Result<bool>::failure(make_error("Original merchant portrait run"));
-                }
-                if (op && !(op & 128))
-                {
-                    c = cel_.at(p++);
-                }
-                while (n--)
-                {
-                    unsigned ink = op & 128 ? cel_.at(p++) : c;
-                    int xx = left + int(x++), yy = 37 + int(y);
-                    if (ink && xx >= 0 && xx < 640 && yy < 480)
-                    {
-                        size_t q = (size_t(yy) * 640 + xx) * 4;
-                        for (unsigned k = 0; k < 3; ++k)
-                        {
-                            image.at(q + k) = uint8_t(unsigned(pal_.at(ink * 3 + k)) * 255 / 63);
-                        }
-                        image.at(q + 3) = 255;
-                    }
-                }
-            }
-        }
-
-        return s2ne::Result<bool>::success(true);
+        size_t g = dword(pal_, 824) - 58, p = g + dword(cel_, g + 2 + portrait_index * 8);
+        unsigned w = word(cel_, p + 1) + 1;
+        return draw_original_sprite(image, cel_, pal_, p, true, 80 - int(w) / 2, 37, OriginalZeroRun::transparent);
     }
+
     void merchant(std::vector<uint8_t>& image, unsigned portrait = 0) const
     {
         auto result = try_merchant(image, portrait);
@@ -336,10 +270,10 @@ public:
     std::vector<uint8_t> service_panel(unsigned portrait, unsigned title, uint32_t cash, const OriginalInterbattle& background, bool show_cash = true) const
     {
         auto image = background.indexed_background(pal_);
-        sprite(image, 235, 6, 8);
+        sprite(image, 235, 6, 8, OriginalZeroRun::opaque);
         if (show_cash)
         {
-            sprite(image, 212, 352, 200);
+            sprite(image, 212, 352, 200, OriginalZeroRun::opaque);
         }
         merchant(image, portrait);
         auto caption = font_.text_bytes(title);
@@ -354,40 +288,9 @@ public:
     s2ne::Result<bool> try_role_portrait(std::vector<uint8_t>& image, unsigned id, int x, int y) const
     {
         size_t g = dword(pal_, 824) - 58, p = g + dword(cel_, g + 2 + (id * 2 - 2) * 8);
-        unsigned type = cel_.at(p++), w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
-        p += 4;
-        for (unsigned yy = 0; yy < h; ++yy)
-        {
-            for (unsigned xx = 0; xx < w;)
-            {
-                unsigned op = type ? 0x81 : cel_.at(p++), n = op ? op & 127 : 1, c = 0;
-                if (!n || n > w - xx)
-                {
-                    return s2ne::Result<bool>::failure(make_error("Role portrait run"));
-                }
-                if (op && !(op & 128))
-                {
-                    c = cel_.at(p++);
-                }
-                while (n--)
-                {
-                    unsigned ink = op & 128 ? cel_.at(p++) : c;
-                    int dx = x + int(xx++), dy = y + int(yy);
-                    if (ink && dx >= 0 && dx < 640 && dy >= 0 && dy < 480)
-                    {
-                        size_t q = (size_t(dy) * 640 + dx) * 4;
-                        for (unsigned k = 0; k < 3; ++k)
-                        {
-                            image.at(q + k) = uint8_t(unsigned(pal_.at(ink * 3 + k)) * 255 / 63);
-                        }
-                        image.at(q + 3) = 255;
-                    }
-                }
-            }
-        }
-
-        return s2ne::Result<bool>::success(true);
+        return draw_original_sprite(image, cel_, pal_, p, true, x, y, OriginalZeroRun::transparent);
     }
+
     void role_portrait(std::vector<uint8_t>& image, unsigned id, int x, int y) const
     {
         auto result = try_role_portrait(image, id, x, y);
@@ -423,8 +326,8 @@ public:
         size_t g = dword(pal_, 816) - 57, p = g + dword(cel_, g + 2 + (id - 142) * 8);
         return int(word(cel_, p + 2)) + 1;
     }
-    void panel(std::vector<uint8_t>& image, unsigned id, int x, int y) const { sprite(image, id, x, y); }
-    void shared_panel(std::vector<uint8_t>& image, unsigned address, int x, int y) const { sprite(image, shared_sprite(address), x, y); }
+    void panel(std::vector<uint8_t>& image, unsigned id, int x, int y) const { sprite(image, id, x, y, OriginalZeroRun::transparent); }
+    void shared_panel(std::vector<uint8_t>& image, unsigned address, int x, int y) const { sprite(image, shared_sprite(address), x, y, OriginalZeroRun::transparent); }
     void outline(std::vector<uint8_t>& image, int left, int top, int right, int bottom, unsigned ink) const
     {
         for (int y = top; y <= bottom; ++y)
@@ -596,8 +499,15 @@ public:
         }
         if (code == 1)
         {
-            page_ = page_ == Page::quantity ? Page::sale : page_ == Page::sale ? Page::shop :
-                                                                                 Page::closed;
+            s2ne::OriginalShopMenu::Page parentPage;
+            if (page_ == Page::quantity) { parentPage = Page::sale; }
+            else if (page_ == Page::sale) { parentPage = Page::shop; }
+            else
+            {
+                parentPage = Page::closed;
+            }
+
+            page_ = parentPage;
             return false;
         }
         if (page_ == Page::shop)
@@ -849,9 +759,9 @@ public:
         }
         else
         {
-            sprite(image, 235, 6, 8);
-            sprite(image, 212, 352, 200);
-            sprite(image, 211, 4, 236);
+            sprite(image, 235, 6, 8, OriginalZeroRun::opaque);
+            sprite(image, 212, 352, 200, OriginalZeroRun::opaque);
+            sprite(image, 211, 4, 236, OriginalZeroRun::opaque);
             merchant(image);
             if (buying_)
             {
@@ -868,7 +778,7 @@ public:
             for (unsigned col = 0; col < 8 && size_t(first_) + col < items_.size(); ++col)
             {
                 unsigned id = items_[size_t(first_) + col];
-                sprite(image, id + 492, 204 + int(col) * 54, 313);
+                sprite(image, id + 492, 204 + int(col) * 54, 313, OriginalZeroRun::transparent);
                 auto price = std::to_string(unit_price(state, id));
                 // 411F5B uses 422402 in both buy and sale paths (8-pixel ASCII advance).
                 font_.draw_small(image, { price.begin(), price.end() }, 220 - int(price.size()) * 4 + int(col) * 54, 358, buying_ && unit_price(state, id) > money(state) ? 68 : 190, true);
@@ -887,7 +797,7 @@ public:
             {
                 thumb += (first_ + row_ + 1) * 349 / int(items_.size());
             }
-            sprite(image, 213, thumb, 382);
+            sprite(image, 213, thumb, 382, OriginalZeroRun::opaque);
             // 413061:475970 rectangle, color60, native selected column bounds.
             int left = 196 + row_ * 54, right = 247 + row_ * 54;
             auto pixel = [&](int x, int y)
@@ -925,14 +835,14 @@ public:
         {
             unsigned id = shared_sprite(0x4F72C8);
             size_t g = dword(pal_, 816) - 57, p = g + dword(cel_, g + 2 + (id - 142) * 8);
-            sprite(image, id, 268, 382);
+            sprite(image, id, 268, 382, OriginalZeroRun::opaque);
             auto message = font_.text_bytes(104);
             text(image, message, 268 + int(word(cel_, p) + 1) / 2 - int(message.size()) * 6, 382 + int(word(cel_, p + 2) + 1) / 2 - 12);
         }
         if (page_ == Page::equipment || page_ == Page::equipment_confirm)
         {
             int top = 480 - panel_height(218);
-            sprite(image, 218, 0, top);
+            sprite(image, 218, 0, top, OriginalZeroRun::opaque);
             number(image, money(state) - unit_price(state, item()), 480, 205, 179);
             auto prompt = font_.text_bytes(208), name = shop_.name(item());
             for (size_t i = 0; i + 1 < prompt.size(); ++i)
@@ -966,7 +876,7 @@ public:
                 {
                     thumb += int((recipient_ + 1) * 100 / recipients_.size());
                 }
-                sprite(image, shared_sprite(0x4F72AC), 239, thumb);
+                sprite(image, shared_sprite(0x4F72AC), 239, thumb, OriginalZeroRun::transparent);
             }
             if (equip_selected_ && !recipients_.empty())
             {
@@ -977,7 +887,7 @@ public:
                     unsigned id = word(r, 0xCB + 2 * i);
                     if (id)
                     {
-                        sprite(image, id + 492, 70, top + 20 + 35 * int(i));
+                        sprite(image, id + 492, 70, top + 20 + 35 * int(i), OriginalZeroRun::transparent);
                         text(image, shop_.name(id), 104, top + 25 + 35 * int(i), 233);
                     }
                 }
@@ -1003,11 +913,17 @@ public:
                         a = unsigned(a) & 255;
                         b = unsigned(b) & 255;
                     }
-                    int value = i == 0 ? word(r, 0xC3) : i == 1 ? word(r, 0xC5) :
-                                                                  a;
+                    int value;
+                    if (i == 0) { value = word(r, 0xC3); }
+                    else if (i == 1) { value = word(r, 0xC5); }
+                    else
+                    {
+                        value = a;
+                    }
+
                     auto n = std::to_string(value), next = std::to_string(i < 2 ? std::max(0, value + b - a) : b);
                     font_.draw_small(image, { n.begin(), n.end() }, 532, y, 109, true);
-                    sprite(image, shared_sprite(0x4F72B0), 560, y + 4);
+                    sprite(image, shared_sprite(0x4F72B0), 560, y + 4, OriginalZeroRun::transparent);
                     font_.draw_small(image, { next.begin(), next.end() }, 588, y, a > b ? 59 : 167, true);
                     y += 24;
                 }
@@ -1024,7 +940,7 @@ public:
         }
         if (page_ == Page::quantity)
         {
-            sprite(image, 216, buying_ ? 258 : 198, 413);
+            sprite(image, 216, buying_ ? 258 : 198, 413, OriginalZeroRun::opaque);
             auto prompt = font_.text_bytes(buying_ ? 200 : 201), name = shop_.name(item());
             for (size_t i = 0; i + 1 < prompt.size(); ++i)
             {

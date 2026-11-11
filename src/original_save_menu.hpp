@@ -1,6 +1,7 @@
 #pragma once
 #include "original_menu.hpp"
 #include "original_save.hpp"
+#include "original_sprite.hpp"
 #include <memory>
 #include <optional>
 #include <string>
@@ -72,34 +73,7 @@ private:
     }
     s2ne::Result<bool> try_panel_validated(std::vector<uint8_t>& image) const
     {
-        size_t p = sprite_position() + 4;
-        for (int y = 0; y < height_; ++y)
-        {
-            int x = 0;
-            while (x < width_)
-            {
-                unsigned op = cel_.at(p++), n = op & 127, value = 0;
-                if (!op)
-                {
-                    n = 1;
-                }
-                else if (!(op & 128))
-                {
-                    value = cel_.at(p++);
-                }
-                if (!n || n > unsigned(width_ - x))
-                {
-                    return s2ne::Result<bool>::failure(make_error("Invalid original save-menu sprite run"));
-                }
-                while (n--)
-                {
-                    unsigned c = op & 128 ? cel_.at(p++) : value;
-                    pixel(image, left_ + x++, top_ + y, c);
-                }
-            }
-        }
-
-        return s2ne::Result<bool>::success(true);
+        return draw_original_cel(image, cel_, pal_, resource_id, left_, top_, OriginalZeroRun::transparent);
     }
     s2ne::Result<bool> try_panel(std::vector<uint8_t>& image) const
     {
@@ -385,8 +359,15 @@ public:
         if (success)
         {
             closed_ = true;
-            return_code_ = pending_->action == Action::save ? 9 : pending_->slot == 51 ? 8 :
-                                                                                         7;
+            int completionCode;
+            if (pending_->action == Action::save) { completionCode = 9; }
+            else if (pending_->slot == 51) { completionCode = 8; }
+            else
+            {
+                completionCode = 7;
+            }
+
+            return_code_ = completionCode;
         }
         pending_.reset();
 

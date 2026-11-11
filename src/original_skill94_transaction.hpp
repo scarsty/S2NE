@@ -180,9 +180,8 @@ public:
             }
             else
             {
-                // Only the no-death-event ordinary corpse branch is authorized.
-                // Scripted removal/transformation and summoned-role slots need
-                // the full41C02A/4531AB dispatcher, not a generic physical callback.
+                // Scripted deaths require the synchronous41C02A continuation.
+                // Removal/transformation and summoned-role slots remain guarded.
                 auto dispatch = OriginalDeathDispatch::inspect(resources, t.id);
                 if (!army_inventory || !equipment || (!dispatch.settled() && !ctx.synchronous_death_ready) || (t.status_flags & 0x50))
                 {

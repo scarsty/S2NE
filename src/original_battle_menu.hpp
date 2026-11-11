@@ -1,6 +1,7 @@
 #pragma once
 #include "original_confirmation.hpp"
 #include "original_settings.hpp"
+#include "original_sprite.hpp"
 #include <memory>
 
 namespace s2ne
@@ -77,41 +78,7 @@ private:
     }
     s2ne::Result<bool> try_sprite_validated(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent) const
     {
-        size_t p = sprite_offset(id);
-        unsigned w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
-        p += 4;
-        for (unsigned y = 0; y < h; ++y)
-        {
-            for (unsigned x = 0; x < w;)
-            {
-                unsigned op = cel_.at(p++), n = op ? op & 127 : 1, value = 0;
-                if (!n || n > w - x)
-                {
-                    return s2ne::Result<bool>::failure(make_error("Invalid battlefield menu sprite run"));
-                }
-                if (op && !(op & 128))
-                {
-                    value = cel_.at(p++);
-                }
-                while (n--)
-                {
-                    unsigned c = op & 128 ? cel_.at(p++) : value;
-                    int dx = left + int(x++), dy = top + int(y);
-                    if ((transparent && !(op & 128) && !c) || dx < 0 || dx >= 640 || dy < 0 || dy >= 480)
-                    {
-                        continue;
-                    }
-                    size_t q = (size_t(dy) * 640 + dx) * 4;
-                    for (unsigned k = 0; k < 3; ++k)
-                    {
-                        image.at(q + k) = uint8_t(unsigned(pal_.at(c * 3 + k)) * 255 / 63);
-                    }
-                    image.at(q + 3) = 255;
-                }
-            }
-        }
-
-        return s2ne::Result<bool>::success(true);
+        return draw_original_cel(image, cel_, pal_, id, left, top, transparent ? OriginalZeroRun::transparent : OriginalZeroRun::opaque);
     }
     s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent) const
     {
@@ -227,9 +194,23 @@ public:
     }
     Page page() const { return page_; }
     int selected() const { return selected_; }
-    int rows() const { return page_ == Page::root ? (context_.byte_4f6f4d == 2 ? 6 : 5) : page_ == Page::overview ? 2 :
-            page_ == Page::system                                                                                 ? 4 :
-                                                                                                                    0; }
+    int rows() const
+    {
+        if (page_ == Page::root)
+        {
+            if (context_.byte_4f6f4d == 2) { return 6; }
+            else
+            {
+                return 5;
+            }
+        }
+        else if (page_ == Page::overview) { return 2; }
+        else if (page_ == Page::system) { return 4; }
+        else
+        {
+            return 0;
+        }
+    }
     int left() const { return left_; }
     int top() const { return top_; }
     int submenu_left() const { return left_ + 135; }
@@ -490,8 +471,15 @@ public:
         }
         auto image = battlefield;
         draw_page(image, Page::root, page_ == Page::root ? selected_ : root_selected_);
-        Page visible = page_ == Page::confirmation ? confirmation_parent_ : page_ == Page::operation ? operation_parent_ :
-                                                                                                       page_;
+        const Page* visiblePage;
+        if (page_ == Page::confirmation) { visiblePage = &(confirmation_parent_); }
+        else if (page_ == Page::operation) { visiblePage = &(operation_parent_); }
+        else
+        {
+            visiblePage = &(page_);
+        }
+
+        Page visible = (*visiblePage);
         if (visible == Page::overview || visible == Page::system || visible == Page::settings)
         {
             draw_page(image, visible == Page::settings ? Page::system : visible, visible == Page::settings ? system_selected_ : selected_);

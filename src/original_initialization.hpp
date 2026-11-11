@@ -416,8 +416,15 @@ public:
         put(8, source.control_class());
         put(0xA, uint16_t(source.role_a()));
         put(0xC, uint16_t(source.role_c()));
-        raw[0x2F] = source.behavior() == 3 || source.behavior() == 9 ? 1 : source.behavior() == 8 || source.behavior() == 10 ? 2 :
-                                                                                                                               0;
+        int roleSelector;
+        if (source.behavior() == 3 || source.behavior() == 9) { roleSelector = 1; }
+        else if (source.behavior() == 8 || source.behavior() == 10) { roleSelector = 2; }
+        else
+        {
+            roleSelector = 0;
+        }
+
+        raw[0x2F] = roleSelector;
         put(0x119, unsigned(source.bytes[53]) | (unsigned(source.bytes[54]) << 8));
         auto patched = OriginalSaveBridge::try_patch_unit(raw, numeric);
         if (!patched)

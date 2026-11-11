@@ -1,5 +1,6 @@
 #pragma once
 #include "original_menu.hpp"
+#include "original_sprite.hpp"
 #include <cstdint>
 #include <cstdio>
 #include <memory>
@@ -109,7 +110,29 @@ private:
             {
                 font_.draw_small(mask, ch, gx, gy, 1);
             }
-            int w = lead > 128 ? (large ? 24 : 16) : (large ? 16 : 8), h = large ? 24 : (lead > 128 ? 16 : 15);
+            int glyphWidth;
+            if (lead > 128)
+            {
+                if (large) { glyphWidth = 24; }
+                else
+                {
+                    glyphWidth = 16;
+                }
+            }
+            else if (large) { glyphWidth = 16; }
+            else
+            {
+                glyphWidth = 8;
+            }
+            int glyphHeight;
+            if (large) { glyphHeight = 24; }
+            else if (lead > 128) { glyphHeight = 16; }
+            else
+            {
+                glyphHeight = 15;
+            }
+
+            int w = glyphWidth, h = glyphHeight;
             for (int yy = gy; yy < gy + h; ++yy)
             {
                 for (int xx = gx; xx < gx + w; ++xx)
@@ -141,7 +164,22 @@ private:
                     }
                 }
             }
-            x += big ? (lead > 128 ? 24 : 16) : (lead > 128 ? 16 : 8);
+            int glyphAdvance;
+            if (big)
+            {
+                if (lead > 128) { glyphAdvance = 24; }
+                else
+                {
+                    glyphAdvance = 16;
+                }
+            }
+            else if (lead > 128) { glyphAdvance = 16; }
+            else
+            {
+                glyphAdvance = 8;
+            }
+
+            x += glyphAdvance;
         }
     }
     void label(std::vector<uint8_t>& image, unsigned id, int x, int y, bool big, unsigned ink, unsigned edge, unsigned style) const
@@ -497,23 +535,10 @@ public:
             return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Settings requires a 640x480 RGBA backdrop"));
         }
         auto image = background;
-        size_t p = 4;
-        for (int y = 0; y < height_; ++y)
+        auto panel = draw_original_sprite(image, sprite_, pal_, 0, false, left_, top_, OriginalZeroRun::transparent);
+        if (!panel)
         {
-            for (int x = 0; x < width_;)
-            {
-                unsigned code = sprite_.at(p++), n = code ? code & 127 : 1;
-                unsigned repeat = code && !(code & 128) ? sprite_.at(p++) : 0;
-                while (n--)
-                {
-                    unsigned c = code & 128 ? sprite_.at(p++) : repeat;
-                    if ((code & 128) || c)
-                    {
-                        pixel(image, left_ + x, top_ + y, c);
-                    }
-                    ++x;
-                }
-            }
+            return s2ne::Result<std::vector<uint8_t>>::failure(panel.error());
         }
         label(image, 130, 262, 12, true, 73, 55, 0);
         for (int i = 0; i < 4; ++i)

@@ -31,6 +31,7 @@ struct AppOptions
     bool skill88Positive;
     unsigned inputSkill;
     std::string inputFolder;
+    std::string skillControl;
     bool skillScheduleStress;
     bool promotionSmoke;
     bool option;

@@ -356,8 +356,15 @@ public:
                 {
                     return Result<Restored>::failure(make_error("Unsupported original saved control class"));
                 }
-                u.behavior = group == 1 ? 2 : ai ? 1 :
-                                                   0;
+                int restoredBehavior;
+                if (group == 1) { restoredBehavior = 2; }
+                else if (ai) { restoredBehavior = 1; }
+                else
+                {
+                    restoredBehavior = 0;
+                }
+
+                u.behavior = restoredBehavior;
                 auto resources = events.try_restore_unit_resources(u);
                 if (!resources)
                 {

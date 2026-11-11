@@ -43,8 +43,14 @@ inline Result<std::vector<uint8_t>> try_reaction_bitmap(unsigned width, unsigned
     // Original signed division truncates toward zero, unlike arithmetic shift.
     int source_x = offset < 0 && left ? -offset : 0;
     int count = offset < 0 ? int(width) + offset : int(width);
-    int destination = offset < 0 ? 0 : left ? offset :
-                                              128 - offset - int(width);
+    int destination;
+    if (offset < 0) { destination = 0; }
+    else if (left) { destination = offset; }
+    else
+    {
+        destination = 128 - offset - int(width);
+    }
+
     for (unsigned y = 0; y < height; ++y)
     {
         for (int x = 0; x < count; ++x)
@@ -177,10 +183,17 @@ struct Feedback
     int text_y() const { return -64 - step * 8; }
     unsigned text_foreground() const { return miss ? 0x68 : 0x3c; }
     unsigned text_background() const { return miss ? 0x24 : 0x56; }
-    unsigned interval() const { return miss ? 30u : step < 3 ? 30u :
-            step < 4                                         ? 20u :
-            step < 6                                         ? 10u :
-                                                               0u; }
+    unsigned interval() const
+    {
+        if (miss) { return 30u; }
+        else if (step < 3) { return 30u; }
+        else if (step < 4) { return 20u; }
+        else if (step < 6) { return 10u; }
+        else
+        {
+            return 0u;
+        }
+    }
     void begin(size_t a, size_t b, int hp, int amount, bool missed, bool windup, int max_hp = 0)
     {
         *this = { };

@@ -259,8 +259,15 @@ public:
         auto result = try_slot(id);
         return std::move(result).value();
     }
-    int field(unsigned id, unsigned offset, bool wide = false) const { return !id ? 0 : wide ? sw(items_, item(id) + offset) :
-                                                                                               int(int8_t(items_.at(item(id) + offset))); }
+    int field(unsigned id, unsigned offset, bool wide = false) const
+    {
+        if (!id) { return 0; }
+        else if (wide) { return sw(items_, item(id) + offset); }
+        else
+        {
+            return int(int8_t(items_.at(item(id) + offset)));
+        }
+    }
     bool eligible(const auto& r, unsigned id) const
     {
         size_t p = item(id);
@@ -291,10 +298,24 @@ public:
                 return false;
             }
         }
-        unsigned attribute = r.at(0x123) + (special(r, 64) ? 10 : 0), moral = attribute <= 30 ? 1 : attribute < 70 ? 2 :
-                                                                                                                     4,
-                 gender = r.at(0x2E) == 0 ? 8 : r.at(0x2E) == 1 ? 16 :
-                                                                  32,
+        unsigned attribute = r.at(0x123) + (special(r, 64) ? 10 : 0);
+        int moralMask;
+        if (attribute <= 30) { moralMask = 1; }
+        else if (attribute < 70) { moralMask = 2; }
+        else
+        {
+            moralMask = 4;
+        }
+        int genderMask;
+        if (r.at(0x2E) == 0) { genderMask = 8; }
+        else if (r.at(0x2E) == 1) { genderMask = 16; }
+        else
+        {
+            genderMask = 32;
+        }
+
+        unsigned moral = moralMask,
+                 gender = genderMask,
                  allowed = word(items_, p + 35);
         return (allowed & moral) && ((r.at(0x118) & 8) || (allowed & gender));
     }

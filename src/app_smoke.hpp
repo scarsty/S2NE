@@ -61,6 +61,10 @@ struct AppSmokeState
     std::vector<uint8_t> skillInputCommitted;
     std::optional<s2ne::OriginalEvents::Unit> skillInputBefore;
     bool skillInputVerified = false;
+    bool scriptDeathObserved = false, scriptFailureInjected = false;
+    bool controlledAreaReady = false;
+    std::vector<size_t> controlledAreaTargets;
+    uint64_t controlledSeed = 0, controlledCalls = 0;
     int skillInputMpGrowth = 0;
     std::vector<uint8_t> skillCancelBaseline;
     std::ofstream skillSequence;

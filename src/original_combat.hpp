@@ -116,8 +116,14 @@ inline Result<CombatValueInput> try_decode_combat_value(std::span<const uint8_t>
         return int(int16_t(unsigned(unit[p]) | (unsigned(unit[p + 1]) << 8)));
     };
     CombatValueInput in{ };
-    in.value18 = word(mode == 2 ? 0xB7 : mode == 1 ? 0x132 :
-                                                     0x124);
+    int valueOffset;
+    if (mode == 2) { valueOffset = 0xB7; }
+    else if (mode == 1) { valueOffset = 0x132; }
+    else
+    {
+        valueOffset = 0x124;
+    }
+    in.value18 = word(valueOffset);
     in.value14 = word(mode == 2 ? 0xBD : 0x12A);
     in.value10 = word(mode == 2 ? 0xB9 : 0x126);
     in.valueC = word(mode == 2 ? 0xBB : 0x128);
@@ -679,8 +685,14 @@ inline Result<bool> try_tick_status_durations(std::span<uint8_t> unit)
     {
         for (unsigned bit = 0; bit < 15; ++bit)
         {
-            size_t p = bit < 9 ? 0x48 + bit * 3 : bit < 14 ? 0x63 + (bit - 9) * 5 :
-                                                             0x7C;
+            unsigned int p;
+            if (bit < 9) { p = 0x48 + bit * 3; }
+            else if (bit < 14) { p = 0x63 + (bit - 9) * 5; }
+            else
+            {
+                p = 0x7C;
+            }
+
             if ((stats & (1u << bit)) && int8_t(unit[p]) > 0)
             {
                 --unit[p];
@@ -895,10 +907,17 @@ inline Result<int> try_ordinary_damage(int attacker_attack, int defender_defense
     }
     if (value < 3)
     {
-        value = minimum_roll < 1 ? 5 : minimum_roll < 6 ? 4 :
-            minimum_roll < 16                           ? 3 :
-            minimum_roll < 46                           ? 2 :
-                                                          1;
+        int minimumDamage;
+        if (minimum_roll < 1) { minimumDamage = 5; }
+        else if (minimum_roll < 6) { minimumDamage = 4; }
+        else if (minimum_roll < 16) { minimumDamage = 3; }
+        else if (minimum_roll < 46) { minimumDamage = 2; }
+        else
+        {
+            minimumDamage = 1;
+        }
+
+        value = minimumDamage;
     }
     return Result<int>::success(value);
 }
@@ -978,10 +997,44 @@ inline int modify_damage(const DamageModifierInput& in)
 
 inline int damage_divisor(int percent_roll, int decimal_roll)
 {
-    int base = percent_roll < 2 ? (decimal_roll >= 5 ? 140 : 100) : percent_roll < 10 ? (decimal_roll >= 5 ? 135 : 105) :
-        percent_roll < 25                                                             ? (decimal_roll >= 5 ? 130 : 110) :
-        percent_roll < 50                                                             ? (decimal_roll >= 5 ? 125 : 115) :
-                                                                                        120;
+    int base;
+    if (percent_roll < 2)
+    {
+        if (decimal_roll >= 5) { base = 140; }
+        else
+        {
+            base = 100;
+        }
+    }
+    else if (percent_roll < 10)
+    {
+        if (decimal_roll >= 5) { base = 135; }
+        else
+        {
+            base = 105;
+        }
+    }
+    else if (percent_roll < 25)
+    {
+        if (decimal_roll >= 5) { base = 130; }
+        else
+        {
+            base = 110;
+        }
+    }
+    else if (percent_roll < 50)
+    {
+        if (decimal_roll >= 5) { base = 125; }
+        else
+        {
+            base = 115;
+        }
+    }
+    else
+    {
+        base = 120;
+    }
+
     return std::max(1, base + decimal_roll);
 }
 struct PhysicalDamageInput
@@ -1003,8 +1056,15 @@ inline Result<int> try_physical_damage(const PhysicalDamageInput& in)
     int factor = height * scale + 1000 + (in.attacker_terrain_bonus - in.defender_terrain_bonus) * 10 + in.context_bonus;
     auto modifiers = in.modifiers;
     modifiers.damage = (in.attack - defense) * factor / 10 / in.divisor;
-    modifiers.attack_mode_bonus = in.attack_mode == 3 ? 6 : in.attack_mode == 2 ? 3 :
-                                                                                  0;
+    int attackModeBonus;
+    if (in.attack_mode == 3) { attackModeBonus = 6; }
+    else if (in.attack_mode == 2) { attackModeBonus = 3; }
+    else
+    {
+        attackModeBonus = 0;
+    }
+
+    modifiers.attack_mode_bonus = attackModeBonus;
     int value = modify_damage(modifiers);
     if (in.height_difference > 0)
     {
@@ -1018,10 +1078,17 @@ inline Result<int> try_physical_damage(const PhysicalDamageInput& in)
     value = std::max(1, value);
     if (value < 3)
     {
-        value = in.minimum_roll < 1 ? 5 : in.minimum_roll < 6 ? 4 :
-            in.minimum_roll < 16                              ? 3 :
-            in.minimum_roll < 46                              ? 2 :
-                                                                1;
+        int minimumDamage;
+        if (in.minimum_roll < 1) { minimumDamage = 5; }
+        else if (in.minimum_roll < 6) { minimumDamage = 4; }
+        else if (in.minimum_roll < 16) { minimumDamage = 3; }
+        else if (in.minimum_roll < 46) { minimumDamage = 2; }
+        else
+        {
+            minimumDamage = 1;
+        }
+
+        value = minimumDamage;
     }
     return Result<int>::success(value);
 }
@@ -1158,8 +1225,15 @@ inline Result<int> try_counter_damage(const CounterDamageInput& in)
     int factor = 1000 + height * (height >= 0 ? 250 : 125) + (p.attacker_terrain_bonus - p.defender_terrain_bonus) * 10 + p.context_bonus;
     auto modifiers = p.modifiers;
     modifiers.damage = (p.attack - defense) * factor / 10 / p.divisor;
-    modifiers.attack_mode_bonus = p.attack_mode == 3 ? -6 : p.attack_mode == 2 ? -3 :
-                                                                                 0;
+    int attackModeBonus;
+    if (p.attack_mode == 3) { attackModeBonus = -6; }
+    else if (p.attack_mode == 2) { attackModeBonus = -3; }
+    else
+    {
+        attackModeBonus = 0;
+    }
+
+    modifiers.attack_mode_bonus = attackModeBonus;
     int value = modify_damage(modifiers) * (in.reduction_roll + 2) / 10;
     if (p.height_difference > 0)
     {
@@ -1181,10 +1255,17 @@ inline Result<int> try_counter_damage(const CounterDamageInput& in)
     if (in.minimum_required) { *in.minimum_required = value < 1; }
     if (value < 1)
     {
-        value = in.minimum_roll < 1 ? 5 : in.minimum_roll < 6 ? 4 :
-            in.minimum_roll < 16                              ? 3 :
-            in.minimum_roll < 46                              ? 2 :
-                                                                1;
+        int minimumDamage;
+        if (in.minimum_roll < 1) { minimumDamage = 5; }
+        else if (in.minimum_roll < 6) { minimumDamage = 4; }
+        else if (in.minimum_roll < 16) { minimumDamage = 3; }
+        else if (in.minimum_roll < 46) { minimumDamage = 2; }
+        else
+        {
+            minimumDamage = 1;
+        }
+
+        value = minimumDamage;
     }
     return Result<int>::success(value);
 }
@@ -1212,8 +1293,14 @@ struct HitChanceInput
 // 408CB7 -> 40A42D -> 40A4B3 -> 407B83 -> 4080E7, before the percent draw.
 inline int hit_chance(const HitChanceInput& in)
 {
-    int mode_bonus = in.attack_mode == 3 ? 5 : in.attack_mode == 2 ? 3 :
-                                                                     0;
+    int mode_bonus;
+    if (in.attack_mode == 3) { mode_bonus = 5; }
+    else if (in.attack_mode == 2) { mode_bonus = 3; }
+    else
+    {
+        mode_bonus = 0;
+    }
+
     if (in.counter_preview || in.counter)
     {
         mode_bonus = -mode_bonus;
@@ -1298,8 +1385,14 @@ inline int consecutive_chance(const ConsecutiveInput& in)
 }
 inline int consecutive_mode_adjustment(int attack_mode, bool reverse_direction = false)
 {
-    int adjustment = attack_mode == 3 ? 10 : attack_mode == 2 ? 5 :
-                                                                0;
+    int adjustment;
+    if (attack_mode == 3) { adjustment = 10; }
+    else if (attack_mode == 2) { adjustment = 5; }
+    else
+    {
+        adjustment = 0;
+    }
+
     return reverse_direction ? -adjustment : adjustment;
 }
 inline bool consecutive_succeeds(const ConsecutiveInput& in, int percent_roll)

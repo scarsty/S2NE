@@ -1,6 +1,7 @@
 #pragma once
 #include "original_menu.hpp"
 #include "original_palette.hpp"
+#include "original_sprite.hpp"
 #include <optional>
 namespace s2ne
 {
@@ -13,43 +14,7 @@ class OriginalConfirmation
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     s2ne::Result<bool> try_sprite_validated(std::vector<uint8_t>& image, unsigned id, int left, int top) const
     {
-        size_t group = dword(pal_, 816) - 57, p = group + dword(cel_, group + 2 + (id - 142) * 8);
-        unsigned width = word(cel_, p) + 1, height = word(cel_, p + 2) + 1;
-        p += 4;
-        for (unsigned y = 0; y < height; ++y)
-        {
-            unsigned x = 0;
-            while (x < width)
-            {
-                unsigned op = cel_.at(p++), n = op & 127, value = 0;
-                if (!op) { n = 1; }
-                else if (!(op & 128))
-                {
-                    value = cel_.at(p++);
-                }
-                if (!n || n > width - x)
-                {
-                    return s2ne::Result<bool>::failure(make_error("Invalid confirmation sprite run"));
-                }
-                while (n--)
-                {
-                    unsigned c = op & 128 ? cel_.at(p++) : value;
-                    int dx = left + int(x++), dy = top + int(y);
-                    if (dx < 0 || dx >= 640 || dy < 0 || dy >= 480)
-                    {
-                        continue;
-                    }
-                    size_t dst = (size_t(dy) * 640 + dx) * 4;
-                    for (unsigned k = 0; k < 3; ++k)
-                    {
-                        image.at(dst + k) = uint8_t(unsigned(pal_.at(c * 3 + k)) * 255 / 63);
-                    }
-                    image.at(dst + 3) = 255;
-                }
-            }
-        }
-
-        return s2ne::Result<bool>::success(true);
+        return draw_original_cel(image, cel_, pal_, id, left, top, OriginalZeroRun::opaque);
     }
     s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
     {
@@ -92,8 +57,14 @@ public:
         {
             return;
         }
-        int row = x >= x_ + 169 && x <= x_ + 196 ? 0 : x >= x_ + 200 && x <= x_ + 227 ? 1 :
-                                                                                        -1;
+        int row;
+        if (x >= x_ + 169 && x <= x_ + 196) { row = 0; }
+        else if (x >= x_ + 200 && x <= x_ + 227) { row = 1; }
+        else
+        {
+            row = -1;
+        }
+
         if (row < 0)
         {
             return;

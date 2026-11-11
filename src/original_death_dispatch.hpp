@@ -68,6 +68,7 @@ public:
         size_t event_count_{ };
         bool returned_change_{ };
         bool evacuation_{ };
+        bool supported_{ true };
         size_t completion_{ };
         static bool active(const OriginalEvents& e, size_t i)
         {
@@ -77,6 +78,7 @@ public:
         void complete(OriginalEvents& e, size_t i) { e.complete(i); }
 
     public:
+        bool supported() const { return supported_; }
         bool evacuation_pending() const { return evacuation_; }
         bool finish_evacuation(OriginalEvents& e)
         {
@@ -140,6 +142,13 @@ public:
                 }
                 if (f.pc == 0)
                 {
+                    const unsigned type = e.type(f.index), condition = e.condition(f.index);
+                    if (f.routine == Routine::generic && active(e, f.index) && type >= 4 && type <= 16 && !(type == 9 && condition == 0) && !(type == 11 && (condition <= 6 || ((condition == 11 || condition == 12) && e.campaign_currencies))))
+                    {
+                        supported_ = false;
+                        frames_.clear();
+                        return std::nullopt;
+                    }
                     bool eligible = e.type(f.index) == 9 && e.condition(f.index) == 0 && active(e, f.index);
                     if (f.routine == Routine::generic && active(e, f.index) && e.type(f.index) == 11)
                     {
@@ -165,6 +174,12 @@ public:
                 if (f.pc == 2)
                 {
                     unsigned flag = e.completion_flag(f.index);
+                    if (flag == 1 || flag == 3)
+                    {
+                        supported_ = false;
+                        frames_.clear();
+                        return std::nullopt;
+                    }
                     if (flag == 7)
                     {
                         evacuation_ = true;
@@ -222,24 +237,13 @@ public:
         {
             return { true, { } };
         }
+        if (events.completion_flag(death.event) == 1 || events.completion_flag(death.event) == 3) { return { }; }
         for (size_t i = 0; i < events.event_count(); ++i)
         {
-            unsigned type = events.type(i);
-            bool currency = type == 11 && (events.condition(i) == 11 || events.condition(i) == 12);
-            bool predicate = type == 11 && events.condition(i) <= 6;
-            if (type >= 4 && type <= 16 && !(type == 9 && events.condition(i) == 0) && !currency && !predicate)
-            {
-                return { };
-            }
-            if (currency && !events.campaign_currencies)
-            {
-                return { };
-            }
-            unsigned completion = events.completion_flag(i);
-            if ((i == death.event || type == 9 || currency || predicate) && (completion == 1 || completion == 3))
-            {
-                return { };
-            }
+            unsigned type = events.type(i), condition = events.condition(i);
+            // Non-flag handlers have independent native predicates; do not
+            // infer their reachability from WORD3 alone.
+            if (type >= 4 && type <= 16 && !(type == 9 && condition == 0) && !(type == 11 && (condition <= 6 || condition == 11 || condition == 12))) { return { }; }
         }
         auto staged = events;
         Stack stack(staged, death.event);
@@ -262,6 +266,7 @@ public:
                 break;
             }
         }
+        if (!stack.supported()) { return { }; }
         // Only the entry is retained for API compatibility, never the scan order.
         return { true, { death.event } };
     }

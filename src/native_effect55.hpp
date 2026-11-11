@@ -36,13 +36,19 @@ struct NativeEffect55
         out.duration = std::max(1, (actor.st - target.st) / 10);
         // 46D874 ->46DBA9, 407E2D, 46D719/46D848. Formula power is WORD21 (zero).
         int d = actor.st - target.st - 100;
-        int hit = d > 42 ? 99 : d >= 10 ? (d - 10) / 4 + 90 :
-            d > 0                       ? d + 80 :
-            d == 0                      ? 80 :
-            d > -40                     ? d / 2 + 80 :
-            d > -80                     ? d + 100 :
-            d > -120                    ? (d + 80) / 2 + 21 :
-                                          1;
+        int hit;
+        if (d > 42) { hit = 99; }
+        else if (d >= 10) { hit = (d - 10) / 4 + 90; }
+        else if (d > 0) { hit = d + 80; }
+        else if (d == 0) { hit = 80; }
+        else if (d > -40) { hit = d / 2 + 80; }
+        else if (d > -80) { hit = d + 100; }
+        else if (d > -120) { hit = (d + 80) / 2 + 21; }
+        else
+        {
+            hit = 1;
+        }
+
         hit = hit * (config[10] + random.bounded(config[11] + 3, seconds)) / 10;
         if (!conditions_mode) { hit = hit * (100 + config[0xF3 + difficulty]) / 100; }
         out.chance = std::clamp(hit, 1, 99);

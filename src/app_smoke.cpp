@@ -483,8 +483,14 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                     }
                 }
             }
-            auto padInput = mineralInput ? mineralInput : campaignContinue && strengthenedFlow ? s2ne::smoke_exit::campaign_pad_input(prologue->battle(), prologue->events) :
-                                                                                                 std::nullopt;
+            std::optional<s2ne::smoke_exit::RevealInput> padInput;
+            if (mineralInput) { padInput = mineralInput; }
+            else if (campaignContinue && strengthenedFlow) { padInput = s2ne::smoke_exit::campaign_pad_input(prologue->battle(), prologue->events); }
+            else
+            {
+                padInput = std::nullopt;
+            }
+
             if (padInput)
             {
                 revealInput = padInput;
@@ -702,7 +708,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                                 if (!battle.attack_command_available(prologue->events.units, 2)) { prologue->end_battle_turn(); }
                                 else
                                 {
-                                    for (unsigned i = 0; i < 8 && battle.attack_index() != int((skill88Input || skill94Input) ? 3 : 2); ++i)
+                                    for (unsigned i = 0; i < 8 && battle.attack_index() != int((skill88Input || skill94Input || inputSkill == 96 || inputSkill == 86 || inputSkill == 92 || (NativeAbilityBuffs::find(inputSkill) && NativeAbilityBuffs::find(inputSkill)->group == 8)) ? 3 : 2); ++i)
                                     {
                                         prologue->battle_cycle(1);
                                     }
@@ -1201,8 +1207,22 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
     {
         SDL_Event e{ };
         e.type = SDL_EVENT_KEY_DOWN;
-        e.key.key = prologue || inSetup ? SDLK_RETURN : inMenu ? (menu.selected ? SDLK_UP : SDLK_RETURN) :
-                                                                 SDLK_ESCAPE;
+        if (prologue || inSetup) { e.key.key = SDLK_RETURN; }
+        else
+        {
+            if (inMenu)
+            {
+                if (menu.selected) { e.key.key = SDLK_UP; }
+                else
+                {
+                    e.key.key = SDLK_RETURN;
+                }
+            }
+            else
+            {
+                e.key.key = SDLK_ESCAPE;
+            }
+        }
         SDL_PushEvent(&e);
         ++smokePhase;
     }
@@ -1219,8 +1239,22 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
     {
         SDL_Event e{ };
         e.type = SDL_EVENT_KEY_DOWN;
-        e.key.key = saveMenu ? SDLK_RETURN : inMenu ? (menu.selected == 1 ? SDLK_RETURN : SDLK_DOWN) :
-                                                      SDLK_ESCAPE;
+        if (saveMenu) { e.key.key = SDLK_RETURN; }
+        else
+        {
+            if (inMenu)
+            {
+                if (menu.selected == 1) { e.key.key = SDLK_RETURN; }
+                else
+                {
+                    e.key.key = SDLK_DOWN;
+                }
+            }
+            else
+            {
+                e.key.key = SDLK_ESCAPE;
+            }
+        }
         SDL_PushEvent(&e);
         ++smokePhase;
     }
@@ -1290,7 +1324,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
     if (skillInputSmoke && prologue && nowUi >= skillInputNext)
     {
         skillInputNext = nowUi + 80;
-        if (nowUi - started > (skill88Positive ? 180000u : 60000u))
+        if (nowUi - started > ((skill88Positive || !options.skillControl.empty()) ? 240000u : 60000u))
         {
             s2ne::fatal("Skill input timeout phase=" + std::to_string(skillInputPhase) + " state=" + std::to_string(int(prologue->battle_state())) + " turn=" + std::to_string(prologue->battle_turn()) + " status=" + prologue->battle_status() + " camera=" + std::to_string(prologue->camera().first) + "," + std::to_string(prologue->camera().second));
         }
@@ -1303,37 +1337,122 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
         };
         auto snapshot = [&](const char* name)
         {
-            auto state = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-            auto bytes = s2ne::OriginalSave::encode(state, saveItems);
+            auto events = prologue->events;
+            if (skill94Input && skillInputPhase == 9 && !skillCastVerified && skillInputBefore)
+            {
+                events.units[skillInputCaster].action_state = skillInputBefore->action_state;
+                events.units[skillInputCaster].direction = skillInputBefore->direction;
+                events.units[skillInputCaster].animation_action = skillInputBefore->animation_action;
+            }
+            auto captured = s2ne::OriginalSaveBridge::capture(events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+            auto bytes = s2ne::OriginalSave::encode(captured, saveItems);
             auto path = root / "S2NE" / "out" / inputFolder / name;
             std::ofstream f(path, std::ios::binary);
             f.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
             f.close();
-            if (s2ne::OriginalSave::encode(s2ne::OriginalSave::load(path, saveItems), saveItems) != bytes)
+            auto decoded = s2ne::OriginalSave::load(path, saveItems);
+            if (s2ne::OriginalSave::encode(decoded, saveItems) != bytes)
             {
                 s2ne::fatal("Skill input evidence save roundtrip failed");
             }
+            if ((NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61) && (std::string_view(name) == "cast-after.sav" || std::string_view(name) == "settled-after.sav"))
+            {
+                const auto restored = s2ne::OriginalSaveBridge::restore(root, decoded);
+                for (auto index : state.controlledAreaTargets)
+                {
+                    const auto& live = events.units[index];
+                    const auto& loaded = restored.events.units[index];
+                    if (loaded.attack != live.attack || loaded.defense != live.defense || loaded.max_action_points != live.max_action_points || loaded.action_points != live.action_points || loaded.carry_points != live.carry_points || !std::equal(live.action_status_runtime->begin() + 0x38, live.action_status_runtime->begin() + 0xA0, loaded.action_status_runtime->begin() + 0x38)) { fatal("Stat production capture/decode/restore mismatch"); }
+                }
+                std::cout << "PASS production stat save/decode/restore all targets and timers\n";
+            }
+            if (skill94Input && (std::string_view(name) == "cast-after.sav" || std::string_view(name) == "settled-after.sav"))
+            {
+                auto restored = s2ne::OriginalSaveBridge::restore(root, decoded);
+                for (auto index : { skillInputCaster, skillInputTarget })
+                {
+                    const auto& live = events.units[index];
+                    const auto& loaded = restored.events.units[index];
+                    if (loaded.hp != live.hp || loaded.st != live.st || loaded.equipment != live.equipment || loaded.ending_kills != live.ending_kills || loaded.ending_losses != live.ending_losses || loaded.action_points != live.action_points || loaded.status_flags != live.status_flags) { fatal("094 persisted death/revival/payment restore mismatch"); }
+                }
+            }
             return bytes;
         };
+        if ((NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96) && prologue->campaign_modal())
+        {
+            key(SDLK_RETURN);
+            return true;
+        }
         if (skillInputPhase == 0)
         {
             bool found = false;
             for (unsigned i = 0; i < prologue->events.units.size() && !found; ++i)
             {
                 const auto& u = prologue->events.units[i];
+                if ((NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96) && !options.skillControl.empty() && u.id != 1) { continue; }
                 s2ne::OriginalSkills::Context inputContext;
-                inputContext.second = skill88Input || skill94Input;
-                if (!u.controllable() || !(u.status_flags & 0x80) || (u.status_flags & 0x20) || !(u.learned[inputSkill == 33 ? 3 : skill94Input ? 9 :
-                                                                                                          skill88Input                          ? 8 :
-                                                                                                                                                  2]
-                        & (inputSkill == 33 ? 1 : skill94Input ? 1 :
-                                skill88Input                   ? 32 :
-                                                                 0x800))
-                    || !skillRules.entry_available(u, inputContext))
+                inputContext.second = (NativeAbilityBuffs::find(inputSkill) && NativeAbilityBuffs::find(inputSkill)->group == 8) || (NativeTimedBuffs::find(inputSkill) && NativeTimedBuffs::find(inputSkill)->group == 8) || skill88Input || skill94Input || inputSkill == 96;
+                unsigned int group;
+                if (NativeAbilityBuffs::find(inputSkill)) { group = NativeAbilityBuffs::find(inputSkill)->group; }
+                else if (NativeTimedBuffs::find(inputSkill)) { group = NativeTimedBuffs::find(inputSkill)->group; }
+                else if (inputSkill == 8) { group = 0; }
+                else if (inputSkill == 12) { group = 1; }
+                else if (inputSkill == 35 || inputSkill == 39) { group = 3; }
+                else if (inputSkill == 48) { group = 4; }
+                else if (inputSkill == 56 || inputSkill == 60) { group = 5; }
+                else if (inputSkill == 17) { group = 1; }
+                else if (inputSkill == 25) { group = 2; }
+                else if (inputSkill == 52) { group = 4; }
+                else if (inputSkill == 61) { group = 5; }
+                else if (inputSkill == 96) { group = 9; }
+                else if (inputSkill == 34 || inputSkill == 38) { group = 3; }
+                else if (inputSkill == 54) { group = 5; }
+                else if (inputSkill == 13 || inputSkill == 15) { group = 1; }
+                else if (inputSkill == 53) { group = 5; }
+                else if ((inputSkill >= 1 && inputSkill <= 10)) { group = 0; }
+                else if (inputSkill == 33) { group = 3; }
+                else if (skill94Input) { group = 9; }
+                else if (skill88Input) { group = 8; }
+                else
                 {
-                    continue;
+                    group = 2;
                 }
+
+                unsigned bit;
+
+                if (NativeAbilityBuffs::find(inputSkill)) { bit = (1u << NativeAbilityBuffs::find(inputSkill)->bit); }
+                else if (NativeTimedBuffs::find(inputSkill)) { bit = (1u << NativeTimedBuffs::find(inputSkill)->bit); }
+                else if (inputSkill == 8 || inputSkill == 60) { bit = 128; }
+                else if (inputSkill == 12) { bit = 2; }
+                else if (inputSkill == 35) { bit = 4; }
+                else if (inputSkill == 39) { bit = 64; }
+                else if (inputSkill == 48) { bit = 32; }
+                else if (inputSkill == 56) { bit = 8; }
+                else if (inputSkill == 17) { bit = 64; }
+                else if (inputSkill == 25) { bit = 16; }
+                else if (inputSkill == 52) { bit = 512; }
+                else if (inputSkill == 61) { bit = 256; }
+                else if (inputSkill == 96) { bit = 4; }
+                else if (inputSkill == 34 || inputSkill == 54) { bit = 2; }
+                else if (inputSkill == 38) { bit = 32; }
+                else if (inputSkill == 13) { bit = 4; }
+                else if (inputSkill == 15) { bit = 16; }
+                else if (inputSkill == 53) { bit = 1; }
+                else if (inputSkill == 6 || inputSkill == 9 || inputSkill == 10) { bit = 1u << (inputSkill - 1); }
+                else if (inputSkill == 4) { bit = 8; }
+                else if (inputSkill == 5) { bit = 16; }
+                else if (inputSkill == 3) { bit = 4; }
+                else if (inputSkill == 2) { bit = 2; }
+                else if (inputSkill == 1 || inputSkill == 33 || skill94Input) { bit = 1; }
+                else if (skill88Input) { bit = 32; }
+                else
+                {
+                    bit = 0x800;
+                }
+
+                if (!u.controllable() || !(u.status_flags & 0x80) || (u.status_flags & 0x20) || !(u.learned[group] & bit) || !skillRules.entry_available(u, inputContext)) { continue; }
                 s2ne::OriginalSkills probe(root);
+                probe.set_area_camera({ u.x * 64 - 320, u.y * 16 - 160 });
                 probe.open(u, inputContext);
                 for (unsigned n = 0; n < 150 && probe.selected().id != inputSkill; ++n)
                 {
@@ -1357,7 +1476,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 }
                 for (unsigned t = 0; t < prologue->events.units.size(); ++t)
                 {
-                    if (probe.hostile_in_range(u, prologue->events.units[t]) && prologue->battle().target_visible(prologue->events.units[t], std::span(&u, 1), 0))
+                    if ((inputSkill != 8 && inputSkill != 56 && inputSkill != 46 || i != t) && (inputSkill != 35 && inputSkill != 39 && inputSkill != 48 || prologue->events.units[t].hostile()) && (!skill94Input || (options.skillControl != "script82" && options.skillControl != "scriptfail82") || prologue->events.units[t].id == 147) && ((inputSkill == 1 && i != t && probe.healing1_in_range(u, prologue->events.units[t]) && prologue->events.units[t].hp < prologue->events.units[t].max_hp) || probe.hostile_in_range(u, prologue->events.units[t])) && prologue->battle().target_visible(prologue->events.units[t], std::span(&u, 1), 0))
                     {
                         skillInputCaster = i;
                         skillInputTarget = t;
@@ -1390,9 +1509,394 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             }
             if (found)
             {
+                if (skill94Input && !options.skillControl.empty() && !state.controlledAreaReady)
+                {
+                    auto& actor = prologue->events.units[skillInputCaster];
+                    auto& victim = prologue->events.units[skillInputTarget];
+                    actor.st = 1000;
+                    actor.learned_proficiency[9] = 60000;
+                    victim.learned_proficiency[9] = 0;
+                    victim.fencing = victim.tactics = 0;
+                    victim.hp = 1;
+                    victim.max_hp = 5000;
+                    victim.equipment = { };
+                    victim.initial_status = { };
+                    victim.status39 = 0;
+                    victim.status3c = victim.status3d = victim.status3f = 0;
+                    victim.action_status_runtime.reset();
+                    if (options.skillControl == "reverse29") { victim.hp = 2500; }
+                    int special;
+                    if (options.skillControl == "revive25") { special = 25; }
+                    else if (options.skillControl == "consume28") { special = 28; }
+                    else if (options.skillControl == "reverse29") { special = 29; }
+                    else
+                    {
+                        special = 0;
+                    }
+
+                    std::ifstream itemFile(root / "ITEMSP.BIN", std::ios::binary);
+                    std::vector<uint8_t> items(std::istreambuf_iterator<char>(itemFile), { });
+                    if (items.size() < 40) { fatal("Controlled094 original item table unavailable"); }
+                    if (special)
+                    {
+                        for (unsigned i = 0; i < (items.size() - 2) / 38; ++i)
+                        {
+                            if (items[2 + i * 38 + 15] == 0 && items[2 + i * 38 + 25] == special)
+                            {
+                                victim.equipment[0] = i + 1;
+                                break;
+                            }
+                        }
+                        if (!victim.equipment[0]) { fatal("Controlled094 original special item missing"); }
+                    }
+                    else
+                    {
+                        victim.initial_status[0] = 1;
+                    }
+                    prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
+                        {
+                            rng.initialize(12);
+                            rng.restore_stream(14, 0);
+                            return true;
+                        });
+                    state.controlledAreaReady = true;
+                    std::cout << "CONTROLLED094 branch=" << options.skillControl << " HP/ST/proficiency/defense/equipment/status/RNG fixture; learning/coordinates/source SAVE unchanged; target=" << victim.id << '\n';
+                }
+                if (NativeAbilityBuffs::find(inputSkill) && !state.controlledAreaReady)
+                {
+                    auto& a = prologue->events.units[skillInputCaster];
+                    a.abilities |= 0x20;
+                    a.st = 200;
+                    state.controlledAreaTargets = { skillInputTarget };
+                    prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
+                        {
+                            rng.restore_stream(1, 0);
+                            state.controlledSeed = rng.seed_state();
+                            state.controlledCalls = rng.draw_count();
+                            return false;
+                        });
+                    state.controlledAreaReady = true;
+                    std::cout << "CONTROLLED ability family learned/ST/halfMP/RNG fixture; source SAVE read-only; NOT natural\n";
+                }
+                if (const auto* buff = NativeTimedBuffs::find(inputSkill); buff && !state.controlledAreaReady)
+                {
+                    auto& a = prologue->events.units[skillInputCaster];
+                    a.abilities |= 0x20;
+                    a.st = 200;
+                    state.controlledAreaTargets = { skillInputTarget };
+                    auto& t = prologue->events.units[skillInputTarget];
+                    auto& r = *t.action_status_runtime;
+                    r[0x3C] &= uint8_t(~buff->mask);
+                    r[0x3D] &= uint8_t(~(buff->mask >> 8));
+                    t.status3c = r[0x3C];
+                    t.status3d = r[0x3D];
+                    if (inputSkill == 46)
+                    {
+                        r[0x3D] |= 1;
+                        r[0x8D] = 255;
+                        t.status3d = r[0x3D];
+                    }
+                    prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
+                        {
+                            rng.restore_stream(1, 0);
+                            state.controlledSeed = rng.seed_state();
+                            state.controlledCalls = rng.draw_count();
+                            return false;
+                        });
+                    state.controlledAreaReady = true;
+                    std::cout << "CONTROLLED timed buff learned/ST/halfMP/status/RNG fixture; original positions/source SAVE read-only; NOT natural\n";
+                }
+                if ((inputSkill == 6 || inputSkill == 9 || inputSkill == 10) && !options.skillControl.empty() && !state.controlledAreaReady)
+                {
+                    auto& units = prologue->events.units;
+                    OriginalSkills probe(root);
+                    probe.open(units[skillInputCaster], { });
+                    while (probe.selected().id != inputSkill) { probe.navigate(0x50); }
+                    const auto center = units[skillInputTarget];
+                    for (size_t i = 0; i < units.size(); ++i)
+                    {
+                        auto& v = units[i];
+                        if (!v.present(prologue->battle_turn()) || !probe.status_area_target(center, v) || !probe.sleep2_area(center, v)) { continue; }
+                        if (inputSkill != 10)
+                        {
+                            v.hp = std::max(1, v.max_hp / 2);
+                            v.action_status_runtime->at(0x3E) &= uint8_t(~1u);
+                            v.status3e = v.action_status_runtime->at(0x3E);
+                        }
+                        else
+                        {
+                            v.action_status_runtime->at(0x3C) &= uint8_t(~0x40u);
+                            v.action_status_runtime->at(0x8B) = 0;
+                            v.status3c = v.action_status_runtime->at(0x3C);
+                        }
+                        state.controlledAreaTargets.push_back(i);
+                    }
+                    if (options.skillControl == "branches")
+                    {
+                        units[skillInputCaster].abilities |= 0x20;
+                        if (inputSkill == 10)
+                        {
+                            auto& v = units[skillInputTarget];
+                            v.status3c |= 0x40;
+                            v.action_status_runtime->at(0x3C) |= 0x40;
+                            v.action_status_runtime->at(0x8B) = 255;
+                        }
+                        else
+                        {
+                            if (state.controlledAreaTargets.size() < 4) { fatal("Family mixed full/blocked/healed needs four targets"); }
+                            auto& full = units[state.controlledAreaTargets[0]];
+                            full.hp = full.max_hp;
+                            auto& blocked = units[state.controlledAreaTargets[1]];
+                            blocked.status3e |= 1;
+                            blocked.action_status_runtime->at(0x3E) |= 1;
+                        }
+                        std::cout << "CONTROLLED branches: halfMP ability; full/blocked plus positive targets, or010 permanent timer255; NOT natural branch\n";
+                    }
+                    if (inputSkill != 10 && state.controlledAreaTargets.size() < 2) { fatal("Restoration production requires multiple original allied targets"); }
+                    prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
+                        {
+                            rng.initialize(12);
+                            rng.seed(1);
+                            return true;
+                        });
+                    state.controlledAreaReady = true;
+                    std::cout << "CONTROLLED support HP/status/RNG fixture; original learning/coordinates/source SAVE unchanged, NOT natural success targets=" << state.controlledAreaTargets.size() << '\n';
+                }
+                if ((inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96) && !options.skillControl.empty() && !state.controlledAreaReady)
+                {
+                    auto& units = prologue->events.units;
+                    auto& a = units[skillInputCaster];
+                    a.st = 1000;
+                    a.abilities |= 0x20;
+                    auto center = units[skillInputTarget];
+                    OriginalSkills probe(root);
+                    probe.set_area_camera({ a.x * 64 - 320, a.y * 16 - 160 });
+                    probe.open(a, OriginalSkills::Context{ .second = inputSkill == 96 });
+                    for (unsigned n = 0; n < 150 && probe.selected().id != inputSkill; ++n)
+                    {
+                        bool has = false;
+                        for (const auto& r : probe.groups()[probe.selected_group()].records) { has |= r.id == inputSkill; }
+                        probe.navigate(has ? 0x50 : 0x4D);
+                    }
+                    state.controlledAreaTargets = { skillInputTarget };
+                    {
+                        std::vector<Battle::Point> cells;
+                        for (int y = center.y - 2; y <= center.y + 2; ++y)
+                        {
+                            for (int x = center.x - 2; x <= center.x + 2; ++x)
+                            {
+                                auto c = center;
+                                c.x = x;
+                                c.y = y;
+                                if (((inputSkill != 53 && inputSkill != 25 && inputSkill != 61 && inputSkill != 48) || probe.sleep2_area(inputSkill == 61 ? a : center, c)) && prologue->battle().skill_area_cell({ x, y }) && std::none_of(units.begin(), units.end(), [&](const auto& u)
+                                        {
+                                            return u.present(prologue->battle_turn()) && u.x == x && u.y == y;
+                                        }))
+                                {
+                                    cells.push_back({ x, y });
+                                }
+                            }
+                        }
+                        for (size_t n = 0; n < units.size() && state.controlledAreaTargets.size() < 3; ++n)
+                        {
+                            if (n == skillInputTarget || n == skillInputCaster || (inputSkill == 48 && state.controlledAreaTargets.size() == 1 ? units[n].hostile() : !units[n].hostile()) || cells.empty()) { continue; }
+                            auto pos = cells.back();
+                            cells.pop_back();
+                            auto& u = units[n];
+                            u.x = pos.x;
+                            u.y = pos.y;
+                            u.hp = std::max(1, u.hp);
+                            u.first_turn = 1;
+                            u.last_turn = 0;
+                            u.status_flags = uint8_t((u.status_flags | 0x80) & ~0x20);
+                            state.controlledAreaTargets.push_back(n);
+                        }
+                        if (state.controlledAreaTargets.size() != 3) { fatal("053 mixed needs three enemy slots"); }
+                    }
+                    for (size_t n = 0; n < state.controlledAreaTargets.size(); ++n)
+                    {
+                        auto& u = units[state.controlledAreaTargets[n]];
+                        u.first_turn = 1;
+                        u.last_turn = 0;
+                        u.status_flags = uint8_t((u.status_flags | 0x80) & ~0x20);
+                        u.st = 1;
+                        u.runtime_role_selector = n == 2 ? 1 : 0;
+                        u.abilities = n == 1 ? 0x4000 : 0;
+                        u.status3d = 0;
+                        u.status3e = 2;
+                        if (!u.action_status_runtime) { fatal("Hostile status fixture missing runtime"); }
+                        auto& r = *u.action_status_runtime;
+                        r[0x3D] = 0;
+                        r[0x3E] = 2;
+                        r[0x3C] = r[0x3F] = 0;
+                        r[0x3D] = 0;
+                        u.status3c = u.status3d = u.status3f = 0;
+                        r[0x91] = r[0x92] = r[0x93] = r[0x94] = r[0x97] = r[0x98] = 0;
+                        if (NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61)
+                        {
+                            u.equipment = { };
+                            u.movement_type = 0;
+                            u.status39 = 0;
+                            u.attack = 203;
+                            u.defense = 157;
+                            u.base_action_points = u.max_action_points = 100;
+                            u.action_points = 80;
+                            u.carry_points = 70;
+                            r[0x38] = r[0x39] = r[0x3A] = r[0x3B] = 0;
+                            r[0x5D] = r[0x68] = r[0x7C] = 0;
+                            auto put = [&](size_t p, int v)
+                            {
+                                r[p] = uint8_t(v);
+                                r[p + 1] = uint8_t(unsigned(v) >> 8);
+                            };
+                            put(0xBF, 100);
+                            put(0xC1, 211);
+                            if (inputSkill == 8 || inputSkill == 48 || inputSkill == 56)
+                            {
+                                r[0x38] = 0x80;
+                                r[0x39] = 4;
+                                r[0x3D] = 0x80;
+                                r[0x3E] = 0;
+                                r[0x5D] = 3;
+                                r[0x68] = 5;
+                                r[0x94] = 3;
+                            }
+                            put(0xC3, 203);
+                            put(0xC5, 157);
+                            put(0x134, 203);
+                            put(0x136, 157);
+                            put(0x12C, 100);
+                            put(0x12E, 80);
+                            put(0x130, 70);
+                            if (n == 2 && (inputSkill == 25 || inputSkill == 61)) { u.movement_type = 7; }
+                        }
+                    }
+                    prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
+                        {
+                            rng.seed(1);
+                            state.controlledSeed = rng.seed_state();
+                            state.controlledCalls = rng.draw_count();
+                            return true;
+                        });
+                    if (inputSkill == 8 || inputSkill == 56)
+                    {
+                        auto& u = units[skillInputTarget];
+                        u.status39 = u.action_status_runtime->at(0x39);
+                        u.status3c = u.action_status_runtime->at(0x3C);
+                        u.status3d = u.action_status_runtime->at(0x3D);
+                        u.status3e = u.action_status_runtime->at(0x3E);
+                        u.status3f = u.action_status_runtime->at(0x3F);
+                    }
+                    state.controlledAreaReady = true;
+                    std::cout << "CONTROLLED hostile timed status ST/abilities/status/roles/RNG/deployment; two existing enemies relocated (053 inside area, 013/015 outside single tile); learned bit explicitly injected on actor1; source SAVE untouched; NOT natural\n";
+                }
+                if (inputSkill == 2 && !options.skillControl.empty() && !state.controlledAreaReady)
+                {
+                    auto& units = prologue->events.units;
+                    auto& actor = units[skillInputCaster];
+                    auto center = units[skillInputTarget];
+                    actor.st = 1000;
+                    state.controlledAreaTargets = { skillInputTarget };
+                    std::vector<Battle::Point> cells;
+                    OriginalSkills probe(root);
+                    probe.open(actor, { });
+                    for (unsigned n = 0; n < 150 && probe.selected().id != 2; ++n)
+                    {
+                        bool has = false;
+                        for (const auto& r : probe.groups()[probe.selected_group()].records) { has |= r.id == 2; }
+                        probe.navigate(has ? 0x50 : 0x4D);
+                    }
+                    for (int y = center.y - 2; y <= center.y + 2; ++y)
+                    {
+                        for (int x = center.x - 2; x <= center.x + 2; ++x)
+                        {
+                            auto candidate = center;
+                            candidate.x = x;
+                            candidate.y = y;
+                            if (!probe.sleep2_area(center, candidate) || !prologue->battle().skill_area_cell({ x, y }) || (x == center.x && y == center.y)) { continue; }
+                            if (std::none_of(units.begin(), units.end(), [&](const auto& v)
+                                    {
+                                        return v.present(prologue->battle_turn()) && v.x == x && v.y == y;
+                                    }))
+                            {
+                                cells.push_back({ x, y });
+                            }
+                        }
+                    }
+                    std::cout << "CONTROLLED probe=" << probe.selected().id << " center=" << center.x << "," << center.y << " emptyValid=" << cells.size() << "\n";
+                    for (size_t n = 0; n < units.size() && state.controlledAreaTargets.size() < 3; ++n)
+                    {
+                        if (n == skillInputTarget || n == skillInputCaster || (inputSkill == 48 && state.controlledAreaTargets.size() == 1 ? units[n].hostile() : !units[n].hostile()) || cells.empty()) { continue; }
+                        auto pos = cells.back();
+                        cells.pop_back();
+                        units[n].hp = std::max(1, units[n].hp);
+                        units[n].first_turn = 1;
+                        units[n].last_turn = 0;
+                        units[n].x = pos.x;
+                        units[n].y = pos.y;
+                        units[n].status_flags = uint8_t((units[n].status_flags | 0x80) & ~0x20);
+                        state.controlledAreaTargets.push_back(n);
+                    }
+                    if (state.controlledAreaTargets.size() != 3) { fatal("Controlled002 needs three existing enemies and empty valid area cells"); }
+                    for (size_t n = 0; n < 3; ++n)
+                    {
+                        auto& v = units[state.controlledAreaTargets[n]];
+                        v.st = 1;
+                        v.runtime_role_selector = n == 2 ? 1 : 0;
+                        v.abilities = n == 1 ? 0x4000 : 0;
+                        v.status3e = 0;
+                        if (!v.action_status_runtime) { fatal("Controlled002 missing runtime"); }
+                        v.action_status_runtime->at(0x3E) = 0;
+                        v.action_status_runtime->at(0x96) = 0;
+                    }
+                    prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
+                        {
+                            rng.seed(1);
+                            state.controlledSeed = rng.seed_state();
+                            state.controlledCalls = rng.draw_count();
+                            return true;
+                        });
+                    state.controlledAreaReady = true;
+                    std::cout << "CONTROLLED002 explicit runtime fixture: three original enemy slots activated/relocated, HP/ST/role/immunity/seed injected; NOT natural source; empty area cells retained\n";
+                }
+                if ((inputSkill == 4 || inputSkill == 5) && !options.skillControl.empty() && !state.controlledAreaReady)
+                {
+                    auto& units = prologue->events.units;
+                    const auto center = units[skillInputTarget];
+                    unsigned n = 0;
+                    OriginalSkills probe(root);
+                    probe.open(units[skillInputCaster], { });
+                    while (probe.selected().id != inputSkill) { probe.navigate(0x50); }
+                    for (auto& v : units)
+                    {
+                        if (!v.present(prologue->battle_turn()) || !probe.status_area_target(center, v) || !probe.sleep2_area(center, v)) { continue; }
+                        auto& r = *v.action_status_runtime;
+                        if (inputSkill == 4)
+                        {
+                            r[0x38] &= uint8_t(~0x20u);
+                            r[0x57] = 0;
+                            if (n == 1 || n == 2)
+                            {
+                                r[0x38] |= 0x20;
+                                r[0x57] = n == 1 ? 1 : 255;
+                            }
+                        }
+                        else
+                        {
+                            r[0x3C] &= uint8_t(~0x20u);
+                            r[0x8A] = 0;
+                            v.status3c = r[0x3C];
+                        }
+                        state.controlledAreaTargets.push_back(size_t(&v - units.data()));
+                        ++n;
+                    }
+                    if (inputSkill == 4 && n < 3) { fatal("004 mixed production requires three original allied targets"); }
+                    state.controlledAreaReady = true;
+                    std::cout << "CONTROLLED004/005 explicit status/timer fixture only; original learned/positions retained, NOT natural success, targets=" << n << '\n';
+                }
                 const auto& u = prologue->events.units[skillInputCaster];
                 auto point = prologue->screen_cell({ u.x, u.y });
-                if (skill94Input || inputSkill == 33)
+                if (NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || skill94Input || inputSkill == 32 || inputSkill == 33 || inputSkill == 1 || ((inputSkill >= 2 && inputSkill <= 10) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96))
                 {
                     auto [cx, cy] = prologue->camera();
                     bool picked = false;
@@ -1410,8 +1914,13 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         }
                     }
                 }
-                if (inputSkill == 33 && skillInputPhase == 0)
+                if ((NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || skill94Input || inputSkill == 32 || inputSkill == 33 || inputSkill == 1 || ((inputSkill >= 2 && inputSkill <= 10) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96)) && skillInputPhase == 0 && (point.x < 32 || point.x > 608 || point.y < 32 || point.y > 370))
                 {
+                    if (prologue->battle_state() != s2ne::Battle::State::idle)
+                    {
+                        key(SDLK_ESCAPE);
+                        return true;
+                    }
                     SDL_Event e{ };
                     e.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
                     e.button.button = SDL_BUTTON_RIGHT;
@@ -1420,9 +1929,24 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     skillInputPhase = 30;
                 }
                 else if (prologue->battle_state() != s2ne::Battle::State::idle) { key(SDLK_ESCAPE); }
-                else if (point.x < 32 || point.x > 608 || point.y < 32 || point.y > 370) { key(point.x < 32 ? SDLK_LEFT : point.x > 608 ? SDLK_RIGHT :
-                        point.y < 32                                                                                                    ? SDLK_UP :
-                                                                                                                                          SDLK_DOWN); }
+                else if (point.x < 32 || point.x > 608 || point.y < 32 || point.y > 370)
+                {
+                    SDL_Keycode keyCode{ };
+                    if (point.x < 32) { keyCode = SDLK_LEFT; }
+                    else
+                    {
+                        if (point.x > 608) { keyCode = SDLK_RIGHT; }
+                        else
+                        {
+                            if (point.y < 32) { keyCode = SDLK_UP; }
+                            else
+                            {
+                                keyCode = SDLK_DOWN;
+                            }
+                        }
+                    }
+                    key(keyCode);
+                }
                 else
                 {
                     SDL_Event e{ };
@@ -1438,9 +1962,19 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
         }
         else if (skillInputPhase >= 30 && skillInputPhase <= 33)
         {
+            if (skillInputPhase == 30 && !context.battleMenu)
+            {
+                SDL_Event retry{ };
+                retry.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
+                retry.button.windowID = SDL_GetWindowID(window);
+                retry.button.button = SDL_BUTTON_RIGHT;
+                SDL_RenderCoordinatesToWindow(renderer, 320, 240, &retry.button.x, &retry.button.y);
+                SDL_PushEvent(&retry);
+                return true;
+            }
             if ((skillInputPhase <= 32 && !context.battleMenu) || (skillInputPhase == 32 && !context.battleReports) || (skillInputPhase == 33 && (context.battleMenu || context.battleReports)))
             {
-                s2ne::fatal("Curse33 production roster/menu transition failed");
+                s2ne::fatal("Skill production roster/menu transition failed phase=" + std::to_string(skillInputPhase) + " battle=" + std::to_string(int(prologue->battle_state())) + " menu=" + std::to_string(bool(context.battleMenu)));
             }
             SDL_Event e{ };
             e.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
@@ -1455,10 +1989,61 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             }
             if (skillInputPhase == 33)
             {
+                if ((inputSkill == 4 || inputSkill == 5) && !options.skillControl.empty() && !state.controlledAreaReady)
+                {
+                    auto& units = prologue->events.units;
+                    const auto center = units[skillInputTarget];
+                    unsigned n = 0;
+                    OriginalSkills probe(root);
+                    probe.open(units[skillInputCaster], { });
+                    while (probe.selected().id != inputSkill) { probe.navigate(0x50); }
+                    for (auto& v : units)
+                    {
+                        if (!v.present(prologue->battle_turn()) || !probe.status_area_target(center, v) || !probe.sleep2_area(center, v)) { continue; }
+                        auto& r = *v.action_status_runtime;
+                        if (inputSkill == 4)
+                        {
+                            r[0x38] &= uint8_t(~0x20u);
+                            r[0x57] = 0;
+                            if (n == 1 || n == 2)
+                            {
+                                r[0x38] |= 0x20;
+                                r[0x57] = n == 1 ? 1 : 255;
+                            }
+                        }
+                        else
+                        {
+                            r[0x3C] &= uint8_t(~0x20u);
+                            r[0x8A] = 0;
+                            v.status3c = r[0x3C];
+                        }
+                        state.controlledAreaTargets.push_back(size_t(&v - units.data()));
+                        ++n;
+                    }
+                    if (inputSkill == 4 && n < 3) { fatal("004 mixed production requires three original allied targets"); }
+                    state.controlledAreaReady = true;
+                    std::cout << "CONTROLLED004/005 explicit status/timer fixture only; original learned/positions retained, NOT natural success, targets=" << n << '\n';
+                }
                 const auto& u = prologue->events.units[skillInputCaster];
                 auto point = prologue->screen_cell({ u.x, u.y });
                 x = float(point.x);
                 y = float(point.y);
+                auto [cx, cy] = prologue->camera();
+                for (int dy = -32; dy <= 32; ++dy)
+                {
+                    bool picked = false;
+                    for (int dx = -32; dx <= 32; ++dx)
+                    {
+                        if (prologue->battle().pick_surface(float(point.x + dx), float(point.y + dy), cx, cy) == s2ne::Battle::Point{ u.x, u.y })
+                        {
+                            x = float(point.x + dx);
+                            y = float(point.y + dy);
+                            picked = true;
+                            break;
+                        }
+                    }
+                    if (picked) { break; }
+                }
                 std::cout << "INPUT33 roster locate then select id=" << u.id << " xy=" << u.x << ',' << u.y << '\n';
             }
             SDL_RenderCoordinatesToWindow(renderer, x, y, &e.button.x, &e.button.y);
@@ -1550,7 +2135,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 {
                     std::cout << "94 submenu selected=" << prologue->events.units.at(size_t(prologue->battle_selected())).id << " index=" << prologue->battle().attack_index() << " secondAvailable=" << skillRules.executable_available(prologue->events.units.at(size_t(prologue->battle_selected())), s2ne::OriginalSkills::Context{ .second = true }, true) << '\n';
                 }
-                if (prologue->battle().attack_index() != int((skill88Input || skill94Input) ? 3 : 2))
+                if (prologue->battle().attack_index() != int((skill88Input || skill94Input || inputSkill == 96 || inputSkill == 86 || inputSkill == 92 || (NativeAbilityBuffs::find(inputSkill) && NativeAbilityBuffs::find(inputSkill)->group == 8)) ? 3 : 2))
                 {
                     key(SDLK_RIGHT);
                 }
@@ -1605,16 +2190,89 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
         }
         else if (skillInputPhase == 8)
         {
+            if (skill94Input && !options.skillControl.empty())
+            {
+                prologue->battle().mutate_combat_random([&](auto& rng, uint32_t seconds)
+                    {
+                        rng.initialize(12);
+                        for (unsigned seed = 0; seed < 1000; ++seed)
+                        {
+                            auto probe = rng;
+                            probe.restore_stream(seed, 0);
+                            probe.bounded(10, seconds);
+                            probe.bounded(10, seconds);
+                            if (probe.percent(seconds) <= 30 && probe.percent(seconds) < 30)
+                            {
+                                rng.restore_stream(seed, 0);
+                                std::cout << "CONTROLLED094 fixed preflight RNG seed=" << seed << " original percent table12, no live retry\n";
+                                return true;
+                            }
+                        }
+                        fatal("Controlled094 deterministic seed unavailable");
+                    });
+            }
             skillInputBefore = prologue->events.units[skillInputCaster];
             skillInputVictim = prologue->events.units[skillInputTarget];
-            snapshot("cast-before.sav");
+            skillInputCommitted = snapshot("cast-before.sav");
+            prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
+                {
+                    state.controlledSeed = rng.seed_state();
+                    state.controlledCalls = rng.draw_count();
+                    return false;
+                });
             key(SDLK_RETURN);
             ++skillInputPhase;
         }
         else if (skillInputPhase == 9 && !skillMenu && !pendingSkillTarget)
         {
+            if (skill94Input && prologue->synchronous_death_active())
+            {
+                if (skillCastVerified || prologue->original_save_boundary_ready() || !prologue->battle().combat_feedback_active()) { fatal("094 script prematurely published/unlocked"); }
+                if (!state.scriptDeathObserved)
+                {
+                    state.scriptDeathObserved = true;
+                    std::cout << "CONTROLLED094 production lethal->original synchronous script stage=" << prologue->events.stage << " role=" << prologue->events.units[skillInputTarget].id << " flag13=" << unsigned(prologue->events.flags[12]) << " save/input locked; no payment\n";
+                }
+                if (options.skillControl == "scriptfail82" && !state.scriptFailureInjected)
+                {
+                    // A runtime-invalid speaker exercises the real dialogue Result
+                    // failure, after preflight and damage, not an event-complete shortcut.
+                    prologue->events.units.clear();
+                    state.scriptFailureInjected = true;
+                    std::cout << "CONTROLLED094 injecting runtime missing speaker after synchronous entry for script Result rollback\n";
+                }
+                key(SDLK_RETURN);
+                return true;
+            }
+            if (options.skillControl == "scriptfail82" && state.scriptFailureInjected)
+            {
+                if (skillCastVerified || !prologue->original_save_boundary_ready() || snapshot("script-rollback-after.sav") != skillInputCommitted) { fatal("094 script failure leaked state/payment/input lock"); }
+                prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
+                    {
+                        if (rng.seed_state() != state.controlledSeed || rng.draw_count() != state.controlledCalls) { fatal("094 script failure changed RNG"); }
+                        return false;
+                    });
+                std::cout << "PASS CONTROLLED094 production script failure restores units/events/flags/currency/inventory/payment/reward/RNG and input/save boundary; no return/payment callback\n";
+                state.skillInputVerified = true;
+                running = false;
+                return true;
+            }
             if (prologue->battle().combat_feedback_active())
             {
+                if (((NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || (inputSkill >= 2 && inputSkill <= 10) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96) || (skill94Input && !prologue->synchronous_death_active())) && snapshot("feedback-unpublished.sav") != skillInputCommitted) { fatal("Area feedback published before all targets presented"); }
+                return true;
+            }
+            if (options.skillControl == "rollback")
+            {
+                if (skillCastVerified || snapshot("rollback-after.sav") != skillInputCommitted) { fatal("Controlled002 rejected award published state"); }
+                prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
+                    {
+                        if (rng.seed_state() != state.controlledSeed || rng.draw_count() != state.controlledCalls) { fatal("Controlled002 rejected award changed RNG"); }
+                        return false;
+                    });
+                std::cout << "PASS CONTROLLED production area rejected award: all targets/state/payment/reward/RNG rolled back\n";
+                state.skillInputVerified = true;
+                running = false;
                 return true;
             }
             if (!skillCastVerified)
@@ -1622,15 +2280,428 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 s2ne::fatal("Normal skill cast did not commit");
             }
             const auto& u = prologue->events.units[skillInputCaster];
-            if (((skill88Input || skill94Input) ? u.st != skillInputBefore->st + (u.max_st - skillInputBefore->max_st) - (skill94Input ? 5 : 25) : u.mp != skillInputBefore->mp + skillInputMpGrowth - (inputSkill == 33 ? ((skillInputBefore->abilities & 0x20) ? 3 : 7) : 40)) || u.action_points >= skillInputBefore->action_points || skillInputFrames != (inputSkill == 33 ? 21 : skill94Input ? 15 :
-                                                                                                                                                                                                                                                                                                                                                  skill88Input                                      ? 35 :
-                                                                                                                                                                                                                                                                                                                                                                                                      23))
+            bool payment_mismatch = false;
+            int expected_mp_cost = 0;
+            if (!NativeAbilityBuffs::find(inputSkill) && !NativeTimedBuffs::find(inputSkill))
+            {
+                if (skill88Input || skill94Input)
+                {
+                    int st_cost = 25;
+                    if (skill94Input) { st_cost = 5; }
+                    payment_mismatch = u.st != skillInputBefore->st + (u.max_st - skillInputBefore->max_st) - st_cost;
+                }
+                else
+                {
+                    if (inputSkill == 6 || inputSkill == 9 || inputSkill == 10)
+                    {
+                        if ((skillInputBefore->abilities & 0x20))
+                        {
+                            if (inputSkill == 6) { expected_mp_cost = 16; }
+                            else if (inputSkill == 9) { expected_mp_cost = 20; }
+                            else
+                            {
+                                expected_mp_cost = 27;
+                            }
+                        }
+                        else if (inputSkill == 6) { expected_mp_cost = 32; }
+                        else if (inputSkill == 9) { expected_mp_cost = 40; }
+                        else
+                        {
+                            expected_mp_cost = 55;
+                        }
+                    }
+                    else if (inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96)
+                    {
+                        if (inputSkill == 96) { expected_mp_cost = 0; }
+                        else if ((skillInputBefore->abilities & 0x20))
+                        {
+                            if (inputSkill == 8 || inputSkill == 35 || inputSkill == 56) { expected_mp_cost = 10; }
+                            else if (inputSkill == 12) { expected_mp_cost = 6; }
+                            else if (inputSkill == 39) { expected_mp_cost = 12; }
+                            else if (inputSkill == 48 || inputSkill == 60) { expected_mp_cost = 15; }
+                            else if (inputSkill == 17 || inputSkill == 25) { expected_mp_cost = 12; }
+                            else if (inputSkill == 52) { expected_mp_cost = 22; }
+                            else if (inputSkill == 61) { expected_mp_cost = 20; }
+                            else if (inputSkill == 34) { expected_mp_cost = 6; }
+                            else if (inputSkill == 38 || inputSkill == 54) { expected_mp_cost = 10; }
+                            else if (inputSkill == 15) { expected_mp_cost = 15; }
+                            else
+                            {
+                                expected_mp_cost = 7;
+                            }
+                        }
+                        else if (inputSkill == 8 || inputSkill == 35 || inputSkill == 56) { expected_mp_cost = 20; }
+                        else if (inputSkill == 12) { expected_mp_cost = 13; }
+                        else if (inputSkill == 39) { expected_mp_cost = 25; }
+                        else if (inputSkill == 48 || inputSkill == 60) { expected_mp_cost = 30; }
+                        else if (inputSkill == 17 || inputSkill == 25) { expected_mp_cost = 25; }
+                        else if (inputSkill == 52) { expected_mp_cost = 45; }
+                        else if (inputSkill == 61) { expected_mp_cost = 40; }
+                        else if (inputSkill == 34) { expected_mp_cost = 13; }
+                        else if (inputSkill == 38 || inputSkill == 54) { expected_mp_cost = 20; }
+                        else if (inputSkill == 15) { expected_mp_cost = 30; }
+                        else
+                        {
+                            expected_mp_cost = 15;
+                        }
+                    }
+                    else if (inputSkill == 4)
+                    {
+                        if ((skillInputBefore->abilities & 0x20)) { expected_mp_cost = 10; }
+                        else
+                        {
+                            expected_mp_cost = 20;
+                        }
+                    }
+                    else if (inputSkill == 5)
+                    {
+                        if ((skillInputBefore->abilities & 0x20)) { expected_mp_cost = 15; }
+                        else
+                        {
+                            expected_mp_cost = 30;
+                        }
+                    }
+                    else if (inputSkill == 33)
+                    {
+                        if ((skillInputBefore->abilities & 0x20)) { expected_mp_cost = 3; }
+                        else
+                        {
+                            expected_mp_cost = 7;
+                        }
+                    }
+                    else if (inputSkill == 3)
+                    {
+                        if ((skillInputBefore->abilities & 0x20)) { expected_mp_cost = 6; }
+                        else
+                        {
+                            expected_mp_cost = 12;
+                        }
+                    }
+                    else if (inputSkill == 2)
+                    {
+                        if ((skillInputBefore->abilities & 0x20)) { expected_mp_cost = 9; }
+                        else
+                        {
+                            expected_mp_cost = 18;
+                        }
+                    }
+                    else if (inputSkill == 1)
+                    {
+                        if ((skillInputBefore->abilities & 0x20)) { expected_mp_cost = 4; }
+                        else
+                        {
+                            expected_mp_cost = 8;
+                        }
+                    }
+                    else
+                    {
+                        expected_mp_cost = 40;
+                    }
+
+                    payment_mismatch = u.mp != skillInputBefore->mp + skillInputMpGrowth - expected_mp_cost;
+                }
+                int expectedFrames;
+                if (inputSkill == 8) { expectedFrames = 37; }
+                else if (inputSkill == 12) { expectedFrames = 32; }
+                else if (inputSkill == 35) { expectedFrames = 22; }
+                else if (inputSkill == 39) { expectedFrames = 30; }
+                else if (inputSkill == 48) { expectedFrames = 36; }
+                else if (inputSkill == 56) { expectedFrames = 34; }
+                else if (inputSkill == 60) { expectedFrames = 33; }
+                else if (inputSkill == 17) { expectedFrames = 31; }
+                else if (inputSkill == 25) { expectedFrames = 28; }
+                else if (inputSkill == 52) { expectedFrames = 63; }
+                else if (inputSkill == 61) { expectedFrames = 32; }
+                else if (inputSkill == 34) { expectedFrames = 36; }
+                else if (inputSkill == 38 || inputSkill == 96) { expectedFrames = 30; }
+                else if (inputSkill == 54) { expectedFrames = 26; }
+                else if (inputSkill == 13) { expectedFrames = 25; }
+                else if (inputSkill == 15) { expectedFrames = 38; }
+                else if (inputSkill == 53) { expectedFrames = 27; }
+                else if (inputSkill == 6) { expectedFrames = 38; }
+                else if (inputSkill == 9) { expectedFrames = 33; }
+                else if (inputSkill == 10) { expectedFrames = 59; }
+                else if (inputSkill == 4) { expectedFrames = 24; }
+                else if (inputSkill == 5) { expectedFrames = 22; }
+                else if (inputSkill == 3) { expectedFrames = 27; }
+                else if (inputSkill == 2) { expectedFrames = 40; }
+                else if (inputSkill == 1) { expectedFrames = 26; }
+                else if (inputSkill == 33) { expectedFrames = 21; }
+                else if (skill94Input) { expectedFrames = 15; }
+                else if (skill88Input) { expectedFrames = 35; }
+                else
+                {
+                    expectedFrames = 23;
+                }
+
+                payment_mismatch = payment_mismatch || (inputSkill == 96 && u.st != skillInputBefore->st - 15) || u.action_points >= skillInputBefore->action_points || skillInputFrames != expectedFrames;
+            }
+            if (payment_mismatch)
             {
                 s2ne::fatal("Normal skill32 payment/frame count mismatch mp=" + std::to_string(u.mp) + " before=" + std::to_string(skillInputBefore->mp) + " ap=" + std::to_string(u.action_points) + " beforeAP=" + std::to_string(skillInputBefore->action_points) + " frames=" + std::to_string(skillInputFrames));
             }
             if (skill88Positive && (u.hp <= skillInputBefore->hp || u.experience <= skillInputBefore->experience))
             {
                 s2ne::fatal("88 positive heal/XP not obtained; no retry or RNG filtering");
+            }
+            if (inputSkill == 1 && prologue->events.units[skillInputTarget].hp <= skillInputVictim->hp) { s2ne::fatal("Healing1 produced no positive target healing"); }
+            if (skill94Input && !options.skillControl.empty())
+            {
+                const auto& v = prologue->events.units[skillInputTarget];
+                if (options.skillControl == "kill" && (v.hp != 0 || !(v.status_flags & 0x20) || u.ending_kills != uint16_t(skillInputBefore->ending_kills + 1) || v.ending_losses != uint16_t(skillInputVictim->ending_losses + 1) || rawSave->groups[0].inventory[0] == 0)) { fatal("Controlled094 lethal/loot branch not reached"); }
+                if ((options.skillControl == "revive25" || options.skillControl == "consume28") && (v.hp != v.max_hp || (v.status_flags & 0x20) || (options.skillControl == "consume28" ? v.equipment[0] != 0 : v.equipment[0] != skillInputVictim->equipment[0]))) { fatal("Controlled094 revival branch not reached"); }
+                if (options.skillControl == "reverse29" && v.hp <= skillInputVictim->hp) { fatal("Controlled094 reversal not reached"); }
+                std::cout << "PASS CONTROLLED094 " << options.skillControl << " targetHP=" << skillInputVictim->hp << "->" << v.hp << " kills=" << u.ending_kills << " losses=" << v.ending_losses << " equipment=" << v.equipment[0] << " inventory0=" << unsigned(rawSave->groups[0].inventory[0]) << '\n';
+            }
+            if (inputSkill == 6 || inputSkill == 9 || inputSkill == 10)
+            {
+                if (inputSkill == 10)
+                {
+                    const auto& v = prologue->events.units[skillInputTarget];
+                    if (!(v.status3c & 0x40) || v.action_status_runtime->at(0x8B) != (options.skillControl == "branches" ? 255 : 2) || v.hp != skillInputVictim->hp) { fatal("010 native timed protection mismatch"); }
+                }
+                else
+                {
+                    if (options.skillControl == "branches")
+                    {
+                        const auto& full = prologue->events.units[state.controlledAreaTargets[0]];
+                        const auto& blocked = prologue->events.units[state.controlledAreaTargets[1]];
+                        if (full.hp != full.max_hp || blocked.hp != std::max(1, blocked.max_hp / 2)) { fatal("Family full/blocked production branch mutated HP"); }
+                        std::cout << "PASS production fullHP skipped feedback/blocked zero feedback with positive neighbours; halfMP\n";
+                    }
+                    unsigned healed = 0;
+                    for (auto i : state.controlledAreaTargets)
+                    {
+                        if (prologue->events.units[i].hp > prologue->events.units[i].max_hp / 2) { ++healed; }
+                    }
+                    if (healed < 2) { fatal("Production multi-target healing not reached"); }
+                    std::cout << "PASS production multi-target healing changed=" << healed << '\n';
+                }
+            }
+            if (inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96)
+            {
+                const unsigned byte = inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96 ? 0x3D : 0x3E;
+                unsigned bit;
+
+                if (inputSkill == 34 || inputSkill == 96) { bit = 128; }
+                else if (inputSkill == 38) { bit = 64; }
+                else if (inputSkill == 54) { bit = 32; }
+                else if (inputSkill == 13) { bit = 4; }
+                else if (inputSkill == 15) { bit = 8; }
+                else
+                {
+                    bit = 16;
+                }
+
+                unsigned timer;
+
+                if (inputSkill == 34 || inputSkill == 96) { timer = 0x94; }
+                else if (inputSkill == 38) { timer = 0x93; }
+                else if (inputSkill == 54) { timer = 0x92; }
+                else if (inputSkill == 13) { timer = 0x97; }
+                else if (inputSkill == 15) { timer = 0x98; }
+                else
+                {
+                    timer = 0x91;
+                }
+
+                if (state.controlledAreaReady)
+                {
+                    for (size_t n = 0; n < (inputSkill == 53 ? state.controlledAreaTargets.size() : 1); ++n)
+                    {
+                        const auto& v = prologue->events.units[state.controlledAreaTargets[n]];
+                        const auto& r = *v.action_status_runtime;
+                        int expectedDuration = 0;
+                        if (n == 0)
+                        {
+                            if (inputSkill == 53 || inputSkill == 34 || inputSkill == 96) { expectedDuration = 3; }
+                            else
+                            {
+                                expectedDuration = 4;
+                            }
+                        }
+                        if (bool(r[byte] & bit) != (n == 0) || r[timer] != expectedDuration || bool(r[0x3E] & 2) != (n == 2)) { fatal("Hostile status mixed hit/immune/role miss/wake/timer mismatch"); }
+                    }
+                    unsigned int group;
+                    if (NativeAbilityBuffs::find(inputSkill)) { group = NativeAbilityBuffs::find(inputSkill)->group; }
+                    else if (NativeTimedBuffs::find(inputSkill)) { group = NativeTimedBuffs::find(inputSkill)->group; }
+                    else if (inputSkill == 8) { group = 0; }
+                    else if (inputSkill == 12) { group = 1; }
+                    else if (inputSkill == 35 || inputSkill == 39) { group = 3; }
+                    else if (inputSkill == 48) { group = 4; }
+                    else if (inputSkill == 56 || inputSkill == 60) { group = 5; }
+                    else if (inputSkill == 17) { group = 1; }
+                    else if (inputSkill == 25) { group = 2; }
+                    else if (inputSkill == 52) { group = 4; }
+                    else if (inputSkill == 61) { group = 5; }
+                    else if (inputSkill == 96) { group = 9; }
+                    else if (inputSkill == 34 || inputSkill == 38) { group = 3; }
+                    else if (inputSkill == 54) { group = 5; }
+                    else if (inputSkill == 13 || inputSkill == 15) { group = 1; }
+                    else if (inputSkill == 53) { group = 5; }
+                    else if ((inputSkill >= 1 && inputSkill <= 10)) { group = 0; }
+                    else if (inputSkill == 33) { group = 3; }
+                    else if (skill94Input) { group = 9; }
+                    else if (skill88Input) { group = 8; }
+                    else
+                    {
+                        group = 2;
+                    }
+
+                    int cost;
+
+                    if (inputSkill == 34) { cost = 13; }
+                    else if (inputSkill == 38 || inputSkill == 54) { cost = 20; }
+                    else if (inputSkill == 15) { cost = 30; }
+                    else
+                    {
+                        cost = 15;
+                    }
+
+                    const int proficiency = (cost + 6 - int(prologue->events.difficulty)) * 5 / 2 + 10;
+                    if (u.action_points != skillInputBefore->action_points - 45 || u.learned_proficiency[group] != skillInputBefore->learned_proficiency[group] + proficiency || u.experience != skillInputBefore->experience + 6) { fatal("Hostile native once-only reward/AP oracle mismatch"); }
+                    std::cout << "PASS CONTROLLED hostile native status/timer and wake; 053 mixed new/immune/role MISS; no damage; halfMP once\n";
+                }
+                if (prologue->events.units[skillInputTarget].hp != skillInputVictim->hp) { fatal("Zero-power hostile status changed HP"); }
+            }
+            if (inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61)
+            {
+                const auto& v = prologue->events.units[skillInputTarget];
+                const auto& r = *v.action_status_runtime;
+                unsigned timer;
+
+                if (inputSkill == 17) { timer = 0x68; }
+                else if (inputSkill == 52) { timer = 0x7C; }
+                else
+                {
+                    timer = 0x5D;
+                }
+
+                int power;
+
+                if (inputSkill == 52) { power = 40; }
+                else if (inputSkill == 25) { power = 10; }
+                else
+                {
+                    power = 12;
+                }
+
+                int expectedDuration;
+                if (inputSkill == 17) { expectedDuration = 5; }
+                else
+                {
+                    if (inputSkill == 52) { expectedDuration = 4; }
+                    else
+                    {
+                        expectedDuration = 3;
+                    }
+                }
+                int expectedAttack = 203;
+                int expectedDefense = 157;
+                if (inputSkill == 17)
+                {
+                    expectedAttack = 163;
+                    expectedDefense = 126;
+                }
+                else if (inputSkill == 52)
+                {
+                    expectedAttack = 183;
+                    expectedDefense = 142;
+                }
+                if (v.hp != skillInputVictim->hp || r[timer] != expectedDuration || v.attack != expectedAttack || v.defense != expectedDefense || v.max_action_points != (inputSkill == 17 ? 100 : 100 - power) || v.action_points != (inputSkill == 25 || inputSkill == 61 ? 80 - power : 80)) { fatal("Stat family independent native values/timer mismatch"); }
+                unsigned int group;
+                if (NativeAbilityBuffs::find(inputSkill)) { group = NativeAbilityBuffs::find(inputSkill)->group; }
+                else if (NativeTimedBuffs::find(inputSkill)) { group = NativeTimedBuffs::find(inputSkill)->group; }
+                else if (inputSkill == 8) { group = 0; }
+                else if (inputSkill == 12) { group = 1; }
+                else if (inputSkill == 35 || inputSkill == 39) { group = 3; }
+                else if (inputSkill == 48) { group = 4; }
+                else if (inputSkill == 56 || inputSkill == 60) { group = 5; }
+                else if (inputSkill == 17) { group = 1; }
+                else if (inputSkill == 25) { group = 2; }
+                else if (inputSkill == 52) { group = 4; }
+                else if (inputSkill == 61) { group = 5; }
+                else if (inputSkill == 96) { group = 9; }
+                else if (inputSkill == 34 || inputSkill == 38) { group = 3; }
+                else if (inputSkill == 54) { group = 5; }
+                else if (inputSkill == 13 || inputSkill == 15) { group = 1; }
+                else if (inputSkill == 53) { group = 5; }
+                else if ((inputSkill >= 1 && inputSkill <= 10)) { group = 0; }
+                else if (inputSkill == 33) { group = 3; }
+                else if (skill94Input) { group = 9; }
+                else if (skill88Input) { group = 8; }
+                else
+                {
+                    group = 2;
+                }
+
+                int cost;
+
+                if (inputSkill == 52) { cost = 45; }
+                else if (inputSkill == 61) { cost = 40; }
+                else
+                {
+                    cost = 25;
+                }
+
+                if (u.action_points != skillInputBefore->action_points - 45 || u.learned_proficiency[group] != skillInputBefore->learned_proficiency[group] + (cost + 6 - int(prologue->events.difficulty)) * 5 / 2 + 10) { fatal("Stat family once reward/payment mismatch"); }
+                for (size_t n = 1; n < state.controlledAreaTargets.size(); ++n)
+                {
+                    const auto& other = prologue->events.units[state.controlledAreaTargets[n]];
+                    if (other.attack != 203 || other.defense != 157 || other.max_action_points != (inputSkill == 25 && n == 2 ? 90 : 100)) { fatal("Stat mixed immune/excluded neighbour mutated"); }
+                }
+                std::cout << "PASS CONTROLLED stat family exact attack/defense/AP current/limit/carry reduction and timer; mixed immunity/exclusion; unique payment\n";
+            }
+            if (inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60)
+            {
+                const auto& v = prologue->events.units[skillInputTarget];
+                const auto& r = *v.action_status_runtime;
+                if (v.hp != skillInputVictim->hp || (inputSkill == 35 && !(r[0x38] & 2)) || (inputSkill == 39 && (v.attack != 161 || r[0x51] != 3)) || (inputSkill == 60 && (v.attack != 102 || v.defense != 79 || r[0x63] != 0)) || (inputSkill == 12 && !(r[0x39] & 4)) || (inputSkill == 8 && (r[0x39] & 4)) || (inputSkill == 48 && !(r[0x38] & 0x80)) || (inputSkill == 56 && (r[0x38] || r[0x39] || r[0x3C] || r[0x3D] || r[0x3E] || r[0x3F]))) { fatal("Special family independent production status oracle"); }
+                unsigned int group;
+                if (NativeAbilityBuffs::find(inputSkill)) { group = NativeAbilityBuffs::find(inputSkill)->group; }
+                else if (NativeTimedBuffs::find(inputSkill)) { group = NativeTimedBuffs::find(inputSkill)->group; }
+                else if (inputSkill == 8) { group = 0; }
+                else if (inputSkill == 12) { group = 1; }
+                else if (inputSkill == 35 || inputSkill == 39) { group = 3; }
+                else if (inputSkill == 48) { group = 4; }
+                else if (inputSkill == 56 || inputSkill == 60) { group = 5; }
+                else if (inputSkill == 17) { group = 1; }
+                else if (inputSkill == 25) { group = 2; }
+                else if (inputSkill == 52) { group = 4; }
+                else if (inputSkill == 61) { group = 5; }
+                else if (inputSkill == 96) { group = 9; }
+                else if (inputSkill == 34 || inputSkill == 38) { group = 3; }
+                else if (inputSkill == 54) { group = 5; }
+                else if (inputSkill == 13 || inputSkill == 15) { group = 1; }
+                else if (inputSkill == 53) { group = 5; }
+                else if ((inputSkill >= 1 && inputSkill <= 10)) { group = 0; }
+                else if (inputSkill == 33) { group = 3; }
+                else if (skill94Input) { group = 9; }
+                else if (skill88Input) { group = 8; }
+                else
+                {
+                    group = 2;
+                }
+
+                int cost;
+
+                if (inputSkill == 12) { cost = 13; }
+                else if (inputSkill == 39) { cost = 25; }
+                else if (inputSkill == 48 || inputSkill == 60) { cost = 30; }
+                else
+                {
+                    cost = 20;
+                }
+
+                if (u.action_points != skillInputBefore->action_points - 45 || u.experience != skillInputBefore->experience + 6 || u.learned_proficiency[group] != skillInputBefore->learned_proficiency[group] + (cost + 6 - int(prologue->events.difficulty)) * 5 / 2 + 10) { fatal("Special family duplicate payment/reward"); }
+                if (inputSkill == 48)
+                {
+                    const auto& friendTarget = prologue->events.units[state.controlledAreaTargets[1]];
+                    const auto& enemyTarget = prologue->events.units[state.controlledAreaTargets[2]];
+                    if (friendTarget.hostile() || !enemyTarget.hostile() || (friendTarget.action_status_runtime->at(0x39) & 4) || (friendTarget.action_status_runtime->at(0x3D) & 0x80) || !(enemyTarget.action_status_runtime->at(0x39) & 4)) { fatal("048 production mixed friendly cure/enemy selective dispel mismatch"); }
+                    std::cout << "PASS CONTROLLED048 same transaction friendly cure/enemy selective dispel/ability immunity bypass; save all targets\n";
+                }
+                std::cout << "PASS CONTROLLED special/clear native status oracle ID=" << inputSkill << "; no HP damage; single transaction payment\n";
             }
             if (inputSkill == 33)
             {
@@ -1641,11 +2712,138 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 }
                 std::cout << "PASS INPUT33 natural learned[3]=" << u.learned[3] << " proficiency3=" << skillInputBefore->learned_proficiency[3] << "->" << u.learned_proficiency[3] << " targetHP=" << victim.hp << " status3e=" << unsigned(victim.status3e) << '\n';
             }
+            if (inputSkill == 3)
+            {
+                const auto& v = prologue->events.units[skillInputTarget];
+                if (!(v.status3f & 4) || !v.action_status_runtime || v.action_status_runtime->at(0x9F) < 4 || v.hp != skillInputVictim->hp) { fatal("Blessing3 production status/timer/HP mismatch"); }
+                std::cout << "PASS INPUT003 original friendly nine-cell state4000000/timer9F/unchangedHP\n";
+            }
+            if (state.controlledAreaReady && inputSkill == 2)
+            {
+                if (u.action_points != skillInputBefore->action_points - 45 || u.experience != skillInputBefore->experience + 6 || u.learned_proficiency[0] != skillInputBefore->learned_proficiency[0] + 57) { fatal("Controlled002 once-only AP/XP/proficiency mismatch"); }
+                for (size_t n = 0; n < 3; ++n)
+                {
+                    const auto& v = prologue->events.units[state.controlledAreaTargets[n]];
+                    if (bool(v.status3e & 2) != (n == 0) || v.action_status_runtime->at(0x96) != (n == 0 ? 2 : 0)) { fatal("Controlled002 mixed HIT/immune/MISS status mismatch"); }
+                }
+                std::cout << "PASS CONTROLLED002 production nine-cell mixed HIT/ability immunity/role MISS/empty cells; once-only payment and serial feedback committed\n";
+            }
+            if (inputSkill == 4 || inputSkill == 5)
+            {
+                if (u.action_points != skillInputBefore->action_points - 45 || u.experience != skillInputBefore->experience + 6 || u.learned_proficiency[0] != skillInputBefore->learned_proficiency[0] + (inputSkill == 4 ? 62 : 87)) { fatal("004/005 once payment/reward mismatch"); }
+                const auto& v = prologue->events.units[skillInputTarget];
+                if (!v.action_status_runtime || v.hp != skillInputVictim->hp) { fatal("004/005 HP/runtime mismatch"); }
+                if (inputSkill == 5 && (!(v.status3c & 0x20) || v.action_status_runtime->at(0x8A) < 2)) { fatal("005 mask20/timer8A mismatch"); }
+                if (inputSkill == 4 && state.controlledAreaReady)
+                {
+                    unsigned n = 0;
+                    for (auto i : state.controlledAreaTargets)
+                    {
+                        const auto& r = *prologue->events.units[i].action_status_runtime;
+                        if (!(r[0x38] & 0x20) || r[0x57] != (n == 2 ? 255 : 3)) { fatal("004 production mixed new/extend/permanent mismatch"); }
+                        ++n;
+                    }
+                }
+                std::cout << "PASS INPUT004/005 exact status/timer and once-only MP/AP/XP/proficiency; HP unchanged\n";
+            }
+            if (const auto* ability = NativeAbilityBuffs::find(inputSkill))
+            {
+                const int cost = ability->tail[0];
+                const unsigned flags = ability->tail[20];
+                if (u.mp != skillInputBefore->mp + skillInputMpGrowth - ((flags & 1) ? cost / 2 : 0) || u.st != skillInputBefore->st - ((flags & 2) ? cost : 0) || u.hp != skillInputBefore->hp - ((flags & 4) ? cost : 0) || u.action_points != skillInputBefore->action_points - 45 || u.learned_proficiency[ability->group] <= skillInputBefore->learned_proficiency[ability->group] || skillInputFrames != (ability->header[6] ? ability->header[6] : ability->header[0])) { fatal("Ability production payment/reward/original CEL mismatch"); }
+                const auto& target = prologue->events.units[skillInputTarget];
+                const auto& raw = *target.action_status_runtime;
+                const unsigned effect = ability->tail[6];
+                unsigned timer;
+
+                if (effect == 2) { timer = 0x54; }
+                else if (effect == 6) { timer = 0x4E; }
+                else if (effect == 10) { timer = 0x5A; }
+                else if (effect == 12) { timer = 0x60; }
+                else if (effect == 63) { timer = 0x6D; }
+                else if (effect == 84) { timer = 0x72; }
+                else
+                {
+                    timer = 0x77;
+                }
+
+                unsigned mask;
+
+                if (effect == 2) { mask = 0x10; }
+                else if (effect == 6) { mask = 4; }
+                else if (effect == 10) { mask = 0x40; }
+                else if (effect == 12) { mask = 0x100; }
+                else if (effect == 63) { mask = 0x800; }
+                else if (effect == 84) { mask = 0x1000; }
+                else
+                {
+                    mask = 0x2000;
+                }
+
+                const unsigned active = unsigned(raw[0x38]) | (unsigned(raw[0x39]) << 8);
+                auto signedWord = [&](size_t p)
+                {
+                    return int(int16_t(unsigned(raw[p]) | (unsigned(raw[p + 1]) << 8)));
+                };
+                if (!(active & mask) || !raw[timer]) { fatal("Ability production independent mask/timer missing"); }
+                if (effect == 2 && target.defense != skillInputVictim->defense + signedWord(timer + 1)) { fatal("Ability production defense delta mismatch"); }
+                if (effect == 6 && target.attack != skillInputVictim->attack + signedWord(timer + 1)) { fatal("Ability production attack delta mismatch"); }
+                if (effect == 12 && target.tactics != skillInputVictim->tactics + 30) { fatal("Ability production tactics delta mismatch"); }
+                if ((effect == 63 || effect == 84 || effect == 86) && (target.attack != skillInputVictim->attack + signedWord(timer + 1) || target.defense != skillInputVictim->defense + signedWord(timer + 3))) { fatal("Ability production paired delta mismatch"); }
+                if (effect == 10)
+                {
+                    const auto& beforeRaw = *skillInputVictim->action_status_runtime;
+                    const bool existing = (beforeRaw[0x38] & 0x40) != 0;
+                    const int expected = skillInputVictim->max_action_points + (existing ? 0 : signedWord(timer + 1));
+                    if (target.max_action_points != expected || (!existing && skillInputVictim->max_action_points < 110 && target.max_action_points > 110))
+                    {
+                        std::cerr << "Ability AP before=" << skillInputVictim->max_action_points << " after=" << target.max_action_points << " delta=" << signedWord(timer + 1) << " existing=" << existing << " expected=" << expected << '\n';
+                        fatal("Ability production AP delta/cap mismatch");
+                    }
+                }
+                std::cout << "PASS CONTROLLED ability family ID=" << inputSkill << " original CEL, stat mask/delta/timer and unique MP/ST/HP/AP/reward transaction\n";
+            }
+            if (const auto* buff = NativeTimedBuffs::find(inputSkill))
+            {
+                const auto& v = prologue->events.units[skillInputTarget];
+                const auto& r = *v.action_status_runtime;
+                unsigned slot = 0;
+                while (!(buff->mask & (1u << slot))) { ++slot; }
+                const int duration = inputSkill == 58 ? std::max(1, skillInputBefore->st / 25) : buff->tail[12];
+                const unsigned frames = buff->header[6] ? buff->header[6] : buff->header[0];
+                const unsigned flags = unsigned(r[0x3C]) | (unsigned(r[0x3D]) << 8);
+                const int cost = buff->tail[0];
+                if (!(flags & buff->mask) || r[0x85 + slot] != (inputSkill == 46 ? 255 : duration) || skillInputFrames != frames || u.action_points != skillInputBefore->action_points - 45 || u.mp != skillInputBefore->mp + skillInputMpGrowth - (buff->group == 8 ? 0 : cost / 2) || (buff->group == 8 && u.st != skillInputBefore->st - cost) || u.learned_proficiency[buff->group] <= skillInputBefore->learned_proficiency[buff->group] || v.hp != skillInputVictim->hp - (inputSkill == 92 && skillInputTarget == skillInputCaster ? cost : 0)) { fatal("Timed buff production oracle/payment/CEL mismatch"); }
+                std::cout << "PASS CONTROLLED timed buff ID=" << inputSkill << " mask=" << buff->mask << " timer=" << unsigned(r[0x85 + slot]) << " original branch, unique payment/reward, no HP damage\n";
+            }
             skillInputCommitted = snapshot("cast-after.sav");
-            std::cout << "PASS INPUT complete" << inputSkill << " ST=" << skillInputBefore->st << "->" << u.st << " HP=" << skillInputBefore->hp << "->" << u.hp << " MP=" << skillInputBefore->mp << "->" << u.mp << " nativeMPGrowth=" << skillInputMpGrowth << " paidMP=" << (skillInputBefore->mp + skillInputMpGrowth - u.mp) << " AP=" << skillInputBefore->action_points << "->" << u.action_points << " proficiency=" << skillInputBefore->learned_proficiency[skill94Input ? 9 : skill88Input ? 8 :
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         2]
-                      << "->" << u.learned_proficiency[skill94Input ? 9 : skill88Input ? 8 :
-                                                                                         2]
+            unsigned int abilityGroup;
+            if (NativeTimedBuffs::find(inputSkill)) { abilityGroup = NativeTimedBuffs::find(inputSkill)->group; }
+            else if (inputSkill == 8) { abilityGroup = 0; }
+            else if (inputSkill == 12) { abilityGroup = 1; }
+            else if (inputSkill == 35 || inputSkill == 39) { abilityGroup = 3; }
+            else if (inputSkill == 48) { abilityGroup = 4; }
+            else if (inputSkill == 56 || inputSkill == 60) { abilityGroup = 5; }
+            else if (inputSkill == 17) { abilityGroup = 1; }
+            else if (inputSkill == 25) { abilityGroup = 2; }
+            else if (inputSkill == 52) { abilityGroup = 4; }
+            else if (inputSkill == 61) { abilityGroup = 5; }
+            else if (inputSkill == 96) { abilityGroup = 9; }
+            else if (inputSkill == 34 || inputSkill == 38) { abilityGroup = 3; }
+            else if (inputSkill == 54) { abilityGroup = 5; }
+            else if (inputSkill == 13 || inputSkill == 15) { abilityGroup = 1; }
+            else if (inputSkill == 53) { abilityGroup = 5; }
+            else if (skill94Input) { abilityGroup = 9; }
+            else if (skill88Input) { abilityGroup = 8; }
+            else if ((inputSkill >= 1 && inputSkill <= 10)) { abilityGroup = 0; }
+            else if (inputSkill == 33) { abilityGroup = 3; }
+            else
+            {
+                abilityGroup = 2;
+            }
+
+            std::cout << "Skill input committed ID=" << inputSkill
+                      << " proficiency=" << skillInputBefore->learned_proficiency[abilityGroup] << "->" << u.learned_proficiency[abilityGroup]
                       << " XP=" << skillInputBefore->experience << "->" << u.experience << " level=" << skillInputBefore->level << "->" << u.level << " SDL frames=" << skillInputFrames << '\n';
             skillInputPhase = 10;
             skillInputNext = nowUi + 500;

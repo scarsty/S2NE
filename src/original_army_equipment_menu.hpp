@@ -318,7 +318,20 @@ public:
             for (size_t row = 0; row < 5 && first_ + row < choices_.size(); ++row)
             {
                 unsigned id = choices_[first_ + row];
-                unsigned color = use_.eligible(state, selected_role(), id) ? (row == row_ ? 242 : 52) : 45;
+                int color;
+                if (use_.eligible(state, selected_role(), id))
+                {
+                    if (row == row_) { color = 242; }
+                    else
+                    {
+                        color = 52;
+                    }
+                }
+                else
+                {
+                    color = 45;
+                }
+
                 graphics_.panel(image, id + 492, 54, top + 37 + int(row) * 35);
                 font_.draw_original_large(image, items_.name(id), 88, top + 44 + int(row) * 35, color);
                 if (state.groups[0].inventory[id - 1])
@@ -366,7 +379,20 @@ public:
         for (size_t row = 0; row < 5 && first_ + row < choices_.size(); ++row)
         {
             unsigned id = choices_[first_ + row];
-            unsigned color = equipment_.eligible(role, id) ? (row == row_ ? 242 : 52) : 45;
+            int color;
+            if (equipment_.eligible(role, id))
+            {
+                if (row == row_) { color = 242; }
+                else
+                {
+                    color = 52;
+                }
+            }
+            else
+            {
+                color = 45;
+            }
+
             graphics_.panel(image, id + 492, 271, top + 52 + int(row) * 35);
             font_.draw_original_large(image, items_.name(id), 305, top + 59 + int(row) * 35, color);
             auto n = std::to_string(state.groups[0].inventory[id - 1]);
@@ -391,8 +417,14 @@ public:
                     a = unsigned(a) & 255;
                     b = unsigned(b) & 255;
                 }
-                int value = i == 0 ? word(role, 0xC3) : i == 1 ? word(role, 0xC5) :
-                                                                 a;
+                int value;
+                if (i == 0) { value = word(role, 0xC3); }
+                else if (i == 1) { value = word(role, 0xC5); }
+                else
+                {
+                    value = a;
+                }
+
                 auto n = std::to_string(value), next = std::to_string(i < 2 ? std::max(0, value + b - a) : b);
                 font_.draw_small(image, font_.text_bytes(labels[i]), 491, y, 137, true);
                 font_.draw_small(image, { n.begin(), n.end() }, 532, y, 109, true);

@@ -38,10 +38,17 @@ private:
     {
         int value = roles_->combat_value(roles_->units.at(recipients_.at(first_ + row_)));
         unsigned difficulty = state.globals_4f7cd0.at(28);
-        value = difficulty == 1 ? value / 10 : difficulty == 2 ? value / 5 :
-            difficulty == 4                                    ? value * 2 :
-            difficulty == 5                                    ? value * 3 :
-                                                                 value;
+        int adjustedCost;
+        if (difficulty == 1) { adjustedCost = value / 10; }
+        else if (difficulty == 2) { adjustedCost = value / 5; }
+        else if (difficulty == 4) { adjustedCost = value * 2; }
+        else if (difficulty == 5) { adjustedCost = value * 3; }
+        else
+        {
+            adjustedCost = value;
+        }
+
+        value = adjustedCost;
         return unsigned(std::max(1, value));
     }
     void load_recipients(const OriginalSave::State& state)
@@ -75,8 +82,12 @@ public:
     static unsigned fee(const OriginalSave::State& state)
     {
         unsigned cash = OriginalShopMenu::money(state);
-        return cash < 10 ? cash : cash >= 100 ? std::max(100u, cash / 10) :
-                                                cash / 10;
+        if (cash < 10) { return cash; }
+        else if (cash >= 100) { return std::max(100u, cash / 10); }
+        else
+        {
+            return cash / 10;
+        }
     }
     static bool supported(const OriginalSave::State& state) { return state.globals_4f7cd0.at(27) != 1 && OriginalShopMenu::money(state) > 0 && fee(state) < 100; }
     static bool donate(OriginalSave::State& state)
@@ -159,10 +170,16 @@ public:
             OriginalProgression progression(root);
             OriginalPromotion promotion(root);
             unsigned difficulty = staged.globals_4f7cd0.at(28);
-            unsigned base = difficulty == 1 ? 50 : difficulty == 2 ? 40 :
-                difficulty == 3                                    ? 30 :
-                difficulty == 4                                    ? 20 :
-                                                                     10;
+            int base;
+            if (difficulty == 1) { base = 50; }
+            else if (difficulty == 2) { base = 40; }
+            else if (difficulty == 3) { base = 30; }
+            else if (difficulty == 4) { base = 20; }
+            else
+            {
+                base = 10;
+            }
+
             unsigned award = std::min(150u, base + (cost - 100) / 100);
             for (auto& record : staged.groups.at(0).units)
             {

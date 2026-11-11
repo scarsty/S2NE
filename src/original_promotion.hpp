@@ -3,6 +3,7 @@
 #include "original_menu.hpp"
 #include "original_random.hpp"
 #include "original_settings.hpp"
+#include "original_sprite.hpp"
 #include <cmath>
 #include <functional>
 #include <optional>
@@ -416,14 +417,6 @@ public:
         {
             return s2ne::Result<std::vector<uint8_t>>::success(image);
         }
-        auto w = [](const auto& b, size_t p)
-        {
-            return unsigned(b.at(p)) | (unsigned(b.at(p + 1)) << 8);
-        };
-        auto dw = [&](const auto& b, size_t p)
-        {
-            return w(b, p) | (w(b, p + 2) << 16);
-        };
         auto pixel = [&](int x, int y, unsigned ink)
         {
             if (x < 0 || x >= 640 || y < 0 || y >= 480)
@@ -440,32 +433,10 @@ public:
         std::optional<Error> sprite_error;
         auto sprite = [&](unsigned id, int left, int top)
         {
-            size_t group = dw(pal_, 816) - 57;
-            size_t p = group + dw(cel_, group + 2 + (id - 142) * 8);
-            unsigned width = w(cel_, p) + 1, height = w(cel_, p + 2) + 1;
-            p += 4;
-            for (unsigned y = 0; y < height; ++y)
+            auto rendered = draw_original_cel(image, cel_, pal_, id, left, top, OriginalZeroRun::transparent);
+            if (!rendered)
             {
-                for (unsigned x = 0; x < width;)
-                {
-                    int op = int(int8_t(cel_.at(p++)));
-                    unsigned n = op ? unsigned(op) & 127 : 1;
-                    if (!n || n > width - x)
-                    {
-                        sprite_error = make_error("Invalid promotion CEL run");
-                        return;
-                    }
-                    unsigned repeat = op > 0 ? cel_.at(p++) : 0;
-                    while (n--)
-                    {
-                        unsigned ink = op < 0 ? cel_.at(p++) : repeat;
-                        if (op < 0 || ink)
-                        {
-                            pixel(left + int(x), top + int(y), ink);
-                        }
-                        ++x;
-                    }
-                }
+                sprite_error = rendered.error();
             }
         };
         auto text = [&](const std::vector<uint8_t>& t, int x, int y, unsigned ink)

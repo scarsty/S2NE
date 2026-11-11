@@ -1,6 +1,7 @@
 #pragma once
 #include "original_map.hpp"
 #include "original_settings.hpp"
+#include "original_sprite.hpp"
 #include "original_unit_status.hpp"
 #include <functional>
 #include <memory>
@@ -66,35 +67,7 @@ private:
     }
     s2ne::Result<bool> try_sprite_validated(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent = true) const
     {
-        size_t g = dword(pal_, 816) - 57, p = g + dword(cel_, g + 2 + (id - 142) * 8);
-        unsigned w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
-        p += 4;
-        for (unsigned y = 0; y < h; ++y)
-        {
-            for (unsigned x = 0; x < w;)
-            {
-                unsigned op = cel_.at(p++), n = op ? op & 127 : 1, c = 0;
-                if (!n || n > w - x)
-                {
-                    return s2ne::Result<bool>::failure(make_error("Invalid battle report sprite"));
-                }
-                if (op && !(op & 128))
-                {
-                    c = cel_.at(p++);
-                }
-                while (n--)
-                {
-                    unsigned ink = op & 128 ? cel_.at(p++) : c;
-                    if (!transparent || (op & 128) || ink)
-                    {
-                        pixel(image, left + int(x), top + int(y), ink);
-                    }
-                    ++x;
-                }
-            }
-        }
-
-        return s2ne::Result<bool>::success(true);
+        return draw_original_cel(image, cel_, pal_, id, left, top, transparent ? OriginalZeroRun::transparent : OriginalZeroRun::opaque);
     }
     s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent = true) const
     {
@@ -134,37 +107,13 @@ private:
         if (entry.unit.portrait)
         {
             size_t g = dword(pal_, 824) - 58, p = g + dword(cel_, g + 2 + (entry.unit.portrait * 2 - 2) * 8);
-            unsigned type = cel_.at(p++), w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
-            p += 4;
-            if (type > 1 || w > 640 || h > 480)
+            auto portrait = draw_original_sprite(image, cel_, pal_, p, true, 12, y + 4, OriginalZeroRun::transparent);
+            if (!portrait)
             {
-                return s2ne::Result<bool>::failure(make_error("Invalid roster portrait"));
-            }
-            for (unsigned yy = 0; yy < h; ++yy)
-            {
-                for (unsigned x = 0; x < w;)
-                {
-                    unsigned op = type ? 0x81 : cel_.at(p++), n = op ? op & 127 : 1, c = 0;
-                    if (!n || n > w - x)
-                    {
-                        return s2ne::Result<bool>::failure(make_error("Invalid roster portrait run"));
-                    }
-                    if (op && !(op & 128))
-                    {
-                        c = cel_.at(p++);
-                    }
-                    while (n--)
-                    {
-                        unsigned ink = op & 128 ? cel_.at(p++) : c;
-                        if (ink)
-                        {
-                            pixel(image, 12 + int(x), y + 4 + int(yy), ink);
-                        }
-                        ++x;
-                    }
-                }
+                return portrait;
             }
         }
+
         for (int yy = 39; yy < 111; ++yy)
         {
             for (int x = 117; x < 511; ++x)

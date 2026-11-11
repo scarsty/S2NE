@@ -5,7 +5,379 @@
 <a id="current-status"></a>
 ## 最新状态与证据口径（2026-11-11 文档合并）
 
-### 技能33自动生产输入与最新包（后续更新，优先于下列历史发布记录）
+### 直接正面计时整族（2026-11-11，本轮有界收尾）
+
+**完成35/115，未完成80/115；本轮新增6项，不重复既有29项。** 保留035 BIN effect40/side3纠正；旧effect53误判不恢复。唯一写者本工程；未广播、未新md、未操作DOSBox。
+
+先按BIN115逐记录及原466544 side0/1→4668F0反向`repne scasb`分派穷举，不将case号当effect：直接442CD5正面计时候选effect14/32/37/50/51/52/54/57/62/70/72/76/85/87，实际七ID。完成六项如下；**055飄浮術**同effect37→case12→466DF1/mask2，但原CEL header[6]=65534（signed -2专用序列），未沿用普通帧目录硬放行，明确保留。
+
+| ID 原名 | group/bit；阈值；支付 | BIN→ASM oracle；mask/timer；CEL |
+|---|---|---|
+|037 報復蠱|3/4；560；MP18|effect62→case21→466FFD；8/88h=3；dispatch37/color245/tint50/24帧|
+|044 幻術攻擊|4/1；100；MP18|effect70→case24→467085；80h/8Ch=3；44/59/25/15帧|
+|046 心靈護盾|4/3；320；MP15|effect72→case25→4670A2；100h/8Dh=5；46/138/50/36帧|
+|058 再生|5/5；900；MP30|effect76→case27→4670FE；200h/8Eh；duration125→470505=max(1,actor ST/25)，ST200得8；60/233/20/43帧|
+|086 輕功|8/3；320；ST12|effect85→case29→46713F；400h/8Fh=4；76/233/45/53帧|
+|092 無想轉生|8/9；2800；ST50+HP50|effect87→case31→467180；800h/90h=2；82/137/60/50帧；flags70不能误作只扣ST|
+
+- 四项side1友方、两项side0沿用原收集；同公共`collect_targets→execute_pipeline→feedback→publish→capture`，没有复制支付。定值power/一次percent，原side1 hit100钳99；友方/自身支持不误套敌方4000/3E10免疫，不凭名字加入攻击、防御、伤害。状态消费者沿用既有机制，不声称本批重新认证所有后续战斗消费。原sprite零run未改。
+- `original_timed_buffs_test.cpp`每ID独立原Big5/学习±1/cost/effect/mask/timer/frame oracle；穷举七候选与055排除；混合new/extend/permanent三目标唯一支付、半价/state2、免疫、取消、晚目标失败、奖励拒绝/RNG全回滚、计时到期/永久、capture→encode→decode→restore全部PASS。058仅原计时分支认证，不把本批称为全回合再生结算重验。模块日志`out\timed-buffs-test.log`。
+- 最终独立包`out\timed-buffs-certified`，`timed-buffs-certified-verify.log`及37/44/46/58/86/92六SDL exit0；046使用异方位友军（非敌人）目标+timer255；其它为自身目标，086/092走第二技能专用分区，092实际ST200→150及HP937→887，不误称无支付扣血。全部目标取消无支付/RNG、原CEL、反馈暂不发布、唯一提交、save/decode/restore及500ms settled均PASS。`timed-buffs-certified-rollback.log`058拒绝奖励后目标/支付/奖励/RNG/save不变exit0。
+- **CONTROLLED只作smoke**：显式注入学习/ST/半价能力/status/RNG；个人UJ02.SAV只读，不称自然习得或自然战斗。SDL dummy非桌面观感。首轮使用不支持的controlled字符串导致清空控制入口并等待，已停止该自有运行；最终用mixed。初轮独立包cwd错误导致BMP路径失败，改独立资源cwd；092初轮断言漏HP支付已改为原flags70双支付；均不拿失败日志充验收。
+- 小回归重新编译`buff-reg-cast_pipeline.log`、`buff-reg-special_status.log`、`buff-reg-hostile_stat.log`全部PASS；C++23/main-only catch，clang-format，最终Debug→Release根同步/15项无SAVE精简包/独立verify完成。未完成子族仍保留：022護甲/023嗜血/028迅捷術能力增量，047隱身含4465B4/4462B6专用分支，055特殊CEL，057鼓勵，076自然祝福复合状态/能力，079時間妖魔行动重置，以及其它未逐ID分派；不扩伤害/召唤。094脚本死亡独立待验不阻塞。
+- **持久SHA256**：根/Release/独立EXE一致`3ED42487EB87BDC2583C2CAE3B20FE50FFF4EFEFB3D94FD075CE5DFB9070FA9D`；ZIP `BB3BCFE305C8D36D749CB4D8F9E7C2B5B2A302DAE2FD24BABC0E1D209E2A23E4`。
+- 日志均在原址`out`，最终认证日志hash如下（早期`final`/`independent`不替代`certified`）：
+  - `timed-buffs-test.log`：`647CD12F971172CA853AB55A1BD3FA5479320EF3E84BBD2D3F9E9468BAE8E5D2`
+  - `buff-reg-cast_pipeline.log`：`E7C1935B68523011AA08F43B139C9AE6D1629AA9D07A7074770B296ED2E60FCD`
+  - `buff-reg-special_status.log`：`00A6BCCFE10AA042C364DC8BD3B547F46EC52F7C835704686EC58C7C61BE8483`
+  - `buff-reg-hostile_stat.log`：`1FB27908F7C97B510603A679CB00CDD2AF8519EB7B65F1B1E6750CA7D5E09C5A`
+  - `timed-buffs-certified-verify.log`：`1136ED7BA62331599D894A4F31B780DE107D4BF40F693659BA3A251682FED98D`
+  - `timed-buffs-certified37.log`：`B642F98129097FF52748D9C5813DBB746AF6F0A28BAE60B1AAE9D5A0D3AF4111`
+  - `timed-buffs-certified44.log`：`1137427DD3EAFB0DB3CA28B081D705698916BB68865F0E983CBD54FEFB37C886`
+  - `timed-buffs-certified46.log`：`DA574FCC0521772696A4E44D717FAF06C2636050FE95815A42A6A5249A89AAA3`
+  - `timed-buffs-certified58.log`：`E8F867952D0A5F43F1A62D62F4C3BA1867E7A1A5CA6A5C0A8E339A0BD4E42CE3`
+  - `timed-buffs-certified86.log`：`5A267396B1C4CE5CB1DE3A5E18DE424A64B312AC232996F8079DE4CED7F4BD5D`
+  - `timed-buffs-certified92.log`：`B6877E561783C3AABC2EDB71A4343C2390E62CA889E50E3C2E829A2E0716B3F1`
+  - `timed-buffs-certified-rollback.log`：`78F01FE79E67EDAD72B9EC2E00F03681C3906E59CCD166C6059DE723CDFA2061`
+
+本六项有界族完成停写；055不计完成。
+
+### 特殊状态与清除整族（前轮七项，最终验收完成）
+
+**完成29/115，未完成86/115；本七项7/7，既有22项不重复计数。**
+
+本轮按BIN115记录穷举effect5/20/40/47/56/58/74，边界恰为 **008祈求、012邪惡祈求、035狂亂之蠱、039瘴氣、048解除魔法、056平靜、060石化術**。不把不同effect硬套计时处理，不按固定三项停点；专用`NativeSpecialStatus`共用`collect_targets→execute_pipeline→feedback→publish→capture`与唯一支付/奖励/RNG事务。**纠正此前035的effect53记录：BIN实际为十进制40（0x28），side3双方目标；不是十进制53。** 原`466838→468181→46844C→443093`，与`467FA2`分开。原sprite零游程未变，094脚本死亡与伤害/召唤/剧情独立留后。
+
+| ID 原名 | group/bit；学习阈值；MP | 原效果与边界 |
+|---|---|---|
+|008 祈求|0/7；1700；20|effect20/side1，反向repne表真实case9→466D3A，WORD38 &=BB74、DWORD3C &=FEF00FFF再442828重建；不是case20→466FC7。友方不额外唤醒，命中仍走ST/RNG，不固定99。|
+|012 邪惡祈求|1/1；100；13|effect56/side2，467625+90：先免疫再五次独立percent，依次毒400/timer68、咒10000/95、封咒4000/93、定身8000/94、眩光1000/91；duration210→470505按max(1,ST差/10)。全部已存在可延时但不冒报新状态成功；只有成功后唤醒。|
+|035 狂亂之蠱|3/2；200；20|effect40/side3，46844C→443093，mask2/timer4B，WORD21=0，不凭名称创造伤害/增攻；角色1排除，命中后先唤醒再能力免疫。|
+|039 瘴氣|3/6；1280；25|effect58/side3，4684C0：当前攻击减runtime C1×20/100，mask8/timer51=3/delta52；WORD21=20同时进入命中，不误用0或额外power RNG。重施只延时，不叠扣，255永久保持；允许双方。|
+|048 解除魔法|4/5；900；30|effect47/side3，46847F：同方与008相同负面掩码清除；异方442DC5按3974/6F00FFF优先只清一个正面。先唤醒，绕过4000/3E10状态免疫，不把敌方当全清。|
+|056 平靜|5/3；320；20|effect74/side1，4670BF：38/3C两个DWORD全清并重建，和008选择性清除区分；命中仍需ST/RNG。|
+|060 石化術|5/7；1800；30|effect5/side2，467B3F→442FE2→442E96，mask200/timer63=0；203攻→102、157防→79。0不倒数、不自动到期（255也永久），清除可恢复；不把0改成1。|
+
+- **每ID独立oracle**：`original_special_status_test.cpp`固定原Big5名字、group/bit、阈值±1、cost/effect、目标范围/收集、命中/免疫/角色、RNG顺序、半价/payment2、晚目标/奖励拒绝回滚、真实capture→encode→decode→restore、CEL帧；012独立五组件、039独立WORD21命中及短/永久重施、060零计时持久与恢复。公共机制不为七项复制。小回归`special-pipeline.log`、`special-stat.log`、`special-timed.log`重新编译PASS，旧13项状态与旧管线不退化；编辑器无错误。
+- **原CEL**：008 dispatch8/color176/tint50/37帧；012 12/233/25/32帧；035 35/139/0/22帧；039 39/233/50/30帧；048 49/245/65/36帧；056 58/233/35/34帧；060 62/107/35/33帧。精确原header门禁沿用原CEL解码，不改SPRITE零run。
+- **生产边界**：CONTROLLED仅smoke注入学习/ST/能力/状态/既有单位部署/RNG；个人SAVE只读，不称自然学习/自然布阵。SDL dummy仅认证原事件/绘制/反馈状态机，不等于桌面观感。修正side3选自身导致actor ST被fixture改写的初轮失败；最终选异方且048实测同一事务多目标友方清负面/敌方只清正面，反馈未发布阶段save不变，提交与settled真实save联合。初轮旧二进制日志不替代最终独立包认证。首次加强面积fixture错误地要求008窄范围容纳两名敌人，导致smoke部署失败；已限定048双阵营多目标严格面积fixture，其余窄范围只作单目标代表，不扩大原技能面积。
+- **最终构建**：最后源码改动后Debug→Release根同步，`special-family-package.log`精简15项无SAVE，独立`out\special-family-independent`的`--verify`通过。一次早期Debug链接LNK1168是未结束smoke占用exe，待原批退出后重建通过，未杀个人进程。强化混合fixture后重新Release并重打包，以最终hash为准。
+- **剩余**：本七项有界族不剩技能ID；友方增强等其它状态子族仍待逐ID，不能称所有状态已完成。伤害/召唤/剧情与094独立待验。不新md、不广播、不操作DOSBox。
+
+- **最终独立SDL验收**：`special-independent8/12/35/39/48/56/60.log`七项全部exit0；原名册定位→第一技能→目标取消无支付/RNG→再确认→原CEL→反馈暂不发布→唯一提交→全部fixture目标save/decode/restore→500ms settled。半价MP分别152→142/146/142/140/137/142/137，AP106→61，XP135→141；熟练奖励使用各自group独立断言（此前错误日志打印旧group已修正）。048同事务友方清负面/敌方选择性清除/免疫绕过PASS；`special-independent-rollback.log`048拒绝奖励后全部目标/支付/熟练/XP/RNG/save不变exit0，预期错误栈不是崩溃。
+- **最终持久交付SHA256**：根/Release/独立EXE一致 **37DC4ED264073AB1D8BFDF4B67E52508465479031DC54E28E04883F9D6389AAF**；`S2NE-game-win64.zip` **C0B1A263CDF771FF9D8E7FB152B9FC671FDE84FACEAAA1A19D62D60AE375A327**。最终独立verify通过，源码/模块/SDL/根/精简包口径一致，本七项有界族完成停写。
+- **日志SHA256**：
+  - special-family-test.log：`00A6BCCFE10AA042C364DC8BD3B547F46EC52F7C835704686EC58C7C61BE8483`
+  - special-pipeline.log：`E7C1935B68523011AA08F43B139C9AE6D1629AA9D07A7074770B296ED2E60FCD`
+  - special-stat.log：`1FB27908F7C97B510603A679CB00CDD2AF8519EB7B65F1B1E6750CA7D5E09C5A`
+  - special-timed.log：`178ECB8ED93A8D511A62AE45E43E8D6FC36A5ADA932F27CBABB2C9BE6F5B586D`
+  - special-independent-verify.log：`1136ED7BA62331599D894A4F31B780DE107D4BF40F693659BA3A251682FED98D`
+  - special-independent8.log：`B51C8E1A0993C864125723728C910011F879C1638D94C19E0D7D427AE9CE9CB7`
+  - special-independent12.log：`B2636A01606F0CAF3798DC12046B74CC14B55DCB7EC7028246D5F50B0AB947E4`
+  - special-independent35.log：`303507F05B0AD93DB149187BDF696985B7C75349EEFE04FDEB366EB334178E1E`
+  - special-independent39.log：`1FF2AA65A719F6CB36C6A1F7E74C5B5EA637F03A1F6A1E4394D871FB660E896C`
+  - special-independent48.log：`7304D93AE66432A3354DB5D02EB6326208451650AD845E9FEC872B2940882B39`
+  - special-independent56.log：`1B8421EFA0FCFC38A3C7289BB47924051D7BE17BAE41379EA66D1300A1E48D8B`
+  - special-independent60.log：`37FDED425886876342A8BBA165FF2E3B384300C86733D6DC9E5D46D0D2A06BA5`
+  - special-independent-rollback.log：`EC189946638FF9A21FDC62EFA8041D28375AA63AD1367C83F06D5270485D2F6E`
+
+### 敌方能力减量/毒/迟缓整族收尾（2026-11-11，历史批次）
+
+**完成22/115，未完成93/115；本族4/4，既有直接敌方定时9/9不重复计数。** 先读顶部18/115，再按原`467625→46803D`比较树及BIN115项穷举effect7/15/16/46敌方记录，恰为 **017毒擊、025遲緩術、052衰退打擊、061牽絆術**；effect7无技能记录。035狂亂之蠱effect40（旧记53已由本轮BIN纠正）/双方阵营、060石化術effect5→442FE2且duration0，独立留后，不硬套；094脚本死亡及其它伤害族未动。
+
+- **原机制逐项而非状态位冒充**：017 group1 bit6/熟练1279/1280/1281，MP25，effect16→467E03→442F74→442E96，stat mask400/timer68=5，当前攻击/防御各减1/5，原signed取整，重复仅延时、不重扣，永久255不延。025 group2 bit4/499/500/501，MP25，effect46→467E9D，stat mask80/timer5D=3，AP上限/当前/携带分别减10/减10/钳当前；061 group5 bit8/2299/2300/2301，MP40，同处理但减12，raw18=7为**镜头可视区403717**，不是半径7或全地图；原列奇偶9/10格、36行，公共收集按行列顺序过滤合法地形/出场/敌方。052 group4 bit9/2799/2800/2801，MP45，effect15→467CFD，stat mask4000/timer7C=4，AP上限减40，攻击/防御各减1/10，当前AP不扣。原`46E858`formula16/29虽计算候选，但`46E058→46E1D0`最终返回WORD21，**不可误套随机power**；原命中46DBA9用ST差+WORD21-100再原随机/难度，非WORD23。017额外能力1000/4000在命中前排除；命中后先唤醒再状态/能力免疫。025允许角色/飞行，061 raw29=129排除movement_class!=0，017/052排除角色1。
+- **共用事务**：仅扩展`NativeHostileStatus`参数及stat分支，维持`collect_targets→execute_pipeline→feedback→publish→capture`，唯一奖励/支付/RNG暂存及失败回滚。倒数复用`tick_status_durations→recalculate_status_stats`恢复原基值，补同步Unit AP上限/status39；存取档保留38..9F全状态减量/计时，非只保存mask。未复制事务，C++23/Result/main-only catch/clang-format保持。
+- **独立原CEL**：017 dispatch17/color233/tint0/header31,0,0,139,221,17,0,5→31帧；025 dispatch25/223/35/header12,0,0,126,158,0,28,5→28呈现帧；052 dispatch54/233/65/header63,119,265,237,463,1,0,5→63帧；061 dispatch63/233/60/header32,65535,65535,640,480,0,0,5→32帧。面积与viewport均使用公共原动画/反馈发布，不伪造HP伤害。
+- **公共模块+逐ID oracle**：`tests/original_hostile_stat_test.cpp`/CTest登记`original-hostile_stat`；`stat-family-test.log`四ID学习/固定原参数/命中RNG/免疫/角色/movement/短延长/255不重扣/到期能力恢复/晚目标与奖励拒绝回滚/cancel/半价/真实capture-decode-restore/CEL均PASS；025/061多目标混合、原收集顺序及payment2唯一AP，061独立镜头奇偶边界通过。小回归`stat-pipeline.log`及`stat-timed.log`PASS，既有9项不退化；编辑器诊断无错误。使用现有VS工程MSBuild及直接cl测试，不冒称运行CTest。
+- **独立生产SDL最终证据**：`stat-independent{17,25,52,61}.log`均exit0：原名册定位→第一技能→目标→取消→再确认→原CEL→反馈未发布→一次提交→save/decode/restore全部目标→500ms settled。017/025/052/061半价MP分别152→140/140/130/132，熟练0→75、6053→6128、4077→4202、0→112；AP106→61，XP135→141。025混合新减量/能力免疫/可命中角色，061 viewport混合新减量/能力免疫/飞行排除；017/052单目标代表不同减量处理。`stat-independent-rollback.log`061奖励拒绝全部目标/支付/奖励/RNG/sav不变exit0，内部预期错误栈非崩溃。
+- **批末交付**：`stat-family-debug.log`→`stat-family-release.log`，一次最终Release根同步，`stat-family-package.log`精简15项无SAVE，独立`out/stat-family-independent` verify与标题音频PASS。独立初次用错cwd导致截图相对路径不存在的失败不计认证，已在独立包cwd重跑成功；025旧邻居排除断言也已改为其原可命中语义。根/Release/独立EXE SHA256 **1564C654C5C83E259FFD4F65F27C0CE6595159B454E73FFC7C9A93E23090341C**；ZIP **BB45655F20D25A488AE49BB58EAE2FBC9A358740C1AF32674FFE5D5162853241**。
+- **日志SHA256**：模块`1FB27908F7C97B510603A679CB00CDD2AF8519EB7B65F1B1E6750CA7D5E09C5A`；017`DAA4C1C802D020CDCCAA7AE61A7016A80B336F96B36914E10A86CB983400BEA1`；025`1FA85A7BEDC583B6E31218C1053652AF3EDC2E1E7AC7C552B80DE2F5E6E7A076`；052`6569CB135E63A96EBDC8DFEB73E504AC61383F32BB211D7F9A3455F527EC4307`；061`C43F242E6A7A9A9604BFD42D5D76BE40606628E0D03E68F08FA95833C3122C7C`；回滚`96C93EAE36FBE5BABC8FBFF23EB12F8E83B031BF7103775E58816884E993430F`。
+- **限制与停点**：所有新技能生产证据显式CONTROLLED，只在smoke入口注入学习/ST/能力/状态/固定基值/RNG/既有敌人部署，个人SAVE仅加载，不称自然学习/自然布阵；SDL dummy验证实际事件/绘制状态机，不等于人工桌面观感。viewport只覆盖原mode7、未扩大其它技能模式。未新建md、未广播/联系agents、未操作DOSBox；本有界整族完成停写。
+
+### 敌方直接定时状态整族收尾（2026-11-11，历史批次）
+
+**完成18/115，未完成97/115；本族9/9。** 从磁盘保留19:44未交付改动，先补完中断Debug（`next-hostile-debug.log`只有编译警告、无成功结尾，不视作完成），未撤销旧工作。按`466544→467625→46803D`原比较树与BIN115记录穷举，直接`442CD5`零power敌方计时族恰为 **002催眠術、013衰弱術、015恐懼、033詛咒術、034定身術、038封咒、053眩光術、054冰凍術、096破魂劍法**。本批新增034/038/054/096四项，不把既有五项重计；不是按三项停点或凑满预设数量。
+
+- **原数据/适配逐ID**：034 group3 bit1，熟练99/100/101，effect43→467E7F，mask8000/timer94=3，排除角色1，MP13（半价6），CEL34 header27/89/70/177/99/0/36/5→36呈现帧。038 group3 bit5，899/900/901，effect17→467E1C，mask4000/timer93=4，排除角色1，MP20（半价10），CEL38 header30/60/250/120/289/0/0/5。054 group5 bit1，99/100/101，effect13→467C81，mask2000/timer92=4，排除角色1/2，MP20（半价10），dispatch56/header26/0/0/125/125/0/0/4；原467C81首次后的4465B4/4462B6为图层重绘/呈现而非额外数值伤害，原CEL和原子反馈发布保持。096 group9 bit2，199/200/201，第二技能菜单，effect43同034但**不排除角色**、**支付ST15而非MP**，dispatch89/header30/0/0/111/249/0/0/5、233/35；不按剑法名称归伤害。
+- **共同管线而非新事务**：`NativeHostileStatus`参数化effect/排除位/duration；002与033生产路径也迁入，033仍按原ST差/10取duration，002计时2。`collect_targets→execute_pipeline→feedback→publish→capture`与唯一支付/奖励保留；修复紧耦合的第一/第二菜单可达bit、遗留034/038/054 smoke角色group、支付/帧数及真实熟练日志，未扩无关功能。
+- **明确特殊排除**：012邪惡祈求effect56不在上述直接计时比较分支，不当作55；017毒擊effect16→442F74→442E96（毒的两项能力减量及mask400），060石化術effect5（专用处理且WORD25=0），025遲緩術/061牽絆術effect46及052衰退打擊effect15含独立power/能力字段，035狂亂之蠱effect53但阵营字段不是敌方2；它们不冒充本直接计时族完成。007/011/014等独立伤害、召唤、事件及094脚本死亡继续未验，不阻塞9项直接族。
+- **一次公共机制、独立数据oracle**：`timed-family-test.log`先独立穷举BIN得到九ID，再逐ID学习/原hit与RNG/唤醒先于免疫/角色排除/延长与255/到期/晚目标和奖励拒绝回滚/取消/半价及payment2/唯一支付/真实capture-decode-restore/CEL。七条独立固定数据，已完成002/033分别由`timed-sleep.log`、`timed-curse.log`独立期望回归；`timed-pipeline.log`、`timed-restoration.log`均PASS，不重跑所有旧项长SDL。
+- **最终独立生产SDL**：`timed-independent-{34,38,54,96,53}.log`均exit0。真实名册定位→命令→第一/第二技能→目标→取消→再确认→原CEL→反馈未发布→原子发布→存档→500ms settled。034/038/054半价MP分别152→146/142/142，熟练0→45/62/62；096 ST1000→985、MP152不变、熟练0→50；统一AP106→61、XP135→141。053复用面积代表三个目标new/能力免疫/角色MISS，逐条反馈后统一发布；`timed-independent-rollback.log`为最终096生产奖励拒绝sav/全部目标/支付/奖励/RNG回滚exit0，内部预期错误栈不冒充运行崩溃。初次034旧帧数断言失败日志仅诊断，最终独立成功日志才是认证依据。
+- **边界**：上述新项全部显式 **CONTROLLED**：只在smoke入口注入actor1学习bit及ST/能力/角色/状态/RNG，搬动既有敌人，battle-only恢复跳过故事续跑。仅写out，不改个人SAVE，不宣称自然学习或自然布阵；SDL dummy验证真实事件/绘制状态机，不等于人工桌面观感。未新建md、未联系旧agent、未操作DOSBox；本有界整族结束停写。
+- **一次批末交付**：clang-format；`timed-family-debug.log`→`timed-family-release.log`成功根同步；`timed-family-package.log`精简15项无SAVE，独立`out/timed-family-independent` verify及标题音频smoke通过，编辑器诊断无错误。CMake Tools因未配置工作区无法配置，诊断为空，采用现有VS工程MSBuild验证，不把它记录为CTest成功。根/Release/独立EXE SHA256 **9F552E5ACFD35B0FBDF6E75F14F4FA81AFADE4DB62FCEBCED795F56E29F3027C**；ZIP **B3FE9599F9EEA6B01BF3ED4980256AB059BEE1589AA334054698D484C925FFD3**。
+- **最终日志SHA256**：模块 `178ECB8ED93A8D511A62AE45E43E8D6FC36A5ADA932F27CBABB2C9BE6F5B586D`；独立034 `C1F4B7743549206E0E1ACB5872D7DC544F3FAF64750A232DFFE92478C1A5D038`；038 `A91F8DB7B09FEBEF64FE5867ADB4C3CC0EFB718BADE38EC93C4A16BAED5AFEDD`；054 `0098F8F5CBC020FDD6A8B841F70418EDD28EED14AC58028CE76DFD1E576853B8`；096 `F684703B6D0CF9CD3E8B81A568A83D3D99F358698E8C20F4ABD4D3FEB997287C`；面积053 `A0E2045C30D3EA351922AA2FBD5A3121145D1E3311F6E5083070A6E147C71812`；生产回滚 `AC1D368082E83C814A88DACCA257189E9507E4D3C4DA7977E0A88D971E1979DB`。
+
+### 013/015/053敌方定时状态族（2026-11-11，历史批次）
+
+**完成14/115，未完成101/115。** 新增013《衰弱術》、015《恐懼》、053《眩光術》；094脚本死亡联合独立缺口未动、不阻塞本族。先查原表：007《聖言》/011《邪惡之箭》是effect1伤害（formula5/7），008《祈求》effect20另有清除语义，012《邪惡祈求》effect56并非55，不能按名字或IDA case号凑族。本批只选同`466544→467625`零power敌方定时状态原处理器。
+
+- **原地址与专用边界**：`46803D`直接比较原record19字节，69→`46801A` mask40000/timer97=4，67→`467FFC` mask80000/timer98=4，8→`467C63` mask1000/timer91=3；均调用`442CD5`原首次/延长/永久规则。`46D874→46DBA9`按ST差-100分段、`407E2D`随机/难度修正、`46D50F/46D545`按record29角色排除：013无、015角色1、053角色1/2。命中先`467804→4685CD`唤醒，再`467A42`状态/能力4000免疫；MISS不唤醒。没有伤害、治疗或伪造数值power抽数。
+- **公共代码**：新`native_hostile_status.hpp`只提供上述原处理器的参数化packet，不复制支付/奖励事务。继续`collect_targets→execute_pipeline→begin_status_area_feedback→publish→capture`，原收集顺序/地形/出场/阵营、一次MP/AP、原生奖励与RNG暂存回滚共用。001等已完成11项不重复计数；formula4/6正确18h/19h与1Eh/1Fh保持。`original_sprite`原零游程规则完全未改。
+- **每ID独立oracle**：`tests/original_hostile_status_test.cpp`与CTest `original-hostile_status`；学习原group1 bit2/4、group5 bit0，WORD15=20/56/0，测试199/200/201、559/560/561及0/1；053门槛为零无合法负熟练前值。各自cost15/30/15、effect69/67/8、timer97/98/91、duration4/4/3、CEL帧25/38/27独立固定期望。覆盖固定ST差独立命中/RNG、角色排除、两种免疫/先唤醒、重复延时/255、倒数到期、晚目标拒绝/奖励拒绝全回滚、cancel/settled、半价7/15/7、payment2与实际capture/decode/restore全计时/学习。日志`out/hostile-family-test.log`全PASS；小回归`hostile-regression-{pipeline,restoration}.log`全PASS。
+- **真实CEL与生产SDL**：013 dispatch13/header25×69×354，015 dispatch15/header38×165×384，053 dispatch55（不是53）/header27×640×480；原调色233及tint25/60/50、锚点/逐帧呈现复用。最终独立包`hostile-independent-{13,15,53}.log`全exit0，真实右键名册定位→命令→技能→目标→取消→再确认→原CEL→反馈→一次发布→落盘/500ms settled。013 MP152→145/AP106→61/熟练0→50；015 MP152→137/熟练0→87；053三目标mixed new/能力免疫/角色MISS（空格保留），3条反馈后原子发布，MP152→145/熟练0→50；均XP135→141。`hostile53-rollback.log`生产拒绝奖励全部sav/RNG回滚exit0。最终日志的proficiency已指向真实group1/5，不采用早期错误group2显示。
+- **严格受控，不冒充自然**：个人SAVE只读；UJ02是原story-stage115，原角色1未学此族。生产fixture明确注入角色1学习bit、ST/能力/status/roles/RNG，并部署/搬动两个既有敌人（053在九格内、013/015在单格外），只写out。`restore_battle(..., resume_story=false)`仅受控新族入口跳过story续跑，默认true保持普通加载行为；无stage/地图字段篡改。早期未经此控制的输入进入旅店/原worldmap断言、无自然053施法者以及错误跨stage捕获均失败，不列成功证据；本批未修改无关worldmap。最终明确CONTROLLED，SDL dummy证明事件/绘制状态机，不宣称自然战斗或桌面人工观感。
+- **一次批末交付**：clang-format；`hostile-family-debug.log`→`hostile-family-release.log`成功根同步；`hostile-family-package.log`精简15项无SAVE，解压`out/hostile-family-independent`独立verify/标题音频smoke及上述三技能实际输入全通过。诊断无错误。根/Release/独立EXE SHA256 `3B782AF8705F59900CA38030CFBE885BE1C577D5A2E4364EB98A25258B84FCDA`；ZIP `F43D96AA14BF1C0BE28DA06AD59DDEA8E48B28887A44FB1DA0948D20004F5100`。
+- **日志SHA256**：模块 `58D5928EBE7F6B2EB54553229027CF8CCE2477DF8AB3FF1144CD1C1F76CC9C28`；独立013 `A79C7C5132C764040BB1A936DBEA997C4333195A42976B1E27B6F9D8EF9B89CE`；015 `056E9F5568E7AC8336C23358BB224F8D53597E73D1F258D42DD3657E16EE08C5`；053 `2F82F0E07237EAF1F0CF3E48D8835E55ED7DBCE017D6B72F08D5B5F836271A92`；生产回滚 `28B38B44464F8F002EC5C1A330D6ADD946D977D6B659417B0F0BA553A007D70B`。未新md、未广播siblings、未操作DOSBox；本批完成停写。
+
+### 006/009/010公共族收尾（2026-11-11，历史批次）
+
+**完成11/115，未完成104/115。** 本批完成006《集體治療》、009《新生術》、010《神之干涉》；原八项共同管线不另建、不重跑八项SDL全套。094脚本死亡联合仍按下节待验，不扩011或其它技能。
+
+- **学习门槛实核**：原`465A47→465A67→465AEE`取熟练WORD/10，与37字节record的signed WORD15比较，门槛大于熟练才跳过；三项group0 bits5/8/9、WORD15=85/214/260，因此849/850/851、2139/2140/2141、2599/2600/2601逐项验证未学/已学/已学。UJ02原角色1三项已学，只读；门槛测试是明确受控副本，不伪称自然习得过程。
+- **公式修正，不沿用旧结果充数**：006原`465C14→46EBDB→470427` formula4读取signed config18h/19h，009原`46EC72` formula6读取1Eh/1Fh；发现上一实现分子/分母均早一字节，本批修正。独立测试直接按原偏移计算ST装备18加1/5、目标装备19翻倍、原随机乘数、缺血钳制及XP/熟练/RNG；默认双目标006期望260/286、XP90/熟练25，009期望469/469、XP120/熟练25。全HP只power抽数且无反馈；禁疗只percent、零治疗反馈；混合目标与缺血1均通过。
+- **010不是治疗**：`467068→442CD5`置mask40/timer8B=2，首次反馈固定180但HP不变；重复静默、短计时延2、永久255不缩、倒数到期通过。`40A823..40A83E`实际受伤减180、最低1独立验证，不当作防御加180。原99命中范围没有虚构随机MISS；失败验收为MP不足、晚目标非法、奖励拒绝及全事务/RNG回滚。
+- **共用边界保持**：继续复用上批`collect_targets→execute_pipeline→feedback→publish`，无新ID支付/奖励事务副本；原`464CFA`半价32/2=16、40/2=20、55/2向零=27，payment2免MP仍扣AP45；取消不动sav/RNG、反馈未发布、settled不重复支付、restore保留全部目标/学习/status/timer。模块`out/family-close-original_restoration_test.log`及旧八项共同事务`family-close-original_cast_pipeline_test.log`、相邻`family-close45.log`全PASS；原八项完成数不因重构再加。
+- **生产SDL核心补缺**：`out/family-close{6,9,10}-branches.log`及最终独立`family-close-independent-{6,9,10}.log`全exit0；006五目标全HP/禁疗/其余正治疗联合，009四目标同类联合，010永久255静默/HP不变；分别38/33/59个原CEL帧，半价16/20/27。`family-close9-rollback.log`实际生产奖励拒绝后sav/RNG全回滚。首次010状态置位及普通MP/CEL采用上批已有证据复用；不重复所有无关自然流程。所有branches显式CONTROLLED，仅内存能力/HP/status/RNG副本，不改学习/坐标/个人SAVE；SDL dummy为真实事件/绘制状态机证据，不宣称人工桌面可见。
+- **统一交付**：统一clang-format，`family-close-debug.log`→`family-close-release.log`成功、根同步；一次`family-close-package.log`精简15项无SAVE，解压`out/family-close-independent`，独立verify/smoke均exit0。首次从工程cwd运行独立SDL的截图路径失败，改用独立包cwd后全通过，最终日志已覆盖为成功结果。诊断检查无错误。
+- **SHA256**：根/Release/独立EXE `C5B6B8E7D934C155BC7ABF59E69400686C32C12AAA1C79781522856132339684`；ZIP `F98CBE10D321D6EE9F1248E3DFEAA026E8DA4A5ED7E2584E637045BFC8362656`；模块日志 `AFCE49FA0E8BF454E57113A0B3555F77C1AF92F1F51F6C692388BF5C525E471D`；共同事务日志 `E7C1935B68523011AA08F43B139C9AE6D1629AA9D07A7074770B296ED2E60FCD`；独立006 `267CD492E0FED48B120BCCCEC6798AF353C23A01835BA714D007255A265ED9C2`、009 `BEDEC14450B2D478A80373A8FFD1B033ADA4DBF7B81D25FD0AD9F2061F9EAC78`、010 `7CFDD8FAD1B51201BF9FFC8FC7D52BE50B91366DDAF6CBDC933515FE531EFDA7`。本批未新md、未广播siblings、未操作DOSBox，完成停写。
+
+### 原处理器公共管线迁移批（2026-11-11，历史口径）
+
+**完成仍8/115，未完成107/115；本批重构不增加完成数。** 001治療、002催眠術、003祝福術、004魔力強化、005天神護體、032高溫氣化、033詛咒術、088療傷心法全部进入共同生产管线；006集體治療、009新生術、010神之干涉已接入并有受控生产结果，但尚未完成各自全部学习阈值/参数分支认证，仍不计完成。094脚本死亡联合保持下节具体待验，不扩范围。
+
+| 迁移ID | 原处理器/专用适配 | 共用范围 |
+|---|---|---|
+| 001、088（及006、009） | `4654A6→465C14`；001 formula1 `46EB27`，088 formula41 `46F781`；006 formula4 `46EBDB`、009 formula6 `46EC72`，各自config/装备/禁疗/全HP抽数保留 | 原顺序收集、逐目标结果、XP/成功数熟练、事务/RNG/支付/发布 |
+| 003、004、005（及010） | `466544→4668F0`；003 `466FAA` mask4000000/timer9F；004 `466AB5` SP增量/57/58；005 `466E0E` mask20/8A；010 `467068` mask40/8B | 同一状态循环，保留首次数字/重复静默、永久/短计时与独立power抽数 |
+| 002、033 | `466544→467625`，`NativeSleep2`/`NativeEffect55`保留原命中/角色排除/唤醒/免疫/计时差异 | 与其它技能同一事务及反馈发布，非旧ID事务套壳 |
+| 032 | `466544→467625` effect34装备slot/防御/消除适配 | 同一目标/事务/奖励/MP/AP/RNG/反馈/保存路径，不借物攻 |
+
+- **已删除重复流程**：`OriginalSkills::execute_pipeline`按原Handler运行唯一staged actor/targets/RNG、奖励拒绝、`pay_staged`及一次提交；旧execute/execute_healing1/execute_sleep2/execute_blessing3/execute_strengthening_status/execute_hostile/execute_curse33仅兼容调用签名，旧计算/奖励/支付事务体已删除。生产`app_runtime`中001、088、区域状态、032/033四套独立复制/反馈/发布回调被一个`collect_targets→execute_pipeline→begin_status_area_feedback→publish→capture`取代。CEL仍是独立精确原资源描述，不强行统一公式。原`402701`mode1/2/3按1/3/5行交错顺序，逐有效地形/出场/阵营收集。`original_save_boundary_ready`同时锁技能视觉与反馈；反馈完成才发布全部目标/原生升级奖励/MP/ST/AP/RNG/存档。
+- **八项等价验证**：新`tests/original_cast_pipeline_test.cpp`读取本批八项实际sav，逐ID检查共同拒绝奖励→全目标/actor/RNG不变、取消字节一致及settled无二次支付；`out/pipeline-common.log`全PASS。重编`pipeline-original_{skills,skill88,skill1,skill2,skill3,skill45,skill33_trace,skill_followup,restoration}_test.log`全PASS；额外32/88持久输入、94反馈/事务、sprite回归全PASS。032首次误用UJ02未升级源触发旧证据测试预期；已重跑原131历史强化源并恢复升级18→19证据，未修改测试断言。
+- **生产SDL八项均exit0**：`out/pipeline{1,2,3,4,5,32,33,88}-sdl.log`，帧26/40/27/24/22/23/21/35。001/088读原UJ02合法移动/AI受伤续档`out/skill88-positive-input/input-source.sav`；002/004使用明确mixed fixture，003/005为原学习/坐标；032最终为只读131历史强化档；033原UJ02自然MISS。全部取消→再确认→真实绘制/反馈→支付/持久sav→500ms无重复。另`pipeline2-rollback-sdl.log`、`pipeline4-rollback-sdl.log`生产奖励拒绝、sav及RNG回滚均exit0；错误诊断栈为预期拒绝日志，不是崩溃。
+- **新族受控证据，不冒充自然或完整认证**：独立包`pipeline6-independent.log`五友军正治疗、38帧/MP32；`pipeline9-independent.log`四友军正治疗、33帧/MP40；`pipeline10-independent.log`单友军mask40/timer8B=2/固定180无HP改变、59帧/MP55。仅内存HP/status/RNG受控，学习/坐标/源SAVE未注入。模块`original_restoration_test`查精确BIN尾/原CEL/two-target支付/奖励失败RNG/保存及payment2。尚缺新三项学习阈值/完整各公式独立期望值和全部分支，因此完成数不变。
+- **最终一次交付**：`out/pipeline-debug.log`→`pipeline-release.log`成功且根同步；`pipeline-package.log`单次精简包15项无SAVE，解压`out/pipeline-independent`，`pipeline-independent-{verify,smoke}.log`均exit0。独立包001/004/032/088代表分别26/24/23/35帧，004四目标、088 HP814→878/ST70→45、032升级18→19；另上列新三项均通过。SDL dummy证明生产事件/绘制状态机，非人工可见桌面。
+- **Hash**：根/Release/独立EXE均SHA256 `DCF1987E1FC548F5459C0CDE0BA97580EE6F21B2B8CBDF489E87ABAAA52C4BAC`；ZIP `F780542790B24ED5B18416AA5226871058AE7CA8309A583F734EA215C0E6C15C`；`pipeline-common.log` `E7C1935B68523011AA08F43B139C9AE6D1629AA9D07A7074770B296ED2E60FCD`；独立004 `1C7325941FB72DE80B79EA4F1EDEFDD39B694283F82B1562FBCAEE0CE53E3C71`；独立088 `59B827CCD1D75F5919BD3D705369C632D167FC795B87FAF3A7B10F66E33666A1`。
+- **磁盘基线修复/限制**：首次Debug发现既有`inject_synchronous_death_failure_for_test`引用未声明成员，改调用既有rollback入口以消除编译阻碍，不宣称补齐094脚本SDL。生产C++已统一clang-format；任务工具拒绝子目录workspace，改原生MSBuild，无新增任务文件。未写个人SAVE、未新md、未广播siblings、未操作DOSBox；以下旧“当前最终”均为历史。
+
+### 094《虛空劍法》收尾批（2026-11-11，历史口径）
+
+**完成8/115；未完成107/115。** 完成001、002、003、004、005、032、033、088；**094未计完成**。本批独占源码/测试/文档；未扩006/其他技能，未写个人SAVE，未操作DOSBox，未广播siblings，收尾后停写。以下004/005为前批记录。
+
+- **实核原ASM，不沿旧“已实现”推断**：`46618D→4662DE/468BAC`先伤害；`46630E..46635C`装备25再一次负数468BAC全复活；`46635C..4663C1`装备28同样反馈后`451D28`消耗；存活`4664D0..466508`装备29额外percent<30，再468BAC(-2×damage)；死亡`466425→452FB1→41C02A`同步事件返回后`455048(3C)`，`468FDF/469024`收initial_status六WORD、`458B03`入库cap99，奖励`469101`。本次修复原来25/28/29只有静默最终HP、缺第二段生产反馈：现两段present-gated反馈完成后HP/装备/奖励/ST/AP/inventory/RNG一次发布，复用共享sprite/原468BAC，不借物攻结算。
+- **生产联合已补齐**：独立包`close94-independent-{kill,revive25,consume28,reverse29,rollback,natural}.log`全exit0。源只读`out\strengthened-flow-acceptance\run-43140-stage131-start.sav`（既有合法续档、历史强化HP30000，非原始平衡）。自然角色11已学/已出场，原坐标经SDL右键总检名册定位→命令第二技能→目标取消/再确认→SPELLSP85 15帧→HIT1→HP反馈→ST219→214/AP71→26/熟练2800→2830/XP2→3→实际sav decode/restore→500ms不重复；非自然死亡声明。
+- **受控数据明确标记**：kill/25/28/29/rollback不改学习/坐标/原档，只改内存HP、ST、熟练、防御、装备、状态、固定RNG（12生成原percent表，接受前受控seed0，无live重试）。kill HP1→0、原455048十帧死亡、kills/losses各+1、initial_status物品1入库；25原物品237 HP1→5000且保留；28原物品238 HP1→5000、装备消耗且不返库存；29原物品239 HP2500→1699→3301、第二段负数1602。每项15技能帧、ST1000→995/AP71→26，一次XP。熟练60000已封顶，**不伪称这些fixture熟练增加**；自然+30另证。
+- **持久与回滚**：新`tests\original_skill94_branch_evidence_test.cpp`重编通过，登记CTest `original-skill94-branch-evidence`（先生成上述独立包证据）。读取真实产物查全部六分支HP/装备/死亡计数/掉落库存/支付/XP/学习未注入、cancel字节相等、settled字节相等；反馈未发布比对**仅归一化施法者朝向/动画pose/action_state**，其余sav原字节相等，不称整个运行时画面不变。rollback生产奖励适配器拒绝，单位/库存/支付/奖励原字节及RNG seed/calls回滚；输入锁由现有反馈/death锁保持。`close94-branch-evidence.log` SHA256 `FEE8D7D9EE7A1447869B6C2E7D875C94543A1DF3B8D8EDAB0D0C729794CD5C41`。
+- **脚本死亡：恢复同步入口/返回/回滚，仍有明确验收阻碍**。保留原`41C02A→41FF30→41C33E→41B9A3`调用栈及return12h；预检在副本运行，仅对可达flag/currency/predicate分支验证，遇独立未知type4..16谓词仍拒绝，**未无脑删校验**。生产入口可接收暂存HP0/status20供脚本谓词；真实脚本失败恢复事件/单位/镜头/输入锁、不调用支付回调。修复restore_battle中断同步链未清锁/回调；死亡展示以独立pose副本清20，不改逻辑尸体。`close94-original_death_continuation_test.log`验证原stage6角色104、stage82角色147完整表对话/flag13先置/只返回一次，以及受控HP0可见与恢复边界；SHA256 `677A90D6A63A169731609444262A99EBEB8CCD18ABD045692C6FC8BB32A6483C`。**这是原完整表调用回归，不是094生产SDL脚本击杀联合验收**。
+- **未完成核心与安全下一步（不泛称待验）**：现只读131续档活动敌方正行数death script=0，无法在该档合法触发094脚本死亡。原stage1/15等含尚未实现独立generic谓词，按原`41B5DF`不能把WORD3当统一flag放行，继续fail-closed。下一步应取得含已学094、已部署施法者且可合法抵达有正行数死亡事件敌方的只读原档/合法续档，先用现有continuation预检输出具体event/type/condition，再沿**同一生产SDL**补事件→返回→死亡→奖励/支付→sav与脚本失败回滚；若只有未知谓词，先逐地址实现该可达谓词，不改事件表/身份/坐标冒充自然。目前不把缺此证据的094计完成。
+- **相关回归与交付**：重编transaction64、resolution、feedback、visual15帧、death_visual10帧、death_continuation、death_predicate、共享88反馈全通过（`out\close94-original_*.log`）；生产C++23/Result/main-only catch，修改C++ clang-format。Debug→Release→根同步、`close94-{debug,release,package}.log`；包解到`out\close94-independent`，verify/smoke及上述六SDL分支独立运行全exit0。SDL dummy为生产事件/绘制验收，不冒称人工桌面。包原15项（含MP3子目录）不含个人SAVE；验收后生成的S2NE/out证据不是发行zip内容。
+- **最终SHA256**：根/Release/独立EXE均`AA3C05EF578489FAF73DB9E2CF392F93A875E9AE2FE4D55226BD47A3993D9657`；ZIP `C8BC0EE07C92B248B1863EFDB72D37CE560A868B2E8D4B6395137AE6256CF380`。独立kill日志`80238AEEEE6CB84492492ACA9E7F8155528AD60C16658CA4D476CD3C6EF3BDE6`；25 `B304A23DFB0D7C3222AA3B9C2BDA1D1622F98828CC2D7CE50F1500129B2D8B03`；28 `91594AC635A80F66F0F90C06D0C2186D0BECBB7709D1C8E742BF234AB0E4698D`；29 `DC5E5920CB8683B3D4B6B39E764866B5CC56A25F8F0954F2C5AF1A588335969E`；rollback `4006ACE7087C05376C9F12B521608DA8DC5237D494AEEC0686F386837E16161F`。
+
+复现：独立目录运行`S2NE.exe --smoke-skill94-input <独立ROOT> <只读131续档> accept94-kill kill`；最后参数可选revive25/consume28/reverse29/rollback，自然不传最后参数。证据目录由第四参数指定，不向SAVE写入。
+
+### 004／005生产联合验收（2026-11-11，前批口径）
+
+**完成8/115；未完成107/115。** 完成：001《治療》、002《催眠術》、003《祝福術》、**004《魔力強化》、005《天神護體》**、032《高溫氣化》、033《詛咒術》、088《療傷心法》。094仍已实现待验，其他106项未逐项验收。下方旧批计数仅历史；本批仅004/005，唯一源码/测试/文档写者；不改个人SAVE、不新md、不广播siblings，完成停写。
+
+- **原BIN/ASM，不按技能相似性猜效果**：004原Big5 `C55DA44FB16AA4C6`；005 `A4D1AFABC540C5E9`，精确37字节记录尾门控。group0 bit3/4，习得熟练/10阈值32/54；原UJ02角色1天然都有。原`repne scasb`反向剩余计数分派：effect9→case3→`466AB5`，effect44→case13→`466E0E`；**IDA case标签不等于effect号**。详细原字节和地址在既有`analysis\skills-evidence.txt`。
+- **004原契约**：半径3、mode2九格友军含自身。formula3=`(ST+装备18加成)*config16h/config17h+15`，再`407EE5`随机倍率config8/9、/10最小1；先power RNG后percent。状态runtime38 bit20，slot5 timer57=3、WORD58存首次随机增量、当前12A即Unit.sp增量。重复不叠加、不显示数字，仅延短计时；永久255不缩短；新状态覆盖旧计时。不是祝福bit4，也不是case9清除效果。
+- **005原契约**：半径3、mode1**单格友军含自身**；不冒充九格。effect44固定反馈150，`442CD5` mask20即3C bit20、timer8A=2。原`40A622`受伤减150/最小1，**不是防御+150或补HP**。命中友军返回100钳99，每目标一个percent；004另有power draw，005无power RNG。两项record29=0无睡眠免疫/角色排除/唤醒分支。首次显示原负数反馈，HP保持不变，重复静默。
+- **真实CEL/共享事务**：004 dispatch4/0/233/15，24帧97×242、锚48/242、四索引各50%混合；005 dispatch5/0/233/60，11源帧按原order呈现22步128×213、锚64/213、40ms（00450ms）。复用共享CEL/RLE/sprite，不改`original_sprite.hpp`。逐帧BMP+sequence.csv/hash；所有目标反馈结束前实际save字节不变，末尾状态/支付/奖励/RNG一次发布。紧耦合将004到期后的12A及005到期后的3C同步回Unit，防止capture写回过期值。
+- **自然来源与受控分开**：最终独立包只读个人原UJ02。自然004角色1对原友方4/1/27/0四目标，24呈现/8draw，MP152→132/AP106→61/熟练2827→2889/XP135→141；自然005原来已经有护体，仅静默刷新，MP152→122/熟练→2914，22呈现/1draw，**不称自然新施加**。另显式`mixed`仅注入状态/计时、不改学习/坐标：004四目标新施加+已有短计时+永久255在同一生产SDL/串行反馈链联合验收，8draw且只付一次；005清除原状态后验新护体150数字。日志明确CONTROLLED，不能称自然。SDL右键→总检名册→定位→指令技能→目标取消→再确认。
+- **回滚/保存**：两项各在同一生产路径受控奖励拒绝，全目标/MP/AP/奖励/RNG回滚，cast-before与rollback-after实际sav一致；预期诊断后PASS不是失败被隐藏。专项`tests\original_skill45_test.cpp`核习得319/320、539/540、原名/目标/公式原数值、状态首次/重复/永久/到期、半MP/payment2/自身别名/多目标一次奖励、取消/敌方/奖励拒绝/RNG回滚/005伤害减150最小1；实际独立包sav decode+restore验证004四目标/永久/12A增量、005护体、取消/全反馈未发布/500ms不重付/拒绝字节。`out\batch45-test.log`全部通过。CMake登记`original-skill45-evidence`（须先生成独立包生产证据）。
+- **最小相关回归**：重编`batch45-regression3.log`（003及002持久证据）、`batch45-regression1.log`、`batch45-sprite.log`通过；生产C++23/main-only catch/Result，修改C++均clang-format。未扩006或094。
+- **Debug→Release根同步/独立包**：`out\batch45-debug.log`、`batch45-release.log`、`batch45-package.log`；根/Release/独立`out\batch45-final-independent` EXE一致。独立`batch45-final-verify.log`、`batch45-final-sdl.log`、`batch45-final-{mixed4,new5,natural4,natural5,rollback4,rollback5}.log`均exit0；包15项无SAVE。边界：SDL dummy验证生产事件/绘制/反馈，不冒称桌面人工验收；未扩敌方施法。004多目标完整混合及一次支付已验，005原单格不要求伪造多目标。
+- SHA256 EXE：`9BDEF8C60FBB9A59DE769DC29E01AC4665A743B123A0271B608D3B0246F2E5D8`；ZIP：`87963C5A656037876E8B1E29C5AE6CA00DE763F8FC6CB67AD15F7DFFCDF4378A`。
+
+复现：在独立目录运行，ROOT为此独立目录绝对路径，SOURCE为原UJ02只读路径；自然不加最后参数，拒绝改为rollback。
+```powershell
+.\S2NE.exe --verify
+.\S2NE.exe --smoke
+.\S2NE.exe --smoke-skill4-input $ROOT $SOURCE skill4-mixed mixed
+.\S2NE.exe --smoke-skill5-input $ROOT $SOURCE skill5-new mixed
+.\S2NE.exe --smoke-skill4-input $ROOT $SOURCE skill4-rollback rollback
+.\S2NE.exe --smoke-skill5-input $ROOT $SOURCE skill5-rollback rollback
+```
+
+### 002／003生产联合验收补齐（2026-11-11，当前最终口径）
+
+**完成6/115；未完成109/115。** 完成：001《治療》、002《催眠術》、003《祝福術》、032《高溫氣化》、033《詛咒術》、088《療傷心法》。094已实现待验，其余108项未逐项验收。此前002单目标生产覆盖不足，继续验收时先退回4/115；本次九格生产混合及回滚补齐后才重新计入，并新增003。不扩004、不改个人SAVE、不操作DOSBox、不广播siblings。
+
+- **002生产九格联合（显式受控）**：读取原UJ02后，专用smoke选项在内存激活/移动原敌方槽，设置HP/ST/role/能力免疫/seed1，明确打印CONTROLLED，绝不称自然。范围中心16,40，九格按原顺序收集3目标：20能力免疫（hit反馈但不睡眠）、39命中睡眠96h=2、200角色限制MISS；其余空格/其他阵营不处理。5次暂存RNG；40帧CEL→三目标串行反馈→统一发布。逐帧存档断言反馈未全部呈现时所有状态字节不变；最后MP18/AP45/熟练57/XP6各一次；500ms不重付；落盘恢复后39睡眠、20/200不睡眠通过。
+- **002错误与取消**：同一生产区域输入路径，在奖励适配器处受控拒绝；动画后收集/解析所有目标，但状态、MP/AP、奖励和RNG均回滚，before/after实际sav字节一致。正常目标取消另有字节断言。受控注入只存在`--smoke-skill2-input ... <folder> mixed|rollback`，非普通游戏规则。多目标原来未验的限制现已消除；dummy桌面边界仍保留。
+- **003原契约**：原名Big5 AF AC BA D6 B3 4E，精确BIN2尾24字节门控；MP12/半价6、半径4、targetmode2九格、side1友方（含自身）、effect19/formula2/WORD21=10/WORD23=100/WORD25=4。`466544→4668F0→466FAA→442CD5`设置4000000h，即3F bit4、timer9F=4。先判命中；友军同军`46D9ED`返回100，46D848钳99，不消耗power倍率随机，仅每目标percent一次。公式2计算后effect19由46E1D0返回固定10，无额外随机；不是治療公式、无敌方睡眠免疫分支。已有状态仅延长较短计时，不缩短、不覆盖永久255；不新增显示数字；新状态468BAC(-10,arg0=0)显示10但**不补HP**。本次复用有符号数字反馈并保持HP前后相同，不冒充002闪烁。
+- **003真实CEL**：dispatch visual3/color233/40，CEL1第四项，27源帧，161×401，锚81/390；6独立混合索引175..170百分比30/45/60/75/85/95；实际27次呈现及逐帧hash。复用既有统一解码/精灵及状态事务。
+- **003自然生产**：原只读UJ02角色1天然learned[0] bit4；SDL右键/名册定位→指令→技能→取消→再次确认；中心16,41，原友方4、1、27、0四目标，4次暂存percent，27帧→逐目标数字反馈→一次发布，MP152→140/AP106→61/熟练2827→2869/XP135→141，HP不变。四目标状态/计时落盘恢复、取消字节、500ms无重付通过。另运行同一自然来源但显式受控奖励拒绝（不改角色），四目标及RNG/支付/奖励全部回滚。
+- **专项与回归**：`out\batch3-test2.log`、`batch3-test3.log`；003专项覆盖自身别名与其他友方批量合并、永久/重复/倒数过期、半MP/payment2、敌方/奖励拒绝回滚、实际CEL；独立包002混合及002/003错误sav再decode/restore验证。`batch3-original_skill1_test.log`、`batch3-original_skill33_trace_test.log`、`batch3-original_sprite_test.log`通过。新增CMake `original-skill3-evidence`，生产仍C++23/main-only catch/Result；本批修改C++格式化。
+- **最终统一交付**：`batch3-debug.log`→`batch3-release.log`→`batch3-package.log`，根EXE为Release；包独立解压`out\batch3-final-independent`。`batch3-final-verify.log`、`batch3-final-sdl.log`、`batch3-final-skill2-controlled-area.log`、`batch3-final-skill2-controlled-rollback.log`、`batch3-final-skill3-input.log`、`batch3-final-skill3-rollback.log`全部exit0。回滚日志里的Sleep2/Blessing3 invalid request/award错误是**故意注入拒绝的预期诊断**，后接PASS，不隐瞒或当自然成功。
+- SHA256根及独立EXE一致：`D2F0A337A2A41DFC6800818E8FD97478C41CDE3377AD277A67DFE4574D7439DF`；包`S2NE-game-win64.zip`：`4AB56BCD2E932DAA117513CF875AECC737130F99C836D668076E634F9D0E6D73`。15项运行资源布局，无SAVE。边界：SDL dummy非桌面人工验收；002多目标是显式受控，003主成功路径为自然原档；无敌方施法拓展。完成停写。
+
+复现（在最终独立解压目录运行，ROOT为该目录绝对路径，SOURCE为原UJ02只读路径）：
+```powershell
+.\S2NE.exe --verify
+.\S2NE.exe --smoke
+.\S2NE.exe --smoke-skill2-input $ROOT $SOURCE skill2-controlled-area mixed
+.\S2NE.exe --smoke-skill2-input $ROOT $SOURCE skill2-controlled-rollback rollback
+.\S2NE.exe --smoke-skill3-input $ROOT $SOURCE skill3-input
+.\S2NE.exe --smoke-skill3-input $ROOT $SOURCE skill3-rollback rollback
+```
+
+### 最新批次002／003（2026-11-11，覆盖下方旧计数）
+
+**总115：逐项验收完成5；未完成验收110。** 完成ID：**001《治療》、002《催眠術》、032《高溫氣化》、033《詛咒術》、088《療傷心法》**。**003《祝福術》未完成验收**；094仍已实现待验，其他108项未逐项验收；004以后未扩项。本批唯一写入者，未改个人SAVE、未操作DOSBox、未向旧agents广播。
+
+- 002按原名Big5 `B6 CA AF 76 B3 4E`、BIN2精确24字节尾契约启用，不按effect猜名。ASM `465342→40244E` **半径3、九格交错区域**，支持含敌人的空中心，按原顺序过滤地形与目标；不是把targetmode2冒充单体。`466544→467625→467FDE→442CD5`状态20000h、计时96h=2；命中先唤醒再判免疫，因此永久睡眠也先清后重置2。runtime2F=1先置chance0且不取power RNG；原47328B允许0，**roll0仍可命中chance0**，不得擅自变成必免。命中、失手、状态免疫/能力免疫、计时倒数/过期均有测试。
+- 原动画BIN10 visual2→CEL1第三项，16源帧、40次有序呈现，167×167，锚84/100，4独立blend百分比、背景59/25；顺序含重复及逆序，未截成16帧。复用既有CEL/RLE/调色路径及统一sprite，`original_sprite.hpp`未改。
+- **自然来源**只读原`SAVE\UJ02.SAV`，角色1天然learned[0]含bit1；生产SDL事件经右键→总检→定位→命令→技能→目标→取消→再施放，40帧逐帧hash，MP152→134/AP106→61/熟练2827→2884/XP135→141，目标HP不变，反馈完成后一次发布及实际save落盘decode/load、settled字节和500ms无重复支付通过。最终自然日志为chance0/roll0 HIT；此前两次自然MISS同样保留，不筛种子、不注入后称自然：`out\batch2-natural.log`。
+- 受控专项`tests\original_skill2_test.cpp`／`out\batch2-test.log`：两目标HIT/免疫顺序、role排除RNG次数、奖励回调变更后失败/资源/条件错误回滚、取消、半MP/重复AP/payment2、永久睡眠重施/倒数/存取档、多目标成功flash+MISS串联且全部完成前不发布。受控正例**不是自然来源**。曾尝试独立受控SDL正例因名册入口超时未成功，失败保留`batch2-controlled-sdl.log`，**不作为通过证据**；未保留注入生产选项。自然SDL末次HIT已覆盖实际成功反馈与状态保存；多目标组合仍为受控反馈测试，dummy不声称桌面人工验收。
+- **003明确待验，未接半成品执行器**：核原名`AF AC BA D6 B3 4E`、MP12/半径4/targetmode2/effect19/formula2/WORD21=10/命中100/WORD25=4/友军；ASM走`466544→4668F0`的case19状态4000000h，不借用002/001公式。其完整状态属性契约、动画、结算及SDL闭环留下一批。详见已有`analysis\skills-evidence.txt`新增段，无新md。
+- 最小回归：`batch2-original_skill1_test.log`、`batch2-original_skill33_trace_test.log`、`batch2-original_sprite_test.log`通过；C++23/main-only catch/Result及clang-format。最终Debug→Release、根同步/包哈希及独立验证见本段后续记录。
+
+- **最终交付已验证**：`out\batch2-debug.log` Debug通过→`out\batch2-release.log` Release通过→`batch2-package.log`根同步打包；全部本批C++ clang-format dry-run通过。独立解压`out\batch2-independent`，`batch2-independent-verify.log`、`batch2-independent-sdl.log`和`batch2-independent-skill2.log`均exit0；独立002自然原UJ02再次完成40帧、取消、支付奖励/保存/500ms稳定（本次合法MISS，roll25）。包15项（含MP3目录），无SAVE，无个人档。独立验证仅SDL dummy，不等于桌面人工验收。
+- 自然HIT落盘正例现由`original_skill2_test.cpp`显式断言角色39 `status3E&2`、`timer96h=2`，保存后恢复通过；证据固定在原`out\skill2-input`，独立运行另写解压目录证据，无覆盖。测试重新编译及执行通过。
+- SHA256：根Release及独立`S2NE.exe`一致 **`4D07D25FC8816672F35AFBCDC3B5EA5C904BDCA50344C37236227432B73F758E`**；`S2NE-game-win64.zip` **`6DFCF39DAB39A9C977ABAAEFCC9C228FD036E88022C6967345E809CE5C4F5B01`**。完成即停写，未继续004或003实现。
+
+### 115技能逐ID验收表（当前完成35／未完成80）
+
+**当前总115：逐项验收完成35；未完成验收80。** 以顶部最新35项及下表为准；094独立待验不计完成。历史批次数字仅代表当时边界。
+
+- 先读并保留共享sprite交付；`original_sprite.hpp`未修改。最终真实25 CEL×双模式、literal0/零游程/opaque及回滚/SDL像素回归仍通过：`out\batch-original_sprite_test.log`。
+- 名字按原ASM `426598/464767/464900`加载路径对应PAL856→BIN2组目录与37字节记录+2的Big5原字节校验；五项并未根据effect猜名。`original_skill1_test`直接比较001/032/033/088/094原字节；原表115项名字沿用下表。
+- **032完成**：既有合法习得131角色1原档复核（源含历史强化值，HP30000在原生升级重算为5000，不称原始平衡）；生产SDL右键→总检→定位→命令→技能→目标→取消/再确认，23帧、MP40/AP45、原生升级与熟练/XP、存档decode/load和500ms无重复支付通过。修复当前dummy下旧边滚定位超时：改用生产名册定位及真实地形pick_surface点击；未改角色位置。补原effect34装备消除受控64固定种子正例，不伪称本次自然命中。日志`batch-current-32`、`batch-original_skill_input_evidence_test`、`batch-original_skill_visual_test`、`batch-original_skill_followup_test`、`batch-skill1-test`。
+- **033完成**：原UJ02角色4天然learned[3]=1023；21帧，MP200→193/AP102→57/熟练2837→2867/XP25→31，目标273HP不变，自然MISS；专项受控命中验证睡眠清除、咒状态/95h计时、免疫/永久计时/失败RNG回滚及save恢复。日志`batch-current-33`、`batch-original_skill33_trace_test`。自然MISS不是缺实现，不要求筛自然命中。
+- **088完成**：有效证据仍是`original_skill88_positive_evidence_test-94-regression.log`，本批重新编译复核同链`batch-original_skill88_positive_evidence_test.log`；原UJ02角色3正常移动/AI受伤814HP后保存的合法续档，本批SDL35帧正治疗814→878、ST70→45/AP88→43/熟练3635→3655/XP0→12，保存与取消一致。不是失败的旧skill88-positive-input.log。紧耦合修复：治疗效果现在经468BAC负数/逐帧HP反馈后一次发布，而非动画结束立即静默结算；资源/RNG/奖励都暂存至反馈完成。日志`batch-current-88`、`batch-original_skill88_test`。
+- **094已实现待验，未计完成**：重编译算式、结算、事务、15帧、反馈、持久MISS/HIT来源证据全部通过（`out\batch-original_skill94_{input_evidence,formula,resolution,transaction,feedback,death_visual,visual}_test.log`，前者实际文件名`batch-original_skill94_input_evidence_test.log`）。普通存活HIT/MISS、ST5/AP45/取消/恢复已有证据；死亡+loot、复活25/消耗28/反转29仅固定种子受控事务，死亡动画仅fixture挂接，尚缺真实生产SDL中这些分支反馈与发布/存取档联合验收。带脚本死亡仍fail-closed，明确未完成而不无限扩项；不把fixture冒充自然死亡。
+- **新001《治療》完成**：选择与088同effect18的最近原链，按`4654A6→465C14→46D431/46D496→46E858 case1(46EB27)→470427`实现单友军/自身半径5治疗，ST/config11h/12h+60、装备18/19修正、诅咒抑制、原命中及XP/熟练/AP/MP规则；不泛化所有effect18。BIN10 visual1→CEL1第2项26帧132×148，原mode1/零背景变换保留。真实来源UJ02合法续档角色1→AI受伤角色3，未注入学习/属性/坐标/物品；SDL事件链26帧，MP152→144/AP91→46/熟练2827→2847/XP135→147，目标正治疗，负数HP反馈后原子发布。取消/资源/越界/奖励失败不付费、不推进RNG；save实际落盘decode/load、settled字节一致；诅咒/失败数值仅受控测试。`out\batch-current-1.log`、`batch-skill1-test.log`、`tests\original_skill1_test.cpp`，CTest登记`original-skill1-evidence`（需生产输入生成证据目录）。
+- 032也补接同原状态技能成功flash/MISS反馈后再发布；33与32共用反馈回调保留各自effect，不借用物攻。88/001共用解码器仅精确双布局，继续使用Result；生产catch仍只在main，C++23/clang-format。最小相关四候选/新项/技能学习/像素测试均重新编译通过；旧宽stage60测试含无关结局且历史hit/miss失败，不当成本批通过证据。
+- **最终Debug→Release及根同步成功**：`out\batch-{debug,release}.log`。包`S2NE-game-win64.zip` SHA256 **938B1E19A642298B35FA3F10A463A2EEDFA4B8D5E3F8976B2E9F59B20E3884D3**；根/Release/独立解压EXE一致 **DBC4D90DEADA61188FCF10411186499CC62CF19FB421E9E2EE1840D3FEABF464**。包15项无SAVE；`out\batch-independent`独立`--verify`、SDL标题音频85帧和001完整生产输入26帧均通过：`batch-package{,-verify,-sdl,-skill1}.log`。独立技能输入读外部原始续档，只写独立目录S2NE/out，不改个人SAVE。
+- 限制：本批SDL为dummy，证明实际事件/生产绘制/反馈状态机，不声称可见桌面人工验收。受控数值分支已标注，不强求所有分支自然出现才计实现闭环。首次旧32定位超时及打包受运行中根EXE占用失败已保留日志/顺序修正，最终结果以上述成功日志为准。
+
+| ID | ASM/BIN原名 | 当前状态 | 具体缺项/边界 |
+|---|---|---|---|
+| 001 | 治療 | 逐项验收完成 | 本批闭环；分支受控证据见下 |
+| 002 | 催眠術 | 逐项验收完成 | 九格生产混合HIT/免疫/MISS/空格、40呈现、一次结算、回滚及存取档已补齐；显式受控见顶部 |
+| 003 | 祝福術 | 逐项验收完成 | 原ASM4000000/timer9F、友方含自身九格、CEL27、自然四目标SDL/反馈/一次结算/存取档及受控拒绝回滚通过 |
+| 004 | 魔力強化 | 逐项验收完成 | 原九格友军38:20/57/58/12A；CEL24；生产新/短计时/永久四目标混合及一次支付/全反馈原子发布/回滚/重载通过；受控标明 |
+| 005 | 天神護體 | 逐项验收完成 | 原单格友军3C:20/8A=2、减伤150最小1；CEL11源帧22呈现；自然刷新/受控新状态及回滚/一次支付/重载通过 |
+| 006 | 集體治療 | 逐项验收完成 | 公共治疗管线；850门槛前/等/后、原formula4独立期望/装备18/19、38帧、五目标混合反馈/半价16、回滚/存取档及独立SDL通过；受控非自然分支见顶部 |
+| 007 | 聖言 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 008 | 祈求 | 逐项验收完成 | 本轮特殊/清除七项族：原BIN/学习/目标/专用效果与恢复/命中免疫/RNG/支付奖励/CEL、独立模块、生产SDL及save回滚联合通过；详见顶部最终证据 |
+| 009 | 新生術 | 逐项验收完成 | 公共治疗管线；2140门槛前/等/后、原formula6独立期望/装备18/19、33帧、四目标混合反馈/半价20、生产奖励拒绝回滚/存取档及独立SDL通过；受控见顶部 |
+| 010 | 神之干涉 | 逐项验收完成 | 公共状态管线；2600门槛前/等/后、mask40/8B计时2及永久255、固定180反馈/真实减伤最低1、59帧、奇数半价27、回滚/存取档及独立SDL通过；受控见顶部 |
+| 011 | 邪惡之箭 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 012 | 邪惡祈求 | 逐项验收完成 | 本轮特殊/清除七项族：原BIN/学习/目标/专用效果与恢复/命中免疫/RNG/支付奖励/CEL、独立模块、生产SDL及save回滚联合通过；详见顶部最终证据 |
+| 013 | 衰弱術 | 逐项验收完成 | effect69→46801A mask40000/timer97=4；学习200；CEL13/25帧；独立oracle及受控生产输入/支付/恢复通过；明确CONTROLLED，非自然学习/战斗来源 |
+| 014 | 亡靈之觸 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 015 | 恐懼 | 逐项验收完成 | effect67→467FFC mask80000/timer98=4；学习560；角色1排除；CEL15/38帧；独立oracle及受控生产输入通过；明确CONTROLLED，非自然学习/战斗来源 |
+| 016 | 邪月氣流 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 017 | 毒擊 | 已完成（CONTROLLED） | effect16→442F74/442E96，mask400/timer68=5，两项能力各减1/5；学习/独立oracle/原CEL/生产SDL/到期恢复/回滚/save已验 |
+| 018 | 吸血大法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 019 | 黑暗漩渦 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 020 | 魔神怒吼 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 021 | 冰錐術 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 022 | 護甲 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 023 | 嗜血 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 024 | 閃電術 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 025 | 遲緩術 | 已完成（CONTROLLED） | effect46→467E9D，mask80/timer5D=3，AP上限/当前减10及携带钳制；面积mixed/逐ID oracle/生产SDL/恢复/回滚/save已验 |
+| 026 | 地震 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 027 | 火球術 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 028 | 迅捷術 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 029 | 裂地術 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 030 | 閃電光束 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 031 | 寒冰風暴 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 032 | 高溫氣化 | 逐项验收完成 | 本批闭环；分支受控证据见下 |
+| 033 | 詛咒術 | 逐项验收完成 | 本批闭环；分支受控证据见下 |
+| 034 | 定身術 | 逐项验收完成 | effect43/mask8000/timer94=3；学习100、角色1排除、CEL34/36帧、MP13半价6；独立oracle/生产SDL/恢复通过；CONTROLLED |
+| 035 | 狂亂之蠱 | 逐项验收完成 | 本轮特殊/清除七项族：原BIN/学习/目标/专用效果与恢复/命中免疫/RNG/支付奖励/CEL、独立模块、生产SDL及save回滚联合通过；详见顶部最终证据 |
+| 036 | 金蠶蠱 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 037 | 報復蠱 | 已完成（CONTROLLED） | 原BIN/ASM独立oracle、mask/计时/延期/永久/到期、学习/CEL、公共事务/取消/回滚/save及独立包SDL通过；见顶部直接正面计时族 |
+| 038 | 封咒 | 逐项验收完成 | effect17/mask4000/timer93=4；学习900、角色1排除、CEL38/30帧、MP20半价10；独立oracle/生产SDL/恢复通过；CONTROLLED |
+| 039 | 瘴氣 | 逐项验收完成 | 本轮特殊/清除七项族：原BIN/学习/目标/专用效果与恢复/命中免疫/RNG/支付奖励/CEL、独立模块、生产SDL及save回滚联合通过；详见顶部最终证据 |
+| 040 | 傀儡血咒 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 041 | 詛咒之風 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 042 | 妖靈附體 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 043 | 幻之箭 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 044 | 幻術攻擊 | 已完成（CONTROLLED） | 原BIN/ASM独立oracle、mask/计时/延期/永久/到期、学习/CEL、公共事务/取消/回滚/save及独立包SDL通过；见顶部直接正面计时族 |
+| 045 | 靈視術 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 046 | 心靈護盾 | 已完成（CONTROLLED） | 原BIN/ASM独立oracle、mask/计时/延期/永久/到期、学习/CEL、公共事务/取消/回滚/save及独立包SDL通过；见顶部直接正面计时族 |
+| 047 | 隱身 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 048 | 解除魔法 | 逐项验收完成 | 本轮特殊/清除七项族：原BIN/学习/目标/专用效果与恢复/命中免疫/RNG/支付奖励/CEL、独立模块、生产SDL及save回滚联合通过；详见顶部最终证据 |
+| 049 | 心靈震爆 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 050 | 真實之眼 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 051 | 傳送術 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 052 | 衰退打擊 | 已完成（CONTROLLED） | effect15→467CFD，mask4000/timer7C=4，AP上限减40及攻防各减1/10；独立oracle/原CEL/生产SDL/恢复/回滚/save已验 |
+| 053 | 眩光術 | 逐项验收完成 | effect8→467C63 mask1000/timer91=3；学习0；角色1/2排除；visual55/27帧；三敌人HIT/免疫/MISS生产联合/回滚/恢复通过；明确CONTROLLED，非自然学习/战斗来源 |
+| 054 | 冰凍術 | 逐项验收完成 | effect13/mask2000/timer92=4；学习100、角色1/2排除、dispatch56/26帧、MP20半价10；独立oracle/生产SDL/恢复通过；CONTROLLED |
+| 055 | 飄浮術 | 未完成验收 | effect37→466DF1/mask2已定位；CEL header[6]=65534 signed -2专用序列未认证，保持关闭，不计完成 |
+| 056 | 平靜 | 逐项验收完成 | 本轮特殊/清除七项族：原BIN/学习/目标/专用效果与恢复/命中免疫/RNG/支付奖励/CEL、独立模块、生产SDL及save回滚联合通过；详见顶部最终证据 |
+| 057 | 鼓勵 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 058 | 再生 | 已完成（CONTROLLED） | 原BIN/ASM独立oracle、mask/计时/延期/永久/到期、学习/CEL、公共事务/取消/回滚/save及独立包SDL通过；见顶部直接正面计时族 |
+| 059 | 連環閃電 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 060 | 石化術 | 逐项验收完成 | 本轮特殊/清除七项族：原BIN/学习/目标/专用效果与恢复/命中免疫/RNG/支付奖励/CEL、独立模块、生产SDL及save回滚联合通过；详见顶部最终证据 |
+| 061 | 牽絆術 | 已完成（CONTROLLED） | effect46→467E9D，AP减12，mode7原镜头403717非全图；飞行排除/mixed/独立oracle/原CEL/生产SDL/恢复/回滚/save已验 |
+| 062 | 譴責 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 063 | 生命力量 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 064 | 地元素 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 065 | 火元素 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 066 | 風元素 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 067 | 水元素 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 068 | 天使 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 069 | 惡魔 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 070 | 巨神 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 071 | 吸血鬼 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 072 | 異界獸 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 073 | 女妖 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 074 | 龍 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 075 | 破壞光束 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 076 | 自然祝福 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 077 | 煉獄之火 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 078 | 天降甘霖 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 079 | 時間妖魔 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 080 | 末日禁咒 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 081 | 七彩光錐 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 082 | 狂嵐焚風 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 083 | 發勁 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 084 | 運功護體 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 085 | 劈空掌 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 086 | 輕功 | 已完成（CONTROLLED） | 原BIN/ASM独立oracle、mask/计时/延期/永久/到期、学习/CEL、公共事务/取消/回滚/save及独立包SDL通过；见顶部直接正面计时族 |
+| 087 | 氣功 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 088 | 療傷心法 | 逐项验收完成 | 本批闭环；分支受控证据见下 |
+| 089 | 如形化影 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 090 | 氣功砲 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 091 | 金身護體 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 092 | 無想轉生 | 已完成（CONTROLLED） | 原BIN/ASM独立oracle、mask/计时/延期/永久/到期、学习/CEL、公共事务/取消/回滚/save及独立包SDL通过；见顶部直接正面计时族 |
+| 093 | 氣功波 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 094 | 虛空劍法 | 未完成验收（核心普通分支已联合验） | 普通死亡掉落、25/28/29生产SDL+反馈+支付+存取档已补；缺094脚本死亡生产联合（131续档无可触发事件，未知generic谓词仍安全拒绝），见顶部close94批 |
+| 095 | 長虹劍法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 096 | 破魂劍法 | 逐项验收完成 | effect43/mask8000/timer94=3；学习200、无角色排除、第二菜单ST15非MP、dispatch89/30帧；独立oracle/生产拒绝回滚/SDL/恢复通过；CONTROLLED |
+| 097 | 裂地劍法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 098 | 爆烈劍法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 099 | 混沌劍法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 100 | 無極劍法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 101 | 九天劍法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 102 | 乾坤劍法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 103 | 雪山飛劍 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 104 | 霸邪劍法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 105 | 紫青雙劍 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 106 | 破邪劍法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 107 | 日月劍法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 108 | 潮雨劍法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 109 | 四象劍法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 110 | 八龍劍法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 111 | 守宮劍法 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 112 | 萬元歸宗 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 113 | 有無相生 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 114 | 天臨神兵 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+| 115 | 保留 | 未完成验收 | 未逐ID核实习得→目标/原效果→动画/消耗/反馈→回滚/存取档→SDL输入；不等于完全未实现 |
+
+### 菜单装饰黑边与共享sprite交付（2026-11-11重启续作，优先于下列历史发布记录）
+
+- 从磁盘保留并续验12:55已有实现，未重应用旧差异或撤销文件。根因是同类CEL解码副本把透明零游程写成调色板0；不是“黑色全部透明”。原 `474E3E` 的 `arg_0=0/1` 分别保留／覆盖零opcode及零repeat；负opcode的literal逐字节复制，即使索引0也必须保留。原依据 `analysis\ida\opening.idb.asm:201141–201689`，重点 `475009/475058/475096/475151`；调用参数审计见 `out\sprite-asm-call-audit.log`。
+- 统一入口 `src\original_sprite.hpp` 的 `draw_original_sprite/draw_original_cel`，显式 `OriginalZeroRun::transparent/opaque`；非法流失败不发布半幅图像。共享调用受影响清单：难度 `new_game`、序章及战场 `prologue`、存取档 `original_save_menu`、设置 `original_settings`、战场菜单 `original_battle_menu`、总检／人物 `original_battle_reports/original_unit_status`、确认 `original_confirmation`、转职 `original_promotion`、关间 `original_campaign`、商店／服务共享面板 `original_shop_menu`、技能菜单 `original_skills`。商店 `41144E/411587/411DE6/411FA1/4125FC` 等按原push0/1保留不同覆盖行为；确认框和指定技能底板仍不透明。标题PCX `title_image`、字体、地图、单位动作及效果原语不硬并入此RLE入口；typed raw索引0掩码保留原独立语义。
+- 底部51/52/53不是裁切垃圾：`4354C0` 原 `435614→435644` 无条件绘制13行，前10行随页，末3行固定51/52/53；模式1仅禁止选择固定槽，不隐藏它们。CEL204为437×461，居中(102,10)，固定行y=376/406/436，面板底471，均在480画布内。原+366、30行距及分页+341保持不改。
+- 像素回归 `tests\original_sprite_test.cpp` 复用独立有符号opcode原资源oracle：25种真实CEL×透明／不透明，全RGBA比对、左右上下及完全画外裁切、背景孔洞／装饰保留、四种存取档模式13行、literal零／非零索引有效黑色、typed raw掩码及非法流回滚；SDL事件翻页与三帧呈现通过。真实样本literal零数量为0，因此该边界由合成契约例覆盖，不虚称原资源出现。日志 `out\sprite-resume-{test-build,test,package-layers}.log`。
+- clang-format完成，最小关联回归通过：战场菜单、总检、关间、确认、对话、关间入口、转职、存取档、设置、商店、技能资源、UI布局、人物及标题菜单。逐项日志 `out\sprite-resume-original_*.log`；沿用此前 `sprite-original_{inn,church}.log` 的成功证据。本次宽服务／全存档装备测试过久已终止，不计本次通过；没有伪造空的旧army日志。Debug初次根同步受本次测试占用DLL失败，停止自有测试后顺序Debug→Release及根同步成功，见 `out\sprite-resume-{debug,release}.log`。已有编译警告未扩项修改。
+- 精简包 `S2NE-game-win64.zip` SHA256 **C9E7CA41A3BA4A60584C2541E0D1D11136D3D8B683B51024232E595EA94523EE**；Release／根／全新独立解压EXE一致 **545856FED555265C7228A3576A55173E4A9658AD02A11502C780338F3E424660**。独立目录 `out\sprite-resume-independent` 的资源 `--verify`、SDL标题音频86帧、新游戏43帧及共享像素测试通过，见 `out\sprite-resume-package{,-verify,-title,-newgame,-layers}.log`。包15项，无SAVE；不声称桌面截图逐像素或所有菜单人工点击已验。
+
+#### 115技能后续只读交接（本次不开技能实现）
+
+严格完成按每个技能ID分别要求：合法习得条件、目标／原效果、完整动画、资源／AP消耗、命中与失败反馈、保存重载、取消／失败回滚、生产菜单输入。仅表审计、共用effect、资源解码、直接execute或受控fixture不能替代闭环；不得把未充分验证等同未实现。
+
+- 当前可复验表审计：115记录=96普通+19协作，13条件标志是重叠子集，60种effect；`out\sprite-resume-skill-audit.log`。原BIN名称／ID逐项清单见 `out\sprite-resume-skill-inventory.log`（115项均暂列严格待验，不是抹掉历史进展）。
+- 优先逐项复核实际名称：32《高溫氣化》（23帧生产输入／消耗／回滚，源档既有强化值边界）；33《詛咒術》（21帧生产输入，原档自然MISS；命中靠专项）；88《療傷心法》（`original_skill88_positive_evidence_test-94-regression.log` 明确原UJ02合法续作、AI受伤后35帧正治疗／保存／回滚；不能误用失败的 `skill88-positive-input.log`）；94《虛空劍法》（15帧生产MISS／续档HIT，复杂死亡／特殊反馈仍有边界）。其余111项无本次逐项闭环认证，按清单待验。
+- 给父任务计数建议：**总数115；本次严格完整认证0、待逐项复核115（其中4项有较强闭环候选证据，其余111项未逐项认证）**。这不是“已实现0／未实现115”，现有证据不足以可靠给出实际实现完成／未完成数。先复核上述4项再逐项推进，不猜数字、不按60种effect批量算完成。
+
+### 技能33自动生产输入与最新包（历史交付，最新包以上方sprite记录为准）
 
 - 新增 `--smoke-skill33-input`，复用现有SDL事件队列和真实生产事件分发；不是直接调用技能execute，也不是桌面点击。CTest登记 `original-skill33-production-input`。原生 `SAVE\UJ02.SAV` 的逐字节隔离副本用于验收，玩家苏id4位于(16,39)，自然learned[3]=1023，未注入学习、物品、flag、坐标或属性。
 - 自动输入依次经过右键战场菜单→总检表→检阅人物→定位苏→角色行动→技能→妖术33→敌军目标39→取消→重新选择→确认施法。菜单/名册状态转换均有断言，21帧均经SDL呈现；自然ST差使命中率1，本次结果MISS，不以此宣称自然命中覆盖。MP200→193、AP102→57、妖术熟练2837→2867、XP25→31，敌HP273不变；取消前后及结算后500ms快照相同，保存decode/load往返通过。命中状态/计时仍由专项测试覆盖。
@@ -44,11 +416,13 @@
 | 项目 | 获准范围与约束 |
 |---|---|
 | 双人对战 | 不实现、不列通关验收；**单人模式19项合作技能仍保留为待办**。 |
-| Windows对话箭头修正 | 所持Windows EXE选上框238／下框237，与CEL实际尖端相反。准许上框237向下、下框238向上；保留原位置、资源、透明和层序，不声称逐指令相同，也不推断所有发行版或DOS相同。原链 `41CA6E → 426CEC → 474E3E`。 |
+| 音视频实现现代化 | 音频与视频的后端、编解码及播放实现允许采用现代化方案；不要求保留旧平台API或旧解码器实现。仍须保留原内容、事件触发与顺序等已查明语义，不得自行换曲、换片、删事件或以实现替换冒称原内容完整验收。既有SDL3／SDL3_mixer、FLIC解码及音频设备记录只证明各自已验证范围。 |
+| 明显原版错误修正 | 经原反汇编／资源等证据确认的明显错误允许修正；每项须记录原行为、修正原因及影响范围，并保留证据。此许可不等于任意改技能公式、规则、状态机或内容；未查明行为仍拒绝猜测。下行对话箭头是已记录实例。 |
+| Windows对话箭头修正 | **原行为**：所持Windows EXE选上框238／下框237，与CEL实际尖端相反。**原因**：纠正箭头朝向错误。**修正与影响**：上框237向下、下框238向上，仅调整对话定位箭头选择；保留原位置、资源、透明和层序，不声称逐指令相同，也不推断所有发行版或DOS相同。原链 `41CA6E → 426CEC → 474E3E`。 |
 | 最终窗口输出柔化 | 640×480逻辑帧保持；按比例铺满、仅必要黑边、不裁切，最终SDL LINEAR轻柔化，不改PAL／透明／遮挡／原游戏像素，不宣称等价DOSBox Super2xSaI。 |
 | 平台与免换盘 | 原生Windows x64／C++23／SDL3，单DAT／单PRG去重封装、免物理换盘；原资源字节与逻辑剧本域兼容保留。 |
 
-**音频只是暂缓，不是永久省略许可。** 新增差异仍需另行明确批准。
+**音频完整原音效／音乐事件与淡入淡出还原只是暂缓，不是永久省略许可；暂缓与音视频现代后端许可不矛盾。** 资源合并去重／免换盘已获准，但不得丢失原资源字节与逻辑剧本域。超出上表范围的新增差异仍需另行明确批准；明显原版错误修正须逐项补全原行为／原因／影响记录。
 
 <a id="corrections"></a>
 ## 已撤销误判与历史优先级

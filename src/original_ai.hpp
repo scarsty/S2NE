@@ -124,8 +124,15 @@ inline bool melee_route_candidate(int signed_record7, unsigned category12, bool 
     return !movement_used && signed_record7 != 0 && category12 >= 1;
 }
 // sub_40C906 dispatch only; inputs MUST be results of its two original helpers.
-inline int movement_mode(bool helper40CAFE, bool helper40C956) { return helper40CAFE ? 0 : helper40C956 ? 1 :
-                                                                                                          3; }
+inline int movement_mode(bool helper40CAFE, bool helper40C956)
+{
+    if (helper40CAFE) { return 0; }
+    else if (helper40C956) { return 1; }
+    else
+    {
+        return 3;
+    }
+}
 
 struct Position
 {
@@ -643,8 +650,14 @@ inline bool retreat_40CFE3(int mode, int kind, int16_t hp, int16_t max_hp, int v
     }
     int weighted = multiply(components[0], 40);
     weighted = std::bit_cast<int32_t>(uint32_t(weighted) + uint32_t(multiply(components[1], mode == 1 ? 30 : 40)));
-    weighted = std::bit_cast<int32_t>(uint32_t(weighted) + uint32_t(multiply(components[2], kind == 3 ? 25 : mode == 1 ? 15 :
-                                                                                                                         20)));
+    int componentWeight;
+    if (kind == 3) { componentWeight = 25; }
+    else if (mode == 1) { componentWeight = 15; }
+    else
+    {
+        componentWeight = 20;
+    }
+    weighted = std::bit_cast<int32_t>(uint32_t(weighted) + uint32_t(multiply(components[2], componentWeight)));
     weighted = std::bit_cast<int32_t>(uint32_t(weighted) + uint32_t(multiply(components[3], 25)));
     if (weighted == INT32_MIN && value == -1)
     {

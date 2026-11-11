@@ -17,6 +17,7 @@
 #include "original_script_predicates.hpp"
 #include "original_scripted_movement.hpp"
 #include "original_skill94_visual.hpp"
+#include "original_sprite.hpp"
 #include "original_ui_timing.hpp"
 #include "original_unit_status.hpp"
 #include <deque>
@@ -36,6 +37,7 @@ class Prologue
     std::optional<OriginalSkill94Visual> skill94_visual_;
     std::vector<uint8_t> skill32_background_;
     unsigned skill32_target_{ };
+    std::optional<Battle::Point> skill_area_center_;
     std::function<void()> skill94_death_commit_;
     bool skill94_death_presented_{ };
     unsigned skill94_death_frame_{ };
@@ -278,13 +280,31 @@ private:
                 b.done = true;
                 break;
             }
-            b.y = std::min(159, b.y < 100 ? b.y + 24 : b.y < 140 ? b.y + 16 :
-                    b.y < 150                                    ? b.y + 8 :
-                                                                   159);
-            b.turn_x = std::min(249, b.turn_x < 200 ? b.turn_x + 40 : b.turn_x < 230 ? b.turn_x + 28 :
-                                                                                       249);
-            b.number_x = std::max(358, b.number_x > 439 ? b.number_x - 40 : b.number_x > 386 ? b.number_x - 28 :
-                                                                                               358);
+            int nextY;
+            if (b.y < 100) { nextY = b.y + 24; }
+            else if (b.y < 140) { nextY = b.y + 16; }
+            else if (b.y < 150) { nextY = b.y + 8; }
+            else
+            {
+                nextY = 159;
+            }
+            b.y = std::min(159, nextY);
+            int nextTurnX;
+            if (b.turn_x < 200) { nextTurnX = b.turn_x + 40; }
+            else if (b.turn_x < 230) { nextTurnX = b.turn_x + 28; }
+            else
+            {
+                nextTurnX = 249;
+            }
+            b.turn_x = std::min(249, nextTurnX);
+            int nextNumberX;
+            if (b.number_x > 439) { nextNumberX = b.number_x - 40; }
+            else if (b.number_x > 386) { nextNumberX = b.number_x - 28; }
+            else
+            {
+                nextNumberX = 358;
+            }
+            b.number_x = std::max(358, nextNumberX);
             b.strip = std::min(320, b.strip < 260 ? b.strip + 60 : b.strip + 30);
         }
         return b;
@@ -917,86 +937,7 @@ private:
     }
     Result<bool> sprite_validated(std::vector<uint8_t>& image, size_t p, bool typed, int left, int top, bool opaque_zero = false) const
     {
-        unsigned type = typed ? cel_.at(p++) : 0;
-        unsigned w = word(cel_, p) + 1, h = word(cel_, p + 2) + 1;
-        p += 4;
-        if (w > 640 || h > 480)
-        {
-            return Result<bool>::failure(make_error("Invalid dialogue sprite dimensions"));
-        }
-        if (type == 1)
-        {
-            for (unsigned y = 0; y < h; ++y)
-            {
-                for (unsigned x = 0; x < w; ++x)
-                {
-                    unsigned c = cel_.at(p++);
-                    int dx = left + int(x), dy = top + int(y);
-                    if (!c || dx < 0 || dx >= 640 || dy < 0 || dy >= 480)
-                    {
-                        continue;
-                    }
-                    size_t dst = (size_t(dy) * 640 + dx) * 4;
-                    for (unsigned k = 0; k < 3; ++k)
-                    {
-                        image.at(dst + k) = uint8_t(unsigned(pal_.at(c * 3 + k)) * 255 / 63);
-                    }
-                    image.at(dst + 3) = 255;
-                }
-            }
-            return Result<bool>::success(true);
-        }
-        if (type != 0)
-        {
-            return Result<bool>::failure(make_error("Unsupported original portrait encoding"));
-        }
-        for (unsigned y = 0; y < h; ++y)
-        {
-            unsigned x = 0;
-            while (x < w)
-            {
-                unsigned code = cel_.at(p++), n = code & 127;
-                if (!code)
-                {
-                    int dx = left + int(x++), dy = top + int(y);
-                    if (opaque_zero && dx >= 0 && dx < 640 && dy >= 0 && dy < 480)
-                    {
-                        size_t dst = (size_t(dy) * 640 + dx) * 4;
-                        for (unsigned k = 0; k < 3; ++k)
-                        {
-                            image.at(dst + k) = uint8_t(unsigned(pal_.at(k)) * 255 / 63);
-                        }
-                        image.at(dst + 3) = 255;
-                    }
-                    continue;
-                }
-                if (!n || n > w - x)
-                {
-                    return Result<bool>::failure(make_error("Invalid dialogue sprite run at " + std::to_string(p - 1) + " width=" + std::to_string(w) + " x=" + std::to_string(x) + " run=" + std::to_string(n)));
-                }
-                unsigned repeat = 0;
-                if (!(code & 128))
-                {
-                    repeat = cel_.at(p++);
-                }
-                while (n--)
-                {
-                    unsigned c = (code & 128) ? cel_.at(p++) : repeat;
-                    int dx = left + int(x++), dy = top + int(y);
-                    if ((!c && !opaque_zero && !(code & 128)) || dx < 0 || dx >= 640 || dy < 0 || dy >= 480)
-                    {
-                        continue;
-                    }
-                    size_t dst = (size_t(dy) * 640 + dx) * 4;
-                    for (unsigned k = 0; k < 3; ++k)
-                    {
-                        image.at(dst + k) = uint8_t(unsigned(pal_.at(c * 3 + k)) * 255 / 63);
-                    }
-                    image.at(dst + 3) = 255;
-                }
-            }
-        }
-        return Result<bool>::success(true);
+        return draw_original_sprite(image, cel_, pal_, p, typed, left, top, opaque_zero ? OriginalZeroRun::opaque : OriginalZeroRun::transparent);
     }
     Result<bool> try_sprite(std::vector<uint8_t>& image, size_t p, bool typed, int left, int top, bool opaque_zero = false) const
     {
@@ -1136,22 +1077,22 @@ private:
                 candidatePages.back().push_back({ { }, color, text_x, text_y, wait_delay });
             }
             else
-            {
+
                 if (lead <= 0x80)
-                {
-                    candidatePages.back().push_back({ { uint8_t(std::max(lead, 30u)) }, color, text_x, text_y, wait_delay });
-                    text_x += small_font_ ? 8 : 16;
-                }
-                else
-                {
-                    if (p == text.size())
-                    {
-                        return reject("Truncated original glyph");
-                    }
-                    candidatePages.back().push_back({ { uint8_t(lead), text.at(p++) }, color, text_x, text_y, wait_delay });
-                    text_x += small_font_ ? 16 : 24;
-                }
+            {
+                candidatePages.back().push_back({ { uint8_t(std::max(lead, 30u)) }, color, text_x, text_y, wait_delay });
+                text_x += small_font_ ? 8 : 16;
             }
+            else
+            {
+                if (p == text.size())
+                {
+                    return reject("Truncated original glyph");
+                }
+                candidatePages.back().push_back({ { uint8_t(lead), text.at(p++) }, color, text_x, text_y, wait_delay });
+                text_x += small_font_ ? 16 : 24;
+            }
+
             wait_delay = delay;
             if (p < text.size())
             {
@@ -1945,8 +1886,15 @@ public:
     }
     std::optional<OriginalInterbattle::Request> interbattle_request() const { return interbattle_ ? interbattle_->request() : std::nullopt; }
     unsigned pending_story_route() const { return phase_ == Phase::story_ready ? story_route_ : 0; }
-    unsigned campaign_next_stage() const { return pending_story_route() ? pending_story_route() : campaign_ ? campaign_->selected_route(events) :
-                                                                                                              0; }
+    unsigned campaign_next_stage() const
+    {
+        if (pending_story_route()) { return pending_story_route(); }
+        else if (campaign_) { return campaign_->selected_route(events); }
+        else
+        {
+            return 0;
+        }
+    }
     void restore_campaign_entry(OriginalEvents restored)
     {
         restore_battle(std::move(restored), 1);
@@ -2171,6 +2119,12 @@ public:
             }
             return;
         }
+        if (!synchronous_death_stack_->supported())
+        {
+            rollback_synchronous_death();
+            report_error(make_error("Original death continuation reached unsupported handler; transaction rolled back"));
+            return;
+        }
         if (synchronous_death_stack_->evacuation_pending())
         {
             evacuation_.begin(events);
@@ -2206,14 +2160,30 @@ public:
         resume();
     }
     bool synchronous_death_active() const { return bool(synchronous_death_return_); }
-    bool original_save_boundary_ready() const { return !teleport_ && !synchronous_death_active() && !skill94_death_commit_ && (!battle_ || (!battle_->combat_feedback_active() && !battle_->animating_movement())); }
-    bool begin_synchronous_death(unsigned role, std::function<void()> resume)
+    bool inject_synchronous_death_failure_for_test()
+    {
+        if (!synchronous_death_active()) { return false; }
+        rollback_synchronous_death();
+        return true;
+    }
+    bool original_save_boundary_ready() const { return !teleport_ && !skill_visual_active() && !synchronous_death_active() && !skill94_death_commit_ && (!battle_ || (!battle_->combat_feedback_active() && !battle_->animating_movement())); }
+    bool begin_synchronous_death(unsigned role, std::function<void()> resume, const OriginalEvents::Unit* dying = nullptr)
     {
         if (synchronous_death_active() || !resume)
         {
             return false;
         }
-        auto plan = OriginalDeathDispatch::continuation(events, role);
+        auto staged = events;
+        if (dying)
+        {
+            auto unit = std::find_if(staged.units.begin(), staged.units.end(), [role](const auto& u)
+                {
+                    return u.id == role;
+                });
+            if (unit == staged.units.end() || dying->id != role) { return false; }
+            *unit = *dying;
+        }
+        auto plan = OriginalDeathDispatch::continuation(staged, role);
         if (!plan.supported)
         {
             return false;
@@ -2225,6 +2195,7 @@ public:
         }
         death_camera_baseline_ = std::pair{ map_.camera_x, map_.camera_y };
         synchronous_death_baseline_ = events;
+        events = std::move(staged);
         synchronous_death_return_ = std::move(resume);
         synchronous_death_stack_.emplace(events, plan.dialogue.front());
         event_ = *synchronous_death_stack_->next(events);
@@ -2235,10 +2206,10 @@ public:
     }
     bool begin_skill94_death(unsigned target, std::function<void()> commit)
     {
-        if (skill94_death_commit_ || !commit || !map_.begin_disappearance(events.units, target, battle_->turn(), animation_elapsed_, true))
-        {
-            return false;
-        }
+        if (skill94_death_commit_ || !commit || target >= events.units.size()) { return false; }
+        auto pose = events.units;
+        pose[target].status_flags &= ~0x20u;
+        if (!map_.begin_disappearance(pose, target, battle_->turn(), animation_elapsed_, true)) { return false; }
         skill94_death_commit_ = std::move(commit);
         skill94_death_presented_ = false;
         skill94_death_frame_ = 0;
@@ -2289,9 +2260,16 @@ public:
         }
     }
     bool skill_visual_active() const { return skill32_visual_ || skill88_visual_ || skill94_visual_; }
-    bool begin_skill88_visual(unsigned caster)
+    bool begin_skill88_visual(unsigned caster, bool healing1 = false, bool sleep2 = false, std::optional<Battle::Point> center = std::nullopt, bool blessing3 = false, unsigned statusSkill = 0)
     {
-        auto prepared = OriginalSkill88Visual::create(root_);
+        auto prepared = Result<OriginalSkill88Visual>::success(OriginalSkill88Visual{ });
+        if (statusSkill) { prepared = OriginalSkill88Visual::create_strengthening_status(root_, statusSkill); }
+        else if (sleep2) { prepared = OriginalSkill88Visual::create_sleep2(root_); }
+        else
+        {
+            prepared = OriginalSkill88Visual::create(root_, healing1, blessing3);
+        }
+
         if (!prepared)
         {
             report_error(prepared.error());
@@ -2299,9 +2277,10 @@ public:
         }
         {
             auto visual = std::move(prepared).value();
-            auto background = map_.skill88_background(events.units, battle_->turn(), caster);
+            auto background = map_.skill88_background(events.units, battle_->turn(), caster, visual.tint_amount(), visual.tint_source());
             skill32_background_ = std::move(background);
             skill32_target_ = caster;
+            skill_area_center_ = (sleep2 || blessing3 || NativeAbilityBuffs::find(statusSkill) || NativeTimedBuffs::find(statusSkill) || statusSkill == 8 || statusSkill == 12 || statusSkill == 35 || statusSkill == 39 || statusSkill == 48 || statusSkill == 56 || statusSkill == 60 || statusSkill == 4 || statusSkill == 6 || statusSkill == 9 || statusSkill == 13 || statusSkill == 15 || statusSkill == 53 || statusSkill == 34 || statusSkill == 38 || statusSkill == 54 || statusSkill == 96) ? center : std::nullopt;
             skill88_visual_ = std::move(visual);
             return true;
         }
@@ -2759,8 +2738,14 @@ public:
         {
             const bool automatic = automatic_actions();
             const int previous_actor = battle_->moving_unit();
-            const bool done = npc_actions() ? battle_->tick_npc_actions(events.units, milliseconds) : automatic ? battle_->tick_automatic_actions(events.units, milliseconds) :
-                                                                                                                  battle_->tick_hostile_actions(events.units, milliseconds);
+            bool done;
+            if (npc_actions()) { done = battle_->tick_npc_actions(events.units, milliseconds); }
+            else if (automatic) { done = battle_->tick_automatic_actions(events.units, milliseconds); }
+            else
+            {
+                done = battle_->tick_hostile_actions(events.units, milliseconds);
+            }
+
             const int actor = battle_->moving_unit() >= 0 ? battle_->moving_unit() : previous_actor;
             if (actor >= 0)
             {
@@ -3147,8 +3132,9 @@ public:
     }
     Battle::State battle_state() const { return battle_ ? battle_->state() : Battle::State::idle; }
     std::pair<int, int> camera() const { return { map_.camera_x, map_.camera_y }; }
-    void restore_battle(OriginalEvents restored, unsigned turn)
+    void restore_battle(OriginalEvents restored, unsigned turn, bool resume_story = true)
     {
+        rollback_synchronous_death();
         role_removal_pending_ = false;
         story_movement_.reset();
         story_group_.reset();
@@ -3189,7 +3175,7 @@ public:
         phase_ = Phase::battle;
         first_banner_ = false;
         finished = true;
-        restored_story_pending_ = story_stage();
+        restored_story_pending_ = resume_story && story_stage();
     }
     void show_objectives()
     {
@@ -3617,7 +3603,13 @@ public:
         }
         if (skill88_visual_)
         {
-            return map_.skill88_frame(skill32_background_, *skill88_visual_, events.units.at(skill32_target_));
+            auto anchor = events.units.at(skill32_target_);
+            if (skill_area_center_)
+            {
+                anchor.x = skill_area_center_->x;
+                anchor.y = skill_area_center_->y;
+            }
+            return map_.skill88_frame(skill32_background_, *skill88_visual_, anchor);
         }
         if (skill32_visual_)
         {
