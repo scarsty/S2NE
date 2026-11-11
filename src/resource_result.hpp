@@ -10,11 +10,16 @@ namespace s2ne
 {
 inline Result<std::vector<uint8_t>> read_resource(const std::filesystem::path& path)
 {
-    if (path.filename() == "SUPERSP.PRG")
+    auto resolved = path;
+    if (!std::filesystem::exists(resolved) && std::filesystem::exists(resolved.parent_path().parent_path() / resolved.filename()))
     {
-        return ResourceBundle(path.parent_path()).try_prg_image();
+        resolved = resolved.parent_path().parent_path() / resolved.filename();
     }
-    std::ifstream file(path, std::ios::binary);
+    if (resolved.filename() == "SUPERSP.PRG")
+    {
+        return ResourceBundle(resolved.parent_path()).try_prg_image();
+    }
+    std::ifstream file(resolved, std::ios::binary);
     if (!file)
     {
         return Result<std::vector<uint8_t>>::failure(make_error("Cannot open resource: " + path.string()));

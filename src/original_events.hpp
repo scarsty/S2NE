@@ -34,7 +34,7 @@ class OriginalEvents
     {
         if (event >= event_count())
         {
-            return Result<size_t>::failure(make_error("Invalid original event index"));
+            return Result<size_t>::failure(make_error("Invalid original event index stage=" + std::to_string(stage) + " event=" + std::to_string(event) + " count=" + std::to_string(event_count())));
         }
         return Result<size_t>::success(events_ + 4 + event * 20);
     }
@@ -83,11 +83,15 @@ public:
         std::optional<uint8_t> status39;
         uint8_t status34{ }, status3c{ };    // runtime state, not fields in the 101-byte stage record
         std::optional<std::array<uint8_t, 0x13A>> action_status_runtime;
+        // 468BAC writes the transient effect state at runtime +5F8, outside the packed +13A unit block.
+        // It is intentionally not serialized as unit data; save round-trips preserve only durable fields.
+        std::optional<int32_t> effect_state_5f8;
         unsigned kind_attribute{ }, allegiance_tag{ };
         unsigned runtime_role_selector{ };
         int persistent_role6{ };
         int ai_role10{ -1 };    // WORD +0Ah: [runtime+8] sar16, distinct from control WORD +8.
         unsigned ending_kills{ }, ending_losses{ };
+        unsigned physical_kill_xp{ };    // WORD runtime +119h, original stage record +53.
         std::optional<int> ending_combat_value;
         std::array<int, 40> relationships{ };
         // sub_4274B5 partitions stage units at the first behavior 2/3/8; behavior 1 is allied AI.
@@ -105,6 +109,7 @@ public:
     unsigned map_id{ };
     std::vector<std::array<unsigned, 4>> dynamic_object_chains;
     std::vector<Unit> units;
+    std::optional<std::array<std::array<uint8_t, 33>, 2>> army_status;
     std::vector<uint8_t> briefing, stage_name, victory_objective, defeat_objective;
     std::array<int, 12> battle_config{ };
     unsigned learned_ability_count{ }, first_ability_count{ }, second_ability_count{ };
@@ -1108,6 +1113,7 @@ public:
             }
             unit.allegiance_tag = bin_.at(p + 15) & 15;
             unit.persistent_role6 = int(int8_t(bin_.at(p + 21)));
+            unit.physical_kill_xp = word(p + 53);
             for (unsigned j = 0; j < 4; ++j)
             {
                 unit.initial_status[j] = word(p + 55 + j * 2);

@@ -36,6 +36,7 @@ class OriginalMap
         bool alternate = true;
     };
     mutable std::map<unsigned, UnitBitmap> unit_bitmaps_;
+    std::optional<uint64_t> idle_pose_time_;
     original_movement::SharedEffectClock movement_effect_clock_;
     std::map<unsigned, uint64_t> movement_effect_stamps_;
     struct EffectPresentation
@@ -48,7 +49,8 @@ class OriginalMap
     mutable std::vector<uint8_t> skill88_indexed_;
     original_combat::Disappearance disappearance_;
     std::optional<unsigned> arrival_target_;
-    unsigned arrival_frame_{ }, arrival_elapsed_{ };
+    unsigned arrival_frame_{ }, arrival_elapsed_{ }, arrival_color_{ 194 };
+    bool arrival_departure_{ };
     bool arrival_presented_{ };
     mutable std::vector<std::vector<uint8_t>> disappearance_frames_;
     mutable uint64_t reaction_draws_{ };
@@ -109,7 +111,7 @@ class OriginalMap
         size_t g = group(archive);
         if (index >= word(prg_, g))
         {
-            return Result<size_t>::failure(make_error("Invalid original map sprite index"));
+            return Result<size_t>::failure(make_error("Invalid original map sprite index archive=" + std::to_string(archive) + " index=" + std::to_string(index) + " count=" + std::to_string(word(prg_, g))));
         }
         return Result<size_t>::success(g + dword(prg_, g + 2 + index * 8));
     }
@@ -444,6 +446,71 @@ public:
         }
         return 0;
     }
+    void mask_selection(std::vector<uint8_t>& pixels, int x, int y) const
+    {
+        if (pixels.empty() || pixels.size() % 64 || x < 0 || y < 0 || unsigned(y) >= height * 2 || unsigned(x) >= width - (unsigned(y) & 1)) { return; }
+        const auto elevation = prg_.at(item(6, map_id - 1) + 28 + (size_t(y) * width + unsigned(x)) * 5);
+        // 42AFBA -> 42F027: the range/cursor bitmap uses the same forward clipping rings.
+        mask_unit_ground(pixels, 64, unsigned(pixels.size() / 64), x, y, elevation);
+    }
+    Result<bool> try_mask_selection_units(std::vector<uint8_t>& pixels, int x, int y, const std::vector<OriginalEvents::Unit>& units, unsigned turn, uint64_t elapsed, int layer, bool idle_cursor = false) const
+    {
+        if (pixels.size() != 64 * 137) { return Result<bool>::success(true); }
+        if (!map_id || x < 0 || y < 0 || unsigned(y) >= height * 2 || unsigned(x) >= width - (unsigned(y) & 1)) { return Result<bool>::failure(make_error("Invalid selection unit mask cell")); }
+        const size_t cells = item(6, map_id - 1) + 28;
+        const int elevation = prg_.at(cells + (size_t(y) * width + x) * 5);
+        const int left = x * 64 + (y & 1) * 32, top = y * 16 + 32 - 137;
+        auto output = pixels;
+        bool enemy_context = false;
+        for (const auto& unit : units)
+        {
+            enemy_context = enemy_context || unit.behavior == 2 || unit.behavior == 3 || unit.behavior == 8;
+            if (!unit.present(turn) || (unit.status_flags & 0x20) || !(unit.status_flags & 0x80) || unit.action_state == 3 || unit.action_state == 5 || (layer == 1 && unit.action_state == 1)) { continue; }
+            const bool same = unit.x == x && unit.y == y;
+            // 431347: rear uses mode3/include-current; front uses mode1,
+            // with mode2 for the friendly roster and mode0 for the enemy roster.
+            const bool include_same = layer == 0 || (idle_cursor && !enemy_context);
+            if (same && !include_same) { continue; }
+            if (std::abs(unit.x - x) > 2 || unit.y > y + 24 || (layer == 0 ? unit.y < y : (unit.y <= y && !(same && include_same)))) { continue; }
+            if (!unit.appearance || unit.x < 0 || unit.y < 0 || unsigned(unit.y) >= height * 2 || unsigned(unit.x) >= width - (unsigned(unit.y) & 1)) { return Result<bool>::failure(make_error("Invalid selection unit mask source")); }
+            const int other_elevation = prg_.at(cells + (size_t(unit.y) * width + unit.x) * 5);
+            if (!other_elevation) { continue; }
+            auto frame = try_idle_frame(unit.appearance, unit.movement_pose ? uint64_t(unit.movement_frame) * 190 : idle_pose_time_.value_or(elapsed), unit.direction, unit.animation_action);
+            if (!frame) { return Result<bool>::failure(frame.error()); }
+            const size_t index = group(1), frames = group(2);
+            const unsigned first = word(prg_, index + 2 + (unit.appearance - 1) * 8 + 2);
+            size_t entry = frames + 2 + (first + frame.value() - 1) * 7;
+            size_t p = frames + dword(prg_, entry), length = word(prg_, entry + 4);
+            if (length < 4 || p > prg_.size() || length > prg_.size() - p) { return Result<bool>::failure(make_error("Invalid selection unit mask entry")); }
+            size_t end = p + length;
+            unsigned w = word(prg_, p) + 1, h = word(prg_, p + 2) + 1;
+            if (w > 512 || h > 512) { return Result<bool>::failure(make_error("Invalid selection unit mask dimensions")); }
+            p += 4;
+            size_t offset = 0;
+            const int dx = unit.x * 64 + (unit.y & 1) * 32 + 32 - int(w / 2) - left;
+            const int dy = unit.y * 16 + 32 - int(h) - top - (other_elevation - elevation) * 16;
+            while (p < end)
+            {
+                unsigned code = prg_.at(p++), count = code ? code & 127 : 1;
+                if (count > size_t(w) * h - offset) { return Result<bool>::failure(make_error("Invalid selection unit mask run")); }
+                const unsigned source = code & 128 ? count : code ? 1 :
+                                                                    0;
+                if (source > end - p) { return Result<bool>::failure(make_error("Truncated selection unit mask run")); }
+                unsigned repeated = code && !(code & 128) ? prg_.at(p++) : 0;
+                while (count--)
+                {
+                    unsigned ink = code & 128 ? prg_.at(p++) : repeated;
+                    int px = dx + int(offset % w), py = dy + int(offset / w);
+                    if (ink && px >= 0 && px < 64 && py >= 0 && py < 137) { output[size_t(py) * 64 + px] = 0; }
+                    ++offset;
+                }
+            }
+            if (offset != size_t(w) * h) { return Result<bool>::failure(make_error("Truncated selection unit mask")); }
+        }
+        pixels.swap(output);
+        return Result<bool>::success(true);
+    }
+    void set_idle_pose_time(uint64_t time) { idle_pose_time_ = time; }
     void set_checker_mask(bool enabled) { checker_mask_ = enabled; }
     void set_dynamic_object_chains(const std::vector<std::array<unsigned, 4>>& chains) { dynamic_object_chains_ = chains; }
     void set_event_flags(const std::array<uint8_t, 80>& flags)
@@ -1298,7 +1365,7 @@ public:
         const auto& b = unit_bitmaps_.at(id);
         return { b.left, b.top, int(b.w), int(b.h) };
     }
-    bool begin_teleport_arrival(const std::vector<OriginalEvents::Unit>& roster, unsigned target, unsigned turn = 1)
+    bool begin_teleport_arrival(const std::vector<OriginalEvents::Unit>& roster, unsigned target, unsigned turn = 1, bool departure = false)
     {
         if (arrival_target_ || target >= roster.size())
         {
@@ -1311,6 +1378,8 @@ public:
             return false;
         }
         arrival_target_ = target;
+        arrival_departure_ = departure;
+        arrival_color_ = departure ? 254 : 194;
         arrival_frame_ = arrival_elapsed_ = 0;
         arrival_presented_ = false;
         return true;
@@ -1501,7 +1570,7 @@ public:
             }
             size_t metadata = index + 2 + (unit.appearance - 1) * 8;
             unsigned first = word(prg_, metadata + 2);
-            auto frame_result = try_idle_frame(unit.appearance, unit.movement_pose ? uint64_t(unit.movement_frame) * 190 : elapsed_ms, unit.direction, unit.animation_action);
+            auto frame_result = try_idle_frame(unit.appearance, unit.movement_pose ? uint64_t(unit.movement_frame) * 190 : idle_pose_time_.value_or(elapsed_ms), unit.direction, unit.animation_action);
             if (!frame_result)
             {
                 return Result<bool>::failure(frame_result.error());
@@ -1780,7 +1849,7 @@ public:
                 {
                     if (ink)
                     {
-                        ink = palette.blend_index(ink, 194, 100 - int(arrival_frame_) * 10);
+                        ink = palette.blend_index(ink, arrival_color_, arrival_departure_ ? 10 + int(arrival_frame_) * 10 : 100 - int(arrival_frame_) * 10);
                     }
                 }
             }
@@ -1907,12 +1976,13 @@ public:
                 image[p * 4 + k] = uint8_t(unsigned(pal_.at(indexed[p] * 3 + k)) * 255 / 63);
             }
         }
+        if (tint_amount == 0) { skill88_indexed_ = indexed; }
         // 46B5DE restores the caster and the selected enemy after the indexed tint.
         draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, caster);
         draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, target);
         return image;
     }
-    std::vector<uint8_t> skill32_frame(const std::vector<uint8_t>& background, const OriginalSkill32Visual::Frame& frame, const std::vector<OriginalEvents::Unit>& units, unsigned turn, unsigned target) const
+    std::vector<uint8_t> skill32_frame(const std::vector<uint8_t>& background, const OriginalSkill32Visual::Frame& frame, const std::vector<OriginalEvents::Unit>& units, unsigned turn, unsigned target, const OriginalSkill32Visual* visual = nullptr) const
     {
         const auto& destination = units.at(target);
         int x = destination.x, y = destination.y;
@@ -1954,6 +2024,7 @@ public:
             }
         }
         auto image = background;
+        OriginalPalette palette(pal_);
         top -= camera_y + std::max(0, elevation - 1) * 16;
         left -= camera_x;
         for (unsigned yy = 0; yy < frame.height; ++yy)
@@ -1965,6 +2036,12 @@ public:
                 if (!c || dx < 0 || dy < 0 || dx >= 640 || dy >= 480)
                 {
                     continue;
+                }
+                if (visual && visual->amount(c) >= 0)
+                {
+                    size_t p = (size_t(dy) * 640 + dx) * 4;
+                    unsigned destinationColor = skill88_indexed_.at(p / 4);
+                    c = uint8_t(palette.blend_index(destinationColor, c, visual->amount(c)));
                 }
                 for (unsigned k = 0; k < 3; ++k)
                 {

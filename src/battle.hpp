@@ -4,6 +4,7 @@
 #include "original_combat_visual.hpp"
 #include "original_disc.hpp"
 #include "original_events.hpp"
+#include "original_promotion_transaction.hpp"
 #include "original_random.hpp"
 #include <algorithm>
 #include <cmath>
@@ -86,6 +87,7 @@ private:
     bool movement_animation_enabled_ = false;
     bool attack_animation_ = false;
     original_combat::Feedback combat_feedback_;
+    bool curse33_feedback_{ };
     bool skill94_feedback_{ }, skill94_feedback_presented_{ }, skill94_death_lock_{ };
     std::function<void()> skill94_feedback_commit_;
     std::optional<OriginalEvents::Unit> reaction_pose_;
@@ -102,7 +104,11 @@ public:
 
 private:
     std::function<void(std::vector<OriginalEvents::Unit>&, const PhysicalSettlement&)> physical_settlement_;
+    std::function<Result<bool>(const std::vector<OriginalEvents::Unit>&, const std::vector<PhysicalSettlement>&)> physical_loot_commit_;
+    std::function<Result<bool>(size_t, size_t)> physical_death_presenter_;
+    std::function<void(bool)> physical_transaction_finish_;
     std::shared_ptr<OriginalEvents> hostile_resources_;
+    std::shared_ptr<OriginalPromotionTransaction> physical_equipment_;
     std::vector<int> ai_kind_classes_;
     std::vector<std::array<std::vector<uint8_t>, 30>> action_sequences_;
     std::array<int, 0x110> ai_config_{ };
@@ -437,6 +443,9 @@ public:
         result.config_ = events.battle_config;
         result.original_rules_ = true;
         result.hostile_resources_ = std::make_shared<OriginalEvents>(events);
+        auto equipment = OriginalPromotionTransaction::create(root);
+        if (!equipment) { return Result<Battle>::failure(equipment.error()); }
+        result.physical_equipment_ = std::make_shared<OriginalPromotionTransaction>(std::move(equipment).value());
         auto binResult = read_resource(root / "SUPERSP.BIN"), kindsResult = read_resource(root / "KINDSP.BIN");
         if (!binResult)
         {
@@ -920,6 +929,144 @@ public:
         }
         return result;
     }
+    Result<std::vector<size_t>> try_physical_target_group(const OriginalEvents& resources, const OriginalEvents::Unit& actor, const OriginalEvents::ActionRecord& action, const std::vector<OriginalEvents::Unit>& units, size_t primary) const
+    {
+        if (primary >= units.size()) { return Result<std::vector<size_t>>::failure(make_error("Original physical target index")); }
+        auto range = resources.action_range(actor, action);
+        auto cells = action_cells({ actor.x, actor.y }, range);
+        auto selected = std::find(cells.begin(), cells.end(), Point{ units[primary].x, units[primary].y });
+        if (selected == cells.end()) { return Result<std::vector<size_t>>::failure(make_error("Original physical target outside action ray")); }
+        std::vector<size_t> result;
+        if (range.shape != 1 && range.shape != 2)
+        {
+            // 406E7C stores each directional ray contiguously; 4074CE selects
+            // the entire ray containing the primary, not every possible target.
+            for (int direction = 0; direction < 4; ++direction)
+            {
+                Point position{ actor.x, actor.y };
+                std::vector<Point> ray;
+                for (int distance = 1; distance <= std::max(range.minimum, range.maximum); ++distance)
+                {
+                    if (direction == 0)
+                    {
+                        if (position.y & 1) { ++position.x; }
+                        --position.y;
+                    }
+                    else if (direction == 1)
+                    {
+                        if (!(position.y & 1)) { --position.x; }
+                        ++position.y;
+                    }
+                    else if (direction == 2)
+                    {
+                        if (!(position.y & 1)) { --position.x; }
+                        --position.y;
+                    }
+                    else
+                    {
+                        if (position.y & 1) { ++position.x; }
+                        ++position.y;
+                    }
+                    if (distance < range.minimum) { continue; }
+                    if (std::find(cells.begin(), cells.end(), position) == cells.end()) { break; }
+                    ray.push_back(position);
+                }
+                if (std::find(ray.begin(), ray.end(), Point{ units[primary].x, units[primary].y }) == ray.end()) { continue; }
+                for (Point position : ray)
+                {
+                    auto occupant = std::find_if(units.begin(), units.end(), [&](const auto& unit)
+                        {
+                            return (unit.status_flags & 0x80) && (!(unit.status_flags & 0x20) || (unit.status_flags & 2)) && unit.x == position.x && unit.y == position.y;
+                        });
+                    if (occupant == units.end()) { continue; }
+                    size_t index = size_t(occupant - units.begin());
+                    if (index == primary) { break; }
+                    result.push_back(index);
+                }
+                break;
+            }
+        }
+        result.push_back(primary);
+        return Result<std::vector<size_t>>::success(std::move(result));
+    }
+    struct PhysicalActionContext
+    {
+        size_t actor{ }, target{ };
+        OriginalEvents::Unit actor_snapshot, target_snapshot;
+        OriginalEvents::ActionRecord action{ };
+        std::optional<OriginalEvents::ActionRecord> counter;
+        int mode{ }, counter_tactics{ };
+    };
+    static uint8_t physical_status(const OriginalEvents::Unit& unit, unsigned offset)
+    {
+        if (unit.action_status_runtime) { return (*unit.action_status_runtime)[offset]; }
+        switch (offset)
+        {
+        case 0x39: return unit.status39.value_or(0);
+        case 0x3C: return unit.status3c;
+        case 0x3D: return unit.status3d;
+        case 0x3E: return unit.status3e;
+        case 0x3F: return unit.status3f;
+        default: return 0;
+        }
+    }
+    static uint32_t physical_status_dword(const OriginalEvents::Unit& unit)
+    {
+        uint32_t value = 0;
+        for (unsigned i = 0; i < 4; ++i) { value |= uint32_t(physical_status(unit, 0x3C + i)) << (8 * i); }
+        return value;
+    }
+    Result<std::vector<PhysicalActionContext>> try_physical_contexts(const OriginalEvents& resources, const std::vector<OriginalEvents::Unit>& units, size_t actor, size_t primary, const OriginalEvents::ActionRecord& action, bool reuse_primary = false)
+    {
+        if (actor >= units.size() || actor == primary) { return Result<std::vector<PhysicalActionContext>>::failure(make_error("Original physical actor index")); }
+        auto group = try_physical_target_group(resources, units[actor], action, units, primary);
+        if (!group) { return Result<std::vector<PhysicalActionContext>>::failure(group.error()); }
+        std::vector<OriginalEvents::Unit> own, opponents;
+        for (const auto& unit : units) { (unit.hostile() == units[actor].hostile() ? own : opponents).push_back(unit); }
+        std::vector<PhysicalActionContext> contexts;
+        auto staged_random = random_;
+        for (size_t target : group.value())
+        {
+            PhysicalActionContext context{ };
+            context.actor = actor;
+            context.target = target;
+            context.actor_snapshot = units[actor];
+            context.target_snapshot = units[target];
+            context.action = action;
+            context.mode = int(attack_mode({ units[actor].x, units[actor].y }, { units[target].x, units[target].y }, units[target].direction, resources.difficulty == 1));
+            if (units[target].abilities & 0x2000) { context.mode = 1; }
+            if (reuse_primary && target == primary)
+            {
+                contexts.push_back(std::move(context));
+                continue;
+            }
+            auto records = resources.try_action_records(units[target]);
+            if (!records) { return Result<std::vector<PhysicalActionContext>>::failure(records.error()); }
+            std::vector<OriginalEvents::ActionRecord> pool;
+            if (!(physical_status(units[target], 0x39) & 2) && !(physical_status_dword(units[target]) & 0x2B000))
+            {
+                for (const auto& candidate : records.value())
+                {
+                    if (candidate.fields[0] == 11 || candidate.fields[0] == 12) { continue; }
+                    auto targets = action_targets(resources, units[target], candidate, own, opponents, 0);
+                    if (std::any_of(targets.begin(), targets.end(), [&](const auto& t)
+                            {
+                                return t.position == Point{ units[actor].x, units[actor].y };
+                            }))
+                    {
+                        pool.push_back(candidate);
+                    }
+                }
+            }
+            if (!pool.empty() && !(reuse_primary && target == primary))
+            {
+                context.counter = pool[size_t(staged_random.bounded(int(pool.size()), random_seconds()))];
+            }
+            contexts.push_back(std::move(context));
+        }
+        random_ = std::move(staged_random);
+        return Result<std::vector<PhysicalActionContext>>::success(std::move(contexts));
+    }
     struct AttackAvailability
     {
         uint32_t mask{ };
@@ -1326,8 +1473,9 @@ public:
             movement_categories_[i] = categories[i] <= 2 ? categories[i] : 0;
         }
     }
+    const auto& physical_exchange_diagnostics() const { return physical_exchange_diagnostics_; }
     const original_combat::Feedback& combat_feedback() const { return combat_feedback_; }
-    bool combat_feedback_active() const { return combat_feedback_.active() || skill94_death_lock_; }
+    bool combat_feedback_active() const { return combat_feedback_.active() || skill94_death_lock_ || physical_exchange_.has_value(); }
     void lock_skill94_death(bool locked) { skill94_death_lock_ = locked; }
     void feedback_presented()
     {
@@ -1349,6 +1497,14 @@ public:
         skill94_feedback_ = true;
         skill94_feedback_presented_ = false;
         skill94_feedback_commit_ = std::move(commit);
+        return true;
+    }
+    bool begin_curse33_feedback(size_t actor, size_t target, int hp, bool hit, std::function<void()> commit)
+    {
+        if (!begin_skill94_feedback(actor, target, hp, 0, std::move(commit))) { return false; }
+        // 4677D7: miss goes to468BAC(0); success uses452E7F without a number.
+        curse33_feedback_ = hit;
+        if (hit) { combat_feedback_.phase = original_combat::Feedback::Phase::flash; }
         return true;
     }
     template <class ScreenPosition, class Silhouette, class Text>
@@ -1376,15 +1532,55 @@ public:
     }
     void set_death_settlement(std::function<void(std::vector<OriginalEvents::Unit>&, size_t, size_t)> callback) { death_settlement_ = std::move(callback); }
     void set_physical_settlement(std::function<void(std::vector<OriginalEvents::Unit>&, const PhysicalSettlement&)> callback) { physical_settlement_ = std::move(callback); }
+    void set_physical_loot_commit(std::function<Result<bool>(const std::vector<OriginalEvents::Unit>&, const std::vector<PhysicalSettlement>&)> callback) { physical_loot_commit_ = std::move(callback); }
+    void set_physical_death_presenter(std::function<Result<bool>(size_t, size_t)> callback, std::function<void(bool)> finish)
+    {
+        physical_death_presenter_ = std::move(callback);
+        physical_transaction_finish_ = std::move(finish);
+    }
+    void resume_physical_death()
+    {
+        if (physical_exchange_)
+        {
+            physical_exchange_->death.reset();
+            physical_exchange_->death_started = false;
+        }
+    }
 
 private:
+    struct PhysicalExchangeDiagnostic
+    {
+        size_t actor{ }, target{ };
+        int damage{ };
+        bool reverse{ }, consecutive{ };
+    };
+    std::vector<PhysicalExchangeDiagnostic> physical_exchange_diagnostics_;
+    struct PhysicalExchangeStep
+    {
+        PhysicalActionContext context;
+        int damage{ };
+        bool consecutive{ }, reverse{ };
+    };
+    struct PhysicalExchange
+    {
+        std::vector<PhysicalExchangeStep> forward, replies;
+        std::vector<PhysicalSettlement> forward_awards, counter_awards;
+        std::vector<OriginalEvents::Unit> forward_targets, baseline_units;
+        original_combat::Random baseline_random{ 1 };
+        std::vector<std::pair<size_t, size_t>> deaths;
+        size_t cursor{ }, counter_cursor{ };
+        std::optional<std::pair<size_t, size_t>> death;
+        bool death_started{ };
+        bool reverse{ }, group_presented{ }, group_status_applied{ };
+    };
+    std::optional<PhysicalExchange> physical_exchange_;
     std::optional<OriginalEvents::ActionRecord> pending_action_status_;
-    int apply_physical_action_status(std::vector<OriginalEvents::Unit>& units, size_t b, const OriginalEvents::ActionRecord& action, int result)
+    int apply_physical_action_status(std::vector<OriginalEvents::Unit>& units, size_t b, const OriginalEvents::ActionRecord& action, int result, std::optional<int> status_roll = std::nullopt)
     {
         auto& target = units[b];
         original_combat::ActionStatusInput input{ };
         input.result = result;
-        input.roll = result > 0 ? percent() : 100;
+        input.roll = status_roll ? *status_roll : (result > 0 ? percent() : 100);
         input.target_kind17 = hostile_resources_ ? hostile_resources_->action_status_kind(target) : 0;
         input.target_equipment14 = hostile_resources_ && hostile_resources_->equipment_special(target, 14);
         if (!target.action_status_runtime)
@@ -1398,7 +1594,11 @@ private:
             };
             bytes[0x2F] = uint8_t(target.runtime_role_selector);
             bytes[0x33] = uint8_t(target.status_flags);
+            bytes[0x39] = target.status39.value_or(0);
             bytes[0x3C] = target.status3c;
+            bytes[0x3D] = target.status3d;
+            bytes[0x3E] = target.status3e;
+            bytes[0x3F] = target.status3f;
             bytes[0x116] = uint8_t(target.abilities >> 8);
             put(0xB5, target.level);
             put(0xB7, target.max_hp);
@@ -1410,6 +1610,10 @@ private:
         }
         auto& bytes = *target.action_status_runtime;
         bytes[0x33] = uint8_t(target.status_flags);
+        if (!target.effect_state_5f8)
+        {
+            target.effect_state_5f8 = 0;
+        }
         bytes[0x2F] = uint8_t(target.runtime_role_selector);
         auto refresh = [&](size_t p, int value)
         {
@@ -1423,28 +1627,116 @@ private:
         target.defense = int(int16_t(unsigned(bytes[0x136]) | (unsigned(bytes[0x137]) << 8)));
         return output.result;
     }
+    int apply_physical_status_tail(std::vector<OriginalEvents::Unit>& units, size_t actor, size_t target, const OriginalEvents::ActionRecord& action, int damage)
+    {
+        auto& victim = units[target];
+        const auto& source = units[actor];
+        if (damage <= 0 || (victim.status_flags & 0x20)) { return damage; }
+        auto set_status = [&](unsigned offset, uint8_t value)
+        {
+            if (victim.action_status_runtime) { (*victim.action_status_runtime)[offset] = value; }
+            if (offset == 0x3D) { victim.status3d = value; }
+            if (offset == 0x3E) { victim.status3e = value; }
+        };
+        set_status(0x3E, physical_status(victim, 0x3E) & ~2);
+        if ((physical_status(victim, 0x3D) & 0x80) && percent() <= 70) { set_status(0x3D, physical_status(victim, 0x3D) & 0x7F); }
+        if ((physical_status(victim, 0x3E) & 0x10) || (victim.abilities & 0x4000)) { return damage; }
+        auto proc = [&](int effect)
+        {
+            auto record = action;
+            record.fields[17] = effect;
+            record.fields[18] = 30;
+            record.fields[19] = 3;
+            apply_physical_action_status(units, target, record, damage);
+        };
+        if (action.fields[0] <= 10)
+        {
+            if ((hostile_resources_->equipment_special(source, 3) || (source.abilities & 0x80000)) && !(victim.abilities & 0x1000) && victim.runtime_role_selector != 1) { proc(1); }
+            if (hostile_resources_->equipment_special(source, 7) && victim.runtime_role_selector != 1) { proc(2); }
+            if ((source.abilities & 0x100000) && !(victim.runtime_role_selector & 3))
+            {
+                int threshold = hostile_resources_->equipment_special(victim, 14) ? 15 : 30;
+                int draw = percent();
+                if (draw <= threshold)
+                {
+                    auto record = action;
+                    record.fields[17] = 0;
+                    apply_physical_action_status(units, target, record, damage, 100);
+                    original_combat::apply_timed_status(*victim.action_status_runtime, 0x4000, 3);
+                }
+            }
+            if (source.abilities & 0x800000) { damage = -damage; }
+        }
+        if (source.abilities & 0x10000000)
+        {
+            if (victim.mp > 4) { units[actor].mp = std::min(units[actor].max_mp, units[actor].mp + victim.mp * 25 / 100); }
+            if (victim.st > 4) { units[actor].st = std::min(units[actor].max_st, units[actor].st + victim.st * 25 / 100); }
+        }
+        return apply_physical_action_status(units, target, action, damage, percent());
+    }
     void settle_physical(std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, int lost)
     {
+        auto damage_snapshot = units[b];
+        damage_snapshot.hp += lost;
+        if (physical_exchange_ && hostile_resources_)
+        {
+            auto& target = units[b];
+            if (!target.hp && (hostile_resources_->equipment_special(target, 25) || hostile_resources_->equipment_special(target, 28)))
+            {
+                bool consume = !hostile_resources_->equipment_special(target, 25);
+                target.hp = target.max_hp;
+                if (consume)
+                {
+                    auto slot = physical_equipment_->first_consumable_special(target, 28);
+                    OriginalPromotionTransaction::State state{ target, std::vector<uint8_t>(physical_equipment_->item_count()), OriginalRandom({ random_.seed_state(), random_.draw_count() }) };
+                    physical_equipment_->remove_equipment(state, *slot, true);
+                    target = std::move(state.unit);
+                }
+            }
+            else if (target.hp > 0 && !physical_exchange_->reverse && hostile_resources_->equipment_special(target, 29) && percent() < 30)
+            {
+                target.hp = std::min(target.max_hp, target.hp + lost * 2);
+            }
+        }
         if (!units[b].hp)
         {
             units[b].status34 |= 0x80;
-            if (death_settlement_)
+            if (physical_exchange_)
+            {
+                units[a].ending_kills = uint16_t(units[a].ending_kills + 1);
+                units[b].ending_losses = uint16_t(units[b].ending_losses + 1);
+            }
+            if (physical_exchange_)
+            {
+                units[b].status_flags |= 0x20;
+                physical_exchange_->deaths.emplace_back(a, b);
+                if (physical_death_presenter_) { physical_exchange_->death = std::pair{ a, b }; }
+            }
+            else if (death_settlement_)
             {
                 death_settlement_(units, a, b);
             }
         }
-        if (!physical_settlement_)
+        if (!physical_settlement_ && !physical_exchange_)
         {
             return;
         }
         // 43CAD4 -> 409454 -> 4094C4, followed by 458B03. Skill469101
         // is a different chain. The kill-equipment459227 supplement is external.
+        if (physical_exchange_ && !physical_exchange_->reverse)
+        {
+            physical_exchange_->forward_awards.push_back({ a, b, units[a].id, units[b].id, lost, 0, !units[b].hp });
+            physical_exchange_->forward_targets.push_back(std::move(damage_snapshot));
+            return;
+        }
         int xp = 1;
         if (hostile_resources_ && (lost || (units[b].status_flags & 0x20)))
         {
-            auto target_snapshot = units[b];
-            target_snapshot.hp += lost;    // 43EBCA saves HP in runtime132 before subtraction.
-            int actor = hostile_resources_->combat_value(units[a]), target = hostile_resources_->combat_value(target_snapshot);
+            auto target_snapshot = damage_snapshot;    // 43EBCA saves HP in runtime132 before subtraction.
+            auto actor_snapshot = units[a];
+            actor_snapshot.ending_combat_value = actor_snapshot.ending_combat_value.value_or(actor_snapshot.hp);
+            target_snapshot.ending_combat_value = target_snapshot.hp;
+            int actor = hostile_resources_->combat_value(actor_snapshot, 1), target = hostile_resources_->combat_value(target_snapshot, 1);
             if (actor > 0 && actor + target > 0 && ai_config_[0xE1])
             {
                 xp = std::max(1, (lost * target * ai_config_[0xE5] / (actor + target)) / ai_config_[0xE1]);
@@ -1458,7 +1750,14 @@ private:
                 return;    // No invented divisor or missing context fallback.
             }
         }
-        physical_settlement_(units, { a, b, units[a].id, units[b].id, lost, xp, !units[b].hp });
+        if (units[b].status_flags & 0x20) { xp += int(units[b].physical_kill_xp); }
+        PhysicalSettlement award{ a, b, units[a].id, units[b].id, lost, xp, !units[b].hp };
+        if (physical_exchange_)
+        {
+            (physical_exchange_->reverse ? physical_exchange_->counter_awards : physical_exchange_->forward_awards).push_back(award);
+            return;
+        }
+        physical_settlement_(units, award);
     }
 
 public:
@@ -1467,11 +1766,21 @@ public:
         auto& feedback = combat_feedback_;
         if (!feedback.active())
         {
+            advance_physical_exchange(units);
             return;
         }
         if (skill94_feedback_)
         {
             feedback.elapsed += std::min(milliseconds, 1000u);
+            if (curse33_feedback_)
+            {
+                if (!skill94_feedback_presented_ || feedback.elapsed < 20) { return; }
+                feedback.phase = original_combat::Feedback::Phase::idle;
+                curse33_feedback_ = skill94_feedback_ = skill94_feedback_presented_ = false;
+                auto commit = std::move(skill94_feedback_commit_);
+                commit();
+                return;
+            }
             unsigned interval = feedback.step < 3 ? 30u : feedback.step < 4 ? 20u :
                                                                               10u;
             // 468F5A waits only for steps0..5, for both damage and MISS.
@@ -2617,7 +2926,7 @@ public:
     int moving_unit() const { return moving_unit_; }
     int moving_actor() const { return moving_unit_; }
     void set_hostile_resources(const OriginalEvents& resources) { hostile_resources_ = std::make_shared<OriginalEvents>(resources); }
-    int physical_action_preview(const OriginalEvents& resources, const OriginalEvents::Unit& actor, const OriginalEvents::Unit& defender, const OriginalEvents::ActionRecord& action) const
+    int physical_action_preview(const OriginalEvents& resources, const OriginalEvents::Unit& actor, const OriginalEvents::Unit& defender, const OriginalEvents::ActionRecord& action, bool counter = false, int counter_mode = 0) const
     {
         original_combat::PhysicalPreviewInput in{ };
         in.attack = actor.attack;
@@ -2627,14 +2936,32 @@ public:
         in.player_side = !actor.hostile();
         in.difficulty_bonus = ai_config_[0xF3 + std::min(5u, resources.difficulty)];
         int mode = int(attack_mode({ actor.x, actor.y }, { defender.x, defender.y }, defender.direction, resources.difficulty == 1));
-        in.mode_bonus = mode == 3 ? 6 : mode == 2 ? 3 :
-                                                    0;
+        in.counter = counter;
+        in.counter_fixed_damage = counter && (actor.abilities & 0x400);
+        in.counter_fixed_value = actor.strikeback;
+        in.counter_equipment_30 = counter && resources.equipment_special(actor, 30);
+        in.mode_bonus = counter ? (counter_mode == 3 ? -3 : counter_mode == 2 ? -2 :
+                                                                                0) :
+                                  (mode == 3 ? 6 : mode == 2 ? 3 :
+                                                               0);
         in.modifiers.class_matchup = resources.class_matchup(actor, defender);
         in.modifiers.action_coefficient = action.fields[11];
         in.modifiers.combat_value = resources.combat_value(actor);
         in.modifiers.defender_116 = uint8_t(defender.abilities >> 8);
-        in.modifiers.defender_3c = defender.status3c;
+        in.modifiers.defender_3c = physical_status(defender, 0x3C);
+        in.modifiers.defender_3f = physical_status(defender, 0x3F);
+        in.modifiers.defender_39 = physical_status(defender, 0x39);
+        in.modifiers.attacker_3e = physical_status(actor, 0x3E);
         in.modifiers.defender_equipment_13 = resources.equipment_special(defender, 0x13);
+        auto attacking_terrain = terrain_effect(resources, actor, { actor.x, actor.y });
+        auto defending_terrain = terrain_effect(resources, defender, { defender.x, defender.y });
+        in.attacker_terrain_bonus = resources.difficulty == 1 ? 0 : int(int8_t(attacking_terrain.bytes[1]));
+        in.defender_terrain_bonus = resources.difficulty == 1 ? 0 : int(int8_t(defending_terrain.bytes[2]));
+        in.attacker_3c = actor.status3c;
+        in.attacker_118 = uint8_t(actor.abilities >> 24);
+        in.defender_kind = uint8_t(defender.kind_attribute);
+        uint8_t status3d = defender.action_status_runtime ? (*defender.action_status_runtime)[0x3D] : defender.status3d;
+        in.immune = (defender.abilities & 0x01000000u) || (status3d & 8);
         // 409BBA+4C1 -> 407C35 uses damage bytes 0/1, not hit bytes 2/3.
         in.multiplier = original_combat::preview_multiplier(ai_config_[0], ai_config_[1]);
         return original_combat::physical_preview(in);
@@ -3101,6 +3428,20 @@ private:
                     hit.modifiers.defender_115 = uint8_t(defender.abilities);
                     hit.modifiers.defender_3c = defender.status3c;
                     hit.modifiers.defender_equipment_16 = hostile_resources_->equipment_special(defender, 0x16);
+                    hit.defender_39 = defender.status39.value_or(0);
+                    hit.defender_3d = defender.status3d;
+                    hit.defender_status3c_dword = defender.status3c;
+                    if (defender.action_status_runtime)
+                    {
+                        hit.defender_39 = (*defender.action_status_runtime)[0x39];
+                        hit.defender_3d = (*defender.action_status_runtime)[0x3D];
+                        hit.defender_status3c_dword = 0;
+                        for (unsigned i = 0; i < 4; ++i)
+                        {
+                            hit.defender_status3c_dword |= uint32_t((*defender.action_status_runtime)[0x3C + i]) << (8 * i);
+                        }
+                    }
+                    hit.preview_immune = (defender.abilities & 0x01000000u) != 0;
                     int chance = original_combat::hit_chance(hit);
                     MeleePreview preview{ };
                     preview.attack_value = physical_preview_value(chance, damage);
@@ -3570,20 +3911,21 @@ public:
     void physical_feedback(std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, int damage, bool miss = false)
     {
         reaction_pose_.reset();
+        units[b].ending_combat_value = units[b].hp;
         if (movement_animation_enabled_)
         {
-            combat_feedback_.begin(a, b, units[b].hp, damage, miss, attack_animation_active() || projectile_active());
+            combat_feedback_.begin(a, b, units[b].hp, damage, miss, attack_animation_active() || projectile_active(), units[b].max_hp);
             if (!miss && damage > 0 && attack_animation_active())
             {
                 reaction_pose_ = units[b];
             }
             return;
         }
-        int lost = std::min(units[b].hp, damage);
+        int lost = damage < 0 ? -std::min(units[b].max_hp - units[b].hp, -damage) : std::min(units[b].hp, damage);
         units[b].hp -= lost;
         settle_physical(units, a, b, lost);
     }
-    int draw_forward_damage(const std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, const OriginalEvents::ActionRecord& action, int attack_style)
+    int draw_forward_damage(const std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, const OriginalEvents::ActionRecord& action, int attack_style, int* reverse_tactics = nullptr)
     {
         const auto& attacker = units[a];
         const auto& defender = units[b];
@@ -3609,10 +3951,9 @@ public:
         hit.attacker_condition = attacker.max_hp ? lost_health_percent(attacker.max_hp, attacker.hp) : 0;
         hit.condition_roll = hit.attacker_condition > 70 ? percent() : 0;
         // 408CB7 adjusts both tactics words before the forward hit draw.
-        if (defender.max_hp && lost_health_percent(defender.max_hp, defender.hp) > 70)
-        {
-            percent();
-        }
+        int defender_condition = defender.max_hp ? lost_health_percent(defender.max_hp, defender.hp) : 0;
+        int defender_roll = defender_condition > 70 ? percent() : 0;
+        if (reverse_tactics) { *reverse_tactics = adjusted_tactics(defender.tactics, defender_condition, defender_roll); }
         hit.random_multiplier = ai_config_[2] + roll(ai_config_[3] + 3);
         hit.player_side = !attacker.hostile();
         hit.difficulty_bonus = ai_config_[0xF3 + std::min(5u, resources.difficulty)];
@@ -3661,7 +4002,10 @@ public:
         damage.modifiers.class_matchup = resources.class_matchup(attacker, defender);
         damage.modifiers.combat_value = resources.combat_value(attacker);
         damage.modifiers.defender_116 = uint8_t(defender.abilities >> 8);
-        damage.modifiers.defender_3c = defender.status3c;
+        damage.modifiers.defender_3c = physical_status(defender, 0x3C);
+        damage.modifiers.defender_3f = physical_status(defender, 0x3F);
+        damage.modifiers.defender_39 = physical_status(defender, 0x39);
+        damage.modifiers.attacker_3e = physical_status(attacker, 0x3E);
         damage.modifiers.defender_equipment_13 = resources.equipment_special(defender, 0x13);
         // The minimum-damage draw only occurs after all modifiers.
         damage.minimum_roll = 99;
@@ -3673,6 +4017,396 @@ public:
         }
 
         return dealt;
+    }
+    bool draw_physical_consecutive(const PhysicalActionContext& context, bool reverse)
+    {
+        const auto& actor = reverse ? context.target_snapshot : context.actor_snapshot;
+        const auto& target = reverse ? context.actor_snapshot : context.target_snapshot;
+        const auto& resources = *hostile_resources_;
+        original_combat::ConsecutiveInput input{ };
+        input.has_attack_context = physical_action_preview(resources, actor, target, reverse ? *context.counter : context.action, reverse, context.mode) != 0;
+        input.attacker_tactics = actor.tactics;
+        input.defender_evasion = target.strikeback;
+        input.mode_adjustment = original_combat::consecutive_mode_adjustment(context.mode, reverse);
+        input.attacker_equipment_bonus = resources.equipment_accuracy(actor);
+        input.defender_equipment_penalty = resources.equipment_evasion(target);
+        input.attacker_115 = uint8_t(actor.abilities);
+        input.defender_115 = uint8_t(target.abilities);
+        input.defender_3c = physical_status(target, 0x3C);
+        input.defender_3f = physical_status(target, 0x3F);
+        input.defender_equipment_13 = resources.equipment_special(target, 13);
+        input.defender_equipment_16 = resources.equipment_special(target, 16);
+        return original_combat::consecutive_succeeds(input, percent());
+    }
+    bool draw_physical_instant(const PhysicalActionContext& context)
+    {
+        const auto& actor = context.actor_snapshot;
+        const auto& target = context.target_snapshot;
+        const auto& resources = *hostile_resources_;
+        if (!physical_action_preview(resources, actor, target, context.action) || target.id == 1 || target.id == 11 || (physical_status(target, 0x3F) & 4) || resources.equipment_special(target, 13)) { return false; }
+        int threshold = 0;
+        if (resources.action_status_kind(target) == 14 && target.runtime_role_selector == 1 && resources.equipment_special(actor, 62)) { threshold = 50; }
+        else if ((actor.abilities & 0x200) && !(target.runtime_role_selector & 3)) { threshold = 5; }
+        return percent() < threshold;
+    }
+    Result<std::vector<PhysicalExchangeStep>> try_forward_exchange(const OriginalEvents& resources, const std::vector<OriginalEvents::Unit>& units, size_t actor, size_t primary, const OriginalEvents::ActionRecord& action)
+    {
+        for (const auto& unit : units)
+        {
+            if (resources.equipment_special(unit, 28) && (!physical_equipment_ || !physical_equipment_->first_consumable_special(unit, 28)))
+            {
+                return Result<std::vector<PhysicalExchangeStep>>::failure(make_error("Original resurrection equipment consumption unavailable"));
+            }
+        }
+        auto baseline = random_;
+        auto contexts = try_physical_contexts(resources, units, actor, primary, action);
+        if (!contexts) { return Result<std::vector<PhysicalExchangeStep>>::failure(contexts.error()); }
+        std::vector<PhysicalExchangeStep> steps;
+        for (auto& context : contexts.value())
+        {
+            if (context.actor_snapshot.max_hp <= 0 || context.target_snapshot.max_hp <= 0)
+            {
+                random_ = baseline;
+                return Result<std::vector<PhysicalExchangeStep>>::failure(make_error("Original physical HP context"));
+            }
+            PhysicalExchangeStep step{ std::move(context) };
+            auto& c = step.context;
+            if (physical_action_preview(resources, c.actor_snapshot, c.target_snapshot, c.action))
+            {
+                step.damage = draw_forward_damage(units, c.actor, c.target, c.action, c.mode, &c.counter_tactics);
+            }
+            step.consecutive = draw_physical_consecutive(c, false);
+            if (draw_physical_instant(c))
+            {
+                step.damage = c.target_snapshot.hp;
+                step.consecutive = false;
+            }
+            if (step.consecutive)
+            {
+                step.damage += draw_forward_damage(units, c.actor, c.target, c.action, c.mode, &c.counter_tactics);
+                if (!step.damage) { step.consecutive = false; }
+            }
+            steps.push_back(std::move(step));
+        }
+        return Result<std::vector<PhysicalExchangeStep>>::success(std::move(steps));
+    }
+    int draw_reverse_damage(const PhysicalActionContext& context)
+    {
+        using namespace original_combat;
+        const auto& actor = context.target_snapshot;
+        const auto& target = context.actor_snapshot;
+        const auto& action = *context.counter;
+        const auto& resources = *hostile_resources_;
+        if (!physical_action_preview(resources, actor, target, action, true, context.mode)) { return 0; }
+        bool simple = resources.difficulty == 1;
+        int height = terrain_height_difference(cell({ actor.x, actor.y }).elevation, cell({ target.x, target.y }).elevation, simple);
+        HitChanceInput hit{ };
+        hit.counter = true;
+        hit.attacker_tactics = context.counter_tactics;
+        hit.defender_evasion = target.strikeback;
+        hit.height_difference = height;
+        hit.attack_mode = context.mode;
+        hit.context_bonus = int(resources.action_proficiency(actor, action));
+        hit.player_side = !actor.hostile();
+        hit.difficulty_bonus = ai_config_[0xF3 + std::min(5u, resources.difficulty)];
+        hit.counter_accuracy_penalty = (physical_status(actor, 0x3D) & 0x10) != 0;
+        hit.modifiers.action_type = 21;
+        hit.modifiers.action_bonus = resources.action_accuracy_bonus(actor, action);
+        hit.modifiers.defender_equipment_penalty = resources.equipment_evasion(target);
+        hit.modifiers.defender_115 = uint8_t(target.abilities);
+        hit.modifiers.defender_3c = physical_status(target, 0x3C);
+        hit.modifiers.defender_equipment_16 = resources.equipment_special(target, 16);
+        hit.defender_3d = physical_status(target, 0x3D);
+        hit.counter_reduction_roll = roll(4);
+        hit.random_multiplier = ai_config_[2] + roll(ai_config_[3] + 3);
+        if (!hit_succeeds(hit, percent())) { return 0; }
+        CounterDamageInput counter{ };
+        auto& damage = counter.physical;
+        damage.attack = actor.attack;
+        damage.defense = target.defense;
+        damage.height_difference = height;
+        damage.attack_mode = context.mode;
+        damage.context_bonus = hit.context_bonus;
+        auto at = terrain_effect(resources, actor, { actor.x, actor.y });
+        auto dt = terrain_effect(resources, target, { target.x, target.y });
+        damage.attacker_terrain_bonus = simple ? 0 : int(int8_t(at.bytes[1]));
+        damage.defender_terrain_bonus = simple ? 0 : int(int8_t(dt.bytes[2]));
+        int chance = percent(), decimal = roll(10);
+        damage.divisor = damage_divisor(chance, decimal);
+        counter.reduction_roll = roll(4);
+        damage.modifiers.action_coefficient = action.fields[11];
+        damage.modifiers.class_matchup = resources.class_matchup(actor, target);
+        damage.modifiers.combat_value = resources.combat_value(actor);
+        damage.modifiers.defender_116 = uint8_t(target.abilities >> 8);
+        damage.modifiers.defender_3c = physical_status(target, 0x3C);
+        damage.modifiers.defender_3f = physical_status(target, 0x3F);
+        damage.modifiers.defender_39 = physical_status(target, 0x39);
+        damage.modifiers.attacker_3e = physical_status(actor, 0x3E);
+        damage.modifiers.defender_equipment_13 = resources.equipment_special(target, 13);
+        damage.attacker_3c = physical_status(actor, 0x3C);
+        damage.attacker_118 = uint8_t(actor.abilities >> 24);
+        damage.defender_kind = uint8_t(target.kind_attribute);
+        counter.fixed_damage = (actor.abilities & 0x400) != 0;
+        counter.fixed_value = actor.strikeback;
+        counter.equipment_30 = resources.equipment_special(actor, 30);
+        damage.random_multiplier = ai_config_[0] + roll(ai_config_[1] + 3);
+        damage.player_side = !actor.hostile();
+        damage.difficulty_bonus = hit.difficulty_bonus;
+        bool minimum_required = false;
+        counter.minimum_required = &minimum_required;
+        int value = counter_damage(counter);
+        if (minimum_required)
+        {
+            counter.minimum_roll = percent();
+            value = counter_damage(counter);
+        }
+        return value;
+    }
+    Result<std::vector<PhysicalExchangeStep>> try_counter_exchange(const std::vector<OriginalEvents::Unit>& units, const PhysicalActionContext& original)
+    {
+        std::vector<PhysicalExchangeStep> steps;
+        if (!original.counter || !units[original.actor].hp || !units[original.target].hp || (physical_status(units[original.target], 0x39) & 2) || (physical_status_dword(units[original.target]) & 0x2B000))
+        {
+            return Result<std::vector<PhysicalExchangeStep>>::success(std::move(steps));
+        }
+        auto baseline = random_;
+        auto contexts = try_physical_contexts(*hostile_resources_, units, original.target, original.actor, *original.counter, true);
+        if (!contexts) { return Result<std::vector<PhysicalExchangeStep>>::failure(contexts.error()); }
+        for (auto& context : contexts.value())
+        {
+            PhysicalExchangeStep step{ std::move(context) };
+            if (step.context.target == original.actor)
+            {
+                step.context = original;
+                step.context.actor_snapshot = units[original.actor];
+                step.context.target_snapshot = units[original.target];
+                step.reverse = true;
+                step.damage = draw_reverse_damage(step.context);
+                step.consecutive = draw_physical_consecutive(step.context, true);
+                if (step.consecutive) { step.damage += draw_reverse_damage(step.context); }
+            }
+            else
+            {
+                const auto& c = step.context;
+                step.damage = draw_forward_damage(units, c.actor, c.target, c.action, c.mode);
+                step.consecutive = draw_physical_consecutive(c, false);
+                if (step.consecutive) { step.damage += draw_forward_damage(units, c.actor, c.target, c.action, c.mode); }
+            }
+            if (!step.damage) { step.consecutive = false; }
+            steps.push_back(std::move(step));
+        }
+        return Result<std::vector<PhysicalExchangeStep>>::success(std::move(steps));
+    }
+    static void advance_physical_proficiency(OriginalEvents::Unit& unit, const OriginalEvents::ActionRecord& action)
+    {
+        int type = action.fields[0];
+        unsigned* value = nullptr;
+        if (type >= 2 && type <= 7) { value = &unit.weapon_proficiency[size_t(type - 2)]; }
+        else if ((type < 1 || type > 10) && type != 11 && type != 12) { value = &unit.special_proficiency; }
+        if (value && *value < 1500) { ++*value; }
+    }
+    void advance_physical_exchange(std::vector<OriginalEvents::Unit>& units)
+    {
+        while (physical_exchange_ && !combat_feedback_.active() && !animating_movement())
+        {
+            auto& exchange = *physical_exchange_;
+            if (exchange.death)
+            {
+                if (!exchange.death_started)
+                {
+                    exchange.death_started = true;
+                    auto [actor, target] = *exchange.death;
+                    auto started = physical_death_presenter_(actor, target);
+                    if (!started || !started.value())
+                    {
+                        auto error = started ? make_error("Original physical death refused") : started.error();
+                        rollback_physical_exchange(units);
+                        report_error(error);
+                    }
+                }
+                return;
+            }
+            auto& steps = exchange.reverse ? exchange.replies : exchange.forward;
+            if (exchange.cursor < steps.size())
+            {
+                auto& step = steps[exchange.cursor];
+                const auto& context = step.context;
+                size_t actor = step.reverse ? context.target : context.actor;
+                size_t target = step.reverse ? context.actor : context.target;
+                const auto& action = step.reverse ? *context.counter : context.action;
+                units[actor].direction = facing({ units[actor].x, units[actor].y }, { units[target].x, units[target].y }, units[actor].direction);
+                bool present_group = !exchange.group_presented;
+                if (present_group)
+                {
+                    exchange.group_presented = true;
+                    present_attack(units, actor, &action);
+                    if (std::any_of(steps.begin(), steps.end(), [](const auto& entry)
+                            {
+                                return entry.consecutive;
+                            })
+                        && attack_animation_active())
+                    {
+                        auto poses = movement_poses_;
+                        movement_poses_.insert(movement_poses_.end(), poses.begin(), poses.end());
+                    }
+                }
+                if (present_group && movement_animation_enabled_ && action.index == 160)
+                {
+                    auto source = screen_center({ units[actor].x, units[actor].y }, 0, 0), destination = screen_center({ units[target].x, units[target].y }, 0, 0);
+                    projectile_ = OriginalEvents::effect_flight(source.x - 32, source.y - 16, destination.x - 32, destination.y - 16, 1);
+                    projectile_elapsed_ = 0;
+                }
+                if (present_group && movement_animation_enabled_ && animating_movement()) { return; }
+                ++exchange.cursor;
+                physical_exchange_diagnostics_.push_back({ actor, target, step.damage, exchange.reverse, step.consecutive });
+                int damage = step.damage;
+                if (!exchange.group_status_applied)
+                {
+                    exchange.group_status_applied = true;
+                    for (auto& entry : steps)
+                    {
+                        size_t victim = entry.reverse ? entry.context.actor : entry.context.target;
+                        const auto& record = entry.reverse ? *entry.context.counter : entry.context.action;
+                        if (entry.damage <= 0 || (units[victim].status_flags & 0x20)) { continue; }
+                        size_t source = entry.reverse ? entry.context.target : entry.context.actor;
+                        entry.damage = apply_physical_status_tail(units, source, victim, record, entry.damage);
+                    }
+                    damage = step.damage;
+                }
+                physical_feedback(units, actor, target, damage, damage == 0);
+                if (movement_animation_enabled_ || !physical_exchange_ || physical_exchange_->death) { return; }
+                continue;
+            }
+            if (!exchange.reverse)
+            {
+                exchange.reverse = true;
+                exchange.counter_cursor = 0;
+            }
+            if (exchange.counter_cursor < exchange.forward.size() && units[exchange.forward.front().context.actor].hp > 0)
+            {
+                if (!exchange.replies.empty())
+                {
+                    const auto& context = exchange.forward[exchange.counter_cursor - 1].context;
+                    advance_physical_proficiency(units[context.target], *context.counter);
+                    exchange.replies.clear();
+                }
+                auto reply = try_counter_exchange(units, exchange.forward[exchange.counter_cursor++].context);
+                if (!reply)
+                {
+                    auto error = reply.error();
+                    rollback_physical_exchange(units);
+                    report_error(error);
+                    return;
+                }
+                exchange.replies = std::move(reply).value();
+                exchange.cursor = 0;
+                exchange.group_presented = false;
+                exchange.group_status_applied = false;
+                if (!exchange.replies.empty()) { continue; }
+                continue;
+            }
+            if (!exchange.replies.empty())
+            {
+                const auto& context = exchange.forward[exchange.counter_cursor - 1].context;
+                advance_physical_proficiency(units[context.target], *context.counter);
+                exchange.replies.clear();
+            }
+            auto counter_awards = std::move(exchange.counter_awards);
+            auto forward_awards = std::move(exchange.forward_awards);
+            for (size_t i = 0; i < forward_awards.size(); ++i)
+            {
+                auto& award = forward_awards[i];
+                award.raw_xp = 1;
+                if (hostile_resources_ && (award.hp_lost || (units[award.target].status_flags & 0x20)))
+                {
+                    auto actor_snapshot = units[award.actor];
+                    actor_snapshot.ending_combat_value = actor_snapshot.ending_combat_value.value_or(actor_snapshot.hp);
+                    auto target_snapshot = units[award.target];
+                    target_snapshot.ending_combat_value = exchange.forward_targets[i].hp;
+                    int actor = hostile_resources_->combat_value(actor_snapshot, 1);
+                    int target = hostile_resources_->combat_value(target_snapshot, 1);
+                    if (actor <= 0 || actor + target <= 0 || !ai_config_[0xE1])
+                    {
+                        award.raw_xp = 0;
+                        continue;
+                    }
+                    award.raw_xp = std::max(1, (award.hp_lost * target * ai_config_[0xE5] / (actor + target)) / ai_config_[0xE1]);
+                    if (!units[award.target].hp) { award.raw_xp += ai_config_[0xE2] * target / actor + 3; }
+                    if (units[award.target].status_flags & 0x20) { award.raw_xp += int(units[award.target].physical_kill_xp); }
+                }
+            }
+            if (!exchange.forward.empty())
+            {
+                auto actor = exchange.forward.front().context.actor;
+                if (!(units[actor].status_flags & 0x20)) { advance_physical_proficiency(units[actor], exchange.forward.front().context.action); }
+            }
+            if (physical_loot_commit_)
+            {
+                auto awards = counter_awards;
+                if (exchange.forward.empty() || !(units[exchange.forward.front().context.actor].status_flags & 0x20))
+                {
+                    awards.insert(awards.end(), forward_awards.begin(), forward_awards.end());
+                }
+                auto committed = physical_loot_commit_(units, awards);
+                if (!committed || !committed.value())
+                {
+                    auto error = committed ? make_error("Original physical loot commit refused") : committed.error();
+                    rollback_physical_exchange(units);
+                    report_error(error);
+                    return;
+                }
+            }
+            auto deaths = std::move(exchange.deaths);
+            physical_exchange_.reset();
+            if (physical_transaction_finish_) { physical_transaction_finish_(true); }
+            if (death_settlement_ && !physical_death_presenter_)
+            {
+                for (auto [actor, target] : deaths) { death_settlement_(units, actor, target); }
+            }
+            if (physical_settlement_)
+            {
+                auto publish = [&](const auto& awards, bool require_alive)
+                {
+                    std::vector<PhysicalSettlement> totals;
+                    for (const auto& award : awards)
+                    {
+                        if (award.raw_xp <= 0) { continue; }
+                        auto found = std::find_if(totals.begin(), totals.end(), [&](const auto& total)
+                            {
+                                return total.actor == award.actor;
+                            });
+                        if (found == totals.end()) { totals.push_back(award); }
+                        else
+                        {
+                            found->raw_xp += award.raw_xp;
+                            found->hp_lost += award.hp_lost;
+                            found->killed |= award.killed;
+                        }
+                    }
+                    for (const auto& award : totals)
+                    {
+                        if (!require_alive || !(units[award.actor].status_flags & 0x20)) { physical_settlement_(units, award); }
+                    }
+                };
+                publish(counter_awards, false);
+                publish(forward_awards, true);
+            }
+        }
+    }
+    void rollback_physical_exchange(std::vector<OriginalEvents::Unit>& units)
+    {
+        if (!physical_exchange_) { return; }
+        auto& baseline = physical_exchange_->baseline_units;
+        if (units.size() == baseline.size()) { std::copy(baseline.begin(), baseline.end(), units.begin()); }
+        else
+        {
+            units = baseline;
+        }
+        random_ = physical_exchange_->baseline_random;
+        physical_exchange_.reset();
+        physical_exchange_diagnostics_.clear();
+        pending_action_status_.reset();
+        if (physical_transaction_finish_) { physical_transaction_finish_(false); }
     }
     bool strike(std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, int slot = -1)
     {
@@ -3690,6 +4424,29 @@ public:
         if (original_rules_ && attacker.action_points < attack_cost(attacker))
         {
             return false;
+        }
+        if (original_rules_ && action && hostile_resources_)
+        {
+            auto baseline_random = random_;
+            auto planned = try_forward_exchange(*hostile_resources_, units, a, b, *action);
+            if (!planned)
+            {
+                report_error(planned.error());
+                return false;
+            }
+            auto baseline_units = units;
+            int cost = attack_cost(attacker);
+            attacker.action_points = int(int16_t(attacker.action_points - cost));
+            attacker.max_action_points = attacker.action_points;
+            attacker.carry_points = std::min(attacker.carry_points, attacker.action_points);
+            attacker.status34 |= 2;
+            physical_exchange_diagnostics_.clear();
+            physical_exchange_.emplace();
+            physical_exchange_->baseline_units = std::move(baseline_units);
+            physical_exchange_->baseline_random = baseline_random;
+            physical_exchange_->forward = std::move(planned).value();
+            advance_physical_exchange(units);
+            return true;
         }
         attacker.direction = facing({ attacker.x, attacker.y }, { defender.x, defender.y }, attacker.direction);
         present_attack(units, a, action ? &*action : nullptr);
@@ -3950,7 +4707,7 @@ public:
             }
         }
     }
-    void draw_selection(std::vector<uint8_t>& image, const std::vector<OriginalEvents::Unit>& units, int cx, int cy, int layer = -1) const
+    void draw_selection(std::vector<uint8_t>& image, const std::vector<OriginalEvents::Unit>& units, int cx, int cy, int layer = -1, const std::function<void(std::vector<uint8_t>&, Point)>& mask = { }) const
     {
         if (image.size() < 640 * 480 * 4 || effect_palette_.size() < 768)
         {
@@ -3966,6 +4723,8 @@ public:
             {
                 return;
             }
+            auto clipped = tile;
+            if (mask) { mask(clipped, cell); }
             auto c = screen_center(cell, cx, cy);
             int height = int(tile.size() / 64);
             // sub_42B0C6 bottom-aligns both 32- and 137-row resources.
@@ -3973,7 +4732,7 @@ public:
             {
                 for (int x = 0; x < 64; ++x)
                 {
-                    unsigned color = tile[size_t(y) * 64 + x];
+                    unsigned color = clipped[size_t(y) * 64 + x];
                     int dx = c.x - 32 + x, dy = c.y + 16 - height + y;
                     if (!color || dx < 0 || dy < 0 || dx >= 640 || dy >= 480)
                     {

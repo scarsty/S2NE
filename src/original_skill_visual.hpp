@@ -20,6 +20,8 @@ public:
 private:
     std::vector<Frame> frames_;
     unsigned duration_{ };
+    std::array<int, 256> amounts_{ };
+    bool curse_{ };
     size_t frame_{ };
     uint64_t elapsed_{ };
     bool presented_{ };
@@ -156,6 +158,41 @@ public:
         result.duration_ = 50;
         return Result<OriginalSkill32Visual>::success(std::move(result));
     }
+    static Result<OriginalSkill32Visual> create_curse33(const std::filesystem::path& root)
+    {
+        auto loaded = read_spell_entry(root, 33, 33, 0, 0);
+        if (!loaded) { return Result<OriginalSkill32Visual>::failure(loaded.error()); }
+        const auto& entry = loaded.value();
+        ResourceReader reader(entry);
+        constexpr std::array<unsigned, 8> header{ 21, 0, 0, 71, 344, 7, 0, 5 };
+        for (unsigned i = 0; i < 8; ++i)
+        {
+            if (reader.number(i * 2) != header[i]) { return Result<OriginalSkill32Visual>::failure(make_error("Invalid curse33 header")); }
+        }
+        if (!reader.extent(16, 14 + 21 * 8)) { return Result<OriginalSkill32Visual>::failure(reader.error()); }
+        OriginalSkill32Visual out;
+        out.curse_ = true;
+        out.duration_ = 50;
+        out.amounts_.fill(-1);
+        for (unsigned i = 0; i < 7; ++i) { out.amounts_[entry[16 + i]] = entry[23 + i]; }
+        size_t data = 30 + 21 * 8, previous = 0;
+        for (unsigned i = 0; i < 21; ++i)
+        {
+            size_t offset = reader.number(30 + i * 8, 4), length = reader.number(34 + i * 8, 4);
+            if (!reader || offset != previous || data > entry.size() || offset > entry.size() - data || length > entry.size() - data - offset)
+            {
+                return Result<OriginalSkill32Visual>::failure(make_error("Invalid curse33 directory"));
+            }
+            auto frame = try_decode({ entry.begin() + data + offset, entry.begin() + data + offset + length }, 71, 344);
+            if (!frame) { return Result<OriginalSkill32Visual>::failure(frame.error()); }
+            out.frames_.push_back(std::move(frame).value());
+            previous = offset + length;
+        }
+        if (previous != entry.size() - data) { return Result<OriginalSkill32Visual>::failure(make_error("Invalid curse33 trailing bytes")); }
+        return Result<OriginalSkill32Visual>::success(std::move(out));
+    }
+    bool curse() const { return curse_; }
+    int amount(unsigned color) const { return curse_ ? amounts_[color] : -1; }
     explicit OriginalSkill32Visual(const std::filesystem::path& root)
     {
         auto result = create(root);

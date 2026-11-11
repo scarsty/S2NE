@@ -101,11 +101,9 @@ class OriginalSaveBridge
         u.status3e = r[0x3E];
         u.status3f = r[0x3F];
         u.status39 = r[0x39];
-        if (get(r, 0x38, 4) & 0x400u)
-        {
-            u.action_status_runtime.emplace();
-            std::copy_n(r.begin(), 0x13A, u.action_status_runtime->begin());
-        }
+        u.action_status_runtime.emplace();
+        std::copy_n(r.begin(), 0x13A, u.action_status_runtime->begin());
+        u.effect_state_5f8.reset();
         u.level = signed_word(r, 0xB5);
         u.max_hp = signed_word(r, 0xB7);
         u.max_mp = signed_word(r, 0xB9);
@@ -142,6 +140,7 @@ class OriginalSaveBridge
             u.learned_proficiency[i] = get(r, 0xE3 + 2 * i);
         }
         u.special_proficiency = get(r, 0xF9);
+        u.physical_kill_xp = get(r, 0x119);
         for (size_t i = 0; i < 4; ++i)
         {
             u.initial_status[i] = get(r, 0x11B + 2 * i);
@@ -279,6 +278,7 @@ class OriginalSaveBridge
             uw(0xE3 + 2 * i, u.learned_proficiency[i]);
         }
         uw(0xF9, u.special_proficiency);
+        uw(0x119, u.physical_kill_xp);
         for (size_t i = 0; i < 4; ++i)
         {
             uw(0x11B + 2 * i, u.initial_status[i]);
@@ -341,6 +341,7 @@ public:
                 events.dynamic_object_chains[i][j] = get(raw.words_4f6fbc, (i * 4 + j) * 2, 2);
             }
         }
+        events.army_status = std::array{ raw.groups[0].status, raw.groups[1].status };
         events.units.clear();
         for (unsigned group = 0; group < 2; ++group)
         {
@@ -435,6 +436,10 @@ public:
             return Result<OriginalSave::State>::failure(make_error("Stage/difficulty changed without original full-state transition"));
         }
         auto result = *baseline;
+        if (events.army_status)
+        {
+            for (size_t group = 0; group < 2; ++group) { result.groups[group].status = (*events.army_status)[group]; }
+        }
         size_t index = 0;
         for (unsigned group = 0; group < 2; ++group)
         {

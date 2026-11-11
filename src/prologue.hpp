@@ -4,9 +4,11 @@
 #include "original_campaign.hpp"
 #include "original_confirmation.hpp"
 #include "original_death_dispatch.hpp"
+#include "original_dialogue_layout.hpp"
 #include "original_ending.hpp"
 #include "original_evacuation.hpp"
 #include "original_events.hpp"
+#include "original_idle_clock.hpp"
 #include "original_interbattle.hpp"
 #include "original_map.hpp"
 #include "original_menu.hpp"
@@ -59,8 +61,116 @@ class Prologue
     std::filesystem::path root_;
     OriginalDisc disc_{ OriginalDisc::one };
     std::optional<Battle> battle_;
+    std::function<Result<bool>(const std::vector<OriginalEvents::Unit>&, const std::vector<Battle::PhysicalSettlement>&)> physical_loot_commit_;
+    std::optional<OriginalEvents> physical_death_baseline_;
+    std::optional<std::pair<int, int>> physical_death_camera_;
+    std::optional<size_t> physical_departure_;
+    bool physical_departure_presented_{ };
+    unsigned physical_departure_notice_ms_{ };
+    void finish_physical_death(size_t target, bool departure)
+    {
+        auto& unit = events.units.at(target);
+        if (departure) { unit.status_flags &= ~0x80u; }
+        else
+        {
+            unit.status_flags |= 0x20u;
+        }
+        if ((unit.status_flags & 0x10) && events.army_status)
+        {
+            auto& slots = (*events.army_status)[unit.hostile() ? 1 : 0];
+            for (size_t i = 0; i < 11; ++i)
+            {
+                if ((unsigned(slots[i * 3 + 1]) | (unsigned(slots[i * 3 + 2]) << 8)) == unit.appearance)
+                {
+                    slots[i * 3] = 0;
+                    break;
+                }
+            }
+        }
+        battle_->lock_skill94_death(false);
+        battle_->resume_physical_death();
+    }
     void connect_combat_progression()
     {
+        battle_->set_physical_loot_commit(physical_loot_commit_);
+        battle_->set_physical_death_presenter([this](size_t, size_t target) -> Result<bool>
+            {
+                if (target >= events.units.size()) { return Result<bool>::failure(make_error("Original physical death target index")); }
+                if ((events.units[target].status_flags & 0x10) && !events.army_status)
+                {
+                    return Result<bool>::failure(make_error("Original summon army status baseline unavailable"));
+                }
+                if (!physical_death_baseline_)
+                {
+                    physical_death_baseline_ = events;
+                    physical_death_camera_ = std::pair{ map_.camera_x, map_.camera_y };
+                }
+                events.units[target].status_flags &= ~0x20u;
+                auto disappear = [this, target]()
+                {
+                    auto pose = events.units;
+                    pose[target].hp = 1;
+                    pose[target].status_flags &= ~0x20u;
+                    if (events.units[target].status_flags & 0x40)
+                    {
+                        if (!map_.begin_teleport_arrival(pose, unsigned(target), battle_->turn(), true))
+                        {
+                            battle_->rollback_physical_exchange(events.units);
+                            report_error(make_error("Original physical454ED5 departure bitmap rejected"));
+                            return;
+                        }
+                        physical_departure_ = target;
+                        physical_departure_notice_ms_ = 400;
+                        physical_departure_presented_ = false;
+                        battle_->lock_skill94_death(true);
+                        return;
+                    }
+                    if (!map_.begin_disappearance(pose, unsigned(target), battle_->turn(), animation_elapsed_, true))
+                    {
+                        battle_->rollback_physical_exchange(events.units);
+                        report_error(make_error("Original physical death bitmap rejected"));
+                        return;
+                    }
+                    skill94_death_commit_ = [this, target]()
+                    {
+                        finish_physical_death(target, false);
+                    };
+                    skill94_death_presented_ = false;
+                    skill94_death_frame_ = 0;
+                    battle_->lock_skill94_death(true);
+                };
+                if (!begin_synchronous_death(events.units[target].id, std::move(disappear)))
+                {
+                    return Result<bool>::failure(make_error("Original physical synchronous death continuation unavailable"));
+                }
+                return Result<bool>::success(true);
+            },
+            [this](bool commit)
+            {
+                if (!commit && physical_death_baseline_)
+                {
+                    auto units = std::move(events.units);
+                    events = std::move(*physical_death_baseline_);
+                    events.units = std::move(units);
+                    if (physical_death_camera_)
+                    {
+                        map_.camera_x = physical_death_camera_->first;
+                        map_.camera_y = physical_death_camera_->second;
+                    }
+                    map_.set_event_flags(events.flags);
+                    skill94_death_commit_ = { };
+                    physical_departure_.reset();
+                    map_.cancel_teleport_arrival();
+                    synchronous_death_return_ = { };
+                    synchronous_death_stack_.reset();
+                    synchronous_death_baseline_.reset();
+                    death_camera_baseline_.reset();
+                    battle_->lock_skill94_death(false);
+                    phase_ = Phase::battle;
+                }
+                physical_death_baseline_.reset();
+                physical_death_camera_.reset();
+            });
         battle_->set_death_settlement([this](auto& units, size_t actor, size_t target)
             {
                 queue_original_death(units, actor, target);
@@ -142,6 +252,7 @@ private:
     bool presentation_driven_ = false;
     OriginalBannerPresentation banner_presentation_;
     unsigned animation_elapsed_ = 0;
+    OriginalIdleClock idle_clock_;
     std::optional<std::pair<int, int>> dialogue_camera_target_;
     std::pair<int, int> dialogue_camera_subject_{ };
     unsigned dialogue_visible_steps_ = 0;
@@ -1083,6 +1194,7 @@ private:
         phase_ = Phase::battle;
         battle_->lock_skill94_death(false);
         map_.set_event_flags(events.flags);
+        if (physical_death_baseline_) { battle_->rollback_physical_exchange(events.units); }
     }
     bool prepare()
     {
@@ -1777,6 +1889,11 @@ public:
     const auto& autosave_requests() const { return autosave_requests_; }
     void clear_autosave_requests() { autosave_requests_.clear(); }
     void set_campaign_reward_adapter(std::function<bool(OriginalEvents&, const OriginalCampaign::Settlement&)> callback) { campaign_reward_adapter_ = std::move(callback); }
+    void set_physical_loot_commit(std::function<Result<bool>(const std::vector<OriginalEvents::Unit>&, const std::vector<Battle::PhysicalSettlement>&)> callback)
+    {
+        physical_loot_commit_ = std::move(callback);
+        if (battle_) { battle_->set_physical_loot_commit(physical_loot_commit_); }
+    }
     void set_campaign_arrival_adapter(std::function<std::optional<ArrivalTransaction>(const OriginalEvents&, unsigned)> callback, unsigned already_inserted_turn = 0)
     {
         campaign_arrival_adapter_ = std::move(callback);
@@ -2039,10 +2156,19 @@ public:
     {
         if (auto next = synchronous_death_stack_->next(events))
         {
+            if (*next >= events.event_count())
+            {
+                rollback_synchronous_death();
+                report_error(make_error("Original death continuation event index out of range"));
+                return;
+            }
             event_ = *next;
             line_ = 0;
             phase_ = Phase::campaign_dialogue;
-            prepare();
+            if (!prepare())
+            {
+                rollback_synchronous_death();
+            }
             return;
         }
         if (synchronous_death_stack_->evacuation_pending())
@@ -2121,11 +2247,13 @@ public:
     }
     void frame_presented()
     {
+        idle_clock_.presented();
         map_.movement_effect_presented();
         if (teleport_)
         {
             teleport_->presented = true;
         }
+        if (physical_departure_) { physical_departure_presented_ = true; }
         if (evacuation_.active())
         {
             evacuation_presented_ = true;
@@ -2199,13 +2327,13 @@ public:
     bool skill32_visual_active() const { return skill32_visual_.has_value(); }
     int skill32_visual_frame() const { return skill32_visual_ ? int(skill32_visual_->frame()) : -1; }
     int skill88_visual_frame() const { return skill88_visual_ ? int(skill88_visual_->frame()) : -1; }
-    bool begin_skill32_visual(unsigned caster, unsigned target)
+    bool begin_skill32_visual(unsigned caster, unsigned target, bool curse33 = false)
     {
         if (skill32_visual_ || caster >= events.units.size() || target >= events.units.size())
         {
             return false;
         }
-        auto prepared = OriginalSkill32Visual::create(root_);
+        auto prepared = curse33 ? OriginalSkill32Visual::create_curse33(root_) : OriginalSkill32Visual::create(root_);
         if (!prepared)
         {
             report_error(prepared.error());
@@ -2213,7 +2341,7 @@ public:
         }
         {
             auto visual = std::move(prepared).value();
-            auto background = map_.skill32_background(events.units, battle_->turn(), caster, target);
+            auto background = curse33 ? map_.skill32_background(events.units, battle_->turn(), caster, target, 0, 0) : map_.skill32_background(events.units, battle_->turn(), caster, target);
             skill32_background_ = std::move(background);
             skill32_target_ = target;
             skill32_visual_ = std::move(visual);
@@ -2358,6 +2486,25 @@ public:
             continue_synchronous_death();
             return Result<bool>::success(true);
         }
+        if (physical_departure_)
+        {
+            if (!physical_departure_presented_) { return Result<bool>::success(true); }
+            physical_departure_presented_ = false;
+            if (physical_departure_notice_ms_)
+            {
+                physical_departure_notice_ms_ -= std::min(milliseconds, physical_departure_notice_ms_);
+                return Result<bool>::success(true);
+            }
+            map_.teleport_arrival_presented();
+            map_.tick_teleport_arrival(milliseconds);
+            if (!map_.teleport_arrival_active())
+            {
+                auto target = *physical_departure_;
+                physical_departure_.reset();
+                finish_physical_death(target, true);
+            }
+            return Result<bool>::success(true);
+        }
         if (skill94_death_commit_)
         {
             if (!skill94_death_presented_)
@@ -2421,6 +2568,9 @@ public:
         }
         map_.set_event_flags(events.flags);
         animation_elapsed_ += milliseconds;
+        if (!presentation_driven_) { idle_clock_.presented(); }
+        idle_clock_.tick(milliseconds);
+        map_.set_idle_pose_time(idle_clock_.pose_time());
         if (phase_ == Phase::story_movement)
         {
             if (story_group_)
@@ -2673,8 +2823,13 @@ public:
             if (was_moving)
             {
                 auto poses = battle_->render_units(events.units);
-                const auto& pose = poses.at(size_t(battle_->selected()));
-                map_.movement_camera(pose.x, pose.y);
+                int actor = battle_->moving_actor();
+                if (actor < 0) { actor = battle_->selected(); }
+                if (actor >= 0 && size_t(actor) < poses.size())
+                {
+                    const auto& pose = poses[size_t(actor)];
+                    map_.movement_camera(pose.x, pose.y);
+                }
             }
         }
         if (!battle_intro())
@@ -3133,6 +3288,18 @@ public:
     }
     unsigned battle_turn() const { return battle_ ? battle_->turn() : 0; }
     Battle::Point screen_cell(Battle::Point p) const { return battle_->screen_center(p, map_.camera_x, map_.camera_y); }
+    std::optional<OriginalDialogueLayout> dialogue_layout() const
+    {
+        if ((phase_ != Phase::dialogue && phase_ != Phase::branch && phase_ != Phase::flag_dialogue && phase_ != Phase::campaign_dialogue) || dialogue_scrolling()) { return std::nullopt; }
+        const auto line = events.line(event_, std::min(line_, size_t(events.line_count(event_) - 1)));
+        auto speaker = std::find_if(events.units.begin(), events.units.end(), [&](const auto& unit)
+            {
+                return unit.id == unsigned(line.speaker);
+            });
+        if (speaker == events.units.end() || (speaker->status_flags & 0x20) || !(speaker->status_flags & 0x80)) { return std::nullopt; }
+        auto [x, y] = map_.screen_position(speaker->x, speaker->y);
+        return OriginalDialogueLayout::locate(x, y, 226);
+    }
     size_t line_index() const { return line_; }
     size_t page_index() const { return page_; }
     bool dialogue_scrolling() const { return dialogue_camera_target_.has_value(); }
@@ -3430,9 +3597,9 @@ public:
         if (tile.ground == 1) { return; }
         const auto effect = battle_->terrain_effect(events, unit, { unit.x, unit.y });
         if (effect.result != 1) { return; }
-        // 42C3C6: native CEL pointers 4F7358/4F735C, followed by signed percentages.
-        sprite(image, sprite_offset(2, (0x4F7358u - 0x4F7060u) / 4u - 1u - 142u), false, 527, panel_y + 91);
-        sprite(image, sprite_offset(2, (0x4F735Cu - 0x4F7060u) / 4u - 1u - 142u), false, 577, panel_y + 91);
+        // 426598 stores CEL1 at 4F7064: 42C3C6's 4F7358/4F735C are CEL190/191.
+        sprite(image, sprite_offset(2, 190u - 142u), false, 527, panel_y + 91);
+        sprite(image, sprite_offset(2, 191u - 142u), false, 577, panel_y + 91);
         for (unsigned i = 0; i < 2; ++i)
         {
             int value = int(int8_t(effect.bytes[i + 1]));
@@ -3454,7 +3621,7 @@ public:
         }
         if (skill32_visual_)
         {
-            return map_.skill32_frame(skill32_background_, skill32_visual_->current(), events.units, battle_->turn(), skill32_target_);
+            return map_.skill32_frame(skill32_background_, skill32_visual_->current(), events.units, battle_->turn(), skill32_target_, &*skill32_visual_);
         }
         if (ending_)
         {
@@ -3617,6 +3784,11 @@ public:
         {
             std::vector<OriginalEvents::Unit> visible;
             auto rendered_units = battle_->render_units(events.units);
+            if (physical_departure_)
+            {
+                rendered_units[*physical_departure_].hp = 1;
+                rendered_units[*physical_departure_].status_flags &= ~0x20u;
+            }
             for (const auto& unit : rendered_units)
             {
                 if (unit.present(battle_->turn()))
@@ -3626,7 +3798,16 @@ public:
             }
             if (in_battle())
             {
-                battle_->draw_selection(image, rendered_units, map_.camera_x, map_.camera_y, 0);
+                battle_->draw_selection(image, rendered_units, map_.camera_x, map_.camera_y, 0, [&](auto& pixels, auto cell)
+                    {
+                        map_.mask_selection(pixels, cell.x, cell.y);
+                        auto result = map_.try_mask_selection_units(pixels, cell.x, cell.y, rendered_units, battle_->turn(), animation_elapsed_, 0);
+                        if (!result)
+                        {
+                            report_error(result.error());
+                            std::fill(pixels.begin(), pixels.end(), 0);
+                        }
+                    });
             }
             std::optional<unsigned> reaction;
             const auto& feedback = battle_->combat_feedback();
@@ -3657,7 +3838,16 @@ public:
                 });
             if (in_battle())
             {
-                battle_->draw_selection(image, rendered_units, map_.camera_x, map_.camera_y, 1);
+                battle_->draw_selection(image, rendered_units, map_.camera_x, map_.camera_y, 1, [&](auto& pixels, auto cell)
+                    {
+                        map_.mask_selection(pixels, cell.x, cell.y);
+                        auto result = map_.try_mask_selection_units(pixels, cell.x, cell.y, rendered_units, battle_->turn(), animation_elapsed_, 1, battle_->selected() < 0);
+                        if (!result)
+                        {
+                            report_error(result.error());
+                            std::fill(pixels.begin(), pixels.end(), 0);
+                        }
+                    });
             }
             if (in_battle() && !battle_->animating_movement() && (battle_->state() == Battle::State::command || battle_->state() == Battle::State::attack_menu))
             {
@@ -3803,21 +3993,14 @@ public:
         }
         auto line = events.line(event_, std::min(line_, size_t(events.line_count(event_) - 1)));
         int frame_y = 125;
-        if (!choosing())
-        {
-            auto speaker = std::find_if(events.units.begin(), events.units.end(), [&](const auto& unit)
-                {
-                    return unit.id == unsigned(line.speaker);
-                });
-            if (speaker != events.units.end() && !(speaker->status_flags & 0x20) && (speaker->status_flags & 0x80))
-            {
-                auto [screen_x, screen_y] = map_.screen_position(speaker->x, speaker->y);
-                bool above = screen_y > 310;
-                frame_y = above ? std::max(32, screen_y - 326) : std::min(screen_y - 2, 253);
-                sprite(image, sprite_offset(2, (above ? 237 : 238) - 142), false, std::clamp(screen_x + (above ? 12 : 33), 0, 591), above ? frame_y + 215 : frame_y - 32);
-            }
-        }
+        const auto dialogue_layout = this->dialogue_layout();
+        if (dialogue_layout) { frame_y = dialogue_layout->frame_y; }
         sprite(image, sprite_offset(2, 235 - 142), false, 6, frame_y, true);
+        if (dialogue_layout)
+        {
+            const auto& layout = *dialogue_layout;
+            sprite(image, sprite_offset(2, layout.arrow_resource - 142), false, layout.arrow_x, layout.arrow_y);
+        }
         size_t portrait = sprite_offset(3, unsigned(line.speaker - 1) * 2);
         int portrait_width = int(word(cel_, portrait + 1)) + 1;
         sprite(image, portrait, true, 80 - portrait_width / 2, frame_y + 29);

@@ -192,7 +192,7 @@ private:
             sprite(image, 194, left_, top_, true);
             if (context_.byte_4f6f4d == 2)
             {
-                sprite(image, 196, left_ + 145, top_ + 293, true);
+                sprite(image, 196, left_ + 145, top_ + 293, false);
             }
             for (int row = 0; row < (context_.byte_4f6f4d == 2 ? 6 : 5); ++row)
             {

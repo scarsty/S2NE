@@ -181,12 +181,13 @@ struct Feedback
             step < 4                                         ? 20u :
             step < 6                                         ? 10u :
                                                                0u; }
-    void begin(size_t a, size_t b, int hp, int amount, bool missed, bool windup)
+    void begin(size_t a, size_t b, int hp, int amount, bool missed, bool windup, int max_hp = 0)
     {
         *this = { };
         attacker = a;
         target = b;
-        damage = remaining = std::min(hp, std::max(0, amount));
+        damage = amount < 0 ? -std::min(std::max(0, max_hp - hp), -amount) : std::min(hp, amount);
+        remaining = std::abs(damage);
         hp_before = hp_after = hp;
         miss = missed;
         phase = windup ? Phase::windup : Phase::flash;
@@ -200,6 +201,7 @@ struct Feedback
         }
         int chunk = std::min(remaining, int(uint32_t(1) << std::min(step, 30)));
         remaining -= chunk;
+        if (damage < 0) { chunk = -chunk; }
         hp_after -= chunk;
         return chunk;
     }

@@ -31,6 +31,37 @@ OriginalEvents AppCampaignAdapter::deploy_next(const OriginalSave::State& captur
 void AppCampaignAdapter::connect()
 {
     prologue->enable_presentation_timing();
+    prologue->set_physical_loot_commit([this](const auto& units, const auto& awards) -> Result<bool>
+        {
+            if (!rawSave) { return Result<bool>::failure(make_error("Original physical loot requires save baseline")); }
+            auto staged = *rawSave;
+            auto equipment = OriginalPromotionTransaction::create(root);
+            if (!equipment) { return Result<bool>::failure(equipment.error()); }
+            for (size_t group = 0; group < 2; ++group)
+            {
+                std::vector<OriginalEvents::Unit> members;
+                std::vector<int> roles;
+                for (const auto& unit : units)
+                {
+                    if (size_t(unit.hostile()) != group) { continue; }
+                    members.push_back(unit);
+                    roles.push_back(int(unit.runtime_role_selector));
+                }
+                auto metadata = equipment.value().try_aggregate_army_metadata(staged.groups[group].metadata[4], members, roles);
+                if (!metadata) { return Result<bool>::failure(metadata.error()); }
+                staged.groups[group].metadata[4] = metadata.value();
+                if (prologue->events.army_status) { staged.groups[group].status = (*prologue->events.army_status)[group]; }
+            }
+            for (const auto& award : awards)
+            {
+                if (!award.killed || !(units[award.target].status_flags & 0x20)) { continue; }
+                auto collected = OriginalCampaignPersistence::try_collect_physical_loot(staged, units[award.actor], units[award.target]);
+                if (!collected) { return collected; }
+            }
+            using std::swap;
+            swap(*rawSave, staged);
+            return Result<bool>::success(true);
+        });
     prologue->set_campaign_arrival_adapter([this](const auto& current, unsigned turn) -> std::optional<s2ne::Prologue::ArrivalTransaction>
         {
             if (!rawSave)

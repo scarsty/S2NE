@@ -1323,10 +1323,12 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 const auto& u = prologue->events.units[i];
                 s2ne::OriginalSkills::Context inputContext;
                 inputContext.second = skill88Input || skill94Input;
-                if (!u.controllable() || !(u.status_flags & 0x80) || (u.status_flags & 0x20) || !(u.learned[skill94Input ? 9 : skill88Input ? 8 :
-                                                                                                                                              2]
-                        & (skill94Input ? 1 : skill88Input ? 32 :
-                                                             0x800))
+                if (!u.controllable() || !(u.status_flags & 0x80) || (u.status_flags & 0x20) || !(u.learned[inputSkill == 33 ? 3 : skill94Input ? 9 :
+                                                                                                          skill88Input                          ? 8 :
+                                                                                                                                                  2]
+                        & (inputSkill == 33 ? 1 : skill94Input ? 1 :
+                                skill88Input                   ? 32 :
+                                                                 0x800))
                     || !skillRules.entry_available(u, inputContext))
                 {
                     continue;
@@ -1390,7 +1392,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             {
                 const auto& u = prologue->events.units[skillInputCaster];
                 auto point = prologue->screen_cell({ u.x, u.y });
-                if (skill94Input)
+                if (skill94Input || inputSkill == 33)
                 {
                     auto [cx, cy] = prologue->camera();
                     bool picked = false;
@@ -1408,7 +1410,16 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         }
                     }
                 }
-                if (prologue->battle_state() != s2ne::Battle::State::idle) { key(SDLK_ESCAPE); }
+                if (inputSkill == 33 && skillInputPhase == 0)
+                {
+                    SDL_Event e{ };
+                    e.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
+                    e.button.button = SDL_BUTTON_RIGHT;
+                    SDL_RenderCoordinatesToWindow(renderer, 320, 240, &e.button.x, &e.button.y);
+                    SDL_PushEvent(&e);
+                    skillInputPhase = 30;
+                }
+                else if (prologue->battle_state() != s2ne::Battle::State::idle) { key(SDLK_ESCAPE); }
                 else if (point.x < 32 || point.x > 608 || point.y < 32 || point.y > 370) { key(point.x < 32 ? SDLK_LEFT : point.x > 608 ? SDLK_RIGHT :
                         point.y < 32                                                                                                    ? SDLK_UP :
                                                                                                                                           SDLK_DOWN); }
@@ -1424,6 +1435,41 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     std::cout << "INPUT select caster=" << u.id << " target=" << prologue->events.units[skillInputTarget].id << " action=" << unsigned(u.action_state) << " click=" << point.x << ',' << point.y << " xy=" << u.x << ',' << u.y << '\n';
                 }
             }
+        }
+        else if (skillInputPhase >= 30 && skillInputPhase <= 33)
+        {
+            if ((skillInputPhase <= 32 && !context.battleMenu) || (skillInputPhase == 32 && !context.battleReports) || (skillInputPhase == 33 && (context.battleMenu || context.battleReports)))
+            {
+                s2ne::fatal("Curse33 production roster/menu transition failed");
+            }
+            SDL_Event e{ };
+            e.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
+            e.button.windowID = SDL_GetWindowID(window);
+            e.button.button = SDL_BUTTON_LEFT;
+            std::cout << "INPUT33 phase=" << skillInputPhase << " menu=" << bool(context.battleMenu) << " roster=" << bool(context.battleReports) << " camera=" << prologue->camera().first << ',' << prologue->camera().second << '\n';
+            float x = 320, y = 220;
+            if (skillInputPhase == 32)
+            {
+                x = 560;
+                y = 400;
+            }
+            if (skillInputPhase == 33)
+            {
+                const auto& u = prologue->events.units[skillInputCaster];
+                auto point = prologue->screen_cell({ u.x, u.y });
+                x = float(point.x);
+                y = float(point.y);
+                std::cout << "INPUT33 roster locate then select id=" << u.id << " xy=" << u.x << ',' << u.y << '\n';
+            }
+            SDL_RenderCoordinatesToWindow(renderer, x, y, &e.button.x, &e.button.y);
+            SDL_Event motion{ };
+            motion.type = SDL_EVENT_MOUSE_MOTION;
+            motion.motion.windowID = SDL_GetWindowID(window);
+            motion.motion.x = e.button.x;
+            motion.motion.y = e.button.y;
+            SDL_PushEvent(&motion);
+            SDL_PushEvent(&e);
+            skillInputPhase = skillInputPhase == 33 ? 1 : skillInputPhase + 1;
         }
         else if (skillInputPhase == 20)
         {
@@ -1576,14 +1622,24 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 s2ne::fatal("Normal skill cast did not commit");
             }
             const auto& u = prologue->events.units[skillInputCaster];
-            if (((skill88Input || skill94Input) ? u.st != skillInputBefore->st + (u.max_st - skillInputBefore->max_st) - (skill94Input ? 5 : 25) : u.mp != skillInputBefore->mp + skillInputMpGrowth - 40) || u.action_points >= skillInputBefore->action_points || skillInputFrames != (skill94Input ? 15 : skill88Input ? 35 :
-                                                                                                                                                                                                                                                                                                                            23))
+            if (((skill88Input || skill94Input) ? u.st != skillInputBefore->st + (u.max_st - skillInputBefore->max_st) - (skill94Input ? 5 : 25) : u.mp != skillInputBefore->mp + skillInputMpGrowth - (inputSkill == 33 ? ((skillInputBefore->abilities & 0x20) ? 3 : 7) : 40)) || u.action_points >= skillInputBefore->action_points || skillInputFrames != (inputSkill == 33 ? 21 : skill94Input ? 15 :
+                                                                                                                                                                                                                                                                                                                                                  skill88Input                                      ? 35 :
+                                                                                                                                                                                                                                                                                                                                                                                                      23))
             {
                 s2ne::fatal("Normal skill32 payment/frame count mismatch mp=" + std::to_string(u.mp) + " before=" + std::to_string(skillInputBefore->mp) + " ap=" + std::to_string(u.action_points) + " beforeAP=" + std::to_string(skillInputBefore->action_points) + " frames=" + std::to_string(skillInputFrames));
             }
             if (skill88Positive && (u.hp <= skillInputBefore->hp || u.experience <= skillInputBefore->experience))
             {
                 s2ne::fatal("88 positive heal/XP not obtained; no retry or RNG filtering");
+            }
+            if (inputSkill == 33)
+            {
+                const auto& victim = prologue->events.units[skillInputTarget];
+                if (victim.hp != skillInputVictim->hp || u.learned != skillInputBefore->learned || u.learned_proficiency[3] <= skillInputBefore->learned_proficiency[3])
+                {
+                    s2ne::fatal("Curse33 HP/learning/proficiency invariant failed");
+                }
+                std::cout << "PASS INPUT33 natural learned[3]=" << u.learned[3] << " proficiency3=" << skillInputBefore->learned_proficiency[3] << "->" << u.learned_proficiency[3] << " targetHP=" << victim.hp << " status3e=" << unsigned(victim.status3e) << '\n';
             }
             skillInputCommitted = snapshot("cast-after.sav");
             std::cout << "PASS INPUT complete" << inputSkill << " ST=" << skillInputBefore->st << "->" << u.st << " HP=" << skillInputBefore->hp << "->" << u.hp << " MP=" << skillInputBefore->mp << "->" << u.mp << " nativeMPGrowth=" << skillInputMpGrowth << " paidMP=" << (skillInputBefore->mp + skillInputMpGrowth - u.mp) << " AP=" << skillInputBefore->action_points << "->" << u.action_points << " proficiency=" << skillInputBefore->learned_proficiency[skill94Input ? 9 : skill88Input ? 8 :

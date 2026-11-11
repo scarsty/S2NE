@@ -28,6 +28,24 @@ class OriginalCampaignPersistence
     }
 
 public:
+    static Result<bool> try_collect_physical_loot(OriginalSave::State& raw, const OriginalEvents::Unit& actor, const OriginalEvents::Unit& target)
+    {
+        if (!(target.status_flags & 0x20) || actor.persistent_role6 == 1) { return Result<bool>::success(true); }
+        auto staged = raw.groups[0].inventory;
+        std::vector<uint8_t> counts(staged.size());
+        for (unsigned id : target.initial_status)
+        {
+            if (!id) { continue; }
+            if (id > counts.size()) { return Result<bool>::failure(make_error("Original physical loot item index")); }
+            ++counts[id - 1];
+        }
+        for (size_t item = 0; item < counts.size(); ++item)
+        {
+            if (counts[item]) { staged[item] = uint8_t(std::min(99u, unsigned(staged[item]) + unsigned(counts[item]))); }
+        }
+        raw.groups[0].inventory.swap(staged);
+        return Result<bool>::success(true);
+    }
     struct RewardState
     {
         OriginalEvents events;

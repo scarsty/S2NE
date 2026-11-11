@@ -1,4 +1,5 @@
 #pragma once
+#include "native_effect55.hpp"
 #include "original_combat.hpp"
 #include "original_events.hpp"
 #include "original_menu.hpp"
@@ -372,7 +373,7 @@ public:
     }
     bool executable_available(const OriginalEvents::Unit& unit, Context context, bool award_bridge_ready) const
     {
-        return award_bridge_ready && context.second && entry_available(unit, context) && ((unit.learned[8] & (1u << 5)) || (unit.learned[9] & 1));
+        return award_bridge_ready && entry_available(unit, context) && (context.second ? ((unit.learned[8] & (1u << 5)) || (unit.learned[9] & 1)) : (unit.learned[2] & 0x800) || (unit.learned[3] & 1));
     }
     Result execute(OriginalEvents::Unit&) const { return { false, Failure::unsupported_execution }; }
     Result execute(OriginalEvents::Unit& unit, const OriginalEvents::Unit& target, const OriginalEvents& events,
@@ -450,11 +451,12 @@ public:
         Failure failure{ Failure::none };
     };
     bool sword94_supported() const { return page_ != Page::closed && selected().id == 94 && selected().group == 9 && selected().bit == 0 && selected().effect() == 1 && selected().raw[20] == 44 && selected().raw[33] == 194; }
+    bool curse33_supported() const { return page_ != Page::closed && selected().id == 33 && selected().group == 3 && selected().bit == 0 && selected().effect() == 55 && selected().raw[31] == 2; }
     bool hostile_supported() const { return page_ != Page::closed && selected().id == 32 && selected().group == 2 && selected().bit == 11 && selected().effect() == 34; }
     // 401146 builds concentric diamond rings; record17 is the radius, not AP.
     bool hostile_in_range(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& target) const
     {
-        if ((!hostile_supported() && !sword94_supported()) || actor.hostile() == target.hostile() || target.hp <= 0 || !(target.status_flags & 0x80) || (target.status_flags & 0x20))
+        if ((!hostile_supported() && !sword94_supported() && !curse33_supported()) || actor.hostile() == target.hostile() || target.hp <= 0 || !(target.status_flags & 0x80) || (target.status_flags & 0x20))
         {
             return false;
         }
@@ -465,6 +467,17 @@ public:
         original_combat::Random& random, ExecutionContext context, const OriginalPromotionTransaction& equipment, const AwardAdapter& award)
     {
         HostileResult result;
+        if (curse33_supported())
+        {
+            auto outcome = execute_curse33(actor, target, random, context, award);
+            if (!outcome)
+            {
+                report_error(outcome.error());
+                result.failure = Failure::world_unresolved;
+                return result;
+            }
+            return outcome.value();
+        }
         if (page_ != Page::requested || !request_ || !hostile_supported())
         {
             result.failure = Failure::unsupported_execution;
@@ -549,6 +562,46 @@ public:
         request_.reset();
         page_ = Page::closed;
         return result;
+    }
+    s2ne::Result<HostileResult> execute_curse33(OriginalEvents::Unit& actor, OriginalEvents::Unit& target,
+        original_combat::Random& random, ExecutionContext context, const AwardAdapter& award)
+    {
+        auto fail = [](const char* message)
+        {
+            return s2ne::Result<HostileResult>::failure(make_error(message));
+        };
+        if (page_ != Page::requested || !request_ || !curse33_supported() || !award)
+        {
+            return fail("Curse33 request unavailable");
+        }
+        constexpr std::array<uint8_t, 24> tail{ 7, 0, 0, 0, 4, 1, 55, 0, 0, 0, 55, 0, 210, 0, 0, 0, 0, 0, 2, 0, 1, 9, 10, 0 };
+        if (!std::equal(tail.begin(), tail.end(), selected().raw.begin() + 13) || request_->second || request_->unit_id != actor.id || request_->appearance != actor.appearance || !(actor.learned[3] & 1) || !entry_available(actor, context_) || !hostile_in_range(actor, target) || !context.friendly_army || resource_failure(actor, selected()) != Failure::none)
+        {
+            return fail("Curse33 stale/invalid target or resources");
+        }
+        auto a = actor, t = target;
+        auto rng = random;
+        auto packet = NativeEffect55::resolve(t, a, rng, config_, context.difficulty, context.seconds, context.conditions_mode);
+        if (!packet) { return s2ne::Result<HostileResult>::failure(packet.error()); }
+        // 466544 starts XP at5 and proficiency at (MP+6-difficulty)*5/2+10.
+        int proficiency = (7 + 6 - int(context.difficulty)) * 5 / 2 + 10;
+        if (!award(a, rng, 5, proficiency, 3)) { return fail("Curse33 award rejected"); }
+        a.action_points -= ap_base_ + ((a.status34 & 4) ? ap_repeat_ : 0);
+        a.status34 |= 4;
+        a.carry_points = std::min(a.carry_points, a.action_points);
+        if (context.skill_payment_state != 2) { a.mp -= (actor.abilities & 0x20) ? 3 : 7; }
+        actor = std::move(a);
+        target = std::move(t);
+        random = rng;
+        request_.reset();
+        page_ = Page::closed;
+        HostileResult out;
+        out.applied = true;
+        out.hit = packet.value().hit;
+        out.immune = packet.value().immune;
+        out.chance = packet.value().chance;
+        out.roll = packet.value().roll;
+        return s2ne::Result<HostileResult>::success(out);
     }
     void resume()
     {

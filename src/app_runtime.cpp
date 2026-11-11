@@ -21,6 +21,7 @@
 #include "original_initialization.hpp"
 #include "original_inn.hpp"
 #include "original_menu.hpp"
+#include "original_presentation.hpp"
 #include "original_promotion_transaction.hpp"
 #include "original_save_bridge.hpp"
 #include "original_save_menu.hpp"
@@ -163,13 +164,16 @@ int s2ne::run_application(int argc, char** argv)
         {
             s2ne::fatal(SDL_GetError());
         }
-        SDL_SetRenderLogicalPresentation(renderer, 640, 480, SDL_LOGICAL_PRESENTATION_LETTERBOX);
         texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, 640, 480);
         if (!texture)
         {
             s2ne::fatal(SDL_GetError());
         }
-        SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
+        auto presentation = s2ne::configure_original_presentation(renderer, texture);
+        if (!presentation)
+        {
+            s2ne::fatal(presentation.error());
+        }
         if (options.teleportSmoke)
         {
             s2ne::original_teleport_smoke(root, renderer, texture);
@@ -821,7 +825,7 @@ int s2ne::run_application(int argc, char** argv)
                 if (skillMenu && pendingSkillTarget && !prologue->battle().animating_movement() && !pendingSkillVisualStarted)
                 {
                     pendingSkillVisualStarted = skillMenu->selected().id == 94 ? prologue->begin_skill94_visual(unsigned(prologue->battle_selected()), unsigned(*pendingSkillTarget)) : skillMenu->selected().id == 88 ? prologue->begin_skill88_visual(unsigned(prologue->battle_selected())) :
-                                                                                                                                                                                                                         prologue->begin_skill32_visual(unsigned(prologue->battle_selected()), unsigned(*pendingSkillTarget));
+                                                                                                                                                                                                                         prologue->begin_skill32_visual(unsigned(prologue->battle_selected()), unsigned(*pendingSkillTarget), skillMenu->selected().id == 33);
                     if (pendingSkillVisualStarted)
                     {
                         nowUi = SDL_GetTicks();
@@ -977,6 +981,39 @@ int s2ne::run_application(int argc, char** argv)
                                     std::cout << "Original94 accepted and suspended for468BAC numbers; no live payment yet\n";
                                 }
                                 std::cout << "Original94 damage=" << outcome.damage << " xp=" << outcome.raw_xp << " proficiency=" << outcome.proficiency << " runtime39=" << sword.damage.target_status39 << " masks=" << masks[0] << ',' << masks[1] << " failure=" << int(outcome.failure) << '\n';
+                                return false;
+                            }
+                            if (skillMenu->selected().id == 33)
+                            {
+                                auto stagedActor = prologue->events.units.at(size_t(selected));
+                                auto stagedTarget = prologue->events.units.at(target);
+                                auto stagedMenu = *skillMenu;
+                                auto stream = rng;
+                                auto outcome = stagedMenu.execute_curse33(stagedActor, stagedTarget, stream, context, award);
+                                if (!outcome)
+                                {
+                                    s2ne::report_error(outcome.error());
+                                    return false;
+                                }
+                                result = outcome.value();
+                                auto seed = stream.seed_state(), calls = stream.draw_count();
+                                swordFeedbackPending = prologue->battle().begin_curse33_feedback(size_t(selected), target,
+                                    prologue->events.units.at(target).hp, result.hit,
+                                    [&, selected, target, stagedActor = std::move(stagedActor), stagedTarget = std::move(stagedTarget), seed, calls]() mutable
+                                    {
+                                        prologue->events.units.at(size_t(selected)) = std::move(stagedActor);
+                                        prologue->events.units.at(target) = std::move(stagedTarget);
+                                        prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
+                                            {
+                                                live.restore_stream(seed, calls);
+                                                return true;
+                                            });
+                                        prologue->battle().commit_external_action();
+                                        skillCastVerified = true;
+                                        *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                        std::cout << "Original33 feedback complete; curse/timer/MP/AP/reward/RNG published once\n";
+                                    });
+                                if (!swordFeedbackPending) { result.applied = false; }
                                 return false;
                             }
                             result = skillMenu->execute_hostile(prologue->events.units.at(size_t(selected)), prologue->events.units.at(target), rng, context, promotionTransaction, award);
@@ -1414,7 +1451,7 @@ int s2ne::run_application(int argc, char** argv)
                                     s2ne::fatal("Final quest normal-input cast blocked: reason=" + std::to_string(int(failure)) + " MP=" + std::to_string(actor.mp) + " ST=" + std::to_string(actor.st) + " checkpoint=" + path.string());
                                 }
                             }
-                            else if (!skillMenu->hostile_supported() && !skillMenu->sword94_supported() && !skillMenu->effect_supported(skillMenu->selected()))
+                            else if (!skillMenu->hostile_supported() && !skillMenu->sword94_supported() && !skillMenu->curse33_supported() && !skillMenu->effect_supported(skillMenu->selected()))
                             {
                                 std::cout << "Original selected spell executor unavailable id=" << skillMenu->selected().id << '\n';
                                 skillMenu->resume();
@@ -2540,7 +2577,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (command == 6)
                         {
-                            return (unit.learned[2] & 0x800) && skillRules.entry_available(unit, { });
+                            return skillRules.executable_available(unit, { }, true);
                         }
                         if (command == 2)
                         {

@@ -40,13 +40,16 @@ AppOptions::AppOptions(int argc, char** argv)
     loadSmoke = argc > 1 && std::string(argv[1]) == "--smoke-load";
     skill88Input = argc > 1 && std::string(argv[1]) == "--smoke-skill88-input";
     skill94Input = argc > 1 && std::string(argv[1]) == "--smoke-skill94-input";
-    skillInputSmoke = skill94Input || skill88Input || (argc > 1 && std::string(argv[1]) == "--smoke-skill32-input");
+    const bool curse33Input = argc > 1 && std::string(argv[1]) == "--smoke-skill33-input";
+    skillInputSmoke = curse33Input || skill94Input || skill88Input || (argc > 1 && std::string(argv[1]) == "--smoke-skill32-input");
     skill88Positive = skill88Input && argc > 4 && std::string(argv[4]) == "--positive-heal";
-    inputSkill = skill94Input ? 94 : skill88Input ? 88 :
+    inputSkill = curse33Input ? 33 : skill94Input ? 94 :
+        skill88Input                              ? 88 :
                                                     32;
-    inputFolder = skill94Input ? (argc > 4 ? argv[4] : "skill94-input-next") : skill88Positive ? "skill88-positive-input" :
-        skill88Input                                                                           ? "skill88-input" :
-                                                                                                 "skill32-input";
+    inputFolder = curse33Input ? "skill33-input" : skill94Input ? (argc > 4 ? argv[4] : "skill94-input-next") :
+        skill88Positive                                         ? "skill88-positive-input" :
+        skill88Input                                            ? "skill88-input" :
+                                                                  "skill32-input";
     skillScheduleStress = skillInputSmoke && argc > 4 && std::string(argv[4]) == "--schedule-stress";
     promotionSmoke = argc > 1 && std::string(argv[1]) == "--smoke-promotion";
     option = teleportSmoke || evacuationSmoke || shopSmoke || verify || smoke || newGameSmoke || battleSmoke || loadSmoke || promotionSmoke || skillInputSmoke;

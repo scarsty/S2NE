@@ -65,6 +65,7 @@ public:
             bool changed{ };
         };
         std::vector<Frame> frames_;
+        size_t event_count_{ };
         bool returned_change_{ };
         bool evacuation_{ };
         size_t completion_{ };
@@ -91,6 +92,9 @@ public:
         Stack() = default;
         Stack(OriginalEvents& e, size_t death)
         {
+            event_count_ = e.event_count();
+            if (death >= event_count_) { return; }
+            frames_.reserve(event_count_ + 16);
             unsigned f = e.completion_flag(death);
             if (f >= 1 && f <= 80)
             {
@@ -128,7 +132,7 @@ public:
                     frames_.push_back({ Routine::flags });
                     continue;
                 }
-                if (f.index >= e.event_count())
+                if (f.index >= event_count_ || f.index >= e.event_count())
                 {
                     returned_change_ = f.routine == Routine::flags && f.changed;
                     frames_.pop_back();
@@ -245,7 +249,8 @@ public:
             {
                 for (size_t line = 0; line < staged.line_count(*i); ++line)
                 {
-                    (void)staged.line(*i, line);
+                    auto text = staged.try_line(*i, line);
+                    if (!text) { return { }; }
                 }
             }
             else if (stack.evacuation_pending())

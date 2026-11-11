@@ -1143,6 +1143,7 @@ struct CounterDamageInput
     int reduction_roll{ }, fixed_value{ };
     int minimum_roll{ 99 };
     bool fixed_damage{ }, equipment_30{ };
+    bool* minimum_required{ };
 };
 // 409060: the reverse attack has its own random reduction, before height/fixed damage.
 inline Result<int> try_counter_damage(const CounterDamageInput& in)
@@ -1177,6 +1178,7 @@ inline Result<int> try_counter_damage(const CounterDamageInput& in)
     {
         value = value * (100 + p.difficulty_bonus) / 100;
     }
+    if (in.minimum_required) { *in.minimum_required = value < 1; }
     if (value < 1)
     {
         value = in.minimum_roll < 1 ? 5 : in.minimum_roll < 6 ? 4 :
