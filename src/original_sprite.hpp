@@ -11,9 +11,9 @@ enum class OriginalZeroRun
     opaque
 };
 inline Result<bool> draw_original_sprite(std::vector<uint8_t>& image, std::span<const uint8_t> bytes,
-    std::span<const uint8_t> palette, size_t position, bool typed, int left, int top, OriginalZeroRun zero)
+    std::span<const uint8_t> palette, size_t position, bool typed, int left, int top, OriginalZeroRun zero, std::vector<uint8_t>* indexed = nullptr)
 {
-    if (image.size() != 640u * 480 * 4 || palette.size() < 768)
+    if (image.size() != 640u * 480 * 4 || palette.size() < 768 || (indexed && indexed->size() != 640u * 480))
     {
         return Result<bool>::failure(make_error("Invalid original sprite framebuffer/palette"));
     }
@@ -26,6 +26,8 @@ inline Result<bool> draw_original_sprite(std::vector<uint8_t>& image, std::span<
         return Result<bool>::failure(make_error("Invalid original sprite header"));
     }
     auto output = image;
+    std::vector<uint8_t> indices;
+    if (indexed) { indices = *indexed; }
     for (unsigned y = 0; y < height; ++y)
     {
         for (unsigned x = 0; x < width;)
@@ -52,6 +54,7 @@ inline Result<bool> draw_original_sprite(std::vector<uint8_t>& image, std::span<
                     continue;
                 }
                 size_t dst = (size_t(dy) * 640 + dx) * 4;
+                if (indexed) { indices[dst / 4] = uint8_t(ink); }
                 for (unsigned k = 0; k < 3; ++k)
                 {
                     output[dst + k] = uint8_t(std::min(255u, unsigned(palette[ink * 3 + k]) * 255 / 63));
@@ -61,10 +64,11 @@ inline Result<bool> draw_original_sprite(std::vector<uint8_t>& image, std::span<
         }
     }
     image.swap(output);
+    if (indexed) { indexed->swap(indices); }
     return Result<bool>::success(true);
 }
 inline Result<bool> draw_original_cel(std::vector<uint8_t>& image, std::span<const uint8_t> cel,
-    std::span<const uint8_t> palette, unsigned id, int left, int top, OriginalZeroRun zero)
+    std::span<const uint8_t> palette, unsigned id, int left, int top, OriginalZeroRun zero, std::vector<uint8_t>* indexed = nullptr)
 {
     ResourceReader pal(palette), data(cel);
     unsigned address = pal.number(816, 4);
@@ -84,6 +88,6 @@ inline Result<bool> draw_original_cel(std::vector<uint8_t>& image, std::span<con
     {
         return Result<bool>::failure(make_error("Invalid original CEL extent"));
     }
-    return draw_original_sprite(image, cel.subspan(group + offset, length), palette, 0, false, left, top, zero);
+    return draw_original_sprite(image, cel.subspan(group + offset, length), palette, 0, false, left, top, zero, indexed);
 }
 }    //namespace s2ne

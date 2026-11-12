@@ -110,6 +110,20 @@ public:
     std::vector<std::array<unsigned, 4>> dynamic_object_chains;
     std::vector<Unit> units;
     std::optional<std::array<std::array<uint8_t, 33>, 2>> army_status;
+    void release_summon_slot(const Unit& unit)
+    {
+        if (!(unit.status_flags & 0x10) || !army_status) { return; }
+        auto& slots = (*army_status)[unit.hostile() ? 1 : 0];
+        for (unsigned i = 0; i < 11; ++i)
+        {
+            if ((unsigned(slots[i * 3 + 1]) | unsigned(slots[i * 3 + 2]) << 8) == unit.appearance)
+            {
+                slots[i * 3] = 0;
+                break;
+            }
+        }
+    }
+    std::optional<std::array<uint32_t, 2>> army_modes;    // Army runtime +DE, independent of summoned slots at +286.
     std::vector<uint8_t> briefing, stage_name, victory_objective, defeat_objective;
     std::array<int, 12> battle_config{ };
     unsigned learned_ability_count{ }, first_ability_count{ }, second_ability_count{ };
@@ -289,6 +303,39 @@ public:
             return weapon && int(int8_t(items_.at(2 + size_t(weapon - 1) * 38 + 14))) == type - 1;
         }
         return type >= 21;
+    }
+    void expire_army_reveal()
+    {
+        if (!army_modes) { return; }
+        for (auto& mode : *army_modes) { mode &= ~uint32_t(1); }
+    }
+    void rebuild_army_modes(unsigned mode = 1)
+    {
+        if (!army_modes) { army_modes = std::array<uint32_t, 2>{ }; }
+        for (auto& value : *army_modes) { value &= ~uint32_t(0x7E); }
+        for (const auto& unit : units)
+        {
+            if ((unit.status_flags & 0x30) || (mode != 2 && !(unit.status_flags & 0x80))) { continue; }
+            auto& value = (*army_modes)[unit.hostile() ? 1 : 0];
+            if (unit.abilities & 8) { value |= 2; }
+            if (unit.abilities & 0x20000) { value |= 0x10; }
+            if (unit.abilities & 0x4000000) { value |= 0x0C; }
+            unsigned control = unit.behavior == 1 ? 1 : 0;
+            if (unit.action_status_runtime) { control = unsigned(unit.action_status_runtime->at(8)) | (unsigned(unit.action_status_runtime->at(9)) << 8); }
+            if (control != 1)
+            {
+                if (unit.abilities & 0x40000) { value |= 0x20; }
+                if (unit.abilities & 0x80000000) { value |= 0x40; }
+            }
+            for (unsigned item : unit.equipment)
+            {
+                if (!item) { continue; }
+                const size_t p = 2 + size_t(item - 1) * 38;
+                if (items_.at(p + 15) || int8_t(items_.at(p + 25)) <= 0) { continue; }
+                if (items_.at(p + 25) == 31) { value |= 8; }
+                if (items_.at(p + 25) == 58) { value |= 4; }
+            }
+        }
     }
     int stage_adjustment{ };
     Result<bool> try_adjust_battle_entry_stats()
@@ -828,6 +875,16 @@ public:
         {
             return 5;
         }
+        return 0;
+    }
+    unsigned skill_target_class(const Unit& unit, unsigned status3c) const
+    {
+        const int kind = unit.movement_type;
+        if (kind == 7 || (status3c & 2)) { return 1; }
+        if (kind == 8 || equipment_special(unit, 15)) { return 2; }
+        if (kind == 6) { return 3; }
+        if ((status3c & 1) || equipment_special(unit, 17)) { return 4; }
+        if (unit.status_flags & 4) { return 5; }
         return 0;
     }
     unsigned difficulty{ };

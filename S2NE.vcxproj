@@ -32,6 +32,7 @@
     <OutDir>$(ProjectDir)out\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)out\obj\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)</TargetName>
+    <PublishGameRuntime Condition="'$(PublishGameRuntime)' == ''">false</PublishGameRuntime>
     <LocalDebuggerWorkingDirectory>$(ProjectDir)..\</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
@@ -71,7 +72,7 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VcpkgRoot)\scripts\buildsystems\msbuild\vcpkg.targets" />
   </ImportGroup>
-  <Target Name="PublishGameRuntime" AfterTargets="Build" Condition="Exists('$(TargetPath)')">
+  <Target Name="PublishGameRuntime" AfterTargets="Build" Condition="'$(PublishGameRuntime)' == 'true' and Exists('$(TargetPath)')">
     <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(ProjectDir)tools\publish-runtime.ps1&quot; -BinaryDirectory &quot;$(TargetDir).&quot; -ResourceDirectory &quot;$(ProjectDir)..&quot;" />
   </Target>
 </Project>

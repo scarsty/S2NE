@@ -60,7 +60,12 @@ struct AppSmokeState
     std::optional<s2ne::OriginalEvents::Unit> skillInputVictim;
     std::vector<uint8_t> skillInputCommitted;
     std::optional<s2ne::OriginalEvents::Unit> skillInputBefore;
+    std::optional<s2ne::OriginalEvents::Unit> cooperativePartnerBefore;
+    size_t cooperativePartnerIndex{ };
     bool skillInputVerified = false;
+    bool spiritSightActive = false, spiritSightObserved = false, spiritSightModifierChecked = false, spiritSightModifierRetained = false, spiritSightAltChecked = false;
+    unsigned revealExpiryTurn = 0;
+    unsigned invisibilityPresentations = 0;
     bool scriptDeathObserved = false, scriptFailureInjected = false;
     bool controlledAreaReady = false;
     std::vector<size_t> controlledAreaTargets;

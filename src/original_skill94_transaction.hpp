@@ -1,6 +1,7 @@
 #pragma once
 #include "original_death_dispatch.hpp"
 #include "original_skill94_resolution.hpp"
+#include "original_skills.hpp"
 namespace s2ne
 {
 // Single94 staging boundary. Unknown scripted death dispatch is rejected, never
@@ -9,6 +10,7 @@ class OriginalSkill94Transaction
 {
     OriginalSkill94Formula formula_;
     OriginalSkill94Resolution resolution_;
+    NativeDamageFormula damage_formula_;
     std::array<int, 256> config_{ };
 
 public:
@@ -20,6 +22,7 @@ public:
         uint32_t seconds{ };
         unsigned payment_state{ };
         bool original_second_partition{ }, target_runtime_known{ }, synchronous_death_ready{ };
+        const OriginalEvents::Unit* partner{ };
     };
     enum class Failure
     {
@@ -63,6 +66,9 @@ public:
             return s2ne::Result<OriginalSkill94Transaction>::failure(resources.error());
         }
         result.formula_ = std::move(formula).value();
+        auto damage_formula = NativeDamageFormula::create(root);
+        if (!damage_formula) { return s2ne::Result<OriginalSkill94Transaction>::failure(damage_formula.error()); }
+        result.damage_formula_ = std::move(damage_formula).value();
         result.resolution_ = std::move(resolution).value();
         auto& data = resources.value();
         for (unsigned i = 0; i < 256; ++i)
@@ -84,11 +90,92 @@ public:
         }
         *this = std::move(result).value();
     }
+    struct AreaResult
+    {
+        std::vector<Result> targets;
+        int raw_xp{ }, proficiency{ };
+    };
+    s2ne::Result<AreaResult> execute_area(OriginalSkills& menu, OriginalEvents::Unit& actor,
+        std::vector<OriginalEvents::Unit>& targets, const OriginalEvents::Unit& center, const OriginalEvents& resources,
+        original_combat::Random& random, const std::vector<Context>& contexts, const Award& award,
+        std::vector<uint8_t>& army_inventory, const OriginalPromotionTransaction& equipment, OriginalEvents::Unit* partner = nullptr) const
+    {
+        auto fail = []
+        {
+            return s2ne::Result<AreaResult>::failure(make_error("Original466082 area transaction rejected"));
+        };
+        if (!menu.damage_supported() || menu.page() != OriginalSkills::Page::requested || targets.empty() || targets.size() != contexts.size() || !award || !menu.sleep2_center_in_range(actor, center)) { return fail(); }
+        auto a = actor;
+        const bool cooperative = menu.selected().raw[32] & 7;
+        if (cooperative && (!partner || !menu.request() || partner->id != menu.request()->partner_id || partner->appearance != menu.request()->partner_appearance || !menu.cooperative_pair(actor, *partner) || menu.resource_failure(*partner, menu.selected()) != OriginalSkills::Failure::none)) { return fail(); }
+        auto p = partner ? *partner : actor;
+        auto staged = targets;
+        auto stream = random;
+        auto inventory = army_inventory;
+        AreaResult out;
+        int successes = 0;
+        for (size_t i = 0; i < staged.size(); ++i)
+        {
+            auto& target = staged[i];
+            if (!menu.sleep2_area(center, target) || !menu.status_area_target(actor, target)) { return fail(); }
+            for (size_t n = 0; n < i; ++n)
+            {
+                if (staged[n].id == target.id && staged[n].appearance == target.appearance && staged[n].x == target.x && staged[n].y == target.y) { return fail(); }
+            }
+            auto single = menu;
+            auto unit = a;
+            auto context = contexts[i];
+            context.payment_state = 2;
+            context.partner = cooperative ? &p : nullptr;
+            auto packet = execute(single, unit, target, resources, stream, context, [](auto&, auto&, int, int, unsigned)
+                {
+                    return true;
+                },
+                &inventory, &equipment, true);
+            if (!packet.applied) { return s2ne::Result<AreaResult>::failure(make_error("Original46618D target failure " + std::to_string(int(packet.failure)))); }
+            a.ending_kills = unit.ending_kills;
+            out.raw_xp += packet.raw_xp;
+            successes += packet.damage != 0;
+            out.targets.push_back(packet);
+        }
+        out.proficiency = (6 + successes + int(uint16_t(a.ending_kills - actor.ending_kills)) - int(contexts.front().damage.difficulty)) * 10 / 3 + 10;
+        if (cooperative)
+        {
+            for (const auto& target : staged)
+            {
+                if (target.id == p.id && target.appearance == p.appearance) { p = target; }
+            }
+        }
+        if (cooperative)
+        {
+            out.raw_xp = std::max(1, out.raw_xp / 2);
+            if (!award(p, stream, out.raw_xp, out.proficiency, menu.selected().group)) { return fail(); }
+        }
+        if (!award(a, stream, out.raw_xp, out.proficiency, menu.selected().group)) { return fail(); }
+        OriginalSkills::ExecutionContext payment;
+        payment.skill_payment_state = contexts.front().payment_state;
+        menu.pay_staged(a, payment, actor.abilities);
+        if (cooperative) { menu.pay_staged(p, payment, partner->abilities); }
+        if (cooperative)
+        {
+            for (auto& target : staged)
+            {
+                if (target.id == p.id && target.appearance == p.appearance) { target = p; }
+            }
+        }
+        actor = std::move(a);
+        targets = std::move(staged);
+        random = stream;
+        army_inventory = std::move(inventory);
+        if (cooperative) { *partner = std::move(p); }
+        menu.cancel();
+        return s2ne::Result<AreaResult>::success(std::move(out));
+    }
     // The caller must pass a requested original94 record and the actual map
     // triples. The function stages unit/RNG copies; adapters see staged data only.
     Result execute(OriginalSkills& menu, OriginalEvents::Unit& actor, OriginalEvents::Unit& target, const OriginalEvents& resources,
         original_combat::Random& random, const Context& ctx, const Award& award,
-        std::vector<uint8_t>* army_inventory = nullptr, const OriginalPromotionTransaction* equipment = nullptr) const
+        std::vector<uint8_t>* army_inventory = nullptr, const OriginalPromotionTransaction* equipment = nullptr, bool area_target = false) const
     {
         Result out;
         if (menu.page() != OriginalSkills::Page::requested || !menu.request())
@@ -97,13 +184,14 @@ public:
         }
         const auto request = *menu.request();
         const auto record = menu.selected();
-        if (request.skill_id != 94 || record.id != 94 || record.group != 9 || record.bit != 0 || record.effect() != 1 || record.raw[20] != 44 || record.word(13) != 5 || record.raw[32] != 0 || record.raw[33] != 194 || request.unit_id != actor.id || request.appearance != actor.appearance || request.group != 9 || request.bit != 0 || !request.second || !ctx.original_second_partition || !award || !(actor.learned[9] & 1) || !actor.controllable() || !(actor.status_flags & 0x80) || (actor.status_flags & 0x20) || actor.hp <= 0 || target.hp <= 0 || actor.hostile() == target.hostile() || &actor == &target || !(target.status_flags & 0x80) || (target.status_flags & 0x20) || ctx.damage.difficulty < 1 || ctx.damage.difficulty > 5 || !ctx.damage.friendly_army || ctx.damage.conditions_mode || actor.st < 5 || actor.action_points < config_[0xEF] + ((actor.status34 & 12) ? config_[0xF3] : 0))
+        const bool family = area_target && menu.damage_supported();
+        if ((!family && !menu.sword94_supported()) || ((record.raw[32] & 7) && !ctx.partner) || request.unit_id != actor.id || request.appearance != actor.appearance || request.group != record.group || request.bit != record.bit || request.second != ctx.original_second_partition || !award || !(actor.learned[record.group] & (1u << record.bit)) || !actor.controllable() || !(actor.status_flags & 0x80) || (actor.status_flags & 0x20) || actor.hp <= 0 || target.hp <= 0 || (record.raw[31] == 2 && actor.hostile() == target.hostile()) || (actor.id == target.id && actor.appearance == target.appearance) || !(target.status_flags & 0x80) || (target.status_flags & 0x20) || ctx.damage.difficulty < 1 || ctx.damage.difficulty > 5 || !ctx.damage.friendly_army || ctx.damage.conditions_mode || menu.resource_failure(actor, record) != OriginalSkills::Failure::none)
         {
             return out;
         }
         int dx = 2 * (target.x - actor.x) + int(target.y & 1) - int(actor.y & 1), dy = target.y - actor.y;
         unsigned status3d = actor.action_status_runtime ? actor.action_status_runtime->at(0x3D) : actor.status3d;
-        if (std::max(std::abs(dx), std::abs(dy)) > 3 || (status3d & 0x40))
+        if ((!family && std::max(std::abs(dx), std::abs(dy)) > 3) || (status3d & 0x40))
         {
             return out;
         }
@@ -112,7 +200,7 @@ public:
             out.failure = Failure::unknown_runtime;
             return out;
         }
-        if (ctx.hit.actor_proficiency != actor.learned_proficiency[9] || ctx.hit.target_proficiency != target.learned_proficiency[9] || ctx.hit.actor_fencing != actor.fencing || ctx.hit.target_fencing != target.fencing || ctx.hit.target_tactics != target.tactics)
+        if (ctx.hit.actor_proficiency != actor.learned_proficiency[record.group] || ctx.hit.target_proficiency != target.learned_proficiency[record.group] || ctx.hit.actor_fencing != actor.fencing || ctx.hit.target_fencing != target.fencing || ctx.hit.target_tactics != target.tactics)
         {
             return out;
         }
@@ -129,12 +217,76 @@ public:
             return out;
         }
         auto raw = formula_.try_raw_damage(a, t);
+        if (family)
+        {
+            NativeDamageFormula::Input input;
+            int actor_sum = 0, target_sum = 0, actor_sources = 0, target_sources = 0;
+            if (record.raw[33] & 1)
+            {
+                actor_sum = a.st + (resources.equipment_special(a, 18) ? a.st / 5 : 0);
+                target_sum = t.st + (resources.equipment_special(t, 18) ? t.st / 5 : 0);
+                ++actor_sources;
+                ++target_sources;
+                if (ctx.partner)
+                {
+                    actor_sum += ctx.partner->st + (resources.equipment_special(*ctx.partner, 18) ? ctx.partner->st / 5 : 0);
+                    ++actor_sources;
+                }
+            }
+            if (record.raw[33] & 2)
+            {
+                actor_sum += a.fencing;
+                target_sum += t.fencing;
+                ++actor_sources;
+                ++target_sources;
+                if (ctx.partner)
+                {
+                    actor_sum += ctx.partner->fencing;
+                    ++actor_sources;
+                }
+            }
+            if (!actor_sources || !target_sources) { return out; }
+            input.actor_value = std::max(1, actor_sum / actor_sources);
+            input.target_value = std::max(1, target_sum / target_sources);
+            input.proficiency = a.learned_proficiency[record.group];
+            if (ctx.partner) { input.proficiency = ((a.learned_proficiency[record.group] / 10 + ctx.partner->learned_proficiency[record.group] / 10) / 2) * 10; }
+            input.target_defense = t.defense;
+            input.target_attribute = t.kind_attribute + (resources.equipment_special(t, 64) ? 10 : 0);
+            input.actor_hp = a.hp;
+            input.target_hp = t.hp;
+            input.actor_combat_value = *a.ending_combat_value;
+            raw = damage_formula_.raw(record.id, input);
+        }
         if (!raw)
         {
             report_error(raw.error());
             return out;
         }
-        auto resolved = resolution_.try_resolve(ctx.hit, raw.value(), t.hp, ctx.elevation, ctx.damage, rng, ctx.seconds);
+        const unsigned status39 = t.action_status_runtime ? t.action_status_runtime->at(0x39) : t.status39.value_or(0);
+        const unsigned target3d = t.action_status_runtime ? t.action_status_runtime->at(0x3D) : t.status3d;
+        const unsigned status3e = t.action_status_runtime ? t.action_status_runtime->at(0x3E) : t.status3e;
+        auto modifiers = ctx.damage;
+        modifiers.target_direction_guard = t.abilities & 0x2000;
+        if (family)
+        {
+            modifiers.damage_mask = record.word(27);
+            modifiers.original_group = record.raw[0];
+            modifiers.formula_flags = record.raw[33];
+            modifiers.bypass_modifiers = record.raw[29] & 64;
+            modifiers.terrain_flags = record.raw[29];
+            modifiers.target_movement_class = resources.skill_target_class(t, ctx.damage.target_status3c);
+            if (!t.action_status_runtime)
+            {
+                out.failure = Failure::unknown_runtime;
+                return out;
+            }
+            modifiers.target_immunity2f = t.action_status_runtime->at(0x2F);
+            modifiers.target_magic_guard = t.abilities & 0x10;
+            modifiers.actor_spell_boost = a.abilities & 0x400000;
+            modifiers.target_spell_armor = t.abilities & 0x2000000;
+            modifiers.target_equipment11 = resources.equipment_special(t, 11);
+        }
+        auto resolved = resolution_.try_resolve(ctx.hit, raw.value(), t.hp, ctx.elevation, modifiers, rng, ctx.seconds, family ? record.word(23) : 50, (status39 & 2) || (target3d & 0x20) || (status3e & 2), (record.raw[33] & 128) != 0, record.raw[33] & 7);
         if (!resolved)
         {
             report_error(resolved.error());
@@ -147,6 +299,13 @@ public:
         out.damage = packet.hit ? packet.damage : 0;
         // 468BAC always captures+132, even on MISS; effect1 has no drain branch.
         out.hp_snapshot = t.hp;
+        if (family && actor.hostile() == target.hostile() && t.action_status_runtime && t.action_status_runtime->at(0x0A) == 2 && t.action_status_runtime->at(0x0B) == 0)
+        {
+            t.ai_role10 = 1;
+            auto& runtime = *t.action_status_runtime;
+            runtime[0x0A] = 1;
+            runtime[0x0B] = runtime[0x0C] = runtime[0x0D] = 0;
+        }
         t.hp -= out.damage;
         if (!t.hp)
         {
@@ -181,9 +340,9 @@ public:
             else
             {
                 // Scripted deaths require the synchronous41C02A continuation.
-                // Removal/transformation and summoned-role slots remain guarded.
+                // Departure requires its own presentation; summoned slots release on publication.
                 auto dispatch = OriginalDeathDispatch::inspect(resources, t.id);
-                if (!army_inventory || !equipment || (!dispatch.settled() && !ctx.synchronous_death_ready) || (t.status_flags & 0x50))
+                if (!army_inventory || !equipment || (!dispatch.settled() && !ctx.synchronous_death_ready) || (t.status_flags & 0x40) || ((t.status_flags & 0x10) && !resources.army_status))
                 {
                     out.failure = Failure::scripted_death;
                     return out;
@@ -239,7 +398,7 @@ public:
         }
         // 466082: successful targets + kill-count delta; resurrection is not a kill.
         out.proficiency = (6 + int(out.damage != 0) + int(out.killed) - int(ctx.damage.difficulty)) * 10 / 3 + 10;
-        if (!award(a, rng, out.raw_xp, out.proficiency, 9))
+        if (!award(a, rng, out.raw_xp, out.proficiency, record.group))
         {
             out.failure = Failure::award;
             return out;
@@ -249,7 +408,7 @@ public:
         a.carry_points = std::min(a.carry_points, a.action_points);
         if (ctx.payment_state != 2)
         {
-            a.st -= 5;
+            a.st -= record.word(13);
         }
         actor = std::move(a);
         target = std::move(t);

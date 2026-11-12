@@ -1,11 +1,13 @@
 #pragma once
 #include "native_ability_buffs.hpp"
+#include "native_damage_records.hpp"
 #include "native_effect55.hpp"
 #include "native_hostile_status.hpp"
 #include "native_sleep2.hpp"
 #include "native_special_status.hpp"
 #include "native_timed_buffs.hpp"
 #include "original_combat.hpp"
+#include "original_drain.hpp"
 #include "original_events.hpp"
 #include "original_menu.hpp"
 #include "original_promotion_transaction.hpp"
@@ -39,8 +41,8 @@ public:
     };
     struct Record
     {
-        unsigned id{ }, group{ }, bit{ };
-        std::array<uint8_t, 37> raw{ };
+        unsigned id{}, group{}, bit{};
+        std::array<uint8_t, 37> raw{};
         int word(size_t offset) const { return int(int16_t(unsigned(raw.at(offset)) | (unsigned(raw.at(offset + 1)) << 8))); }
         std::vector<uint8_t> name() const
         {
@@ -55,51 +57,57 @@ public:
     };
     struct Group
     {
-        unsigned index{ };
+        unsigned index{};
         std::vector<uint8_t> name;
         std::vector<Record> records;
     };
     struct Context
     {
-        bool second{ }, suppress_first{ }, suppress_second{ }, army_da_nonzero{ };
-        bool status3d_40{ };    // Original full runtime status unavailable in Unit.status3c byte.
-        bool debug{ };
+        bool second{}, suppress_first{}, suppress_second{}, army_da_nonzero{};
+        bool status3d_40{};    // Original full runtime status unavailable in Unit.status3c byte.
+        bool debug{};
     };
     struct Request
     {
-        unsigned unit_id{ }, appearance{ }, skill_id{ }, group{ }, bit{ };
-        bool second{ };
+        unsigned unit_id{}, appearance{}, skill_id{}, group{}, bit{};
+        bool second{};
+        unsigned partner_id{}, partner_appearance{};
     };
     struct Result
     {
-        bool applied{ };
+        bool applied{};
         Failure failure{ Failure::unsupported_execution };
-        int healing{ }, experience_award{ }, proficiency_award{ };
+        int healing{}, experience_award{}, proficiency_award{};
     };
     struct ExecutionContext
     {
         unsigned difficulty{ 3 };
-        uint32_t seconds{ };
-        uint32_t status3c{ };               // Full runtime +3C DWORD, not Unit.status3c's low byte.
-        unsigned skill_payment_state{ };    // Live 505C1C[skill-1], initially BIN10 table2.
-        bool friendly_army{ true }, conditions_mode{ };
+        uint32_t seconds{};
+        uint32_t status3c{};               // Full runtime +3C DWORD, not Unit.status3c's low byte.
+        unsigned skill_payment_state{};    // Live 505C1C[skill-1], initially BIN10 table2.
+        bool friendly_army{ true }, conditions_mode{};
     };
     // Apply proficiency/learning (group), then 458B03/459309 XP/level-up to
     // the staged unit/RNG only. Return false when the native bridge is absent.
     using AwardAdapter = std::function<bool(OriginalEvents::Unit&, original_combat::Random&, int, int, unsigned)>;
+    using SummonAdapter = std::function<bool(const OriginalEvents::Unit&, unsigned, original_combat::Random&)>;
+    static int summon_level(const OriginalEvents::Unit& caster)
+    {
+        return std::clamp(int(int16_t(caster.sp)) / 20 + 1, 1, 10);
+    }
 
 private:
     OriginalMenu font_;
     std::vector<uint8_t> bin_, pal_, cel_;
     std::vector<Group> groups_;
-    size_t header_{ };
-    int ap_base_{ }, ap_repeat_{ };
-    std::array<int, 256> config_{ };
-    unsigned owner_id_{ }, owner_appearance_{ };
+    size_t header_{};
+    int ap_base_{}, ap_repeat_{};
+    std::array<int, 256> config_{};
+    unsigned owner_id_{}, owner_appearance_{};
     Context context_;
-    std::pair<int, int> area_camera_{ };
+    std::pair<int, int> area_camera_{};
     Page page_{ Page::closed };
-    size_t group_{ }, skill_{ };
+    size_t group_{}, skill_{};
     std::optional<Request> request_;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
@@ -241,7 +249,7 @@ public:
             {
                 continue;
             }
-            Group group{ g, string(name_data + word(bin_, names + g * 2)), { } };
+            Group group{ g, string(name_data + word(bin_, names + g * 2)), {} };
             unsigned first = bin_.at(header_ + 9 + g * 2), length = bin_.at(header_ + 10 + g * 2);
             for (unsigned bit = 0; bit < length; ++bit)
             {
@@ -249,7 +257,7 @@ public:
                 {
                     continue;
                 }
-                Record r{ first + bit + 1, g, bit, { } };
+                Record r{ first + bit + 1, g, bit, {} };
                 if (r.id > bin_.at(header_ + 7))
                 {
                     report_error(make_error("Invalid original skill ID"));
@@ -297,7 +305,45 @@ public:
         }
         return Failure::none;
     }
-    Failure select(const OriginalEvents::Unit& unit)
+    template <class Elevation>
+    std::optional<size_t> cooperative_partner(const OriginalEvents::Unit& actor, const std::vector<OriginalEvents::Unit>& units, unsigned turn, Elevation elevation) const
+    {
+        const auto& record = selected();
+        if (!(record.raw[32] & 7)) { return std::nullopt; }
+        const int right = actor.x + int(actor.y & 1), left = right - 1;
+        const std::array<std::pair<int, int>, 4> positions{ { { right, actor.y - 1 }, { left, actor.y + 1 }, { left, actor.y - 1 }, { right, actor.y + 1 } } };
+        for (auto [x, y] : positions)
+        {
+            for (size_t i = 0; i < units.size(); ++i)
+            {
+                const auto& partner = units[i];
+                if (partner.first_turn > int(turn) || (partner.last_turn != 0 && partner.last_turn < int(turn)) || !(partner.status_flags & 0x80) || (partner.status_flags & 0x20) || partner.x != x || partner.y != y || partner.hostile() != actor.hostile()) { continue; }
+                // 45CC0C returns the first occupied slot; 46AAEB rejects hidden +2D.
+                if (partner.action_state != 0 || !(partner.learned[record.group] & (1u << record.bit)) || std::abs(elevation(actor.x, actor.y) - elevation(x, y)) > 3) { break; }
+                if (record.raw[32] & 6)
+                {
+                    if (actor.id < 1 || actor.id > 40 || partner.id < 1 || partner.id > 41) { break; }
+                    if (partner.id > 40 || actor.relationships[partner.id - 1] < 70 || partner.relationships[actor.id - 1] < 70) { break; }
+                }
+                return i;
+            }
+        }
+        return std::nullopt;
+    }
+    bool cooperative_pair(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& partner) const
+    {
+        if (actor.id == partner.id && actor.appearance == partner.appearance) { return false; }
+        if (actor.hostile() != partner.hostile() || !(partner.status_flags & 0x80) || (partner.status_flags & 0x20) || partner.action_state != 0 || !(partner.learned[selected().group] & (1u << selected().bit))) { return false; }
+        const int right = actor.x + int(actor.y & 1), left = right - 1;
+        if ((partner.y != actor.y - 1 && partner.y != actor.y + 1) || (partner.x != left && partner.x != right)) { return false; }
+        if (selected().raw[32] & 6)
+        {
+            if (actor.id < 1 || actor.id > 40 || partner.id < 1 || partner.id > 40) { return false; }
+            if (actor.relationships[partner.id - 1] < 70 || partner.relationships[actor.id - 1] < 70) { return false; }
+        }
+        return true;
+    }
+    Failure select(const OriginalEvents::Unit& unit, const OriginalEvents::Unit* partner = nullptr, bool summon_world_ready = false)
     {
         if (page_ != Page::list)
         {
@@ -317,14 +363,20 @@ public:
         }
         if (selected().raw[32] & 7)
         {
-            return Failure::partner_unresolved;
+            if (!partner || !cooperative_pair(unit, *partner)) { return Failure::partner_unresolved; }
+            if (auto failure = resource_failure(*partner, selected()); failure != Failure::none) { return failure; }
         }
         // 21..31 require 44CB0E world-state checks before leaving the list.
-        if (selected().effect() >= 21 && selected().effect() <= 31)
+        if (selected().effect() >= 21 && selected().effect() <= 31 && (!summon_world_ready || !summon_supported()))
         {
             return Failure::world_unresolved;
         }
         request_ = Request{ unit.id, unit.appearance, selected().id, selected().group, selected().bit, context_.second };
+        if (partner)
+        {
+            request_->partner_id = partner->id;
+            request_->partner_appearance = partner->appearance;
+        }
         page_ = Page::requested;
         return Failure::none;
     }
@@ -386,15 +438,54 @@ public:
     }
     struct HostileResult
     {
-        bool applied{ }, hit{ }, immune{ };
-        unsigned removed{ }, slot{ };
-        int chance{ }, roll{ };
+        bool applied{}, hit{}, immune{};
+        unsigned removed{}, slot{};
+        int chance{}, roll{};
         Failure failure{ Failure::none };
         std::vector<bool> target_hits;
         std::vector<int> target_amounts;
-        int raw_xp{ }, proficiency{ };
+        int raw_xp{}, proficiency{};
+        bool reveal_army{};
+        std::vector<OriginalDrain::Packet> drain_targets;
     };
     bool sword94_supported() const { return page_ != Page::closed && selected().id == 94 && selected().group == 9 && selected().bit == 0 && selected().effect() == 1 && selected().raw[20] == 44 && selected().raw[33] == 194; }
+    bool damage_supported() const
+    {
+        if (page_ == Page::closed) { return false; }
+        if (!NativeDamageRecords::ordinary_sword(selected().id)) { return false; }
+        const auto* original = NativeDamageRecords::find(selected().id);
+        return original && selected().raw == original->raw;
+    }
+    bool drain_supported() const
+    {
+        if (page_ == Page::closed) { return false; }
+        constexpr std::array<uint8_t, 37> blood{ 2, 8, 167, 108, 166, 229, 164, 106, 170, 107, 0, 0, 0, 45, 0, 180, 0, 1, 1, 42, 9, 75, 0, 70, 0, 0, 0, 2, 0, 0, 0, 2, 0, 1, 0, 0, 0 };
+        constexpr std::array<uint8_t, 37> puppet{ 4, 8, 179, 200, 192, 119, 166, 229, 169, 71, 0, 0, 0, 25, 0, 180, 0, 3, 1, 41, 23, 1, 0, 60, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0 };
+        return (selected().id == 18 && selected().raw == blood) || (selected().id == 40 && selected().raw == puppet);
+    }
+    bool fissure29_supported() const
+    {
+        constexpr std::array<uint8_t, 37> record{ 3, 9, 181, 245, 166, 97, 179, 78, 0, 0, 0, 0, 0, 24, 0, 208, 0, 2, 1, 3, 0, 0, 0, 20, 0, 0, 0, 0, 0, 2, 0, 2, 0, 1, 0, 0, 0 };
+        return page_ != Page::closed && selected().id == 29 && selected().raw == record;
+    }
+    bool transfer51_supported() const
+    {
+        constexpr std::array<uint8_t, 37> record{ 5, 9, 182, 199, 176, 101, 179, 78, 0, 0, 0, 0, 0, 25, 0, 230, 0, 2, 1, 4, 28, 5, 0, 100, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0 };
+        return page_ != Page::closed && selected().id == 51 && selected().raw == record;
+    }
+    bool summon_supported() const
+    {
+        if (page_ == Page::closed || selected().id < 64 || selected().id > 74) { return false; }
+        constexpr unsigned costs[]{ 32, 32, 32, 32, 50, 50, 60, 60, 70, 70, 80 };
+        constexpr unsigned thresholds[]{ 0, 25, 40, 60, 70, 70, 70, 70, 70, 70, 70 };
+        const unsigned slot = selected().id - 64;
+        const auto& r = selected();
+        return r.group == 6 && r.bit == slot && r.raw[0] == 7 && r.raw[1] == slot + 1
+            && r.word(13) == int(costs[slot]) && r.word(15) == int(thresholds[slot]) && !r.raw[17] && r.raw[18] == 1
+            && r.effect() == slot + 21 && !r.raw[20] && !r.word(21) && r.word(23) == 100 && r.word(25) == 99
+            && !r.word(27) && !r.word(29) && !r.raw[31] && r.raw[32] == (slot >= 4 ? 128 : 0)
+            && r.raw[33] == 1 && r.raw[34] == 26 - slot && r.raw[35] == 5 && !r.raw[36];
+    }
     bool curse33_supported() const { return page_ != Page::closed && selected().id == 33 && selected().group == 3 && selected().bit == 0 && selected().effect() == 55 && selected().raw[31] == 2; }
     bool sleep2_supported() const
     {
@@ -486,12 +577,18 @@ public:
         else if (id == 9) { index = 1; }
         return (id == 6 || id == 9 || id == 10) && selected().bit == id - 1 && std::equal(tails[index].begin(), tails[index].end(), selected().raw.begin() + 13);
     }
-    bool area_healing_supported() const { return (restoration_supported() && selected().effect() == 18) || (ability_buff_supported() && selected().effect() == 90); }
+    bool area_healing_supported() const { return (restoration_supported() && selected().effect() == 18) || (cooperative_supported() && selected().effect() == 90); }
     bool timed_buff_supported() const
     {
         if (page_ == Page::closed) { return false; }
         const auto* o = NativeTimedBuffs::find(selected().id);
         return o && selected().group == o->group && selected().bit == o->bit && std::equal(o->tail.begin(), o->tail.end(), selected().raw.begin() + 13);
+    }
+    bool cooperative_supported() const
+    {
+        if (page_ == Page::closed) { return false; }
+        const auto* o = NativeAbilityBuffs::find(selected().id);
+        return o && (o->id == 76 || o->id == 78 || o->id == 79) && selected().group == o->group && selected().bit == o->bit && std::equal(o->tail.begin(), o->tail.end(), selected().raw.begin() + 13);
     }
     bool ability_buff_supported() const
     {
@@ -500,7 +597,23 @@ public:
         if (selected().id == 47 || selected().id == 76 || selected().id == 78 || selected().id == 79) { return false; }
         return o && selected().group == o->group && selected().bit == o->bit && std::equal(o->tail.begin(), o->tail.end(), selected().raw.begin() + 13);
     }
-    bool friendly_status_supported() const { return ability_buff_supported() || timed_buff_supported() || blessing3_supported() || strengthening4_supported() || protection5_supported() || restoration_supported(); }
+    bool invisibility47_supported() const
+    {
+        if (page_ == Page::closed) { return false; }
+        const auto& oracle = *NativeAbilityBuffs::find(47);
+        return selected().id == 47 && selected().group == oracle.group && selected().bit == oracle.bit && std::equal(oracle.tail.begin(), oracle.tail.end(), selected().raw.begin() + 13);
+    }
+    bool reveal50_supported() const
+    {
+        constexpr std::array<uint8_t, 24> tail{ 25, 0, 180, 0, 0, 7, 45, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 31, 150, 0 };
+        return page_ != Page::closed && selected().id == 50 && selected().group == 4 && selected().bit == 7 && std::equal(tail.begin(), tail.end(), selected().raw.begin() + 13);
+    }
+    bool spirit45_supported() const
+    {
+        constexpr std::array<uint8_t, 24> tail{ 15, 0, 20, 0, 7, 1, 35, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0 };
+        return page_ != Page::closed && selected().id == 45 && selected().group == 4 && selected().bit == 2 && std::equal(tail.begin(), tail.end(), selected().raw.begin() + 13);
+    }
+    bool friendly_status_supported() const { return invisibility47_supported() || cooperative_supported() || ability_buff_supported() || timed_buff_supported() || blessing3_supported() || strengthening4_supported() || protection5_supported() || restoration_supported(); }
     void pay_staged(OriginalEvents::Unit& actor, ExecutionContext context, uint32_t payment_abilities) const
     {
         const unsigned mask = request_->second ? 8 : 4;
@@ -513,17 +626,107 @@ public:
         if (selected().raw[33] & 2) { actor.st -= cost; }
         if (selected().raw[33] & 4) { actor.hp = std::max(1, actor.hp - cost); }
     }
-    bool status_area_supported() const { return special_status_supported() || sleep2_supported() || hostile_status_supported() || friendly_status_supported(); }
+    bool status_area_supported() const { return fissure29_supported() || spirit45_supported() || reveal50_supported() || damage_supported() || drain_supported() || special_status_supported() || sleep2_supported() || hostile_status_supported() || friendly_status_supported(); }
     bool status_area_target(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& target) const
     {
-        return status_area_supported() && (selected().raw[31] == 3 || selected().raw[31] == 0 || ((target.hostile() == actor.hostile()) == (selected().raw[31] == 1)));
+        return status_area_supported() && (!damage_supported() || target.id != actor.id || target.appearance != actor.appearance) && (selected().raw[31] == 3 || selected().raw[31] == 0 || ((target.hostile() == actor.hostile()) == (selected().raw[31] == 1)));
     }
     bool sleep2_center_in_range(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& center) const
     {
         int dx = 2 * (center.x - actor.x) + int(center.y & 1) - int(actor.y & 1), dy = center.y - actor.y;
-        return status_area_supported() && std::max(std::abs(dx), std::abs(dy)) <= int(selected().raw[17]);
+        return status_area_supported() && ((damage_supported() && selected().raw[18] == 7) || std::max(std::abs(dx), std::abs(dy)) <= int(selected().raw[17]));
     }
     void set_area_camera(std::pair<int, int> camera) { area_camera_ = camera; }
+    std::function<int(int, int)> area_elevation_;
+    std::function<bool(int, int)> area_valid_;
+    void set_area_elevation(std::function<int(int, int)> elevation) { area_elevation_ = std::move(elevation); }
+    void set_area_valid(std::function<bool(int, int)> valid) { area_valid_ = std::move(valid); }
+    std::vector<std::pair<int, int>> radial_cells(const OriginalEvents::Unit& center, bool preserve_ray_slots = false) const
+    {
+        std::vector<std::pair<int, int>> cells{ { center.x, center.y } };
+        const unsigned mode = selected().raw[18];
+        const int radius = mode == 6 ? 6 : selected().raw[17];
+        if (mode == 5 || mode == 6)
+        {
+            std::array<std::pair<int, int>, 4> rays;
+            rays.fill({ center.x, center.y });
+            std::array<bool, 4> active{ true, true, true, true };
+            for (int n = 0; n < radius; ++n)
+            {
+                for (unsigned d = 0; d < 4; ++d)
+                {
+                    if (!active[d])
+                    {
+                        if (preserve_ray_slots) { cells.emplace_back(-1, -1); }
+                        continue;
+                    }
+                    auto& [x, y] = rays[d];
+                    if (d == 0 || d == 3)
+                    {
+                        if (y & 1) { ++x; }
+                    }
+                    else if (!(y & 1)) { --x; }
+                    y += d < 2 ? -1 : 1;
+                    if (area_valid_ && !area_valid_(x, y))
+                    {
+                        active[d] = false;
+                        if (preserve_ray_slots) { cells.emplace_back(-1, -1); }
+                        continue;
+                    }
+                    if (area_elevation_)
+                    {
+                        int difference = area_elevation_(center.x, center.y) - area_elevation_(x, y);
+                        if (difference < -2 || difference > 3)
+                        {
+                            active[d] = false;
+                            if (preserve_ray_slots) { cells.emplace_back(-1, -1); }
+                            continue;
+                        }
+                    }
+                    cells.emplace_back(x, y);
+                }
+            }
+            return cells;
+        }
+        // 403916/403A23: four wedges, axial cell then the two flanks of each layer.
+        for (unsigned d = 0; d < 4; ++d)
+        {
+            int x = center.x, y = center.y;
+            for (int n = 0; n < radius; ++n)
+            {
+                if (d == 0 || d == 3)
+                {
+                    if (!(y & 1)) { --x; }
+                }
+                else if (y & 1) { ++x; }
+                y += d < 2 ? 1 : -1;
+                bool stop = false;
+                if (area_valid_) { stop = !area_valid_(x, y); }
+                if (area_elevation_) { stop |= std::abs(area_elevation_(center.x, center.y) - area_elevation_(x, y)) > 10; }
+                if (!stop) { cells.emplace_back(x, y); }
+                int rightX = x, rightY = y, leftX = x, leftY = y;
+                for (int k = 0; k < n; ++k)
+                {
+                    if (d < 2)
+                    {
+                        if (rightY & 1) { ++rightX; }
+                    }
+                    else if (!(rightY & 1)) { --rightX; }
+                    rightY += (d == 0 || d == 3) ? 1 : -1;
+                    if (d < 2)
+                    {
+                        if (!(leftY & 1)) { --leftX; }
+                    }
+                    else if (leftY & 1) { ++leftX; }
+                    leftY += (d == 0 || d == 3) ? -1 : 1;
+                    if ((!area_valid_ || area_valid_(rightX, rightY)) && (!area_elevation_ || std::abs(area_elevation_(center.x, center.y) - area_elevation_(rightX, rightY)) <= 10)) { cells.emplace_back(rightX, rightY); }
+                    if ((!area_valid_ || area_valid_(leftX, leftY)) && (!area_elevation_ || std::abs(area_elevation_(center.x, center.y) - area_elevation_(leftX, leftY)) <= 10)) { cells.emplace_back(leftX, leftY); }
+                }
+                if (stop) { break; }
+            }
+        }
+        return cells;
+    }
     bool viewport_area_cell(int x, int y) const
     {
         // 4028DC -> 403717: mode7 enumerates the original camera's 19x36 staggered viewport, not radius7.
@@ -543,6 +746,11 @@ public:
     bool sleep2_area(const OriginalEvents::Unit& center, const OriginalEvents::Unit& target) const
     {
         if (selected().raw[18] == 7) { return viewport_area_cell(target.x, target.y); }
+        if (selected().raw[18] == 5 || selected().raw[18] == 6 || selected().raw[18] == 8)
+        {
+            const auto cells = radial_cells(center);
+            return std::find(cells.begin(), cells.end(), std::pair{ target.x, target.y }) != cells.end();
+        }
         // 402701: modes1/2/3 enumerate 1/3/5 staggered rows.
         const int side = 2 * int(selected().raw[18]) - 1;
         int startY = center.y - side + 1, startX = center.x;
@@ -584,8 +792,16 @@ public:
     // 401146 builds concentric diamond rings; record17 is the radius, not AP.
     bool hostile_in_range(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& target) const
     {
+        if (transfer51_supported())
+        {
+            const int dx = 2 * (target.x - actor.x) + int(target.y & 1) - int(actor.y & 1), dy = target.y - actor.y;
+            return target.hp > 0 && (target.status_flags & 0x80) && !(target.status_flags & 0x20) && std::max(std::abs(dx), std::abs(dy)) <= 2;
+        }
+        if (reveal50_supported()) { return actor.id == target.id && actor.appearance == target.appearance; }
+        if (spirit45_supported()) { return target.hp > 0 && (target.status_flags & 0x80) && !(target.status_flags & 0x20) && sleep2_center_in_range(actor, target); }
+        if (damage_supported() && selected().raw[17] == 0 && selected().raw[18] != 7) { return actor.id == target.id && actor.appearance == target.appearance; }
         if (hostile_stat_supported() && selected().raw[18] == 7) { return status_area_target(actor, target) && target.hp > 0 && (target.status_flags & 0x80) && !(target.status_flags & 0x20) && sleep2_area(actor, target); }
-        if (special_status_supported() || friendly_status_supported()) { return status_area_target(actor, target) && target.hp > 0 && (target.status_flags & 0x80) && !(target.status_flags & 0x20) && sleep2_center_in_range(actor, target); }
+        if (fissure29_supported() || damage_supported() || drain_supported() || special_status_supported() || friendly_status_supported()) { return status_area_target(actor, target) && target.hp > 0 && (target.status_flags & 0x80) && !(target.status_flags & 0x20) && sleep2_center_in_range(actor, target); }
         if ((!hostile_supported() && !sword94_supported() && !curse33_supported() && !sleep2_supported() && !hostile_status_supported()) || actor.hostile() == target.hostile() || target.hp <= 0 || !(target.status_flags & 0x80) || (target.status_flags & 0x20))
         {
             return false;
@@ -618,15 +834,29 @@ public:
     enum class Handler
     {
         unavailable,
+        damage466082,
         healing465C14,
         status4668F0,
         hostile467625,
         equipment467625,
-        specialStatus
+        drain467625,
+        fissure467625,
+        transfer4665D8,
+        summon465E04,
+        specialStatus,
+        army4666C5,
+        spirit46864F
     };
-    Handler handler() const
+    Handler handler(bool summon_ready = false) const
     {
         if (page_ == Page::closed) { return Handler::unavailable; }
+        if (damage_supported()) { return Handler::damage466082; }
+        if (drain_supported()) { return Handler::drain467625; }
+        if (fissure29_supported()) { return Handler::fissure467625; }
+        if (transfer51_supported()) { return Handler::transfer4665D8; }
+        if (summon_ready && summon_supported()) { return Handler::summon465E04; }
+        if (reveal50_supported()) { return Handler::army4666C5; }
+        if (spirit45_supported()) { return Handler::spirit46864F; }
         if (special_status_supported()) { return Handler::specialStatus; }
         if (effect_supported(selected()) || area_healing_supported()) { return Handler::healing465C14; }
         if (friendly_status_supported()) { return Handler::status4668F0; }
@@ -640,6 +870,19 @@ public:
         const std::vector<OriginalEvents::Unit>& units, unsigned turn, ValidCell valid) const
     {
         std::vector<size_t> out;
+        if (selected().raw[18] == 5 || selected().raw[18] == 6 || selected().raw[18] == 8)
+        {
+            for (auto [x, y] : radial_cells(center))
+            {
+                if (!valid(x, y)) { continue; }
+                for (size_t n = 0; n < units.size(); ++n)
+                {
+                    const auto& u = units[n];
+                    if (u.x == x && u.y == y && u.present(turn) && u.hp > 0 && (u.status_flags & 0x80) && !(u.status_flags & 0x20) && status_area_target(actor, u) && std::find(out.begin(), out.end(), n) == out.end()) { out.push_back(n); }
+                }
+            }
+            return out;
+        }
         if (selected().raw[18] == 7)
         {
             const int firstRow = area_camera_.second / 16;
@@ -671,7 +914,7 @@ public:
                         const auto& u = units[n];
                         const bool friendly = selected().raw[31] != 2;
                         const bool self = selected().id != 88 || (u.id == actor.id && u.appearance == actor.appearance);
-                        if (u.x == x && u.y == y && u.present(turn) && u.hp > 0 && (u.status_flags & 0x80) && !(u.status_flags & 0x20) && self && (selected().raw[31] == 0 || selected().raw[31] == 3 || ((u.hostile() == actor.hostile()) == friendly))) { out.push_back(n); }
+                        if (u.x == x && u.y == y && u.present(turn) && u.hp > 0 && (u.status_flags & 0x80) && !(u.status_flags & 0x20) && self && (!damage_supported() || u.id != actor.id || u.appearance != actor.appearance) && (selected().raw[31] == 0 || selected().raw[31] == 3 || ((u.hostile() == actor.hostile()) == friendly))) { out.push_back(n); }
                     }
                 }
                 if (y & 1) { ++x; }
@@ -693,25 +936,56 @@ public:
     }
     s2ne::Result<HostileResult> execute_pipeline(OriginalEvents::Unit& actor, std::vector<OriginalEvents::Unit>& targets,
         const OriginalEvents::Unit& center, const OriginalEvents* events, const OriginalPromotionTransaction* equipment,
-        original_combat::Random& random, ExecutionContext context, const AwardAdapter& award)
+        original_combat::Random& random, ExecutionContext context, const AwardAdapter& award, OriginalEvents::Unit* partner = nullptr,
+        const OriginalDrain* drain = nullptr, std::vector<uint8_t>* army_inventory = nullptr, const SummonAdapter& summon = {})
     {
         auto fail = []
         {
             return s2ne::Result<HostileResult>::failure(make_error("Original cast pipeline rejected request/target/resources/adapter"));
         };
-        const auto kind = handler();
-        if (kind == Handler::unavailable || page_ != Page::requested || !request_ || request_->unit_id != actor.id || request_->appearance != actor.appearance || !(actor.learned[request_->group] & (1u << request_->bit)) || !entry_available(actor, context_) || resource_failure(actor, selected()) != Failure::none || !context.friendly_army || context.difficulty < 1 || context.difficulty > 5 || !award || targets.empty()) { return fail(); }
+        const auto kind = handler(bool(summon));
+        if (kind == Handler::damage466082 || kind == Handler::unavailable || page_ != Page::requested || !request_ || request_->unit_id != actor.id || request_->appearance != actor.appearance || !(actor.learned[request_->group] & (1u << request_->bit)) || !entry_available(actor, context_) || resource_failure(actor, selected()) != Failure::none || !context.friendly_army || context.difficulty < 1 || context.difficulty > 5 || !award || (targets.empty() && kind != Handler::army4666C5 && kind != Handler::summon465E04)) { return fail(); }
         if (context.conditions_mode && (kind == Handler::healing465C14 || kind == Handler::status4668F0)) { return fail(); }
         if ((kind == Handler::healing465C14 || strengthening4_supported() || ability_buff_supported()) && !events) { return fail(); }
         if (kind == Handler::equipment467625 && !equipment) { return fail(); }
+        if (kind == Handler::drain467625 && (!drain || !events || !equipment || !army_inventory)) { return fail(); }
+        if (kind == Handler::fissure467625 && (!events || !army_inventory || config_[11] + 3 <= 0)) { return fail(); }
+        if (cooperative_supported() && (!partner || partner->id != request_->partner_id || partner->appearance != request_->partner_appearance || !cooperative_pair(actor, *partner) || resource_failure(*partner, selected()) != Failure::none)) { return fail(); }
         const unsigned group = request_->group;
         auto a = actor;
+        auto p = partner ? *partner : actor;
         auto staged = targets;
         auto stream = random;
+        auto inventory = army_inventory ? *army_inventory : std::vector<uint8_t>{};
         HostileResult out;
+        out.reveal_army = kind == Handler::army4666C5;
+        if (kind == Handler::summon465E04)
+        {
+            if (!targets.empty() || !summon(a, selected().id - 64, stream)) { return fail(); }
+            out.raw_xp = 5;
+        }
         int successes = 0;
         for (size_t i = 0; i < staged.size(); ++i)
         {
+            if (kind == Handler::army4666C5)
+            {
+                out.target_hits.push_back(false);
+                out.target_amounts.push_back(0);
+                continue;
+            }
+            if (kind == Handler::spirit46864F)
+            {
+                if (staged.size() != 1 || !hostile_in_range(actor, staged[i])) { return fail(); }
+                out.chance = 100;
+                if (events && (selected().raw[29] & 1) && events->skill_target_class(staged[i], staged[i].status3c)) { out.chance = 0; }
+                if ((selected().raw[29] & 2) && staged[i].runtime_role_selector == 1) { out.chance = 0; }
+                if ((selected().raw[29] & 0x20) && staged[i].runtime_role_selector == 2) { out.chance = 0; }
+                out.roll = stream.percent(context.seconds);
+                out.hit = out.roll <= out.chance;
+                out.target_hits.push_back(false);
+                out.target_amounts.push_back(0);
+                continue;
+            }
             auto& t = staged[i];
             for (size_t n = 0; n < i; ++n)
             {
@@ -731,7 +1005,81 @@ public:
                 else if (!healing1_in_range(actor, t)) { return fail(); }
             }
             else if (!hostile_in_range(actor, t) || targets.size() != 1) { return fail(); }
-            if (kind == Handler::healing465C14)
+            if (kind == Handler::transfer4665D8)
+            {
+                // 4665D8 delegates relocation to45DB10 after selection; settlement stays here.
+                if (!transfer51_supported() || targets.size() != 1) { return fail(); }
+                out.target_hits.push_back(false);
+                out.target_amounts.push_back(0);
+            }
+            else if (kind == Handler::fissure467625)
+            {
+                if (!t.action_status_runtime) { return fail(); }
+                auto& runtime = *t.action_status_runtime;
+                if ((unsigned(runtime[8]) | unsigned(runtime[9]) << 8) == 2)
+                {
+                    t.ai_role10 = 1;
+                    runtime[0xA] = 1;
+                    runtime[0xB] = runtime[0xC] = runtime[0xD] = 0;
+                }
+                OriginalDrain::Packet packet;
+                if (t.runtime_role_selector != 1)
+                {
+                    packet.chance = OriginalSkill94Formula::hit_curve(a.st - t.st + 20 - 100);
+                    packet.chance = packet.chance * (config_[10] + stream.bounded(config_[11] + 3, context.seconds)) / 10;
+                    if (context.friendly_army && !context.conditions_mode) { packet.chance = packet.chance * (100 + config_[0xF3 + context.difficulty]) / 100; }
+                    packet.chance = std::clamp(packet.chance, 1, 99);
+                }
+                packet.roll = stream.percent(context.seconds);
+                packet.hit = packet.roll <= packet.chance;
+                packet.snapshot = t.hp;
+                if (packet.hit)
+                {
+                    t.status3e = runtime[0x3E] &= uint8_t(~2u);
+                    if (!(context.difficulty == 2 && !a.hostile()))
+                    {
+                        if ((t.status_flags & 0x40) || ((t.status_flags & 0x10) && !events->army_status) || !OriginalDeathDispatch::continuation(*events, t.id).supported) { return fail(); }
+                        packet.killed = true;
+                        t.hp = 0;
+                        t.status_flags |= 0x20;
+                        runtime[0x33] = uint8_t(t.status_flags);
+                        runtime[0x124] = runtime[0x125] = 0;
+                        t.ending_losses = uint16_t(t.ending_losses + 1);
+                        a.ending_kills = uint16_t(a.ending_kills + 1);
+                        for (const auto item : t.initial_status)
+                        {
+                            if (!item) { continue; }
+                            if (item > inventory.size()) { return fail(); }
+                            inventory[item - 1] = uint8_t(std::min(99u, unsigned(inventory[item - 1]) + 1));
+                        }
+                        out.raw_xp = 1;
+                    }
+                }
+                out.drain_targets.push_back(packet);
+                out.chance = packet.chance;
+                out.roll = packet.roll;
+                out.hit |= packet.hit;
+                out.target_hits.push_back(packet.hit);
+                out.target_amounts.push_back(0);
+            }
+            else if (kind == Handler::drain467625)
+            {
+                OriginalSkill94Resolution::DamageContext modifiers;
+                modifiers.difficulty = context.difficulty;
+                modifiers.friendly_army = context.friendly_army;
+                modifiers.conditions_mode = context.conditions_mode;
+                auto packet = drain->resolve(a, t, *events, *equipment, inventory, stream, modifiers,
+                    selected().id, context.seconds, OriginalDeathDispatch::continuation(*events, t.id).supported);
+                if (!packet) { return fail(); }
+                out.drain_targets.push_back(packet.value());
+                out.chance = packet.value().chance;
+                out.roll = packet.value().roll;
+                out.hit |= packet.value().hit;
+                out.target_hits.push_back(packet.value().hit);
+                out.target_amounts.push_back(packet.value().damage);
+                if (packet.value().killed) { out.raw_xp = 1; }
+            }
+            else if (kind == Handler::healing465C14)
             {
                 if (t.hp > t.max_hp) { return fail(); }
                 if (selected().effect() == 90)
@@ -844,14 +1192,47 @@ public:
                 {
                     auto& r = *t.action_status_runtime;
                     bool changed = false;
-                    if (ability_buff_supported())
+                    if (cooperative_supported())
+                    {
+                        if (selected().id == 76)
+                        {
+                            auto applied = NativeAbilityBuffs::apply(t, 12, power, selected().word(25));
+                            if (!applied) { return fail(); }
+                            changed = applied.value();
+                            for (unsigned mask : { 4u, 0x200u })
+                            {
+                                auto status = original_combat::try_apply_timed_status(r, mask, selected().word(25));
+                                if (!status) { return fail(); }
+                                changed |= status.value();
+                            }
+                            t.status3c = r[0x3C];
+                            t.status3d = r[0x3D];
+                        }
+                        else if (selected().id == 79 && t.id != actor.id && t.id != p.id && t.action_state == 2 && t.persistent_role6 == 1)
+                        {
+                            t.action_state = 0;
+                            t.status34 = 0;
+                            t.carry_points = t.action_points;
+                            if (t.action_points > config_[0xED]) { t.carry_points = config_[0xED]; }
+                            if (t.action_points + t.max_action_points >= 110) { t.carry_points = 0; }
+                            t.action_points = int(int16_t(t.max_action_points + t.carry_points));
+                            r[0x2D] = 0;
+                            r[0x34] = r[0x35] = r[0x36] = r[0x37] = 0;
+                            r[0x12E] = uint8_t(t.action_points);
+                            r[0x12F] = uint8_t(unsigned(t.action_points) >> 8);
+                            r[0x130] = uint8_t(t.carry_points);
+                            r[0x131] = uint8_t(unsigned(t.carry_points) >> 8);
+                            changed = true;
+                        }
+                    }
+                    else if (ability_buff_supported())
                     {
                         int duration = selected().word(25);
                         if (duration > 100 && duration <= 200) { duration = std::max(1, actor.st / (duration - 100)); }
                         else if (duration > 200 && duration < 255) { duration = std::max(1, (actor.st - t.st) / (duration - 200)); }
                         else if (duration >= 255) { duration = -1; }
                         if (context_.army_da_nonzero) { ++duration; }
-                        auto applied = NativeAbilityBuffs::apply(t, actor, selected().effect(), power, duration, config_);
+                        auto applied = NativeAbilityBuffs::apply(t, selected().effect(), power, duration);
                         if (!applied) { return fail(); }
                         changed = applied.value();
                     }
@@ -874,10 +1255,12 @@ public:
                         const auto* buff = timed_buff_supported() ? NativeTimedBuffs::find(selected().id) : nullptr;
                         uint32_t mask = 0x20;
                         if (buff) { mask = buff->mask; }
+                        else if (invisibility47_supported()) { mask = 0x10; }
                         else if (selected().effect() == 19) { mask = 0x4000000; }
                         else if (selected().effect() == 65) { mask = 0x40; }
                         int duration = selected().word(25);
                         if (buff && duration > 100 && duration <= 200) { duration = std::max(1, actor.st / (duration - 100)); }
+                        if (invisibility47_supported() && context_.army_da_nonzero) { ++duration; }
                         auto applied = original_combat::try_apply_timed_status(r, mask, duration);
                         if (!applied) { return fail(); }
                         changed = applied.value();
@@ -972,22 +1355,43 @@ public:
                 out.target_amounts.push_back(0);
             }
             if (t.id == actor.id && t.appearance == actor.appearance) { a = t; }
+            if (partner && t.id == p.id && t.appearance == p.appearance) { p = t; }
         }
-        if (kind == Handler::healing465C14) { out.proficiency = (successes + 6 - int(context.difficulty)) * 5 + 10; }
+        if (kind == Handler::summon465E04)
+        {
+            int learned = 0;
+            for (unsigned bit = 0; bit < 11; ++bit)
+            {
+                if (actor.learned[6] & (1u << bit)) { ++learned; }
+            }
+            out.proficiency = (learned + 6 - int(context.difficulty)) * 5 + 20;
+        }
+        else if (kind == Handler::healing465C14) { out.proficiency = (successes + 6 - int(context.difficulty)) * 5 + 10; }
         else
         {
-            out.raw_xp = 5;
+            if ((kind != Handler::drain467625 && kind != Handler::fissure467625) || out.raw_xp != 1) { out.raw_xp = 5; }
             out.proficiency = (selected().word(13) + 6 - int(context.difficulty)) * 5 / 2 + 10;
+        }
+        if (cooperative_supported())
+        {
+            const int half_xp = std::max(1, out.raw_xp / 2);
+            // 46570C/4659F6 both add the unchanged +24h proficiency; only +1Ch/+20h are halved.
+            if (!award(p, stream, half_xp, out.proficiency, group)) { return fail(); }
+            out.raw_xp = half_xp;
         }
         if (!award(a, stream, out.raw_xp, out.proficiency, group)) { return fail(); }
         pay_staged(a, context, actor.abilities);
+        if (cooperative_supported()) { pay_staged(p, context, partner->abilities); }
         for (auto& t : staged)
         {
             if (t.id == actor.id && t.appearance == actor.appearance) { t = a; }
+            if (partner && t.id == p.id && t.appearance == p.appearance) { t = p; }
         }
+        if (cooperative_supported()) { *partner = std::move(p); }
         actor = std::move(a);
         targets = std::move(staged);
         random = stream;
+        if (army_inventory) { *army_inventory = std::move(inventory); }
         request_.reset();
         page_ = Page::closed;
         out.applied = true;

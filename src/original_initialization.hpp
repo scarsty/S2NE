@@ -342,6 +342,221 @@ public:
         }
         return g;
     }
+    Result<Source> try_summon_source(unsigned army, unsigned appearance, int level, int x, int y,
+        OriginalRandom& random, const OriginalPromotion& promotion, const OriginalRandom::TimeSource& time = { }) const
+    {
+        const auto kinds = read_resource(root_ / "KINDSP.BIN");
+        if (!kinds) { return Result<Source>::failure(kinds.error()); }
+        ResourceReader reader(kinds.value());
+        const unsigned count = reader.number(4), records = reader.number(18, 4);
+        const unsigned growth = get(pal_, 904, 4);
+        if (army > 1 || !appearance || appearance > count || level < 1 || level > 10 || growth < 18
+            || x < -32768 || x > 32767 || y < -32768 || y > 32767)
+        {
+            return Result<Source>::failure(make_error("Invalid44494E summon initialization"));
+        }
+        const size_t base = size_t(growth - 18) + 2 + size_t(count) * 108 + size_t(appearance - 1) * 50;
+        if (base > bin_.size() || 50 > bin_.size() - base || !reader.extent(records + size_t(appearance - 1) * 37, 37))
+        {
+            return Result<Source>::failure(make_error("Truncated42788A summon base record"));
+        }
+        Source source;
+        source.group = army;
+        const size_t kind = records + size_t(appearance - 1) * 37;
+        for (unsigned i = 0; i < 14 && kinds.value().at(kind + i); ++i) { source.bytes[2 + i] = kinds.value().at(kind + i); }
+        auto put = [&](unsigned offset, int value)
+        {
+            source.bytes.at(offset) = uint8_t(value);
+            source.bytes.at(offset + 1) = uint8_t(uint16_t(value) >> 8);
+        };
+        put(16, appearance);
+        put(18, level);
+        put(23, x);
+        put(25, y);
+        source.bytes[49] = uint8_t(army);
+        source.bytes[50] = army == 0 ? 1 : 0;
+        source.bytes[51] = 1;
+        constexpr unsigned offsets[]{ 27, 29, 31, 37, 39, 35, 43, 33, 41 };
+        for (unsigned i = 0; i < 9; ++i) { put(offsets[i], int16_t(get(bin_, base + i * 2))); }
+        for (unsigned i = 0; i < 5; ++i) { put(63 + i * 2, get(bin_, base + 18 + i * 2)); }
+        for (unsigned i = 0; i < 11; ++i) { put(79 + i * 2, get(bin_, base + 28 + i * 2)); }
+        put(45, kinds.value().at(kind + 26));
+        put(47, int8_t(kinds.value().at(kind + 21)));
+        auto next = random;
+        for (int current = 2; current <= level; ++current)
+        {
+            auto increase = promotion.try_growth(appearance, current, next, time);
+            if (!increase) { return Result<Source>::failure(increase.error()); }
+            for (unsigned i = 0; i < 9; ++i)
+            {
+                const unsigned offset = offsets[i];
+                int value = int16_t(unsigned(source.bytes[offset]) | unsigned(source.bytes[offset + 1]) << 8);
+                value = int16_t(value + increase.value()[i]);
+                put(offset, std::clamp(value, 0, i == 0 ? 5000 : 999));
+            }
+        }
+        random = next;
+        return Result<Source>::success(std::move(source));
+    }
+    Result<OriginalSave::UnitRecord> try_new_summon_role(const Source& source, unsigned index, unsigned control,
+        const OriginalEvents& events, const PlacementMap& map, std::span<const OriginalSave::UnitRecord> first,
+        std::span<const OriginalSave::UnitRecord> second, unsigned game_mode = 0) const
+    {
+        if (source.id() || source.group > 1 || control > 1)
+        {
+            return Result<OriginalSave::UnitRecord>::failure(make_error("Unsupported44494E summon owner/army adjustment"));
+        }
+        const auto loaded = read_resource(root_ / "KINDSP.BIN");
+        if (!loaded) { return Result<OriginalSave::UnitRecord>::failure(loaded.error()); }
+        const auto& kinds = loaded.value();
+        auto word = [&](unsigned offset)
+        {
+            return unsigned(source.bytes.at(offset)) | unsigned(source.bytes.at(offset + 1)) << 8;
+        };
+        const unsigned appearance = word(16);
+        if (!appearance || appearance > get(kinds, 4)) { return Result<OriginalSave::UnitRecord>::failure(make_error("Invalid44494E summon appearance")); }
+        const size_t kind = get(kinds, 18, 4) + size_t(appearance - 1) * 37;
+        OriginalEvents::Unit unit;
+        unit.id = 0;
+        unit.appearance = appearance;
+        unit.level = word(18);
+        unit.x = int16_t(word(23));
+        unit.y = int16_t(word(25));
+        unit.behavior = 0;
+        if (source.group) { unit.behavior = 2; }
+        else if (control) { unit.behavior = 1; }
+        unit.status_flags = 0x90;
+        unit.runtime_flags30 = 0x90000000;
+        unit.direction = source.bytes[50];
+        unit.first_turn = 1;
+        unit.hp = unit.max_hp = int16_t(word(27));
+        unit.mp = unit.max_mp = int16_t(word(29));
+        unit.st = unit.max_st = int16_t(word(31));
+        unit.sp = unit.max_sp = int16_t(word(33));
+        unit.strikeback = int16_t(word(35));
+        unit.attack = unit.attack_limit = int16_t(word(37));
+        unit.defense = unit.defense_limit = int16_t(word(39));
+        unit.fencing = int16_t(word(41));
+        unit.tactics = unit.base_tactics = int16_t(word(43));
+        unit.kind_attribute = uint8_t(word(45));
+        unit.base_action_points = unit.action_points = unit.max_action_points = int16_t(word(47));
+        unit.experience_threshold = get(kinds, kind + 14);
+        if (kinds.at(kind + 19)) { unit.abilities = 1u << ((kinds.at(kind + 19) - 1) & 31); }
+        for (unsigned p = 2; p < 16 && source.bytes[p]; ++p) { unit.name.push_back(source.bytes[p]); }
+        const size_t directory = entry(2);
+        size_t ability = directory + 9 + 11 * 2;
+        for (unsigned group = 0; group < 11; ++group)
+        {
+            unit.learned[group] = word(79 + group * 2);
+            const unsigned count = bin_.at(directory + 10 + group * 2);
+            for (unsigned bit = 0; bit < count; ++bit, ability += 37)
+            {
+                if (!(unit.learned[group] & (1u << (bit & 31)))) { continue; }
+                const int threshold = int16_t(get(bin_, ability + 15));
+                if (int(unit.learned_proficiency[group] / 10) < threshold) { unit.learned_proficiency[group] = uint16_t(threshold * 10); }
+            }
+        }
+        OriginalPromotionTransaction equipment(root_);
+        OriginalPromotionTransaction::State state{ unit, std::vector<uint8_t>(equipment.item_count()), OriginalRandom({ 1, 0 }) };
+        for (unsigned i = 0; i < 6; ++i)
+        {
+            const unsigned item = word(63 + i * 2);
+            if (!item) { continue; }
+            if (item > state.inventory.size()) { return Result<OriginalSave::UnitRecord>::failure(make_error("Invalid summon source equipment")); }
+            state.inventory[item - 1] = 1;
+            if (!equipment.equip(state, item)) { return Result<OriginalSave::UnitRecord>::failure(make_error("Unsupported summon source item distribution")); }
+        }
+        unit = std::move(state.unit);
+        if (source.group && game_mode != 1)
+        {
+            const size_t stage = entry(1) + 2 + size_t(events.stage - 1) * 30;
+            if (bin_.at(stage + 21) != 3)
+            {
+                size_t config = entry(10);
+                config += 2 + 4 * get(bin_, config);
+                config += 2 + get(bin_, config);
+                config += 2;
+                const int factor = kinds.at(kind + 20);
+                const unsigned minimum = unsigned(std::clamp(int(int8_t(bin_.at(config + 0xE0))) * int(events.difficulty) * factor / 10 + unit.level * factor / 20, 0, 999));
+                for (const auto& action : events.action_records(unit))
+                {
+                    const int type = action.fields[0];
+                    if (type >= 2 && type <= 7) { unit.weapon_proficiency[type - 2] = std::max(unit.weapon_proficiency[type - 2], minimum); }
+                    else if ((type < 1 || type > 10) && type != 11 && type != 12) { unit.special_proficiency = std::max(unit.special_proficiency, minimum); }
+                }
+            }
+        }
+        auto record = try_new_role(source, unit, index, map, first, second);
+        if (record)
+        {
+            OriginalSaveBridge::put(record.value(), 8, control);
+            if (source.group)
+            {
+                auto adjusted = original_combat::try_adjust_runtime_stats(record.value(), events.stage_adjustment);
+                if (!adjusted) { return Result<OriginalSave::UnitRecord>::failure(adjusted.error()); }
+            }
+        }
+        return record;
+    }
+    Result<OriginalSave::State> try_summon_role(const OriginalSave::State& before, const OriginalEvents& events,
+        unsigned army, unsigned slot, int level, int x, int y, unsigned control, OriginalRandom& random,
+        const OriginalPromotion& promotion, const OriginalRandom::TimeSource& time = { }) const
+    {
+        if (army > 1 || slot >= 11 || control > 1 || level < 1 || level > 10 || events.stage != OriginalSaveBridge::get(before.globals_4f7cd0, 8, 4))
+        {
+            return Result<OriginalSave::State>::failure(make_error("Invalid44494E summon transaction"));
+        }
+        auto staged = before;
+        auto& group = staged.groups[army];
+        const unsigned appearance = group.status[slot * 3 + 1] | unsigned(group.status[slot * 3 + 2]) << 8;
+        if (!appearance || group.status[slot * 3]) { return Result<OriginalSave::State>::failure(make_error("Original summon slot already deployed/undefined")); }
+        for (unsigned i = 0; i < 11; ++i)
+        {
+            if (group.status[i * 3] == 1) { return Result<OriginalSave::State>::failure(make_error("44CB0E army already has a deployed summon")); }
+        }
+        auto next = random;
+        auto map = try_placement_map(root_, events.map_id);
+        if (!map) { return Result<OriginalSave::State>::failure(map.error()); }
+        auto existing = std::find_if(group.units.begin(), group.units.end(), [&](const auto& record)
+            {
+                return (unsigned(record[4]) | unsigned(record[5]) << 8) == appearance && (record[0x33] & 0x10);
+            });
+        if (existing == group.units.end())
+        {
+            if (group.units.size() >= OriginalSave::maximum_units) { return Result<OriginalSave::State>::failure(make_error("Original summon army full")); }
+            if (OriginalSaveBridge::get(before.globals_4f7cd0, 0, 4) == 1 || army == 0) { level = 1; }
+            auto source = try_summon_source(army, appearance, level, x, y, next, promotion, time);
+            if (!source) { return Result<OriginalSave::State>::failure(source.error()); }
+            auto role = try_new_summon_role(source.value(), unsigned(group.units.size() + 1), control, events, map.value(), staged.groups[0].units, staged.groups[1].units, OriginalSaveBridge::get(before.globals_4f7cd0, 0, 4));
+            if (!role) { return Result<OriginalSave::State>::failure(role.error()); }
+            group.units.push_back(std::move(role).value());
+        }
+        else
+        {
+            OriginalSaveBridge::put(*existing, 0x23, uint32_t(x), 4);
+            OriginalSaveBridge::put(*existing, 0x27, uint32_t(y), 4);
+            (*existing)[0x2B] = army == 0 ? 1 : 0;
+            OriginalSaveBridge::put(*existing, 8, control);
+            (*existing)[0x2D] = 0;
+            std::fill(existing->begin() + 0x34, existing->begin() + 0x40, 0);
+            std::fill(existing->begin() + 0x124, existing->begin() + 0x13A, 0);
+            constexpr std::pair<unsigned, unsigned> restore[]{ { 0xB7, 0x124 }, { 0xB9, 0x126 }, { 0xBB, 0x128 }, { 0xBD, 0x12A }, { 0xC3, 0x134 }, { 0xC5, 0x136 }, { 0xC9, 0x138 } };
+            for (const auto [source, destination] : restore)
+            {
+                (*existing)[destination] = (*existing)[source];
+                (*existing)[destination + 1] = (*existing)[source + 1];
+            }
+            const int ap = std::min(110, int(int16_t(unsigned((*existing)[0xBF]) | unsigned((*existing)[0xC0]) << 8)));
+            OriginalSaveBridge::put(*existing, 0x12C, uint16_t(ap));
+            OriginalSaveBridge::put(*existing, 0x12E, uint16_t(ap));
+            OriginalSaveBridge::put(*existing, 0x30, 0x90000000, 4);
+        }
+        group.status[slot * 3] = 1;
+        auto restored = OriginalSaveBridge::try_restore(root_, staged);
+        if (!restored) { return Result<OriginalSave::State>::failure(restored.error()); }
+        random = next;
+        return Result<OriginalSave::State>::success(std::move(staged));
+    }
     Result<std::vector<Source>> try_sources(unsigned stage) const
     {
         ResourceReader pal(pal_), bin(bin_);
@@ -938,7 +1153,28 @@ public:
                 }
                 if (flags & 0x10)
                 {
-                    return Result<OriginalSave::State>::failure(make_error("Original44A4A9 alternate appearance retention requires army status lookup"));
+                    bool retainedSummon = false;
+                    for (unsigned slot = 0; slot < 11; ++slot)
+                    {
+                        if ((unsigned(army.status[slot * 3 + 1]) | unsigned(army.status[slot * 3 + 2]) << 8) == OriginalSaveBridge::get(role, 4))
+                        {
+                            retainedSummon = true;
+                            break;
+                        }
+                    }
+                    if (!retainedSummon) { continue; }
+                    role[0x33] &= 0x73;
+                    role[0x2D] = 0;
+                    std::fill(role.begin() + 0x34, role.begin() + 0x40, uint8_t(0));
+                    std::fill(role.begin() + 0x124, role.begin() + 0x13A, uint8_t(0));
+                    for (unsigned j = 0; j < 4; ++j) { OriginalSaveBridge::put(role, 0x124 + j * 2, OriginalSaveBridge::get(role, 0xB7 + j * 2)); }
+                    const int ap = std::min(110, int(int16_t(OriginalSaveBridge::get(role, 0xBF))));
+                    OriginalSaveBridge::put(role, 0x12C, uint16_t(ap));
+                    OriginalSaveBridge::put(role, 0x12E, uint16_t(ap));
+                    for (auto [to, from] : { std::pair{ 0x134u, 0xC3u }, { 0x136u, 0xC5u }, { 0x138u, 0xC9u } })
+                    {
+                        OriginalSaveBridge::put(role, to, OriginalSaveBridge::get(role, from));
+                    }
                 }
                 retained.push_back(role);
             }
@@ -986,6 +1222,11 @@ public:
             for (size_t i = 0; i < raw.groups[0].units.size(); ++i)
             {
                 auto& r = raw.groups[0].units[i];
+                if (r[0x33] & 0x10)
+                {
+                    OriginalSaveBridge::put(r, 0, unsigned(i + 1));
+                    continue;
+                }
                 unsigned original_index = OriginalSaveBridge::get(r, 0);
                 if (!original_index || original_index > deployed.units.size())
                 {
@@ -1034,6 +1275,11 @@ public:
         for (size_t i = 0; i < raw.groups[0].units.size(); ++i)
         {
             auto& r = raw.groups[0].units[i];
+            if (r[0x33] & 0x10)
+            {
+                OriginalSaveBridge::put(r, 0, unsigned(i + 1));
+                continue;
+            }
             unsigned original_index = OriginalSaveBridge::get(r, 0);
             if (!original_index || original_index > deployed.units.size())
             {

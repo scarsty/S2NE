@@ -218,5 +218,20 @@ struct Feedback
         hp_after -= chunk;
         return chunk;
     }
+    int consume_with_caster(unsigned effect, int& caster_hp, int caster_max_hp, bool reverse)
+    {
+        const int chunk = consume();
+        if (chunk <= 0) { return chunk; }
+        if (effect == 41) { caster_hp = int16_t(uint16_t(caster_hp - chunk)); }
+        else if (effect == 42 && caster_hp < caster_max_hp)
+        {
+            if (!reverse) { caster_hp = std::min(caster_max_hp, int(int16_t(uint16_t(caster_hp + chunk)))); }
+        }
+        else if (reverse)
+        {
+            caster_hp = std::max(0, int(int16_t(uint16_t(caster_hp - chunk))));
+        }
+        return chunk;
+    }
 };
 }    //namespace s2ne::original_combat

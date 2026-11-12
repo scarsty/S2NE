@@ -10,6 +10,7 @@ namespace s2ne
 {
 inline Result<std::vector<uint8_t>> read_resource(const std::filesystem::path& path)
 {
+    StartupTrace trace("Resource");
     auto resolved = path;
     if (!std::filesystem::exists(resolved) && std::filesystem::exists(resolved.parent_path().parent_path() / resolved.filename()))
     {
@@ -19,16 +20,23 @@ inline Result<std::vector<uint8_t>> read_resource(const std::filesystem::path& p
     {
         return ResourceBundle(resolved.parent_path()).try_prg_image();
     }
-    std::ifstream file(resolved, std::ios::binary);
+    std::ifstream file(resolved, std::ios::binary | std::ios::ate);
     if (!file)
     {
         return Result<std::vector<uint8_t>>::failure(make_error("Cannot open resource: " + path.string()));
     }
-    std::vector<uint8_t> bytes{ std::istreambuf_iterator<char>(file), { } };
-    if (file.bad())
+    const auto length = file.tellg();
+    if (length < 0 || uint64_t(length) > std::vector<uint8_t>().max_size())
+    {
+        return Result<std::vector<uint8_t>>::failure(make_error("Invalid resource length: " + path.string()));
+    }
+    std::vector<uint8_t> bytes(size_t(length), uint8_t{ });
+    file.seekg(0);
+    if (!file.read(reinterpret_cast<char*>(bytes.data()), std::streamsize(bytes.size())))
     {
         return Result<std::vector<uint8_t>>::failure(make_error("Cannot read resource: " + path.string()));
     }
+    trace.mark(resolved.filename().string() + " bytes=" + std::to_string(bytes.size()));
     return Result<std::vector<uint8_t>>::success(std::move(bytes));
 }
 class ResourceReader

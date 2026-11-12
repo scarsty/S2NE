@@ -1,9 +1,22 @@
 #include "app_options.hpp"
+#include "native_damage_records.hpp"
 #include <SDL3/SDL.h>
 namespace s2ne
 {
 AppOptions::AppOptions(int argc, char** argv)
 {
+    stdio = argc > 1 && std::string_view(argv[1]) == "--stdio";
+    if (stdio)
+    {
+        if (argc != 5 && argc != 7) { throw std::runtime_error("Usage: --stdio <resources> --save-root <new-directory> [--load <read-only-save>]"); }
+        if (std::string_view(argv[3]) != "--save-root") { throw std::runtime_error("--stdio requires --save-root"); }
+        stdioSaveRoot = std::filesystem::absolute(argv[4]);
+        if (argc == 7)
+        {
+            if (std::string_view(argv[5]) != "--load") { throw std::runtime_error("Expected --load"); }
+            stdioInitialSave = std::filesystem::absolute(argv[6]);
+        }
+    }
     verify = argc > 1 && std::string(argv[1]) == "--verify";
     teleportSmoke = argc > 1 && std::string(argv[1]) == "--smoke-teleport";
     evacuationSmoke = argc > 1 && std::string(argv[1]) == "--smoke-evacuation";
@@ -40,10 +53,13 @@ AppOptions::AppOptions(int argc, char** argv)
     loadSmoke = argc > 1 && std::string(argv[1]) == "--smoke-load";
     skill88Input = argc > 1 && std::string(argv[1]) == "--smoke-skill88-input";
     skill94Input = argc > 1 && std::string(argv[1]) == "--smoke-skill94-input";
+    const bool damageInput = argc > 6 && std::string(argv[1]) == "--smoke-damage-input" && NativeDamageRecords::ordinary_sword(unsigned(std::stoul(argv[6])));
     const bool curse33Input = argc > 1 && std::string(argv[1]) == "--smoke-skill33-input";
-    const bool timedBuffInput = argc > 1 && (std::string(argv[1]) == "--smoke-skill37-input" || std::string(argv[1]) == "--smoke-skill44-input" || std::string(argv[1]) == "--smoke-skill46-input" || std::string(argv[1]) == "--smoke-skill58-input" || std::string(argv[1]) == "--smoke-skill86-input" || std::string(argv[1]) == "--smoke-skill92-input");
+    const bool summonInput = argc > 1 && std::string_view(argv[1]).starts_with("--smoke-skill")
+        && unsigned(std::atoi(argv[1] + 13)) >= 64 && unsigned(std::atoi(argv[1] + 13)) <= 74;
+    const bool timedBuffInput = argc > 1 && (std::string(argv[1]) == "--smoke-skill37-input" || std::string(argv[1]) == "--smoke-skill44-input" || std::string(argv[1]) == "--smoke-skill46-input" || std::string(argv[1]) == "--smoke-skill55-input" || std::string(argv[1]) == "--smoke-skill58-input" || std::string(argv[1]) == "--smoke-skill86-input" || std::string(argv[1]) == "--smoke-skill92-input");
     const bool abilityBuffInput = argc > 1 && (std::string(argv[1]) == "--smoke-skill22-input" || std::string(argv[1]) == "--smoke-skill23-input" || std::string(argv[1]) == "--smoke-skill28-input" || std::string(argv[1]) == "--smoke-skill42-input" || std::string(argv[1]) == "--smoke-skill47-input" || std::string(argv[1]) == "--smoke-skill57-input" || std::string(argv[1]) == "--smoke-skill76-input" || std::string(argv[1]) == "--smoke-skill78-input" || std::string(argv[1]) == "--smoke-skill79-input" || std::string(argv[1]) == "--smoke-skill84-input" || std::string(argv[1]) == "--smoke-skill89-input" || std::string(argv[1]) == "--smoke-skill91-input");
-    const bool specialStatusInput = abilityBuffInput || timedBuffInput || argc > 1 && (std::string(argv[1]) == "--smoke-skill8-input" || std::string(argv[1]) == "--smoke-skill12-input" || std::string(argv[1]) == "--smoke-skill35-input" || std::string(argv[1]) == "--smoke-skill39-input" || std::string(argv[1]) == "--smoke-skill48-input" || std::string(argv[1]) == "--smoke-skill56-input" || std::string(argv[1]) == "--smoke-skill60-input");
+    const bool specialStatusInput = abilityBuffInput || timedBuffInput || argc > 1 && (std::string(argv[1]) == "--smoke-skill51-input" || std::string(argv[1]) == "--smoke-skill29-input" || std::string(argv[1]) == "--smoke-skill18-input" || std::string(argv[1]) == "--smoke-skill40-input" || std::string(argv[1]) == "--smoke-skill45-input" || std::string(argv[1]) == "--smoke-skill50-input") || argc > 1 && (std::string(argv[1]) == "--smoke-skill8-input" || std::string(argv[1]) == "--smoke-skill12-input" || std::string(argv[1]) == "--smoke-skill35-input" || std::string(argv[1]) == "--smoke-skill39-input" || std::string(argv[1]) == "--smoke-skill48-input" || std::string(argv[1]) == "--smoke-skill56-input" || std::string(argv[1]) == "--smoke-skill60-input");
     const bool hostileStatusInput = specialStatusInput || argc > 1 && (std::string(argv[1]) == "--smoke-skill17-input" || std::string(argv[1]) == "--smoke-skill25-input" || std::string(argv[1]) == "--smoke-skill52-input" || std::string(argv[1]) == "--smoke-skill61-input" || std::string(argv[1]) == "--smoke-skill13-input" || std::string(argv[1]) == "--smoke-skill15-input" || std::string(argv[1]) == "--smoke-skill53-input" || std::string(argv[1]) == "--smoke-skill34-input" || std::string(argv[1]) == "--smoke-skill38-input" || std::string(argv[1]) == "--smoke-skill54-input" || std::string(argv[1]) == "--smoke-skill96-input");
     const bool restorationInput = argc > 1 && (std::string(argv[1]) == "--smoke-skill6-input" || std::string(argv[1]) == "--smoke-skill9-input" || std::string(argv[1]) == "--smoke-skill10-input");
     const bool status4Input = argc > 1 && std::string(argv[1]) == "--smoke-skill4-input";
@@ -52,10 +68,20 @@ AppOptions::AppOptions(int argc, char** argv)
     const bool blessing3Input = argc > 1 && std::string(argv[1]) == "--smoke-skill3-input";
     const bool sleep2Input = argc > 1 && std::string(argv[1]) == "--smoke-skill2-input";
     const bool healing1Input = argc > 1 && std::string(argv[1]) == "--smoke-skill1-input";
-    skillInputSmoke = hostileStatusInput || restorationInput || status4Input || status5Input || blessing3Input || sleep2Input || healing1Input || curse33Input || skill94Input || skill88Input || (argc > 1 && std::string(argv[1]) == "--smoke-skill32-input");
+    skillInputSmoke = summonInput || damageInput || hostileStatusInput || restorationInput || status4Input || status5Input || blessing3Input || sleep2Input || healing1Input || curse33Input || skill94Input || skill88Input || (argc > 1 && std::string(argv[1]) == "--smoke-skill32-input");
     skill88Positive = skill88Input && argc > 4 && std::string(argv[4]) == "--positive-heal";
     unsigned int requestedSkill;
-    if (specialStatusInput) { requestedSkill = unsigned(std::stoul(std::string(argv[1]).substr(13))); }
+    if (summonInput)
+    {
+        requestedSkill = unsigned(std::atoi(argv[1] + 13));
+        skillControl = argc > 5 ? argv[5] : "mixed";
+    }
+    else if (damageInput)
+    {
+        requestedSkill = unsigned(std::stoul(argv[6]));
+        skillControl = argv[5];
+    }
+    else if (specialStatusInput) { requestedSkill = unsigned(std::stoul(std::string(argv[1]).substr(13))); }
     else if (hostileStatusInput)
     {
         if (std::string(argv[1]) == "--smoke-skill17-input") { requestedSkill = 17; }
@@ -97,7 +123,8 @@ AppOptions::AppOptions(int argc, char** argv)
 
     inputSkill = requestedSkill;
     const char* requestedFolder;
-    if (hostileStatusInput)
+    if (damageInput) { requestedFolder = argv[4]; }
+    else if (hostileStatusInput)
     {
         if (argc > 4) { requestedFolder = argv[4]; }
         else
@@ -156,7 +183,8 @@ AppOptions::AppOptions(int argc, char** argv)
     }
 
     inputFolder = requestedFolder;
-    if (skillControl != "mixed" && skillControl != "rollback" && !(restorationInput && skillControl == "branches") && !(skill94Input && (skillControl == "kill" || skillControl == "revive25" || skillControl == "consume28" || skillControl == "reverse29" || skillControl == "script82" || skillControl == "scriptfail82"))) { skillControl.clear(); }
+    if (skillControl != "mixed" && skillControl != "rollback" && !(inputSkill == 51 && (skillControl == "ally" || skillControl == "enemy" || skillControl == "arrivalfail" || skillControl == "arrivalfinalfail")) && !(inputSkill == 29 && (skillControl == "script82" || skillControl == "scriptfail82" || skillControl == "drainfail")) && !((inputSkill == 18 || inputSkill == 40) && (skillControl == "drainfail" || skillControl == "revive25" || skillControl == "consume28" || skillControl == "reverse29" || skillControl == "script82" || skillControl == "scriptfail82")) && !(inputSkill == 50 && skillControl == "expire") && !((inputSkill == 47 || inputSkill == 50) && skillControl == "scratchfail") && !(inputSkill == 45 && (skillControl == "panelfail" || skillControl == "enemy")) && !(NativeDamageRecords::ordinary_sword(inputSkill) && (skillControl == "script82" || skillControl == "scriptfail82")) && !(restorationInput && skillControl == "branches") && !(skill94Input && (skillControl == "kill" || skillControl == "revive25" || skillControl == "consume28" || skillControl == "reverse29" || skillControl == "script82" || skillControl == "scriptfail82"))) { skillControl.clear(); }
+    if (summonInput && argc > 5 && (std::string_view(argv[5]) == "summonfail" || std::string_view(argv[5]) == "growthfail")) { skillControl = argv[5]; }
     skillScheduleStress = skillInputSmoke && argc > 4 && std::string(argv[4]) == "--schedule-stress";
     promotionSmoke = argc > 1 && std::string(argv[1]) == "--smoke-promotion";
     option = teleportSmoke || evacuationSmoke || shopSmoke || verify || smoke || newGameSmoke || battleSmoke || loadSmoke || promotionSmoke || skillInputSmoke;
@@ -165,7 +193,7 @@ AppOptions::AppOptions(int argc, char** argv)
 std::filesystem::path AppOptions::resource_root(int argc, char** argv) const
 {
     int resource_argument = 1;
-    if (option) { resource_argument = 2; }
+    if (option || stdio) { resource_argument = 2; }
     std::filesystem::path root;
     if (argc > resource_argument) { root = std::filesystem::u8path(argv[resource_argument]); }
     else

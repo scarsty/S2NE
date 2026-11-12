@@ -24,26 +24,26 @@ class Battle
 public:
     struct Cell
     {
-        int elevation{ }, ground{ }, object{ };
+        int elevation{}, ground{}, object{};
     };
     struct Point
     {
-        int x{ }, y{ };
+        int x{}, y{};
         bool operator==(const Point&) const = default;
     };
 
 private:
-    unsigned width_{ }, height_{ };
+    unsigned width_{}, height_{};
     std::vector<Cell> cells_;
     std::vector<unsigned> ground_attributes_, object_attributes_;
     std::vector<Point> teleport_pads_;
     std::function<bool(unsigned, Point)> teleport_presenter_;
-    size_t teleport_cursor_{ };
+    size_t teleport_cursor_{};
     std::optional<Point> teleport_destination_;
-    bool teleport_pending_{ };
+    bool teleport_pending_{};
     std::vector<uint8_t> movement_;
     std::vector<Point> sealed_cells_;
-    std::array<int, 12> config_{ };
+    std::array<int, 12> config_{};
     unsigned turn_ = 1;
     bool hostile_side_ = false;
     std::vector<uint8_t> effect_palette_;
@@ -52,20 +52,20 @@ private:
     std::vector<uint8_t> ground_cursor_;
     struct ProjectileSprite
     {
-        unsigned width{ }, height{ };
+        unsigned width{}, height{};
         std::vector<uint8_t> pixels;
     };
     std::array<ProjectileSprite, 16> projectile59_;
     std::array<ProjectileSprite, 5> finish_directions_;
     std::optional<OriginalEvents::EffectFlight> projectile_;
-    unsigned projectile_elapsed_{ };
+    unsigned projectile_elapsed_{};
 
 public:
     bool projectile_active() const { return projectile_.has_value(); }
 
 private:
     std::array<std::vector<uint8_t>, 4> movement_mouse_;
-    std::array<Point, 4> movement_mouse_sizes_{ };
+    std::array<Point, 4> movement_mouse_sizes_{};
     Point mouse_position_{ -1, -1 }, hovered_cell_{ -1, -1 };
     Point hovered_{ -1, -1 };
 
@@ -73,9 +73,9 @@ public:
     // Raw inputs used by sub_476707; offsets refer to its runtime unit record.
     struct MovementContext
     {
-        unsigned extra_flags{ }, status34{ }, status118{ }, status116{ };
-        bool has_usable_ability{ };    // sub_443235(side, unit, 3) == 1
-        unsigned movement_class{ }, sprite_height{ };
+        unsigned extra_flags{}, status34{}, status118{}, status116{};
+        bool has_usable_ability{};    // sub_443235(side, unit, 3) == 1
+        unsigned movement_class{}, sprite_height{};
     };
 
 private:
@@ -87,11 +87,14 @@ private:
     bool movement_animation_enabled_ = false;
     bool attack_animation_ = false;
     original_combat::Feedback combat_feedback_;
-    bool curse33_feedback_{ };
-    bool skill94_feedback_{ }, skill94_feedback_presented_{ }, skill94_death_lock_{ };
+    bool curse33_feedback_{};
+    bool skill94_feedback_{}, skill94_feedback_presented_{}, skill94_death_lock_{};
+    unsigned skill_feedback_effect_{};
+    int skill_feedback_caster_hp_{}, skill_feedback_caster_max_hp_{};
+    bool skill_feedback_reverse_{};
     std::function<void()> skill94_feedback_commit_;
     std::vector<std::pair<size_t, bool>> status_feedback_targets_;
-    size_t status_feedback_actor_{ }, status_feedback_cursor_{ };
+    size_t status_feedback_actor_{}, status_feedback_cursor_{};
     std::function<void()> status_feedback_commit_;
     std::optional<OriginalEvents::Unit> reaction_pose_;
     std::function<void(std::vector<OriginalEvents::Unit>&, size_t, size_t)> death_settlement_;
@@ -99,10 +102,10 @@ private:
 public:
     struct PhysicalSettlement
     {
-        size_t actor{ }, target{ };
-        unsigned actor_id{ }, target_id{ };
-        int hp_lost{ }, raw_xp{ };
-        bool killed{ };
+        size_t actor{}, target{};
+        unsigned actor_id{}, target_id{};
+        int hp_lost{}, raw_xp{};
+        bool killed{};
     };
 
 private:
@@ -113,8 +116,9 @@ private:
     std::shared_ptr<OriginalEvents> hostile_resources_;
     std::shared_ptr<OriginalPromotionTransaction> physical_equipment_;
     std::vector<int> ai_kind_classes_;
+    std::vector<int> kind_movement_types_;
     std::vector<std::array<std::vector<uint8_t>, 30>> action_sequences_;
-    std::array<int, 0x110> ai_config_{ };
+    std::array<int, 0x110> ai_config_{};
     size_t hostile_cursor_ = 0;
     int hostile_actor_ = -1, hostile_target_ = -1, hostile_attack_slot_ = -1;
     unsigned hostile_wait_ = 0;
@@ -138,14 +142,14 @@ private:
 public:
     struct AiCandidateDiagnostic
     {
-        unsigned actor{ }, target{ }, action{ };
-        int chance{ }, damage{ }, value{ };
+        unsigned actor{}, target{}, action{};
+        int chance{}, damage{}, value{};
     };
     std::vector<AiCandidateDiagnostic> ai_candidate_diagnostics;
     struct PhysicalDiagnostic
     {
-        size_t actor{ }, target{ };
-        int legacy_chance{ }, original_chance{ }, accuracy_bonus{ }, height{ }, mode{ };
+        size_t actor{}, target{};
+        int legacy_chance{}, original_chance{}, accuracy_bonus{}, height{}, mode{};
     };
     std::optional<PhysicalDiagnostic> last_physical_diagnostic_;
     const std::optional<PhysicalDiagnostic>& physical_diagnostic() const { return last_physical_diagnostic_; }
@@ -187,7 +191,7 @@ public:
 
 private:
     bool moved_ = false, acted_ = false;
-    OriginalEvents::Unit before_move_{ };
+    OriginalEvents::Unit before_move_{};
     std::vector<int> distances_, previous_;
     std::vector<uint8_t> movement_categories_;
     std::vector<Point> path_;
@@ -487,6 +491,7 @@ public:
         for (unsigned i = 0; i < word(kinds, 22); ++i)
         {
             result.ai_kind_classes_.push_back(int(int8_t(kinds.at(kind_table + size_t(i) * 37 + 17))));
+            result.kind_movement_types_.push_back(int(int8_t(kinds.at(kind_table + size_t(i) * 37 + 18))));
         }
         return Result<Battle>::success(std::move(result));
     }
@@ -500,12 +505,124 @@ public:
         return std::move(result).value();
     }
     bool valid(Point p) const { return p.x >= 0 && p.y >= 0 && p.y < int(height_) && p.x < int(width_) - (p.y & 1); }
-    Cell cell(Point p) const { return valid(p) ? cells_.at(size_t(p.y) * width_ + p.x) : Cell{ }; }
+    Cell cell(Point p) const { return valid(p) ? cells_.at(size_t(p.y) * width_ + p.x) : Cell{}; }
     bool skill_area_cell(Point p) const
     {
         if (!valid(p) || cell(p).ground <= 1) { return false; }
         const auto object = cell(p).object;
         return object <= 0 || size_t(object) > object_attributes_.size() || !(object_attributes_[size_t(object) - 1] & 0x8000);
+    }
+    // 42CE30/42CE6D tests the transported appearance, not caster movement or route cost.
+    bool spell_transfer_terrain(const OriginalEvents::Unit& unit, Point p) const
+    {
+        if (!original_rules_ || !valid(p) || !unit.appearance || unit.appearance > kind_movement_types_.size() || cell(p).ground <= 0) { return false; }
+        const auto target = cell(p);
+        if (size_t(target.ground) > ground_attributes_.size()) { return false; }
+        const unsigned attribute = ground_attributes_.at(size_t(target.ground - 1));
+        const unsigned terrain = attribute >> 8;
+        if (!attribute || terrain == 5) { return false; }
+        const size_t stride = word(movement_, 0);
+        const size_t kind = unit.appearance - 1;
+        const size_t column = std::max(1u, attribute & 255) - 1;
+        if (6 + (kind * stride + column) * 3 >= movement_.size() || int8_t(movement_.at(6 + (kind * stride + column) * 3)) == -1) { return false; }
+        switch (kind_movement_types_[kind])
+        {
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 10:
+            if (terrain != 0 && terrain != 1 && terrain != 2 && terrain != 4) { return false; }
+            break;
+        case 9:
+            if (terrain != 1 && terrain != 2) { return false; }
+            break;
+        default: return false;
+        }
+        if (target.object)
+        {
+            if (target.object < 0 || size_t(target.object) > object_attributes_.size()) { return false; }
+            const unsigned object = object_attributes_.at(size_t(target.object - 1));
+            const unsigned category = object >> 8, local = object & 255;
+            if (local > word(movement_, 4) || category == 1 || category == 2 || category == 10) { return false; }
+            const size_t index = kind * stride + word(movement_, 2) - 1 + local;
+            if (6 + index * 3 >= movement_.size() || int8_t(movement_.at(6 + index * 3)) == -1) { return false; }
+        }
+        return true;
+    }
+    std::vector<Point> spell_transfer_destinations(const OriginalEvents::Unit& caster, const OriginalEvents::Unit& transported, const std::vector<OriginalEvents::Unit>& units) const
+    {
+        std::vector<Point> result;
+        const Point source{ transported.x, transported.y };
+        if (!valid(source)) { return result; }
+        const int radius = std::clamp(int(int16_t(caster.sp)) / 10 + 1, 1, 10);
+        int left = source.x, top = source.y;
+        auto append = [&](Point p)
+        {
+            if (!valid(p) || !spell_transfer_terrain(transported, p) || std::abs(cell(source).elevation - cell(p).elevation) >= 10 || !skill_area_cell(p)) { return; }
+            if ((!(p.y & 1) && p.x < 1) || p.x >= int(width_) - 1 || p.y >= int(height_) - 1 || p.y - std::max(0, cell(p).elevation - 1) < 1) { return; }
+            for (const auto& other : units)
+            {
+                if (other.x == p.x && other.y == p.y && (other.status_flags & 0x80) && (!(other.status_flags & 0x20) || (other.status_flags & 2))) { return; }
+            }
+            result.push_back(p);
+        };
+        // 40295E: paired top/bottom edges, then paired left/right edges per ring.
+        for (int ring = 1; ring <= radius; ++ring)
+        {
+            if (!(top & 1)) { --left; }
+            --top;
+            for (int x = left; x <= left + ring; ++x)
+            {
+                append({ x, top });
+                append({ x, top + 2 * ring });
+            }
+            for (int y = top + 2; y <= top + 2 * ring - 2; y += 2)
+            {
+                append({ left, y });
+                append({ left + ring, y });
+            }
+        }
+        return result;
+    }
+    std::optional<Point> spell_summon_destination(const OriginalEvents::Unit& caster, unsigned appearance,
+        const std::vector<OriginalEvents::Unit>& units) const
+    {
+        const Point source{ caster.x, caster.y };
+        if (!valid(source)) { return std::nullopt; }
+        OriginalEvents::Unit summoned;
+        summoned.appearance = appearance;
+        int left = source.x;
+        if (!(source.y & 1)) { --left; }
+        const int top = source.y - 1;
+        // 402E85 checks just ring1, paired upper/lower cells, and returns the first match.
+        for (int x = left; x <= left + 1; ++x)
+        {
+            for (int y : { top, top + 2 })
+            {
+                const Point p{ x, y };
+                if (!valid(p) || !spell_transfer_terrain(summoned, p) || !skill_area_cell(p)
+                    || std::abs(cell(source).elevation - cell(p).elevation) > 4) { continue; }
+                if ((!(p.y & 1) && p.x < 1) || p.x >= int(width_) - 1 || p.y >= int(height_) - 1
+                    || p.y - std::max(0, cell(p).elevation - 1) < 1) { continue; }
+                bool occupied = false;
+                for (const auto& other : units)
+                {
+                    if (other.x == p.x && other.y == p.y && (other.status_flags & 0x80)
+                        && (!(other.status_flags & 0x20) || (other.status_flags & 2)))
+                    {
+                        occupied = true;
+                        break;
+                    }
+                }
+                if (!occupied) { return p; }
+            }
+        }
+        return std::nullopt;
     }
     void clear_runtime_object(Point p)
     {
@@ -636,7 +753,7 @@ public:
     }
     struct TerrainEffect
     {
-        int result{ };
+        int result{};
         std::array<uint8_t, 3> bytes{ 1, 0, 0 };
     };
     TerrainEffect terrain_effect(const OriginalEvents& resources, const OriginalEvents::Unit& unit, Point p) const
@@ -748,6 +865,10 @@ public:
         if (!(target.abilities & 0x80) && !(target.status3c & 0x10))
         {
             return true;
+        }
+        if (hostile_resources_ && hostile_resources_->army_modes)
+        {
+            opposing_mode |= (*hostile_resources_->army_modes)[target.hostile() ? 0 : 1];
         }
         if (opposing_mode & 9)
         {
@@ -913,9 +1034,9 @@ public:
     }
     struct ActionTarget
     {
-        size_t unit_index{ };
+        size_t unit_index{};
         Point position;
-        unsigned direction{ };
+        unsigned direction{};
     };
     std::vector<ActionTarget> action_targets(const OriginalEvents& resources, const OriginalEvents::Unit& actor,
         const OriginalEvents::ActionRecord& action, std::span<const OriginalEvents::Unit> candidates,
@@ -1032,11 +1153,11 @@ public:
     }
     struct PhysicalActionContext
     {
-        size_t actor{ }, target{ };
+        size_t actor{}, target{};
         OriginalEvents::Unit actor_snapshot, target_snapshot;
-        OriginalEvents::ActionRecord action{ };
+        OriginalEvents::ActionRecord action{};
         std::optional<OriginalEvents::ActionRecord> counter;
-        int mode{ }, counter_tactics{ };
+        int mode{}, counter_tactics{};
     };
     static uint8_t physical_status(const OriginalEvents::Unit& unit, unsigned offset)
     {
@@ -1068,7 +1189,7 @@ public:
         auto staged_random = random_;
         for (size_t target : group.value())
         {
-            PhysicalActionContext context{ };
+            PhysicalActionContext context{};
             context.actor = actor;
             context.target = target;
             context.actor_snapshot = units[actor];
@@ -1110,7 +1231,7 @@ public:
     }
     struct AttackAvailability
     {
-        uint32_t mask{ };
+        uint32_t mask{};
         std::array<int, 8> actions{ -1, -1, -1, -1, -1, -1, -1, -1 };
     };
     AttackAvailability attack_availability(const OriginalEvents& resources, const OriginalEvents::Unit& actor,
@@ -1405,7 +1526,7 @@ public:
         {
             mask |= command_masks[0];
         }
-        const auto context = size_t(selected_) < movement_contexts_.size() ? movement_contexts_[selected_] : MovementContext{ };
+        const auto context = size_t(selected_) < movement_contexts_.size() ? movement_contexts_[selected_] : MovementContext{};
         bool move_budget = !original_rules_ || u.max_action_points >= config_[0] + config_[context.movement_class ? 1 : 4];
         if (!moved_ && !(u.status34 & 1) && move_budget)
         {
@@ -1531,7 +1652,7 @@ public:
             skill94_feedback_presented_ = true;
         }
     }
-    bool begin_skill94_feedback(size_t actor, size_t target, int hp, int damage, std::function<void()> commit)
+    bool begin_skill94_feedback(size_t actor, size_t target, int hp, int damage, std::function<void()> commit, unsigned effect = 1, int caster_hp = 0, int caster_max_hp = 0, bool reverse = false)
     {
         if (combat_feedback_active() || !commit || damage < 0 || damage > hp)
         {
@@ -1540,7 +1661,11 @@ public:
         combat_feedback_.begin(actor, target, hp, damage, damage == 0, false);
         // 468BAC starts directly at number step0: no physical452E7F flash.
         combat_feedback_.phase = original_combat::Feedback::Phase::numbers;
-        combat_feedback_.consume();
+        skill_feedback_effect_ = effect;
+        skill_feedback_caster_hp_ = caster_hp;
+        skill_feedback_caster_max_hp_ = caster_max_hp;
+        skill_feedback_reverse_ = reverse;
+        combat_feedback_.consume_with_caster(effect, skill_feedback_caster_hp_, caster_max_hp, reverse);
         skill94_feedback_ = true;
         skill94_feedback_presented_ = false;
         skill94_feedback_commit_ = std::move(commit);
@@ -1552,6 +1677,7 @@ public:
         combat_feedback_.begin(actor, target, hp, -healing, healing == 0, false, hp + healing);
         combat_feedback_.phase = original_combat::Feedback::Phase::numbers;
         combat_feedback_.consume();
+        skill_feedback_effect_ = 0;
         skill94_feedback_ = true;
         skill94_feedback_presented_ = false;
         skill94_feedback_commit_ = std::move(commit);
@@ -1566,7 +1692,7 @@ public:
         return true;
     }
     bool begin_status_area_feedback(size_t actor, std::vector<std::pair<size_t, bool>> targets,
-        const std::vector<OriginalEvents::Unit>& units, std::function<void()> commit, bool blessing3 = false, std::vector<int> amounts = { }, bool healing = false)
+        const std::vector<OriginalEvents::Unit>& units, std::function<void()> commit, bool blessing3 = false, std::vector<int> amounts = {}, bool healing = false)
     {
         status_feedback_healing_ = healing;
         status_feedback_amounts_ = std::move(amounts);
@@ -1582,7 +1708,7 @@ public:
         status_feedback_commit_ = std::move(commit);
         return next_status_feedback(units);
     }
-    bool status_feedback_blessing3_{ }, status_feedback_healing_{ };
+    bool status_feedback_blessing3_{}, status_feedback_healing_{};
     std::vector<int> status_feedback_amounts_;
     bool next_status_feedback(const std::vector<OriginalEvents::Unit>& units)
     {
@@ -1656,16 +1782,16 @@ public:
 private:
     struct PhysicalExchangeDiagnostic
     {
-        size_t actor{ }, target{ };
-        int damage{ };
-        bool reverse{ }, consecutive{ };
+        size_t actor{}, target{};
+        int damage{};
+        bool reverse{}, consecutive{};
     };
     std::vector<PhysicalExchangeDiagnostic> physical_exchange_diagnostics_;
     struct PhysicalExchangeStep
     {
         PhysicalActionContext context;
-        int damage{ };
-        bool consecutive{ }, reverse{ };
+        int damage{};
+        bool consecutive{}, reverse{};
     };
     struct PhysicalExchange
     {
@@ -1674,17 +1800,17 @@ private:
         std::vector<OriginalEvents::Unit> forward_targets, baseline_units;
         original_combat::Random baseline_random{ 1 };
         std::vector<std::pair<size_t, size_t>> deaths;
-        size_t cursor{ }, counter_cursor{ };
+        size_t cursor{}, counter_cursor{};
         std::optional<std::pair<size_t, size_t>> death;
-        bool death_started{ };
-        bool reverse{ }, group_presented{ }, group_status_applied{ };
+        bool death_started{};
+        bool reverse{}, group_presented{}, group_status_applied{};
     };
     std::optional<PhysicalExchange> physical_exchange_;
     std::optional<OriginalEvents::ActionRecord> pending_action_status_;
     int apply_physical_action_status(std::vector<OriginalEvents::Unit>& units, size_t b, const OriginalEvents::ActionRecord& action, int result, std::optional<int> status_roll = std::nullopt)
     {
         auto& target = units[b];
-        original_combat::ActionStatusInput input{ };
+        original_combat::ActionStatusInput input{};
         input.result = result;
         int statusRoll;
         if (status_roll) { statusRoll = *status_roll; }
@@ -1919,7 +2045,7 @@ public:
                 commit();
                 return;
             }
-            feedback.consume();
+            feedback.consume_with_caster(skill_feedback_effect_, skill_feedback_caster_hp_, skill_feedback_caster_max_hp_, skill_feedback_reverse_);
             return;
         }
         if (feedback.phase == original_combat::Feedback::Phase::windup)
@@ -1981,7 +2107,7 @@ public:
         }
         units.at(feedback.target).hp -= feedback.consume();
     }
-    bool movement_presentation_driven_{ }, movement_presented_{ };
+    bool movement_presentation_driven_{}, movement_presented_{};
     void enable_movement_presentation() { movement_presentation_driven_ = true; }
     void movement_presented()
     {
@@ -2058,6 +2184,10 @@ public:
         if (combat_feedback_active() && combat_feedback_.target < result.size())
         {
             result[combat_feedback_.target].hp = std::max(1, skill94_feedback_ ? combat_feedback_.hp_after : result[combat_feedback_.target].hp);
+        }
+        if (skill94_feedback_ && (skill_feedback_effect_ == 41 || skill_feedback_effect_ == 42) && combat_feedback_.attacker < result.size())
+        {
+            result[combat_feedback_.attacker].hp = skill_feedback_caster_hp_;
         }
         return result;
     }
@@ -2234,7 +2364,7 @@ public:
         }
         auto c = screen_center({ units[selected_].x, units[selected_].y }, cx, cy);
         int count = state_ == State::attack_menu ? std::max(1, attack_count(units)) : std::max(1, command_count(units));
-        const auto context = size_t(selected_) < movement_contexts_.size() ? movement_contexts_[selected_] : MovementContext{ };
+        const auto context = size_t(selected_) < movement_contexts_.size() ? movement_contexts_[selected_] : MovementContext{};
         int y = c.y + 16;
         if (context.movement_class >= 3 && context.movement_class <= 5)
         {
@@ -2311,7 +2441,7 @@ public:
         }
         if (original_rules_)
         {
-            const auto context = size_t(selected_) < movement_contexts_.size() ? movement_contexts_[selected_] : MovementContext{ };
+            const auto context = size_t(selected_) < movement_contexts_.size() ? movement_contexts_[selected_] : MovementContext{};
             unsigned flags = 1u | context.extra_flags | (context.has_usable_ability ? 2u : 0u);
             int ability_threshold = config_[7] + ((context.status34 & 0x0c) ? config_[11] : 0);
             int attack_threshold = config_[6] - ((context.status118 & 0x20) ? 4 : 0);
@@ -2398,7 +2528,7 @@ public:
             }
         }
         std::array<std::optional<OriginalEvents::ActionRecord>, 8> chosen;
-        std::array<bool, 8> reaches{ };
+        std::array<bool, 8> reaches{};
         for (const auto& action : hostile_resources_->action_records(u))
         {
             int action_slot = executable_attack_slot(action);
@@ -2543,8 +2673,8 @@ public:
     }
 
 private:
-    uint32_t available_mask_{ };
-    unsigned attack_menu_mask_{ };
+    uint32_t available_mask_{};
+    unsigned attack_menu_mask_{};
 
 public:
     void cycle_target(const std::vector<OriginalEvents::Unit>& units)
@@ -3093,7 +3223,7 @@ public:
     void set_hostile_resources(const OriginalEvents& resources) { hostile_resources_ = std::make_shared<OriginalEvents>(resources); }
     int physical_action_preview(const OriginalEvents& resources, const OriginalEvents::Unit& actor, const OriginalEvents::Unit& defender, const OriginalEvents::ActionRecord& action, bool counter = false, int counter_mode = 0) const
     {
-        original_combat::PhysicalPreviewInput in{ };
+        original_combat::PhysicalPreviewInput in{};
         in.attack = actor.attack;
         in.defense = defender.defense;
         in.context_bonus = int(resources.action_proficiency(actor, action));
@@ -3147,14 +3277,14 @@ public:
     }
     struct AiPlanDiagnostic
     {
-        unsigned actor_id{ };
-        int behavior{ }, appearance_kind{ }, dispatch{ };
-        bool unsupported_goal{ }, unsupported_special{ }, no_attack_candidate{ };
-        int movement_mode{ }, route_count{ }, destination_record{ };
-        bool unsupported_health{ };
-        unsigned target_id{ };
-        int target_value{ };
-        bool target_hidden{ };
+        unsigned actor_id{};
+        int behavior{}, appearance_kind{}, dispatch{};
+        bool unsupported_goal{}, unsupported_special{}, no_attack_candidate{};
+        int movement_mode{}, route_count{}, destination_record{};
+        bool unsupported_health{};
+        unsigned target_id{};
+        int target_value{};
+        bool target_hidden{};
     };
     std::optional<AiPlanDiagnostic> ai_plan_diagnostic_;
     const std::optional<AiPlanDiagnostic>& ai_plan_diagnostic() const { return ai_plan_diagnostic_; }
@@ -3604,7 +3734,7 @@ private:
                         continue;
                     }
                     int damage = physical_action_preview(*hostile_resources_, moved_actor, defender, action);
-                    original_combat::HitChanceInput hit{ };
+                    original_combat::HitChanceInput hit{};
                     hit.preview = true;
                     hit.attacker_tactics = actor.tactics;
                     hit.defender_evasion = defender.strikeback;
@@ -3635,7 +3765,7 @@ private:
                     }
                     hit.preview_immune = (defender.abilities & 0x01000000u) != 0;
                     int chance = original_combat::hit_chance(hit);
-                    MeleePreview preview{ };
+                    MeleePreview preview{};
                     preview.attack_value = physical_preview_value(chance, damage);
                     preview.attack_damage = damage;
                     preview.attack_chance = chance;
@@ -4138,7 +4268,7 @@ public:
         }
         // 408D4C reads [runtime136] SAR16 == current tactics138;
         // 408DD0 subtracts [runtime0BF] SAR16 == evasion0C1.
-        HitChanceInput hit{ };
+        HitChanceInput hit{};
         hit.attacker_tactics = attacker.tactics;
         hit.defender_evasion = defender.strikeback;
         hit.height_difference = height;
@@ -4178,7 +4308,7 @@ public:
         last_physical_diagnostic_ = PhysicalDiagnostic{ a, b, std::clamp(attacker.tactics - defender.strikeback + hitBonus, 1, 100) * 12 / 10,
             hit_chance(hit), hit.modifiers.action_bonus, height, attack_style };
         if (!hit_succeeds(hit, percent())) { return 0; }
-        PhysicalDamageInput damage{ };
+        PhysicalDamageInput damage{};
         damage.attack = attacker.attack;
         damage.defense = defender.defense;
         damage.height_difference = height;
@@ -4219,7 +4349,7 @@ public:
         const auto& actor = reverse ? context.target_snapshot : context.actor_snapshot;
         const auto& target = reverse ? context.actor_snapshot : context.target_snapshot;
         const auto& resources = *hostile_resources_;
-        original_combat::ConsecutiveInput input{ };
+        original_combat::ConsecutiveInput input{};
         input.has_attack_context = physical_action_preview(resources, actor, target, reverse ? *context.counter : context.action, reverse, context.mode) != 0;
         input.attacker_tactics = actor.tactics;
         input.defender_evasion = target.strikeback;
@@ -4296,7 +4426,7 @@ public:
         if (!physical_action_preview(resources, actor, target, action, true, context.mode)) { return 0; }
         bool simple = resources.difficulty == 1;
         int height = terrain_height_difference(cell({ actor.x, actor.y }).elevation, cell({ target.x, target.y }).elevation, simple);
-        HitChanceInput hit{ };
+        HitChanceInput hit{};
         hit.counter = true;
         hit.attacker_tactics = context.counter_tactics;
         hit.defender_evasion = target.strikeback;
@@ -4316,7 +4446,7 @@ public:
         hit.counter_reduction_roll = roll(4);
         hit.random_multiplier = ai_config_[2] + roll(ai_config_[3] + 3);
         if (!hit_succeeds(hit, percent())) { return 0; }
-        CounterDamageInput counter{ };
+        CounterDamageInput counter{};
         auto& damage = counter.physical;
         damage.attack = actor.attack;
         damage.defense = target.defense;
@@ -4922,7 +5052,7 @@ public:
             }
         }
     }
-    void draw_selection(std::vector<uint8_t>& image, const std::vector<OriginalEvents::Unit>& units, int cx, int cy, int layer = -1, const std::function<void(std::vector<uint8_t>&, Point)>& mask = { }) const
+    void draw_selection(std::vector<uint8_t>& image, const std::vector<OriginalEvents::Unit>& units, int cx, int cy, int layer = -1, const std::function<void(std::vector<uint8_t>&, Point)>& mask = {}) const
     {
         if (image.size() < 640 * 480 * 4 || effect_palette_.size() < 768)
         {

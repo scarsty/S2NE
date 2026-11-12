@@ -30,7 +30,7 @@ struct NativeAbilityBuffs
         }
         return nullptr;
     }
-    static Result<bool> apply(OriginalEvents::Unit& target, const OriginalEvents::Unit& actor, unsigned effect, int power, int duration, std::span<const int, 256> config)
+    static Result<bool> apply(OriginalEvents::Unit& target, unsigned effect, int power, int duration)
     {
         // Only the native 4668F0 increment / 442E96 contracts. Invisibility,
         // cooperative effects and reactivation require their own scene adapters.
@@ -55,14 +55,9 @@ struct NativeAbilityBuffs
         put(0x12C, target.max_action_points);
         put(0x12E, target.action_points);
         put(0x130, target.carry_points);
+        put(0x138, target.tactics);
         bool changed = false;
-        if (effect == 33)
-        {
-            auto v = original_combat::try_apply_timed_status(r, 0x10, duration);
-            if (!v) { return v; }
-            changed = v.value();
-        }
-        else if (effect == 63 || effect == 84 || effect == 86)
+        if (effect == 63 || effect == 84 || effect == 86)
         {
             unsigned mask = 0x2000;
             if (effect == 63) { mask = 0x800; }
@@ -71,26 +66,6 @@ struct NativeAbilityBuffs
                 duration, effect == 63 ? target.attack / 2 : power, effect == 63 ? target.defense / 2 : power);
             if (!v) { return v; }
             changed = v.value();
-        }
-        else if (effect == 91)
-        {
-            if (target.id != actor.id || target.appearance != actor.appearance)
-            {
-                if (target.action_state == 2 && word(8) == 1)
-                {
-                    r[0x2D] = 0;
-                    std::fill(r.begin() + 0x34, r.begin() + 0x38, 0);
-                    int carry = target.action_points > config[0xED] ? config[0xF0] : target.action_points;
-                    if (target.sp + target.action_points >= 110) { carry = 0; }
-                    target.action_state = 0;
-                    target.status34 = 0;
-                    target.carry_points = carry;
-                    target.action_points = int16_t(target.max_action_points + carry);
-                    put(0x12E, target.action_points);
-                    put(0x130, carry);
-                    changed = true;
-                }
-            }
         }
         else
         {
@@ -128,15 +103,6 @@ struct NativeAbilityBuffs
                 }
                 auto& timer = r[0x48 + slot * 3];
                 if (changed || (int8_t(timer) != -1 && int8_t(timer) < duration)) { timer = uint8_t(duration); }
-            }
-            if (effect == 88)
-            {
-                for (unsigned bit : { 4u, 0x200u })
-                {
-                    auto v = original_combat::try_apply_timed_status(r, bit, duration);
-                    if (!v) { return v; }
-                    changed |= v.value();
-                }
             }
         }
         target.attack = word(0x134);

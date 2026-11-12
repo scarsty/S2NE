@@ -227,6 +227,11 @@ class OriginalSaveBridge
         {
             w(0x0A, u.ai_role10);
         }
+        if (u.action_status_runtime)
+        {
+            r[0x0C] = u.action_status_runtime->at(0x0C);
+            r[0x0D] = u.action_status_runtime->at(0x0D);
+        }
         for (size_t i = 0; i < u.relationships.size(); ++i)
         {
             if (u.relationships[i] < -128 || u.relationships[i] > 127)
@@ -342,12 +347,13 @@ public:
             }
         }
         events.army_status = std::array{ raw.groups[0].status, raw.groups[1].status };
+        events.army_modes = std::array{ get(raw.groups[0].metadata, 4, 4), get(raw.groups[1].metadata, 4, 4) };
         events.units.clear();
         for (unsigned group = 0; group < 2; ++group)
         {
             for (const auto& record : raw.groups[group].units)
             {
-                OriginalEvents::Unit u{ };
+                OriginalEvents::Unit u{};
                 decode_unit(record, u);
                 // +8 is the original AI/control class; group supplies allegiance.
                 // Preserve the other role words in raw state instead of inventing stage behaviors.
@@ -419,7 +425,10 @@ public:
         put(staged.groups[0].units[selected], 4, unit.appearance);
         staged.groups[0].inventory.assign(inventory.begin(), inventory.end());
         staged.groups[0].metadata[4] = army_metadata;
-        return try_capture(events, turn, camera, &staged);
+        auto captured = try_capture(events, turn, camera, &staged);
+        if (!captured) { return captured; }
+        captured.value().groups[0].metadata[4] = army_metadata;
+        return captured;
     }
     static Result<OriginalSave::State> try_capture(const OriginalEvents& events, unsigned turn, std::pair<int, int> camera,
         const OriginalSave::State* baseline = nullptr)
@@ -443,6 +452,10 @@ public:
             return Result<OriginalSave::State>::failure(make_error("Stage/difficulty changed without original full-state transition"));
         }
         auto result = *baseline;
+        if (events.army_modes)
+        {
+            for (size_t group = 0; group < 2; ++group) { put(result.groups[group].metadata, 4, (*events.army_modes)[group], 4); }
+        }
         if (events.army_status)
         {
             for (size_t group = 0; group < 2; ++group) { result.groups[group].status = (*events.army_status)[group]; }

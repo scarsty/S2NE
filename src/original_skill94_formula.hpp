@@ -1,5 +1,6 @@
 #pragma once
-#include "original_skills.hpp"
+#include "native_damage_formula.hpp"
+#include "original_events.hpp"
 namespace s2ne
 {
 // Verified arithmetic subchain only; intentionally has no state/payment API.
@@ -67,7 +68,15 @@ public:
         {
             return Result<int>::failure(make_error("Unsupported sword94 formula input"));
         }
-        return Result<int>::success(int((int64_t(proficiency / 10) + 1000) * std::max(1, actor_fencing) / 1000 - int64_t(std::max(1, target_fencing)) * numerator / denominator - target_defense + power));
+        std::array<int, 256> config{ };
+        config[0x98] = numerator;
+        config[0x99] = denominator;
+        NativeDamageFormula::Input input;
+        input.actor_value = std::max(1, actor_fencing);
+        input.target_value = std::max(1, target_fencing);
+        input.proficiency = int(proficiency);
+        input.target_defense = target_defense;
+        return NativeDamageFormula::evaluate(44, power, input, config);
     }
     static int raw_formula44(int actor_fencing, unsigned proficiency, int target_fencing, int target_defense, int numerator, int denominator, int power = 50)
     {
@@ -94,26 +103,22 @@ public:
         {
             return Result<OriginalSkill94Formula>::failure(make_error("Invalid sword94 divisor"));
         }
-        auto skillsResult = OriginalSkills::create(root);
-        if (!skillsResult)
+        ResourceReader palette(data.pal), bin(data.bin);
+        const unsigned address = palette.number(856, 4);
+        if (!palette || address < 12 || !bin.extent(address - 12, 9))
         {
-            return Result<OriginalSkill94Formula>::failure(skillsResult.error());
+            return Result<OriginalSkill94Formula>::failure(make_error("Missing sword94 formula header"));
         }
-        auto skills = std::move(skillsResult).value();
-        OriginalEvents::Unit unit;
-        unit.id = 1;
-        unit.appearance = 1;
-        unit.action_points = 110;
-        unit.learned[9] = 1;
-        OriginalSkills::Context ctx;
-        ctx.second = true;
-        skills.open(unit, ctx);
-        if (skills.page() != OriginalSkills::Page::list)
+        const size_t header = address - 12;
+        const unsigned groups = data.bin[header + 1], records = data.bin[header + 7];
+        const size_t start = header + 9 + size_t(groups) * 2;
+        if (groups < 10 || groups > 11 || records < 94 || !bin.extent(header + 9, size_t(groups) * 2 + size_t(records) * 37)
+            || data.bin[header + 9 + 9 * 2] != 93 || !data.bin[header + 10 + 9 * 2])
         {
             return Result<OriginalSkill94Formula>::failure(make_error("Missing sword94 formula record"));
         }
-        const auto& r = skills.selected();
-        if (r.id != 94 || r.effect() != 1 || r.raw[20] != 44 || r.word(21) != 50 || r.raw[0] != 10 || r.raw[27] != 64 || r.raw[28] != 0 || r.raw[29] != 0 || r.raw[31] != 2 || r.raw[32] != 0 || r.raw[33] != 194)
+        const size_t r = start + 93 * 37;
+        if (data.bin[r + 19] != 1 || data.bin[r + 20] != 44 || bin.number(r + 21) != 50 || data.bin[r] != 10 || data.bin[r + 27] != 64 || data.bin[r + 28] != 0 || data.bin[r + 29] != 0 || data.bin[r + 31] != 2 || data.bin[r + 32] != 0 || data.bin[r + 33] != 194)
         {
             return Result<OriginalSkill94Formula>::failure(make_error("Unsupported sword94 formula record"));
         }

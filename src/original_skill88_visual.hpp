@@ -1,5 +1,6 @@
 #pragma once
 #include "native_ability_buffs.hpp"
+#include "native_damage_records.hpp"
 #include "native_timed_buffs.hpp"
 #include "original_skill_visual.hpp"
 namespace s2ne
@@ -14,10 +15,25 @@ class OriginalSkill88Visual
     unsigned tint_amount_{ 50 }, tint_source_{ 233 };
     bool presented_{ };
     unsigned frame_delay_{ 50 };
+    unsigned prefix_frames_{ };
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
 
 public:
+    static std::vector<uint8_t> shake_frame(const std::vector<uint8_t>& source, const std::vector<uint8_t>& previous, unsigned remaining)
+    {
+        if (source.size() != 640u * 480 * 4 || previous.size() != source.size() || !remaining)
+        {
+            fatal("46C34D invalid shake framebuffer");
+        }
+        auto image = previous;
+        if (remaining & 1) { std::copy_n(source.begin() + 8, 307198 * 4, image.begin()); }
+        else
+        {
+            std::copy_n(source.begin(), 307198 * 4, image.begin() + 8);
+        }
+        return image;
+    }
     OriginalSkill88Visual() = default;
     static Result<OriginalSkill88Visual> create(const std::filesystem::path& root, bool healing1 = false, bool blessing3 = false)
     {
@@ -144,14 +160,24 @@ public:
         }
         return Result<OriginalSkill88Visual>::success(std::move(result));
     }
-    static Result<OriginalSkill88Visual> create_strengthening_status(const std::filesystem::path& root, unsigned skill)
+    static Result<OriginalSkill88Visual> create_strengthening_status(const std::filesystem::path& root, unsigned skill, unsigned cursor = 0)
     {
         const auto* buff = NativeTimedBuffs::find(skill);
-        if (!buff && !NativeAbilityBuffs::find(skill) && skill != 8 && skill != 12 && skill != 35 && skill != 39 && skill != 48 && skill != 56 && skill != 60 && skill != 17 && skill != 25 && skill != 52 && skill != 61 && skill != 4 && skill != 5 && skill != 6 && skill != 9 && skill != 10 && skill != 13 && skill != 15 && skill != 53 && skill != 34 && skill != 38 && skill != 54 && skill != 96) { return Result<OriginalSkill88Visual>::failure(make_error("Unsupported support visual ID")); }
+        const auto* damage = NativeDamageRecords::find(skill);
+        const bool summon = skill >= 64 && skill <= 74;
+        if (cursor && ((skill != 108 && skill != 51) || cursor != 1)) { return Result<OriginalSkill88Visual>::failure(make_error("Unsupported spell resource cursor")); }
+        if (!summon && !damage && !buff && !NativeAbilityBuffs::find(skill) && skill != 51 && skill != 29 && skill != 18 && skill != 40 && skill != 45 && skill != 50 && skill != 8 && skill != 12 && skill != 35 && skill != 39 && skill != 48 && skill != 56 && skill != 60 && skill != 17 && skill != 25 && skill != 52 && skill != 61 && skill != 4 && skill != 5 && skill != 6 && skill != 9 && skill != 10 && skill != 13 && skill != 15 && skill != 53 && skill != 34 && skill != 38 && skill != 54 && skill != 96) { return Result<OriginalSkill88Visual>::failure(make_error("Unsupported support visual ID")); }
         const auto* ability = NativeAbilityBuffs::find(skill);
         unsigned color;
 
-        if (ability) { color = ability->color; }
+        if (damage) { color = damage->color; }
+        else if (summon) { color = 233; }
+        else if (skill == 51) { color = 0; }
+        else if (skill == 29) { color = 106; }
+        else if (skill == 18 || skill == 40) { color = 233; }
+        else if (skill == 45) { color = 59; }
+        else if (skill == 50) { color = 233; }
+        else if (ability) { color = ability->color; }
         else if (buff) { color = buff->color; }
         else if (skill == 8) { color = 176; }
         else if (skill == 35) { color = 139; }
@@ -169,7 +195,15 @@ public:
 
         unsigned tint;
 
-        if (ability) { tint = ability->tint; }
+        if (damage) { tint = damage->tint; }
+        else if (summon) { tint = 50; }
+        else if (skill == 51) { tint = 0; }
+        else if (skill == 29) { tint = 45; }
+        else if (skill == 18) { tint = 15; }
+        else if (skill == 40) { tint = 45; }
+        else if (skill == 45) { tint = 25; }
+        else if (skill == 50) { tint = 75; }
+        else if (ability) { tint = ability->tint; }
         else if (buff) { tint = buff->tint; }
         else if (skill == 8 || skill == 39) { tint = 50; }
         else if (skill == 35) { tint = 0; }
@@ -192,7 +226,11 @@ public:
         }
 
         unsigned visual = skill;
-        if (ability) { visual = ability->visual; }
+        if (damage) { visual = damage->visual; }
+        else if (summon) { visual = 65; }
+        else if (skill == 51) { visual = 52; }
+        else if (skill == 50) { visual = 51; }
+        else if (ability) { visual = ability->visual; }
         else if (buff) { visual = buff->visual; }
         else
         {
@@ -209,12 +247,27 @@ public:
             default: break;
             }
         }
-        auto loaded = read_spell_entry(root, skill, visual, color, tint);
+        unsigned dispatch = 0;
+        if (damage) { dispatch = damage->dispatch; }
+        if (skill == 78) { dispatch = 9; }
+        if (skill == 47) { dispatch = 1; }
+        if (skill == 29) { dispatch = 7; }
+        if (skill == 51) { dispatch = 5; }
+        auto loaded = read_spell_entry(root, skill, visual, color, tint, dispatch, cursor);
         if (!loaded) { return Result<OriginalSkill88Visual>::failure(loaded.error()); }
         const auto& entry = loaded.value();
         ResourceReader reader(entry);
         std::array<unsigned, 8> header{ };
-        if (ability) { header = ability->header; }
+        if (damage) { header = damage->header; }
+        else if (summon) { header = std::array<unsigned, 8>{ 46, 0, 0, 192, 290, 0, 55, 4 }; }
+        else if (skill == 51 && !cursor) { header = std::array<unsigned, 8>{ 7, 0, 0, 70, 123, 0, 0, 3 }; }
+        else if (skill == 51) { header = std::array<unsigned, 8>{ 6, 0, 0, 97, 391, 0, 0, 3 }; }
+        else if (skill == 29) { header = std::array<unsigned, 8>{ 14, 56, 31, 111, 65, 1, 22, 4 }; }
+        else if (skill == 18) { header = std::array<unsigned, 8>{ 22, 86, 345, 172, 361, 7, 27, 4 }; }
+        else if (skill == 40) { header = std::array<unsigned, 8>{ 14, 0, 0, 109, 344, 0, 26, 5 }; }
+        else if (skill == 45) { header = std::array<unsigned, 8>{ 14, 0, 0, 63, 241, 4, 22, 5 }; }
+        else if (skill == 50) { header = std::array<unsigned, 8>{ 1, 65535, 65535, 640, 480, 0, 65516, 5 }; }
+        else if (ability) { header = ability->header; }
         else if (buff) { header = buff->header; }
         else
         {
@@ -246,6 +299,7 @@ public:
             }
         }
 
+        if (cursor && skill != 51) { header = { 16, 155, 280, 312, 398, 0, 0, 4 }; }
         for (unsigned i = 0; i < 8; ++i)
         {
             if (reader.number(i * 2) != header[i]) { return Result<OriginalSkill88Visual>::failure(make_error("004/005 CEL header")); }
@@ -257,11 +311,21 @@ public:
         result.anchor_y_ = int(header[4]);
         if (header[2] == 65535) { result.anchor_y_ = -1; }
         else if (header[2]) { result.anchor_y_ = int(header[2]); }
+        if (dispatch == 6 || dispatch == 10)
+        {
+            // 46BD98/46D072 use the cell-local bitmap size, not the ordinary CEL anchor.
+            result.anchor_x_ = int(header[3] / 2);
+            result.anchor_y_ = int(header[4]);
+        }
         result.tint_amount_ = tint;
         result.tint_source_ = color;
         result.frame_delay_ = header[7] * 10;
         result.amounts_.fill(-1);
-        const size_t directory = 16 + header[5] * 2 + header[6], data = directory + header[0] * 8;
+        // 463EA6 advances past an order table only for a positive signed count.
+        const int order_count = int16_t(header[6]);
+        size_t order_bytes = 0;
+        if (order_count > 0) { order_bytes = unsigned(order_count); }
+        const size_t directory = 16 + header[5] * 2 + order_bytes, data = directory + header[0] * 8;
         if (!reader.extent(16, data - 16)) { return Result<OriginalSkill88Visual>::failure(reader.error()); }
         for (unsigned i = 0; i < header[5]; ++i) { result.amounts_[entry[16 + i]] = entry[16 + header[5] + i]; }
         std::vector<OriginalSkill32Visual::Frame> frames;
@@ -276,10 +340,18 @@ public:
             previous = off + size;
         }
         if (previous != entry.size() - data) { return Result<OriginalSkill88Visual>::failure(make_error("004/005 CEL trailing bytes")); }
-        if (!header[6]) { result.frames_ = std::move(frames); }
+        if (order_count <= 0)
+        {
+            // 46B9A9/46BD98 repeat the whole directory abs(count)+1 times.
+            const unsigned passes = unsigned(-order_count) + 1;
+            for (unsigned pass = 0; pass < passes; ++pass)
+            {
+                for (const auto& frame : frames) { result.frames_.push_back(frame); }
+            }
+        }
         else
         {
-            for (unsigned i = 0; i < header[6]; ++i)
+            for (unsigned i = 0; i < order_bytes; ++i)
             {
                 unsigned index = entry[16 + header[5] * 2 + i];
                 if (!index || index > frames.size()) { return Result<OriginalSkill88Visual>::failure(make_error("005 CEL order")); }
@@ -303,6 +375,19 @@ public:
     unsigned tint_amount() const { return tint_amount_; }
     const auto& frames() const { return frames_; }
     const auto& current() const { return frames_.at(frame_); }
+    const auto& frame_at(size_t index) const { return frames_.at(index); }
+    unsigned frame_delay() const { return frame_delay_; }
+    void prepend_timeline(unsigned count)
+    {
+        const auto first = frames_.front();
+        frames_.insert(frames_.begin(), count, first);
+        prefix_frames_ = count;
+    }
+    void extend_timeline(unsigned count)
+    {
+        const auto last = frames_.back();
+        for (unsigned i = 0; i < count; ++i) { frames_.push_back(last); }
+    }
     int amount(unsigned color) const { return amounts_.at(color); }
     size_t frame() const { return frame_; }
     bool done() const { return frame_ == frames_.size(); }
@@ -314,7 +399,7 @@ public:
             return;
         }
         elapsed_ += ms;
-        if (presented_ && elapsed_ >= frame_delay_)
+        if (presented_ && elapsed_ >= (frame_ < prefix_frames_ ? 20u : frame_delay_))
         {
             ++frame_;
             elapsed_ = 0;

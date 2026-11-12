@@ -1,4 +1,5 @@
 #pragma once
+#include "native_invisibility.hpp"
 #include "original_combat_visual.hpp"
 #include "original_disc.hpp"
 #include "original_events.hpp"
@@ -17,7 +18,7 @@ namespace s2ne
 class OriginalMap
 {
     std::vector<uint8_t> prg_, pal_, pixels_, terrain_names_;
-    unsigned terrain_ground_names_{ }, terrain_object_names_{ };
+    unsigned terrain_ground_names_{}, terrain_object_names_{};
     struct Image
     {
         unsigned w, h;
@@ -27,15 +28,25 @@ class OriginalMap
     mutable std::map<size_t, Image> cache_;
     struct UnitBitmap
     {
-        unsigned w{ }, h{ };
-        size_t frame{ };
-        int x{ }, y{ }, left{ }, top{ };
-        uint8_t state{ };
-        unsigned status{ };
+        unsigned w{}, h{};
+        size_t frame{};
+        int x{}, y{}, left{}, top{};
+        uint8_t state{};
+        unsigned status{};
         std::vector<uint8_t> ad, b1;
         bool alternate = true;
     };
     mutable std::map<unsigned, UnitBitmap> unit_bitmaps_;
+    mutable std::array<uint32_t, 2> army_modes_{};
+    mutable std::array<std::vector<uint8_t>, 2> invisibility_feet_;
+    mutable std::vector<uint8_t> invisibility_world_;
+    std::array<std::vector<uint8_t>, 2> invisibility_viewports_;
+    unsigned invisibility_scratch_{};
+    bool invisibility_present_pending_{};
+    std::vector<std::vector<uint8_t>> invisibility_presentations_;
+    size_t invisibility_presentation_cursor_{};
+    mutable bool write_invisibility_world_{};
+    mutable bool read_world_background_{};
     std::optional<uint64_t> idle_pose_time_;
     original_movement::SharedEffectClock movement_effect_clock_;
     std::map<unsigned, uint64_t> movement_effect_stamps_;
@@ -49,16 +60,20 @@ class OriginalMap
     mutable std::vector<uint8_t> skill88_indexed_;
     original_combat::Disappearance disappearance_;
     std::optional<unsigned> arrival_target_;
-    unsigned arrival_frame_{ }, arrival_elapsed_{ }, arrival_color_{ 194 };
-    bool arrival_departure_{ };
-    bool arrival_presented_{ };
+    unsigned arrival_frame_{}, arrival_elapsed_{}, arrival_color_{ 194 };
+    uint64_t arrival_pose_time_{};
+    bool arrival_departure_{};
+    bool arrival_presented_{};
+    std::optional<unsigned> summon_target_;
+    unsigned summon_rows_{}, summon_full_rows_{};
+    bool summon_presented_{};
     mutable std::vector<std::vector<uint8_t>> disappearance_frames_;
-    mutable uint64_t reaction_draws_{ };
-    mutable unsigned last_reaction_target_{ };
-    mutable bool last_reaction_left_{ };
+    mutable uint64_t reaction_draws_{};
+    mutable unsigned last_reaction_target_{};
+    mutable bool last_reaction_left_{};
     mutable std::vector<uint8_t> last_reaction_;
     mutable std::vector<uint8_t> reaction_foot_mask_;
-    mutable std::array<uint8_t, 256> reaction_shadow_{ };
+    mutable std::array<uint8_t, 256> reaction_shadow_{};
     static void overlay_bitmap(UnitBitmap& destination, const UnitBitmap& source, bool background)
     {
         const auto& pixels = background ? source.b1 : source.ad;
@@ -86,7 +101,7 @@ class OriginalMap
     std::filesystem::path root_;
     OriginalDisc disc_ = OriginalDisc::one;
     bool checker_mask_ = false;
-    std::array<uint8_t, 80> event_flags_{ };
+    std::array<uint8_t, 80> event_flags_{};
     std::vector<std::array<unsigned, 4>> dynamic_object_chains_;
     bool composing_static_ = false;
     std::vector<size_t> cleared_object_cells_;
@@ -102,7 +117,7 @@ class OriginalMap
         return std::find(cleared_object_cells_.begin(), cleared_object_cells_.end(), cell) != cleared_object_cells_.end() ? 0 : word(prg_, cell + 3);
     }
     std::vector<unsigned> object_attributes_, scenery_attributes_;
-    std::array<std::array<uint8_t, 256>, 2> object_shadows_{ };
+    std::array<std::array<uint8_t, 256>, 2> object_shadows_{};
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     size_t group(unsigned id) const { return dword(pal_, 808 + 8 * (64 + id - 1)) - 10 - (id - 1); }
@@ -126,7 +141,7 @@ class OriginalMap
         {
             return Result<Image>::failure(make_error("Truncated original map sprite header"));
         }
-        Image image{ word(prg_, offset) + 1, word(prg_, offset + 2) + 1, { } };
+        Image image{ word(prg_, offset) + 1, word(prg_, offset + 2) + 1, {} };
         if (image.w > 8192 || image.h > 8192)
         {
             return Result<Image>::failure(make_error("Invalid original map sprite dimensions"));
@@ -302,7 +317,7 @@ class OriginalMap
         }
         size_t p = g + offset, end = p + length;
         unsigned encoding = prg_.at(p++);
-        Image image{ word(prg_, p) + 1, word(prg_, p + 2) + 1, { } };
+        Image image{ word(prg_, p) + 1, word(prg_, p + 2) + 1, {} };
         p += 4;
         if (image.w > 8192 || image.h > 8192 || end > prg_.size())
         {
@@ -532,7 +547,7 @@ public:
             camera_y = y;
         }
     }
-    unsigned width{ }, height{ }, map_id{ };
+    unsigned width{}, height{}, map_id{};
     // 42BEED: the terrain area shares the status panel's top/bottom placement.
     void draw_terrain(const OriginalMenu& font, std::vector<uint8_t>& image, int x, int y, int panel_y) const
     {
@@ -621,6 +636,7 @@ public:
         pending_effect_presentations_.clear();
     }
     unsigned movement_effect_phase() const { return movement_effect_clock_.phase(); }
+    void set_army_modes(const std::optional<std::array<uint32_t, 2>>& modes) const { army_modes_ = modes.value_or(std::array<uint32_t, 2>{}); }
     Result<std::vector<uint8_t>> try_movement_effect(unsigned movement_class, unsigned frame, unsigned direction) const
     {
         if (movement_class != 4 && movement_class != 5)
@@ -675,7 +691,7 @@ public:
         }
         return original_movement::try_shadow(background, reaction_foot_mask_, reaction_shadow_);
     }
-    int camera_x{ }, camera_y{ };
+    int camera_x{}, camera_y{};
     // Explicit indexed B1 contract: callers must supply 4483CB's reconstructed
     // background, including 4485DB/448773 roster overlays, never a framebuffer.
     Result<std::vector<uint8_t>> try_compose_reaction(unsigned w, unsigned h, std::span<const uint8_t> current, std::span<const uint8_t> background, bool left) const
@@ -706,7 +722,7 @@ public:
         if (!result)
         {
             report_error(result.error());
-            return { };
+            return {};
         }
         return std::move(result).value();
     }
@@ -971,6 +987,21 @@ public:
     }
     Result<bool> load_validated(unsigned id)
     {
+        arrival_target_.reset();
+        arrival_frame_ = arrival_elapsed_ = 0;
+        arrival_presented_ = false;
+        arrival_pose_time_ = 0;
+        summon_target_.reset();
+        summon_rows_ = summon_full_rows_ = 0;
+        summon_presented_ = false;
+        invisibility_world_.clear();
+        for (auto& viewport : invisibility_viewports_) { viewport.clear(); }
+        invisibility_scratch_ = 0;
+        invisibility_present_pending_ = false;
+        invisibility_presentations_.clear();
+        invisibility_presentation_cursor_ = 0;
+        write_invisibility_world_ = false;
+        read_world_background_ = false;
         unit_bitmaps_.clear();
         pending_effect_presentations_.clear();
         movement_effect_stamps_.clear();
@@ -1205,7 +1236,7 @@ public:
                 else
                 {
                     int left = x * 64 + (y & 1) * 32, top = y * 16 - (int(prg_.at(cells + (size_t(y) * width + x) * 5)) - 1) * 16 - 64;
-                    Image background{ 64, 96, std::vector<uint8_t>(64 * 96), { } };
+                    Image background{ 64, 96, std::vector<uint8_t>(64 * 96), {} };
                     for (int row = 0; row < 96; ++row)
                     {
                         for (int col = 0; col < 64; ++col)
@@ -1369,14 +1400,15 @@ public:
         const auto& b = unit_bitmaps_.at(id);
         return { b.left, b.top, int(b.w), int(b.h) };
     }
-    bool begin_teleport_arrival(const std::vector<OriginalEvents::Unit>& roster, unsigned target, unsigned turn = 1, bool departure = false)
+    bool begin_teleport_arrival(const std::vector<OriginalEvents::Unit>& roster, unsigned target, unsigned turn = 1, bool departure = false, uint64_t elapsed = 0)
     {
         if (arrival_target_ || target >= roster.size())
         {
             return false;
         }
         auto image = draw();
-        draw_units(image, roster, turn);
+        auto prepared = try_draw_units(image, roster, turn, elapsed);
+        if (!prepared) { return false; }
         if (!unit_bitmaps_.contains(target))
         {
             return false;
@@ -1386,9 +1418,42 @@ public:
         arrival_color_ = departure ? 254 : 194;
         arrival_frame_ = arrival_elapsed_ = 0;
         arrival_presented_ = false;
+        arrival_pose_time_ = idle_pose_time_.value_or(elapsed);
         return true;
     }
     bool teleport_arrival_active() const { return arrival_target_.has_value(); }
+    Result<bool> begin_summon_growth(const std::vector<OriginalEvents::Unit>& roster, unsigned target, unsigned turn = 1)
+    {
+        if (summon_target_ || target >= roster.size()) { return Result<bool>::failure(make_error("Invalid465E04 growth target")); }
+        auto candidate = *this;
+        auto image = candidate.draw();
+        auto prepared = candidate.try_draw_units(image, roster, turn);
+        if (!prepared) { return prepared; }
+        const auto found = candidate.unit_bitmaps_.find(target);
+        if (found == candidate.unit_bitmaps_.end()) { return Result<bool>::failure(make_error("465E04 summon AD unavailable")); }
+        candidate.summon_full_rows_ = found->second.h;
+        candidate.summon_rows_ = found->second.h % 3 + 1;
+        candidate.summon_target_ = target;
+        candidate.summon_presented_ = false;
+        *this = std::move(candidate);
+        return Result<bool>::success(true);
+    }
+    bool summon_growth_active() const { return summon_target_.has_value(); }
+    std::optional<unsigned> summon_growth_target() const { return summon_target_; }
+    unsigned summon_growth_rows() const { return summon_rows_; }
+    void summon_growth_presented() { summon_presented_ = true; }
+    void tick_summon_growth()
+    {
+        if (!summon_target_ || !summon_presented_) { return; }
+        summon_presented_ = false;
+        if (summon_rows_ == summon_full_rows_)
+        {
+            summon_target_.reset();
+            return;
+        }
+        summon_rows_ = std::min(summon_full_rows_, summon_rows_ + 3);
+    }
+    void cancel_summon_growth() { summon_target_.reset(); }
     unsigned teleport_arrival_frame() const { return arrival_frame_; }
     void teleport_arrival_presented() { arrival_presented_ = true; }
     void tick_teleport_arrival(unsigned ms)
@@ -1574,7 +1639,10 @@ public:
             }
             size_t metadata = index + 2 + (unit.appearance - 1) * 8;
             unsigned first = word(prg_, metadata + 2);
-            auto frame_result = try_idle_frame(unit.appearance, unit.movement_pose ? uint64_t(unit.movement_frame) * 190 : idle_pose_time_.value_or(elapsed_ms), unit.direction, unit.animation_action);
+            uint64_t pose_time = unit.movement_pose ? uint64_t(unit.movement_frame) * 190 : idle_pose_time_.value_or(elapsed_ms);
+            if (summon_target_) { pose_time = 0; }
+            if (arrival_target_) { pose_time = arrival_pose_time_; }
+            auto frame_result = try_idle_frame(unit.appearance, pose_time, unit.direction, unit.animation_action);
             if (!frame_result)
             {
                 return Result<bool>::failure(frame_result.error());
@@ -1657,6 +1725,18 @@ public:
                 if (resize)
                 {
                     bitmap.b1.assign(size_t(w) * h, 0);
+                    for (unsigned y = 0; y < h; ++y)
+                    {
+                        for (unsigned x = 0; x < w; ++x)
+                        {
+                            const int sx = bitmap.left + int(x), sy = bitmap.top + int(y);
+                            if (sx >= 0 && sy >= 0 && sx < int(width * 64) && sy < int(height * 32))
+                            {
+                                const auto& background = read_world_background_ ? invisibility_world_ : pixels_;
+                                bitmap.b1[size_t(y) * w + x] = background.at(size_t(sy) * width * 64 + sx);
+                            }
+                        }
+                    }
                 }
             }
             if (silhouette)
@@ -1673,20 +1753,47 @@ public:
                     }
                 }
             }
+            if (arrival_target_ && instance == *arrival_target_ && !silhouette)
+            {
+                // 454ED5 tints AD before4462B6 composes feet and terrain masks.
+                OriginalPalette palette(pal_);
+                for (auto& ink : decoded)
+                {
+                    if (ink)
+                    {
+                        ink = palette.blend_index(ink, arrival_color_, arrival_departure_ ? 10 + int(arrival_frame_) * 10 : 100 - int(arrival_frame_) * 10);
+                    }
+                }
+            }
             // 4409A4 stores table+6 at runtime+ACh; 4462B6 sign-extends it.
             int displacement = int(int8_t(prg_.at(table + 6)));
             int left = unit.x * 64 + (unit.y & 1) * 32 + 32 - int(w / 2) + displacement - camera_x;
             size_t map = item(6, map_id - 1), cell = map + 28 + (size_t(unit.y) * width + unit.x) * 5;
             int elevation = prg_.at(cell);
-            mask_unit_ground(decoded, w, h, unit.x, unit.y, elevation, checker_mask_, displacement);
-            // sub_42B1D2 anchors the foot at tile bottom minus (height-1)*16.
+            if (summon_target_ && instance == *summon_target_ && !silhouette)
+            {
+                // 465E04 shortens AD before42AFBA applies terrain masks at its new bottom anchor.
+                h = std::min(h, summon_rows_);
+                decoded.resize(size_t(w) * h);
+            }
+            if (!silhouette && (unit.status_flags & 0x10)
+                && (!summon_target_ || instance != *summon_target_ || summon_rows_ == summon_full_rows_))
+            {
+                if (unit.action_state == 2)
+                {
+                    OriginalPalette palette(pal_);
+                    for (auto& ink : decoded)
+                    {
+                        if (ink) { ink = uint8_t(palette.map(7, ink)); }
+                    }
+                }
+            }
+            // 4483CB must finish B1 before442452 reads it for foot composition.
             int top = unit.y * 16 + 32 - int(h) - camera_y - std::max(0, elevation - 1) * 16;
             presented.push_back({ instance, unit, w, h, left, top, std::move(decoded) });
         }
         if (!silhouette)
         {
-            // 4483CB mode0: crop the indexed world, then copy OTHER B1
-            // buffers (including transparent bytes) in original roster order.
             for (auto id : changed)
             {
                 auto& target = unit_bitmaps_.at(id);
@@ -1694,54 +1801,70 @@ public:
                 {
                     for (unsigned x = 0; x < target.w; ++x)
                     {
-                        int sx = target.left + int(x), sy = target.top + int(y);
-                        target.b1[size_t(y) * target.w + x] = sx >= 0 && sy >= 0 && sx < int(width * 64) && sy < int(height * 32) ? pixels_.at(size_t(sy) * width * 64 + unsigned(sx)) : 0;
+                        const int sx = target.left + int(x), sy = target.top + int(y);
+                        const auto& background = read_world_background_ ? invisibility_world_ : pixels_;
+                        target.b1[size_t(y) * target.w + x] = sx >= 0 && sy >= 0 && sx < int(width * 64) && sy < int(height * 32) ? background.at(size_t(sy) * width * 64 + unsigned(sx)) : 0;
                     }
                 }
-                if (background_mode == 1)
-                {
-                    continue;
-                }
+                if (background_mode == 1) { continue; }
                 for (const auto& other : units)
                 {
-                    if (!other.present(turn) || (other.status_flags & 0x20) || !(other.status_flags & 0x80) || other.action_state == 1 || other.action_state == 3 || other.action_state == 5)
-                    {
-                        continue;
-                    }
+                    if (!other.present(turn) || (other.status_flags & 0x20) || !(other.status_flags & 0x80) || other.action_state == 1 || other.action_state == 3 || other.action_state == 5) { continue; }
                     auto found = unit_bitmaps_.find(unsigned(&other - units.data()));
-                    if (found == unit_bitmaps_.end())
-                    {
-                        continue;
-                    }
+                    if (found == unit_bitmaps_.end()) { continue; }
                     const auto& source = found->second;
-                    if ((source.x == target.x && source.y == target.y) || std::abs(source.x - target.x) > 2 || std::abs(source.y - target.y) > 24)
-                    {
-                        continue;
-                    }
+                    if ((source.x == target.x && source.y == target.y) || std::abs(source.x - target.x) > 2 || std::abs(source.y - target.y) > 24) { continue; }
                     overlay_bitmap(target, source, true);
                 }
-                if (background_mode == 2)
+                if (background_mode != 2) { continue; }
+                for (const auto& other : units)
                 {
-                    for (const auto& other : units)
-                    {
-                        if (!other.present(turn) || (other.status_flags & 0x20) || !(other.status_flags & 0x80) || other.action_state == 1 || other.action_state == 3 || other.action_state == 5)
-                        {
-                            continue;
-                        }
-                        auto found = unit_bitmaps_.find(unsigned(&other - units.data()));
-                        if (found == unit_bitmaps_.end())
-                        {
-                            continue;
-                        }
-                        const auto& source = found->second;
-                        if ((source.x == target.x && source.y == target.y) || std::abs(source.x - target.x) > 2 || source.y >= target.y || source.y < target.y - 24)
-                        {
-                            continue;
-                        }
-                        overlay_bitmap(target, source, false);
-                    }
+                    if (!other.present(turn) || (other.status_flags & 0x20) || !(other.status_flags & 0x80) || other.action_state == 1 || other.action_state == 3 || other.action_state == 5) { continue; }
+                    auto found = unit_bitmaps_.find(unsigned(&other - units.data()));
+                    if (found == unit_bitmaps_.end()) { continue; }
+                    const auto& source = found->second;
+                    if ((source.x == target.x && source.y == target.y) || std::abs(source.x - target.x) > 2 || source.y >= target.y || source.y < target.y - 24) { continue; }
+                    overlay_bitmap(target, source, false);
                 }
             }
+        }
+        for (auto& pose : presented)
+        {
+            const auto& unit = pose.unit;
+            const auto instance = pose.instance;
+            auto& decoded = pose.pixels;
+            const unsigned w = pose.w, h = pose.h;
+            const size_t cell = item(6, map_id - 1) + 28 + (size_t(unit.y) * width + unit.x) * 5;
+            const int displacement = pose.left + camera_x - (unit.x * 64 + (unit.y & 1) * 32 + 32 - int(w / 2));
+            if (!silhouette && (unit.status_flags & 0x10)
+                && (!summon_target_ || instance != *summon_target_ || summon_rows_ == summon_full_rows_))
+            {
+                if (h >= 32 && (!(unit.status_flags & 8) || (summon_target_ && instance == *summon_target_ && summon_rows_ == summon_full_rows_)))
+                {
+                    const unsigned ground = word(prg_, cell + 1);
+                    const unsigned category = ground ? word(prg_, group(7) + 6 + (ground - 1) * 2) >> 8 : 0;
+                    const bool special = ground > 4 && (category == 1 || category == 2);
+                    auto& foot = invisibility_feet_[special ? 1 : 0];
+                    if (foot.empty())
+                    {
+                        auto resources = OriginalDiscResources(root_).try_dat_entry(disc_, 5);
+                        if (!resources) { return Result<bool>::failure(resources.error()); }
+                        const auto& bytes = resources.value();
+                        ResourceReader reader(bytes);
+                        const size_t entry = 2 + size_t(special ? 21 : 20) * 8;
+                        const size_t offset = reader.number(entry, 4), length = reader.number(entry + 4, 4);
+                        if (length != 2052 || !reader.extent(offset, length) || reader.number(offset) != 63 || reader.number(offset + 2) != 31)
+                        {
+                            return Result<bool>::failure(make_error("Invalid465F8F final foot bitmap"));
+                        }
+                        foot.assign(bytes.begin() + offset + 4, bytes.begin() + offset + 2052);
+                    }
+                    auto shadow = NativeInvisibility::shadow(decoded, unit_bitmaps_.at(instance).b1, w, h, displacement,
+                        foot, OriginalPalette(pal_), special, unit.movement_type == 9);
+                    if (!shadow) { return shadow; }
+                }
+            }
+            mask_unit_ground(decoded, w, h, unit.x, unit.y, int(prg_.at(cell)), checker_mask_, displacement);
         }
         std::stable_sort(presented.begin(), presented.end(), [](const auto& a, const auto& b)
             {
@@ -1766,6 +1889,81 @@ public:
         auto staged_effect_stamps = movement_effect_stamps_;
         for (auto& pose : presented)
         {
+            if (!silhouette && ((summon_target_ && pose.instance == *summon_target_) || (arrival_target_ && pose.instance == *arrival_target_)))
+            {
+                const auto& bitmap = unit_bitmaps_.at(pose.instance);
+                const int displacement = int(int8_t(prg_.at(bitmap.frame + 6)));
+                for (const auto& other : units)
+                {
+                    if (!other.present(turn) || !(other.status_flags & 0x80) || (other.status_flags & 0x20) || other.action_state == 1 || other.action_state == 3 || other.action_state == 5) { continue; }
+                    const auto found = unit_bitmaps_.find(unsigned(&other - units.data()));
+                    if (found == unit_bitmaps_.end()) { continue; }
+                    const auto& occluder = found->second;
+                    if (occluder.x < bitmap.x - 2 - (displacement < 0) || occluder.x > bitmap.x + 2 + (displacement > 0) || occluder.y <= bitmap.y || occluder.y > bitmap.y + 24) { continue; }
+                    auto erased = original_movement::try_erase(pose.pixels, pose.w, pose.h, occluder.ad, occluder.w, occluder.h,
+                        occluder.left - camera_x - pose.left, occluder.top - camera_y - pose.top);
+                    if (!erased) { return erased; }
+                }
+            }
+            const bool hidden = !silhouette && !(pose.unit.status39.value_or(0) & 2) && !(pose.unit.status3d & 0x20)
+                && NativeInvisibility::hidden(pose.unit, units, turn, army_modes_[pose.unit.hostile() ? 0 : 1], [&](int x, int y)
+                    {
+                        if (x < 0 || y < 0 || x >= int(width) || y >= int(height * 2)) { return 0; }
+                        return int(prg_.at(item(6, map_id - 1) + 28 + (size_t(y) * width + x) * 5));
+                    });
+            if (hidden)
+            {
+                const auto& bitmap = unit_bitmaps_.at(pose.instance);
+                auto scratch = bitmap.ad;
+                if (arrival_target_ && pose.instance == *arrival_target_)
+                {
+                    OriginalPalette palette(pal_);
+                    for (auto& ink : scratch)
+                    {
+                        if (ink) { ink = palette.blend_index(ink, arrival_color_, arrival_departure_ ? 10 + int(arrival_frame_) * 10 : 100 - int(arrival_frame_) * 10); }
+                    }
+                }
+                const size_t cell = item(6, map_id - 1) + 28 + (size_t(pose.unit.y) * width + pose.unit.x) * 5;
+                const unsigned ground = word(prg_, cell + 1);
+                const unsigned category = ground ? word(prg_, group(7) + 6 + (ground - 1) * 2) >> 8 : 0;
+                const bool special = ground > 4 && (category == 1 || category == 2);
+                auto& foot = invisibility_feet_[special ? 1 : 0];
+                if (foot.empty())
+                {
+                    auto resources = OriginalDiscResources(root_).try_dat_entry(disc_, 5);
+                    if (!resources) { return Result<bool>::failure(resources.error()); }
+                    const auto& data = resources.value();
+                    ResourceReader reader(data);
+                    // 426598 stores one-based slots at 4F7060 + slot*4: B4=21, B8=22.
+                    const size_t entry = 2 + size_t(special ? 21 : 20) * 8;
+                    const size_t offset = reader.number(entry, 4), length = reader.number(entry + 4, 4);
+                    if (length != 2052 || !reader.extent(offset, length) || reader.number(offset) != 63 || reader.number(offset + 2) != 31)
+                    {
+                        return Result<bool>::failure(make_error("Invalid448984 original foot bitmap"));
+                    }
+                    foot.assign(data.begin() + offset + 4, data.begin() + offset + 2052);
+                }
+                const int displacement = int(int8_t(prg_.at(bitmap.frame + 6)));
+                auto shadow = NativeInvisibility::shadow(scratch, bitmap.b1, bitmap.w, bitmap.h, displacement,
+                    foot, OriginalPalette(pal_), special, pose.unit.movement_type == 9);
+                if (!shadow) { return shadow; }
+                auto composed = NativeInvisibility::compose(scratch, bitmap.b1, pose.unit, OriginalPalette(pal_));
+                if (!composed) { return composed; }
+                mask_unit_ground(scratch, bitmap.w, bitmap.h, pose.unit.x, pose.unit.y, int(prg_.at(cell)), checker_mask_, displacement);
+                // 4465B4(mode1) and 4462B6 erase both armies' nearer raw AD masks.
+                for (const auto& other : units)
+                {
+                    if (!other.present(turn) || !(other.status_flags & 0x80) || (other.status_flags & 0x20) || other.action_state == 1 || other.action_state == 3 || other.action_state == 5) { continue; }
+                    const auto found = unit_bitmaps_.find(unsigned(&other - units.data()));
+                    if (found == unit_bitmaps_.end()) { continue; }
+                    const auto& occluder = found->second;
+                    if (occluder.x < bitmap.x - 2 - (displacement < 0) || occluder.x > bitmap.x + 2 + (displacement > 0) || occluder.y <= bitmap.y || occluder.y > bitmap.y + 24) { continue; }
+                    auto erased = original_movement::try_erase(scratch, bitmap.w, bitmap.h, occluder.ad, occluder.w, occluder.h,
+                        occluder.left - bitmap.left - displacement, occluder.top - bitmap.top);
+                    if (!erased) { return erased; }
+                }
+                pose.pixels = std::move(scratch);
+            }
             if (!silhouette && (pose.unit.action_state == 4 || pose.unit.movement_pose) && pose.unit.movement_visual_class >= 3 && pose.unit.movement_visual_class <= 5)
             {
                 const int elevation = prg_.at(item(6, map_id - 1) + 28 + (size_t(pose.unit.y) * width + pose.unit.x) * 5);
@@ -1846,17 +2044,6 @@ public:
             {
                 pose.pixels = disappearance_frames_.at(disappearance_.frame);
             }
-            if (arrival_target_ && pose.instance == *arrival_target_ && !silhouette)
-            {
-                OriginalPalette palette(pal_);
-                for (auto& ink : pose.pixels)
-                {
-                    if (ink)
-                    {
-                        ink = palette.blend_index(ink, arrival_color_, arrival_departure_ ? 10 + int(arrival_frame_) * 10 : 100 - int(arrival_frame_) * 10);
-                    }
-                }
-            }
             if (reaction && pose.instance == *reaction && !silhouette)
             {
                 auto& bitmap = unit_bitmaps_.at(*reaction);
@@ -1886,6 +2073,15 @@ public:
                 {
                     unsigned c = pose.pixels.at(size_t(y) * pose.w + x);
                     int dx = pose.left + int(x), dy = pose.top + int(y);
+                    if (write_invisibility_world_ && c && pose.unit.action_state != 1 && pose.unit.action_state != 3 && pose.unit.action_state != 5)
+                    {
+                        const auto& bitmap = unit_bitmaps_.at(pose.instance);
+                        const int wx = bitmap.left + int(x), wy = bitmap.top + int(y);
+                        if (wx >= 0 && wy >= 0 && wx < int(width * 64) && wy < int(height * 32))
+                        {
+                            invisibility_world_.at(size_t(wy) * width * 64 + wx) = uint8_t(c);
+                        }
+                    }
                     if (!c || dx < 0 || dy < 0 || dx >= 640 || dy >= 480)
                     {
                         continue;
@@ -1924,7 +2120,7 @@ public:
         auto last_left = last_reaction_left_;
         auto draws = reaction_draws_;
         auto output = image;
-        auto indices = indexed ? *indexed : std::vector<uint8_t>{ };
+        auto indices = indexed ? *indexed : std::vector<uint8_t>{};
         auto result = draw_units_validated(output, units, turn, elapsed_ms, silhouette, reaction, background_mode, only_instance, indexed ? &indices : nullptr);
         if (!result)
         {
@@ -1952,6 +2148,171 @@ public:
         {
             report_error(result.error());
         }
+    }
+    Result<bool> prepare_invisibility_buffers(const std::vector<OriginalEvents::Unit>& baseline,
+        const std::vector<OriginalEvents::Unit>& staged, const std::vector<size_t>& targets, unsigned turn, uint64_t elapsed)
+    {
+        if (baseline.size() != staged.size()) { return Result<bool>::failure(make_error("466D83 roster extent changed")); }
+        bool newly_hidden = false;
+        for (const auto target : targets)
+        {
+            if (target >= staged.size()) { return Result<bool>::failure(make_error("466D83 invalid target instance")); }
+            if (!(baseline[target].status3c & 0x10) && (staged[target].status3c & 0x10)) { newly_hidden = true; }
+        }
+        if (!newly_hidden) { return Result<bool>::success(true); }
+        auto prepared = *this;
+        prepared.invisibility_world_ = pixels_;
+        prepared.invisibility_present_pending_ = false;
+        prepared.invisibility_presentations_.clear();
+        prepared.invisibility_presentation_cursor_ = 0;
+        prepared.invisibility_scratch_ = 0;
+        prepared.invisibility_viewports_[0].resize(640 * 480);
+        for (unsigned y = 0; y < 480; ++y)
+        {
+            for (unsigned x = 0; x < 640; ++x)
+            {
+                prepared.invisibility_viewports_[0][size_t(y) * 640 + x] = pixels_.at(size_t(camera_y + y) * width * 64 + camera_x + x);
+            }
+        }
+        auto image = prepared.draw();
+        prepared.write_invisibility_world_ = true;
+        auto result = prepared.try_draw_units(image, baseline, turn, elapsed, std::nullopt, std::nullopt, 0,
+            std::nullopt, &prepared.invisibility_viewports_[0]);
+        if (!result) { return result; }
+        prepared.invisibility_viewports_[1] = prepared.invisibility_viewports_[0];
+        auto current = baseline;
+        for (const auto target : targets)
+        {
+            if (target >= staged.size()) { return Result<bool>::failure(make_error("466D83 invalid target instance")); }
+            // 442CD5 returns one only when the bit was newly installed.
+            if ((baseline[target].status3c & 0x10) || !(staged[target].status3c & 0x10)) { continue; }
+            current[target] = staged[target];
+            prepared.invisibility_scratch_ = 1;
+            result = prepared.try_draw_units(image, current, turn, elapsed, std::nullopt, std::nullopt, 0,
+                unsigned(target), &prepared.invisibility_viewports_[1]);
+            if (!result) { return result; }
+            prepared.invisibility_scratch_ = 0;
+            prepared.invisibility_present_pending_ = true;
+            prepared.invisibility_presentations_.push_back(prepared.invisibility_viewports_[1]);
+        }
+        prepared.write_invisibility_world_ = false;
+        *this = std::move(prepared);
+        return Result<bool>::success(true);
+    }
+    const std::vector<uint8_t>& invisibility_world() const { return invisibility_world_; }
+    Result<bool> refresh_world(const std::vector<OriginalEvents::Unit>& roster, unsigned turn, uint64_t elapsed)
+    {
+        auto prepared = *this;
+        prepared.invisibility_world_ = pixels_;
+        prepared.read_world_background_ = true;
+        auto image = prepared.draw();
+        auto result = prepared.try_draw_units(image, roster, turn, elapsed);
+        if (!result) { return result; }
+        prepared.write_invisibility_world_ = true;
+        result = prepared.try_draw_units(image, roster, turn, elapsed);
+        if (!result) { return result; }
+        prepared.write_invisibility_world_ = false;
+        prepared.read_world_background_ = false;
+        *this = std::move(prepared);
+        return Result<bool>::success(true);
+    }
+    Result<std::vector<uint8_t>> world_viewport() const
+    {
+        if (invisibility_world_.size() != pixels_.size()) { return Result<std::vector<uint8_t>>::failure(make_error("42927B world not initialized")); }
+        std::vector<uint8_t> indices(640 * 480);
+        for (unsigned y = 0; y < 480; ++y)
+        {
+            std::copy_n(invisibility_world_.begin() + size_t(camera_y + y) * width * 64 + camera_x, 640, indices.begin() + size_t(y) * 640);
+        }
+        return Result<std::vector<uint8_t>>::success(std::move(indices));
+    }
+    Result<bool> try_draw_world(std::vector<uint8_t>& image, const std::vector<OriginalEvents::Unit>& roster, unsigned turn, uint64_t elapsed) const
+    {
+        if (image.size() != 640u * 480 * 4) { return Result<bool>::failure(make_error("42927B invalid framebuffer extent")); }
+        auto prepared = *this;
+        auto result = prepared.refresh_world(roster, turn, elapsed);
+        if (!result) { return result; }
+        auto cropped = prepared.world_viewport();
+        if (!cropped) { return Result<bool>::failure(cropped.error()); }
+        auto output = image;
+        for (size_t p = 0; p < cropped.value().size(); ++p)
+        {
+            for (unsigned c = 0; c < 3; ++c) { output[p * 4 + c] = uint8_t(unsigned(pal_.at(cropped.value()[p] * 3 + c)) * 255 / 63); }
+            output[p * 4 + 3] = 255;
+        }
+        // 447FC3 restores B1 without its viewport-only signed AD displacement.
+        // The caller then applies4462B6 after selection overlays.
+        for (const auto& [instance, bitmap] : prepared.unit_bitmaps_)
+        {
+            if (instance >= roster.size()) { continue; }
+            const auto& unit = roster[instance];
+            if (!unit.present(turn) || (unit.status_flags & 0x20) || !(unit.status_flags & 0x80) || unit.action_state == 1 || unit.action_state == 3 || unit.action_state == 5) { continue; }
+            for (unsigned y = 0; y < bitmap.h; ++y)
+            {
+                for (unsigned x = 0; x < bitmap.w; ++x)
+                {
+                    const int dx = bitmap.left + int(x) - camera_x, dy = bitmap.top + int(y) - camera_y;
+                    if (dx < 0 || dx >= 640 || dy < 0 || dy >= 480) { continue; }
+                    const auto ink = bitmap.b1.at(size_t(y) * bitmap.w + x);
+                    const size_t p = (size_t(dy) * 640 + dx) * 4;
+                    for (unsigned c = 0; c < 3; ++c) { output[p + c] = uint8_t(unsigned(pal_.at(ink * 3 + c)) * 255 / 63); }
+                }
+            }
+        }
+        invisibility_world_ = std::move(prepared.invisibility_world_);
+        unit_bitmaps_ = std::move(prepared.unit_bitmaps_);
+        image.swap(output);
+        return Result<bool>::success(true);
+    }
+    Result<bool> refresh_army_world(const std::vector<OriginalEvents::Unit>& roster, bool hostile, unsigned turn, uint64_t elapsed)
+    {
+        auto prepared = *this;
+        const bool initialize = prepared.invisibility_world_.empty();
+        if (initialize) { prepared.invisibility_world_ = pixels_; }
+        auto image = prepared.draw();
+        // Warm both armies' AD/B1 before4466FC visits just the opposing army.
+        auto result = prepared.try_draw_units(image, roster, turn, elapsed);
+        if (!result) { return result; }
+        prepared.write_invisibility_world_ = true;
+        if (initialize)
+        {
+            result = prepared.try_draw_units(image, roster, turn, elapsed);
+            if (!result) { return result; }
+        }
+        for (unsigned i = 0; i < roster.size(); ++i)
+        {
+            const auto& unit = roster[i];
+            if (unit.hostile() != hostile || unit.action_state == 1 || unit.action_state == 3 || unit.action_state == 5) { continue; }
+            result = prepared.try_draw_units(image, roster, turn, elapsed, std::nullopt, std::nullopt, 0, i);
+            if (!result) { return result; }
+        }
+        prepared.write_invisibility_world_ = false;
+        *this = std::move(prepared);
+        return Result<bool>::success(true);
+    }
+    const std::vector<uint8_t>& invisibility_viewport(unsigned index) const { return invisibility_viewports_.at(index); }
+    unsigned invisibility_scratch() const { return invisibility_scratch_; }
+    bool invisibility_present_pending() const { return invisibility_present_pending_; }
+    void invisibility_presented()
+    {
+        if (!invisibility_present_pending_) { return; }
+        ++invisibility_presentation_cursor_;
+        if (invisibility_presentation_cursor_ == invisibility_presentations_.size())
+        {
+            invisibility_present_pending_ = false;
+            invisibility_presentations_.clear();
+            invisibility_presentation_cursor_ = 0;
+        }
+    }
+    std::vector<uint8_t> present_invisibility_viewport() const
+    {
+        std::vector<uint8_t> image(640 * 480 * 4, 255);
+        const auto& viewport = invisibility_presentations_.at(invisibility_presentation_cursor_);
+        for (size_t p = 0; p < viewport.size(); ++p)
+        {
+            for (unsigned c = 0; c < 3; ++c) { image[p * 4 + c] = uint8_t(unsigned(pal_.at(viewport[p] * 3 + c)) * 255 / 63); }
+        }
+        return image;
     }
     std::vector<uint8_t> skill32_background(const std::vector<OriginalEvents::Unit>& units, unsigned turn, unsigned caster, unsigned target, unsigned tint_source = 140, unsigned tint_amount = 45) const
     {
@@ -2055,7 +2416,7 @@ public:
         }
         return image;
     }
-    std::vector<uint8_t> skill88_background(const std::vector<OriginalEvents::Unit>& units, unsigned turn, unsigned caster, unsigned tint_amount = 50, unsigned tint_source = 233) const
+    std::vector<uint8_t> skill88_background(const std::vector<OriginalEvents::Unit>& units, unsigned turn, unsigned caster, unsigned tint_amount = 50, unsigned tint_source = 233, std::optional<unsigned> partner = std::nullopt) const
     {
         auto image = draw();
         std::vector<uint8_t> indexed(640 * 480);
@@ -2082,22 +2443,49 @@ public:
             }
         }
         draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, caster, &indexed);
+        if (partner) { draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, *partner, &indexed); }
         skill88_indexed_ = std::move(indexed);
         return image;
     }
-    std::vector<uint8_t> skill88_frame(const std::vector<uint8_t>& background, const OriginalSkill88Visual& visual, const OriginalEvents::Unit& actor) const
+    std::vector<uint8_t> skill88_frame(const std::vector<uint8_t>& background, const OriginalSkill88Visual& visual, const OriginalEvents::Unit& actor, std::optional<size_t> frame_index = std::nullopt, const std::vector<OriginalEvents::Unit>* occluders = nullptr, unsigned turn = 1) const
     {
         auto image = background;
-        const auto& frame = visual.current();
+        const auto& frame = frame_index ? visual.frame_at(*frame_index) : visual.current();
+        auto pixels = frame.pixels;
+        if (occluders)
+        {
+            const auto cells = item(6, map_id - 1) + 28;
+            const int height = prg_.at(cells + (size_t(actor.y) * width + actor.x) * 5);
+            mask_unit_ground(pixels, frame.width, frame.height, actor.x, actor.y, height);
+            for (unsigned i = 0; i < occluders->size(); ++i)
+            {
+                const auto& unit = occluders->at(i);
+                if (!unit.present(turn) || !(unit.status_flags & 0x80) || (unit.status_flags & 0x20) || unit.action_state == 1 || unit.action_state == 3 || unit.action_state == 5 || std::abs(unit.x - actor.x) > 2 || unit.y <= actor.y || unit.y > actor.y + 24) { continue; }
+                const auto found = unit_bitmaps_.find(i);
+                if (found == unit_bitmaps_.end()) { continue; }
+                const auto& bitmap = found->second;
+                const int elevation = prg_.at(cells + (size_t(unit.y) * width + unit.x) * 5);
+                const int dx = unit.x * 64 + (unit.y & 1) * 32 + 32 - int(bitmap.w / 2) - (actor.x * 64 + (actor.y & 1) * 32 + 32 - int(frame.width / 2));
+                const int dy = unit.y * 16 + 32 - int(bitmap.h) - (actor.y * 16 + 32 - int(frame.height)) - (elevation - height) * 16;
+                auto erased = original_movement::try_erase(pixels, frame.width, frame.height, bitmap.ad, bitmap.w, bitmap.h, dx, dy);
+                if (!erased)
+                {
+                    report_error(erased.error());
+                    return background;
+                }
+            }
+        }
         OriginalPalette palette(pal_);
         int left = actor.x * 64 + (actor.y & 1) * 32 - camera_x + 32 - visual.anchor_x(), top = actor.y * 16 - camera_y + 32 - visual.anchor_y();
+        if (visual.anchor_x() == -1) { left = 0; }
+        if (visual.anchor_y() == -1) { top = 0; }
         int elevation = prg_.at(item(6, map_id - 1) + 28 + (size_t(actor.y) * width + actor.x) * 5);
-        top -= std::max(0, elevation - 1) * 16;
+        if (visual.anchor_y() != -1) { top -= std::max(0, elevation - 1) * 16; }
         for (unsigned y = 0; y < frame.height; ++y)
         {
             for (unsigned x = 0; x < frame.width; ++x)
             {
-                unsigned c = frame.pixels[size_t(y) * frame.width + x];
+                unsigned c = pixels[size_t(y) * frame.width + x];
                 int dx = left + int(x), dy = top + int(y);
                 if (!c || dx < 0 || dy < 0 || dx >= 640 || dy >= 480)
                 {
@@ -2198,6 +2586,21 @@ public:
             }
         }
         return image;
+    }
+    Result<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>> sight_background(const std::vector<OriginalEvents::Unit>& units, unsigned turn, uint64_t elapsed) const
+    {
+        auto prepared = *this;
+        auto result = prepared.refresh_world(units, turn, elapsed);
+        if (!result) { return Result<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>>::failure(result.error()); }
+        auto viewport = prepared.world_viewport();
+        if (!viewport) { return Result<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>>::failure(viewport.error()); }
+        auto indices = std::move(viewport).value();
+        std::vector<uint8_t> image(640 * 480 * 4, 255);
+        for (size_t p = 0; p < indices.size(); ++p)
+        {
+            for (unsigned c = 0; c < 3; ++c) { image[p * 4 + c] = uint8_t(unsigned(pal_.at(indices[p] * 3 + c)) * 255 / 63); }
+        }
+        return Result<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>>::success({ std::move(image), std::move(indices) });
     }
     // 42FE12 supplies random object-name entries to 46243A and explicitly
     // skips type12; it is not a water-animation timer. Palette cycling is

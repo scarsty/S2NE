@@ -37,6 +37,8 @@ S2NE 是面向 Windows x64 的 C++23／SDL3 原生重写工程，以原 Windows 
 
 日常开发入口为原生单工程方案 [S2NE.sln](S2NE.sln)，工程文件为 [S2NE.vcxproj](S2NE.vcxproj)。旧 [CMakeLists.txt](CMakeLists.txt) 和构建目录仅保留作兼容用途，不用于生成日常 VS 工程。
 
+CMake 兼容入口默认 `BUILD_TESTING=OFF`，不配置或编译测试。需要测试时显式配置 `-DBUILD_TESTING=ON`，再用 `cmake --build <构建目录> --config Release --target <测试目标>` 仅编译相关目标，并用 `ctest --test-dir <构建目录> -C Release -R <测试名称正则> --output-on-failure` 运行对应测试。测试可执行目标也排除在默认构建之外；`ctest` 不会自动编译它们，须先构建所选目标。已有缓存若启用了测试，须显式传入 `-DBUILD_TESTING=OFF` 才会关闭。
+
 ## 构建与运行
 
 在 Visual Studio 中打开方案，选择 `Release | x64` 或 `Debug | x64` 构建。也可在 Visual Studio Developer PowerShell 中进入工程目录执行：
@@ -53,7 +55,9 @@ msbuild .\S2NE.sln /p:Configuration=Release /p:Platform=x64 /m
 
 ## 本地检查与游戏包
 
-原生 Debug／Release 构建完成后，会自动将当前游戏程序及运行库同步到资源根目录，可直接运行根目录的 `S2NE.exe`。Debug 构建也会覆盖该检查副本；日常交付包固定使用 Release。
+CMake 兼容构建也默认不向资源根目录发布；仅显式配置 `-DS2NE_PUBLISH_RUNTIME=ON` 才启用该复制步骤。构建输出目录所需的 DLL 复制保留，不触发 DAT／PRG 重建。
+
+原生 Debug／Release 构建默认**不向资源根目录同步**游戏程序及运行库（`PublishGameRuntime=false`）。仅显式传入 `/p:PublishGameRuntime=true` 才在构建后同步；此时 Debug 也会覆盖根目录检查副本。正式打包脚本保留显式发布，日常交付包固定使用 Release。旧 CMake 兼容入口仍有无条件根目录发布的 POST_BUILD，尚未与此开关统一，详见 PROGRESS 配置遗留；不能把原生工程默认关闭外推到 CMake。
 
 运行 `powershell -NoProfile -ExecutionPolicy Bypass -File S2NE\tools\package-game.ps1` 可在资源根目录生成 `S2NE-game-win64.zip`。解压后使用 `run-game.cmd` 启动；需要 Windows x64 及 Microsoft Visual C++ x64 运行库。包中仅保留运行依赖与当前使用资源，不含个人存档、源码或验证产物。
 
@@ -72,6 +76,8 @@ PRG 并非单根文件冒充合并：两盘前8组相同，CD1第9组与第7组�
 C/C++修改后使用工程现有 `_clang-format` 格式化改动文件；可运行 `tools\format-code.ps1 -Files <文件列表>`。工作区已为 C/C++ 配置保存时格式化（需要 VS Code C/C++ 扩展）。不批量格式化无关源文件。
 
 程序启动时将 MSVC CRT断言、运行库参数错误与未处理异常输出到标准错误，不弹出运行库调试对话框；致命错误保持非零退出，不忽略断言继续运行。需要查看错误时从终端执行 `run-opening.cmd`，也可用 `2>error.log` 重定向标准错误。外部调试器主动中断不受此设置控制。
+
+启动卡顿诊断可设置环境变量 `S2NE_STARTUP_TRACE=1`，标准错误输出单调时钟分阶段耗时、原资源实际读取字节数、窗口／原开场首帧／事件循环／首次输入分发；不设置时不输出这些记录。`tools\measure-startup.ps1` 默认执行三次有界 dummy 开场跳过检查，并在 `out` 保存阶段日志与调用启动至阶段日志被观察的上界时间（含轮询／日志刷新开销）；它不是实际桌面 renderer 或硬件音频性能证明，也不清理系统缓存。真实窗口验证须在可用且已解锁的桌面进行。原首帧在音频初始化和战斗数据准备之前提交；完整性检查和原视频／菜单顺序不删除。
 
 ## 工程导航
 

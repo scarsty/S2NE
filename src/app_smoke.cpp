@@ -132,7 +132,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
     auto& skillRules = context.skillRules;
     if (smoke && smokePhase == 0 && SDL_GetTicks() - started > 300)
     {
-        SDL_Event e{ };
+        SDL_Event e{};
         if (openingRightSmoke)
         {
             e.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
@@ -148,7 +148,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
     }
     if (smoke && smokePhase == 1 && SDL_GetTicks() - started > 600)
     {
-        SDL_Event e{ };
+        SDL_Event e{};
         e.type = SDL_EVENT_KEY_DOWN;
         e.key.key = SDLK_DOWN;
         SDL_PushEvent(&e);
@@ -167,7 +167,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
     }
     if (battleSmoke && SDL_GetTicks() - started > 100 + smokePhase * 100)
     {
-        SDL_Event e{ };
+        SDL_Event e{};
         e.type = SDL_EVENT_KEY_DOWN;
         e.key.key = smokePhase == 0 ? SDLK_ESCAPE : SDLK_RETURN;
         if (inSetup && smokePhase == 2)
@@ -394,7 +394,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
             {
                 if (itemMenu)
                 {
-                    SDL_Event key{ };
+                    SDL_Event key{};
                     key.type = SDL_EVENT_KEY_DOWN;
                     key.key.key = SDLK_RETURN;
                     SDL_PushEvent(&key);
@@ -413,7 +413,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                 else if (battle.state() == s2ne::Battle::State::command)
                 {
                     battle.prepare_commands(prologue->events.units);
-                    SDL_Event key{ };
+                    SDL_Event key{};
                     key.type = SDL_EVENT_KEY_DOWN;
                     key.key.key = battle.command_index() == 2 ? SDLK_RETURN : SDLK_RIGHT;
                     SDL_PushEvent(&key);
@@ -510,7 +510,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                 output.close();
                 s2ne::fatal("Final quest approach requires next legal route; refusing blind auto while boss237 remains; checkpoint=" + path.string());
             }
-            if (skillMenu) { }
+            if (skillMenu) {}
             else if (campaignContinue && (s2ne::smoke_exit::ready(*smokeExitStage, prologue->events, hostile) || revealInput || captureInput))
             {
                 auto& battle = prologue->battle();
@@ -689,7 +689,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                             }
                             else if (battle.state() == s2ne::Battle::State::command)
                             {
-                                if (!skillRules.entry_available(*actor, { })) { prologue->end_battle_turn(); }
+                                if (!skillRules.entry_available(*actor, {})) { prologue->end_battle_turn(); }
                                 else
                                 {
                                     for (unsigned i = 0; i < 6 && prologue->battle_command_index() != 0; ++i)
@@ -900,7 +900,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                 {
                     prologue->battle_cycle(1);
                 }
-                SDL_Event key{ };
+                SDL_Event key{};
                 key.type = SDL_EVENT_KEY_DOWN;
                 key.key.key = SDLK_RETURN;
                 SDL_PushEvent(&key);
@@ -912,7 +912,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                 {
                     s2ne::fatal("Detail command did not open original report");
                 }
-                SDL_Event key{ };
+                SDL_Event key{};
                 key.type = SDL_EVENT_KEY_DOWN;
                 key.key.key = SDLK_ESCAPE;
                 SDL_PushEvent(&key);
@@ -935,7 +935,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                 battleSmokeStartTurn = prologue->battle_turn();
                 auto pushRight = [&]
                 {
-                    SDL_Event click{ };
+                    SDL_Event click{};
                     click.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
                     click.button.button = SDL_BUTTON_RIGHT;
                     SDL_RenderCoordinatesToWindow(renderer, 320, 240, &click.button.x, &click.button.y);
@@ -945,7 +945,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
             }
             else if (!autoMenuOpened && !battleMenu)
             {
-                SDL_Event click{ };
+                SDL_Event click{};
                 click.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
                 click.button.windowID = SDL_GetWindowID(window);
                 click.button.button = SDL_BUTTON_RIGHT;
@@ -955,7 +955,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
             else if (battleMenu)
             {
                 autoMenuOpened = true;
-                SDL_Event key{ };
+                SDL_Event key{};
                 key.type = SDL_EVENT_KEY_DOWN;
                 key.key.key = SDLK_DOWN;
                 if (battleMenu->page() == s2ne::OriginalBattleMenu::Page::root && battleMenu->selected() < 3)
@@ -1002,7 +1002,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
             }
             auto pushClick = [&](s2ne::Battle::Point point)
             {
-                SDL_Event click{ };
+                SDL_Event click{};
                 click.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
                 click.button.windowID = SDL_GetWindowID(window);
                 click.button.button = SDL_BUTTON_LEFT;
@@ -1028,7 +1028,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                     {
                         s2ne::fatal("SDL routed movement failed");
                     }
-                    SDL_Event finish{ };
+                    SDL_Event finish{};
                     finish.type = SDL_EVENT_KEY_DOWN;
                     finish.key.key = SDLK_F10;
                     SDL_PushEvent(&finish);
@@ -1070,7 +1070,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                     {
                         battleSmokeStartTurn = prologue->battle_turn();
                         hostileBannerFrames = playerBannerFrames = 0;
-                        SDL_Event finish{ };
+                        SDL_Event finish{};
                         finish.type = SDL_EVENT_KEY_DOWN;
                         finish.key.key = SDLK_F10;
                         SDL_PushEvent(&finish);
@@ -1088,7 +1088,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                 {
                     battleSmokeEnemyOrigins.emplace_back(unit.x, unit.y);
                 }
-                s2ne::OriginalBattleMenu originalMenu(root, { }, settingsState);
+                s2ne::OriginalBattleMenu originalMenu(root, {}, settingsState);
                 originalMenu.activate();
                 if (originalMenu.request().action != s2ne::OriginalBattleMenu::Action::conditions)
                 {
@@ -1205,7 +1205,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
     }
     if (newGameSmoke && SDL_GetTicks() - started > 100 + smokePhase * 150 && (!prologue || prologue->line_index() == 0))
     {
-        SDL_Event e{ };
+        SDL_Event e{};
         e.type = SDL_EVENT_KEY_DOWN;
         if (prologue || inSetup) { e.key.key = SDLK_RETURN; }
         else
@@ -1237,7 +1237,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
     }
     if (loadSmoke && SDL_GetTicks() - started > 100 + smokePhase * 150 && !prologue)
     {
-        SDL_Event e{ };
+        SDL_Event e{};
         e.type = SDL_EVENT_KEY_DOWN;
         if (saveMenu) { e.key.key = SDLK_RETURN; }
         else
@@ -1330,7 +1330,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
         }
         auto key = [&](SDL_Keycode code)
         {
-            SDL_Event e{ };
+            SDL_Event e{};
             e.type = SDL_EVENT_KEY_DOWN;
             e.key.key = code;
             SDL_PushEvent(&e);
@@ -1338,7 +1338,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
         auto snapshot = [&](const char* name)
         {
             auto events = prologue->events;
-            if (skill94Input && skillInputPhase == 9 && !skillCastVerified && skillInputBefore)
+            if (((inputSkill >= 64 && inputSkill <= 74) || inputSkill == 51 || inputSkill == 29 || inputSkill == 18 || inputSkill == 40 || skill94Input || NativeDamageRecords::ordinary_sword(inputSkill)) && skillInputPhase == 9 && !skillCastVerified && skillInputBefore)
             {
                 events.units[skillInputCaster].action_state = skillInputBefore->action_state;
                 events.units[skillInputCaster].direction = skillInputBefore->direction;
@@ -1351,6 +1351,65 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             f.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
             f.close();
             auto decoded = s2ne::OriginalSave::load(path, saveItems);
+            if (inputSkill >= 64 && inputSkill <= 74 && (std::string_view(name) == "cast-after.sav" || std::string_view(name) == "settled-after.sav"))
+            {
+                const auto restored = s2ne::OriginalSaveBridge::restore(root, decoded);
+                const unsigned appearance = inputSkill + 49;
+                const auto& caster = events.units.at(skillInputCaster);
+                const auto found = std::find_if(events.units.begin(), events.units.end(), [&](const auto& unit)
+                    {
+                        return unit.appearance == appearance && unit.hostile() == caster.hostile() && (unit.status_flags & 0x10);
+                    });
+                if (found == events.units.end() || !(found->status_flags & 0x80)) { fatal("465E04 summon original role missing or incorrect owner"); }
+                const auto index = size_t(found - events.units.begin());
+                const auto& loaded = restored.events.units.at(index);
+                if (found->id || loaded.id || loaded.appearance != appearance || loaded.hostile() != caster.hostile()
+                    || loaded.x != found->x || loaded.y != found->y || loaded.hp != found->hp || loaded.status_flags != found->status_flags
+                    || loaded.level != found->level || loaded.action_state != 2
+                    || loaded.learned != found->learned || loaded.equipment != found->equipment
+                    || restored.events.units.size() != events.units.size() || !restored.events.army_status
+                    || (*restored.events.army_status)[caster.hostile() ? 1 : 0][(inputSkill - 64) * 3] != 1)
+                {
+                    fatal("465E04 variable roster, slot, ownership and original save restore mismatch");
+                }
+                std::cout << "PASS465E04 variable roster/slot/owner/level-preserving/action2 capture-decode-restore\n";
+            }
+            if ((inputSkill == 51 || inputSkill == 29 || inputSkill == 18 || inputSkill == 40) && (std::string_view(name) == "cast-after.sav" || std::string_view(name) == "settled-after.sav"))
+            {
+                const auto restored = s2ne::OriginalSaveBridge::restore(root, decoded);
+                for (auto index : { skillInputCaster, skillInputTarget })
+                {
+                    const auto& live = events.units[index];
+                    const auto& loaded = restored.events.units[index];
+                    if (live.hp != loaded.hp || live.mp != loaded.mp || live.st != loaded.st || live.action_points != loaded.action_points
+                        || live.experience != loaded.experience || live.learned_proficiency != loaded.learned_proficiency
+                        || live.equipment != loaded.equipment || live.ending_kills != loaded.ending_kills || live.ending_losses != loaded.ending_losses
+                        || live.ending_combat_value != loaded.ending_combat_value
+                        || live.x != loaded.x || live.y != loaded.y || live.status_flags != loaded.status_flags) { fatal("Original spell full save restore mismatch"); }
+                }
+                std::cout << "PASS467625 caster/target HP/payment/reward capture/decode/restore\n";
+            }
+            if (NativeDamageRecords::ordinary_sword(inputSkill) && (std::string_view(name) == "cast-after.sav" || std::string_view(name) == "settled-after.sav"))
+            {
+                auto restored = s2ne::OriginalSaveBridge::restore(root, decoded);
+                for (auto index : state.controlledAreaTargets)
+                {
+                    const auto& live = events.units[index];
+                    const auto& loaded = restored.events.units[index];
+                    if (live.hp != loaded.hp || live.status_flags != loaded.status_flags || live.ending_losses != loaded.ending_losses) { fatal("466082 multi-target death save restore mismatch"); }
+                }
+                std::cout << "PASS466082 multi-target death capture/decode/restore\n";
+                if (NativeDamageRecords::find(inputSkill)->raw[32] & 7)
+                {
+                    for (auto index : { size_t(skillInputCaster), size_t(state.cooperativePartnerIndex) })
+                    {
+                        const auto& live = events.units[index];
+                        const auto& loaded = restored.events.units[index];
+                        if (live.hp != loaded.hp || live.mp != loaded.mp || live.st != loaded.st || live.action_points != loaded.action_points || live.experience != loaded.experience || live.learned_proficiency != loaded.learned_proficiency) { fatal("Cooperative damage settlement save restore mismatch"); }
+                    }
+                    std::cout << "PASS cooperative damage both participants payment/reward save restore\n";
+                }
+            }
             if (s2ne::OriginalSave::encode(decoded, saveItems) != bytes)
             {
                 s2ne::fatal("Skill input evidence save roundtrip failed");
@@ -1375,30 +1434,134 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     const auto& loaded = restored.events.units[index];
                     if (loaded.hp != live.hp || loaded.st != live.st || loaded.equipment != live.equipment || loaded.ending_kills != live.ending_kills || loaded.ending_losses != live.ending_losses || loaded.action_points != live.action_points || loaded.status_flags != live.status_flags) { fatal("094 persisted death/revival/payment restore mismatch"); }
                 }
+                if ((inputSkill == 45 || inputSkill == 50) && (std::string_view(name) == "cast-after.sav" || std::string_view(name) == "settled-after.sav" || std::string_view(name) == "reveal-expired.sav"))
+                {
+                    auto restored = OriginalSaveBridge::restore(root, decoded);
+                    if (restored.events.army_modes != events.army_modes) { fatal("Army DE save restore mismatch"); }
+                    if (inputSkill == 50 && std::string_view(name) != "reveal-expired.sav" && (!events.army_modes || !((*events.army_modes)[events.units[skillInputCaster].hostile() ? 1 : 0] & 1))) { fatal("4666C5 reveal bit missing"); }
+                    if (inputSkill == 45 && (!state.spiritSightObserved || !state.spiritSightModifierRetained)) { fatal("46864F missing original input wait or473420 modifier filtering"); }
+                    std::cout << "PASS dedicated sight information/army-mode capture/decode/restore\n";
+                }
             }
             return bytes;
         };
-        if ((NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96) && prologue->campaign_modal())
+        if (skillInputPhase < 9 && (inputSkill == 29 || inputSkill == 18 || inputSkill == 40 || skill94Input || NativeDamageRecords::ordinary_sword(inputSkill) || NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96) && prologue->campaign_modal())
         {
             key(SDLK_RETURN);
             return true;
         }
         if (skillInputPhase == 0)
         {
+            if (inputSkill >= 64 && inputSkill <= 74 && !options.skillControl.empty())
+            {
+                for (auto& unit : prologue->events.units)
+                {
+                    if (!unit.controllable()) { continue; }
+                    unit.learned[6] |= uint16_t(1u << (inputSkill - 64));
+                    unit.learned_proficiency[6] = 9999;
+                    unit.st = unit.mp = 1000;
+                }
+                if (!prologue->events.army_status) { fatal("CONTROLLED summon missing original slots"); }
+                for (auto& slots : *prologue->events.army_status)
+                {
+                    for (unsigned i = 0; i < 11; ++i) { slots[i * 3] = 0; }
+                }
+                std::cout << "CONTROLLED summon learned/resources/slot fixture only, not natural\n";
+            }
+            if (inputSkill == 51 && !options.skillControl.empty())
+            {
+                for (auto& unit : prologue->events.units)
+                {
+                    if (unit.controllable())
+                    {
+                        unit.learned[4] |= 256;
+                        unit.st = unit.mp = 1000;
+                    }
+                }
+            }
+            if ((inputSkill == 29 || inputSkill == 18 || inputSkill == 40) && !options.skillControl.empty())
+            {
+                for (auto& unit : prologue->events.units)
+                {
+                    if (!unit.controllable()) { continue; }
+                    unsigned group = 3, bit = 128;
+                    if (inputSkill == 18) { group = 1; }
+                    if (inputSkill == 29)
+                    {
+                        group = 2;
+                        bit = 256;
+                    }
+                    unit.learned[group] |= bit;
+                    unit.st = unit.mp = 1000;
+                }
+                std::cout << "CONTROLLED drain learned/resources injection; not natural acquisition\n";
+            }
+            if (NativeDamageRecords::ordinary_sword(inputSkill))
+            {
+                for (auto& unit : prologue->events.units)
+                {
+                    if (unit.controllable())
+                    {
+                        unit.learned[NativeDamageRecords::find(inputSkill)->raw[0] - 1] |= 1u << (NativeDamageRecords::find(inputSkill)->raw[1] - 1);
+                        unit.st = 1000;
+                        unit.mp = 1000;
+                    }
+                }
+                const auto* record = NativeDamageRecords::find(inputSkill);
+                if ((record->raw[32] & 7) && !state.controlledAreaReady)
+                {
+                    auto& actor = prologue->events.units.front();
+                    auto partner = std::find_if(prologue->events.units.begin(), prologue->events.units.end(), [&](const auto& unit)
+                        {
+                            return unit.id != actor.id && unit.id >= 1 && unit.id <= 40 && unit.controllable() && unit.present(prologue->battle_turn());
+                        });
+                    if (partner == prologue->events.units.end()) { fatal("CONTROLLED damage partner missing"); }
+                    const int right = actor.x + (actor.y & 1);
+                    const std::array<std::pair<int, int>, 4> positions{ { { right, actor.y - 1 }, { right - 1, actor.y + 1 }, { right - 1, actor.y - 1 }, { right, actor.y + 1 } } };
+                    bool placed = false;
+                    for (auto [x, y] : positions)
+                    {
+                        if (!prologue->battle().skill_area_cell({ x, y }) || std::abs(prologue->battle().cell({ actor.x, actor.y }).elevation - prologue->battle().cell({ x, y }).elevation) > 3) { continue; }
+                        partner->x = x;
+                        partner->y = y;
+                        placed = true;
+                        break;
+                    }
+                    if (!placed) { fatal("CONTROLLED damage partner has no valid original adjacent elevation"); }
+                    partner->action_state = 0;
+                    partner->action_points = partner->carry_points = 110;
+                    partner->status34 = 0;
+                    actor.action_state = 0;
+                    partner->learned[record->raw[0] - 1] |= 1u << (record->raw[1] - 1);
+                    partner->st = partner->mp = 1000;
+                    if ((record->raw[32] & 6) && actor.id <= 40 && partner->id <= 40)
+                    {
+                        actor.relationships[partner->id - 1] = 70;
+                        partner->relationships[actor.id - 1] = 70;
+                    }
+                    std::cout << "CONTROLLED damage adjacent partner/learning/relationship/resources injection; not natural\n";
+                }
+            }
             bool found = false;
             for (unsigned i = 0; i < prologue->events.units.size() && !found; ++i)
             {
                 const auto& u = prologue->events.units[i];
+                if ((inputSkill == 45 || inputSkill == 50) && !options.skillControl.empty() && u.id != 1) { continue; }
                 if ((NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96) && !options.skillControl.empty() && u.id != 1) { continue; }
                 s2ne::OriginalSkills::Context inputContext;
-                inputContext.second = (NativeAbilityBuffs::find(inputSkill) && NativeAbilityBuffs::find(inputSkill)->group == 8) || (NativeTimedBuffs::find(inputSkill) && NativeTimedBuffs::find(inputSkill)->group == 8) || skill88Input || skill94Input || inputSkill == 96;
+                inputContext.second = NativeDamageRecords::ordinary_sword(inputSkill) || (NativeAbilityBuffs::find(inputSkill) && NativeAbilityBuffs::find(inputSkill)->group == 8) || (NativeTimedBuffs::find(inputSkill) && NativeTimedBuffs::find(inputSkill)->group == 8) || skill88Input || skill94Input || inputSkill == 96;
+                if (NativeDamageRecords::ordinary_sword(inputSkill)) { inputContext.second = NativeDamageRecords::find(inputSkill)->raw[0] >= 9; }
                 unsigned int group;
-                if (NativeAbilityBuffs::find(inputSkill)) { group = NativeAbilityBuffs::find(inputSkill)->group; }
+                if (NativeDamageRecords::ordinary_sword(inputSkill)) { group = NativeDamageRecords::find(inputSkill)->raw[0] - 1; }
+                else if (NativeAbilityBuffs::find(inputSkill)) { group = NativeAbilityBuffs::find(inputSkill)->group; }
                 else if (NativeTimedBuffs::find(inputSkill)) { group = NativeTimedBuffs::find(inputSkill)->group; }
                 else if (inputSkill == 8) { group = 0; }
-                else if (inputSkill == 12) { group = 1; }
-                else if (inputSkill == 35 || inputSkill == 39) { group = 3; }
-                else if (inputSkill == 48) { group = 4; }
+                else if (inputSkill == 29) { group = 2; }
+                else if (inputSkill == 51) { group = 4; }
+                else if (inputSkill >= 64 && inputSkill <= 74) { group = 6; }
+                else if (inputSkill == 12 || inputSkill == 18) { group = 1; }
+                else if (inputSkill == 35 || inputSkill == 39 || inputSkill == 40) { group = 3; }
+                else if (inputSkill == 45 || inputSkill == 48 || inputSkill == 50) { group = 4; }
                 else if (inputSkill == 56 || inputSkill == 60) { group = 5; }
                 else if (inputSkill == 17) { group = 1; }
                 else if (inputSkill == 25) { group = 2; }
@@ -1420,13 +1583,20 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
 
                 unsigned bit;
 
-                if (NativeAbilityBuffs::find(inputSkill)) { bit = (1u << NativeAbilityBuffs::find(inputSkill)->bit); }
+                if (NativeDamageRecords::ordinary_sword(inputSkill)) { bit = 1u << (NativeDamageRecords::find(inputSkill)->raw[1] - 1); }
+                else if (NativeAbilityBuffs::find(inputSkill)) { bit = (1u << NativeAbilityBuffs::find(inputSkill)->bit); }
                 else if (NativeTimedBuffs::find(inputSkill)) { bit = (1u << NativeTimedBuffs::find(inputSkill)->bit); }
                 else if (inputSkill == 8 || inputSkill == 60) { bit = 128; }
                 else if (inputSkill == 12) { bit = 2; }
+                else if (inputSkill == 29) { bit = 256; }
+                else if (inputSkill == 51) { bit = 256; }
+                else if (inputSkill >= 64 && inputSkill <= 74) { bit = 1u << (inputSkill - 64); }
+                else if (inputSkill == 18 || inputSkill == 40) { bit = 128; }
                 else if (inputSkill == 35) { bit = 4; }
                 else if (inputSkill == 39) { bit = 64; }
                 else if (inputSkill == 48) { bit = 32; }
+                else if (inputSkill == 45) { bit = 4; }
+                else if (inputSkill == 50) { bit = 128; }
                 else if (inputSkill == 56) { bit = 8; }
                 else if (inputSkill == 17) { bit = 64; }
                 else if (inputSkill == 25) { bit = 16; }
@@ -1463,20 +1633,94 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     }
                     probe.navigate(has ? 0x50 : 0x4D);
                 }
-                if (probe.selected().id != inputSkill || probe.select(u) != s2ne::OriginalSkills::Failure::none)
+                auto partner = probe.cooperative_partner(u, prologue->events.units, prologue->battle_turn(), [&](int x, int y)
+                    {
+                        return prologue->battle().cell({ x, y }).elevation;
+                    });
+                const OriginalEvents::Unit* partnerUnit = nullptr;
+                if (partner)
                 {
+                    partnerUnit = &prologue->events.units[*partner];
+                    state.cooperativePartnerIndex = *partner;
+                    state.cooperativePartnerBefore = *partnerUnit;
+                }
+                const auto selectionFailure = probe.select(u, partnerUnit, inputSkill >= 64 && inputSkill <= 74);
+                if (probe.selected().id != inputSkill || selectionFailure != s2ne::OriginalSkills::Failure::none)
+                {
+                    if (NativeDamageRecords::ordinary_sword(inputSkill) && !options.skillControl.empty())
+                    {
+                        std::cout << "CONTROLLED damage selection actor=" << u.id << " record=" << probe.selected().id << " partner=" << (partnerUnit ? partnerUnit->id : 0) << " failure=" << int(selectionFailure) << '\n';
+                    }
                     continue;
                 }
-                if (skill88Input)
+                if (skill88Input || (inputSkill >= 64 && inputSkill <= 74))
                 {
                     skillInputCaster = i;
                     skillInputTarget = i;
                     found = true;
                     break;
                 }
+                if (NativeDamageRecords::ordinary_sword(inputSkill) && NativeDamageRecords::find(inputSkill)->raw[17] == 0 && NativeDamageRecords::find(inputSkill)->raw[18] != 7)
+                {
+                    skillInputCaster = skillInputTarget = i;
+                    found = true;
+                    break;
+                }
                 for (unsigned t = 0; t < prologue->events.units.size(); ++t)
                 {
-                    if ((inputSkill != 8 && inputSkill != 56 && inputSkill != 46 || i != t) && (inputSkill != 35 && inputSkill != 39 && inputSkill != 48 || prologue->events.units[t].hostile()) && (!skill94Input || (options.skillControl != "script82" && options.skillControl != "scriptfail82") || prologue->events.units[t].id == 147) && ((inputSkill == 1 && i != t && probe.healing1_in_range(u, prologue->events.units[t]) && prologue->events.units[t].hp < prologue->events.units[t].max_hp) || probe.hostile_in_range(u, prologue->events.units[t])) && prologue->battle().target_visible(prologue->events.units[t], std::span(&u, 1), 0))
+                    if (inputSkill == 51 && options.skillControl == "ally" && (t == i || prologue->events.units[t].hostile() != u.hostile())) { continue; }
+                    if (inputSkill == 51 && options.skillControl == "enemy")
+                    {
+                        auto& candidate = prologue->events.units[t];
+                        if (!candidate.hostile() || candidate.hp <= 0) { continue; }
+                        candidate.x = u.x;
+                        candidate.y = u.y + 1;
+                    }
+                    if ((inputSkill == 29 || inputSkill == 18 || inputSkill == 40) && (options.skillControl == "script82" || options.skillControl == "scriptfail82")
+                        && prologue->events.units[t].id != 147) { continue; }
+                    if ((inputSkill == 29 || inputSkill == 18 || inputSkill == 40) && !options.skillControl.empty())
+                    {
+                        auto& candidate = prologue->events.units[t];
+                        if (i != t && candidate.hp > 0 && candidate.hostile() != u.hostile() && (candidate.status_flags & 0x80) && !(candidate.status_flags & 0x20) && prologue->battle().skill_area_cell({ u.x, u.y + 1 }))
+                        {
+                            candidate.x = u.x;
+                            candidate.y = u.y + 1;
+                            candidate.hp = candidate.max_hp = 5000;
+                            candidate.equipment.fill(0);
+                            if (inputSkill != 29 && (options.skillControl == "script82" || options.skillControl == "scriptfail82"))
+                            {
+                                candidate.hp = 1;
+                                candidate.status_flags &= ~0x50u;
+                                candidate.abilities = 0;
+                                candidate.st = 1;
+                                candidate.status3c = candidate.status3d = candidate.status3e = candidate.status3f = 0;
+                                candidate.action_status_runtime->at(0x39) = 0;
+                                for (unsigned p = 0x3C; p <= 0x3F; ++p) { candidate.action_status_runtime->at(p) = 0; }
+                            }
+                            std::cout << "CONTROLLED drain survivor target relocation/maxHP; not natural deployment\n";
+                        }
+                    }
+                    if (inputSkill == 45 && options.skillControl == "enemy" && !prologue->events.units[t].hostile()) { continue; }
+                    if ((skill94Input || NativeDamageRecords::ordinary_sword(inputSkill)) && (options.skillControl == "script82" || options.skillControl == "scriptfail82") && prologue->events.units[t].id != (prologue->events.stage == 6 ? 104u : 147u)) { continue; }
+                    if (NativeDamageRecords::ordinary_sword(inputSkill) && !options.skillControl.empty() && partner && prologue->events.units[t].hostile() != u.hostile() && prologue->events.units[t].hp > 0 && (prologue->events.units[t].status_flags & 0x80) && !(prologue->events.units[t].status_flags & 0x20))
+                    {
+                        auto& candidate = prologue->events.units[t];
+                        candidate.x = u.x;
+                        candidate.y = u.y + 1;
+                        std::cout << "CONTROLLED cooperative target adjacent relocation; not natural\n";
+                    }
+                    if (NativeDamageRecords::ordinary_sword(inputSkill) && !options.skillControl.empty() && NativeDamageRecords::find(inputSkill)->raw[17] == 1)
+                    {
+                        auto& candidate = prologue->events.units[t];
+                        if (i != t && candidate.hp > 0 && candidate.hostile() != u.hostile() && (candidate.status_flags & 0x80) && !(candidate.status_flags & 0x20) && prologue->battle().skill_area_cell({ u.x, u.y + 1 }))
+                        {
+                            candidate.x = u.x;
+                            candidate.y = u.y + 1;
+                            std::cout << "CONTROLLED range1 target relocation; not natural deployment\n";
+                        }
+                    }
+                    if ((skill94Input || NativeDamageRecords::ordinary_sword(inputSkill)) && (options.skillControl == "script82" || options.skillControl == "scriptfail82") && prologue->events.units[t].id != (prologue->events.stage == 6 ? 104u : 147u)) { continue; }
+                    if ((inputSkill != 79 || (i != t && (!partner || t != *partner))) && (inputSkill != 8 && inputSkill != 56 && inputSkill != 46 || i != t) && (inputSkill != 35 && inputSkill != 39 && inputSkill != 48 || prologue->events.units[t].hostile()) && (!skill94Input || (options.skillControl != "script82" && options.skillControl != "scriptfail82") || prologue->events.units[t].id == 147) && ((inputSkill == 1 && i != t && probe.healing1_in_range(u, prologue->events.units[t]) && prologue->events.units[t].hp < prologue->events.units[t].max_hp) || probe.hostile_in_range(u, prologue->events.units[t])) && prologue->battle().target_visible(prologue->events.units[t], std::span(&u, 1), 0))
                     {
                         skillInputCaster = i;
                         skillInputTarget = t;
@@ -1509,6 +1753,104 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             }
             if (found)
             {
+                if (NativeDamageRecords::ordinary_sword(inputSkill) && !state.controlledAreaReady)
+                {
+                    auto& actor = prologue->events.units[skillInputCaster];
+                    actor.st = 1000;
+                    actor.learned_proficiency[NativeDamageRecords::find(inputSkill)->raw[0] - 1] = 14000;
+                    OriginalSkills probe(root);
+                    probe.open(actor, { .second = NativeDamageRecords::find(inputSkill)->raw[0] >= 9 });
+                    for (unsigned n = 0; n < 150 && probe.selected().id != inputSkill; ++n)
+                    {
+                        bool has = false;
+                        for (const auto& record : probe.groups()[probe.selected_group()].records) { has |= record.id == inputSkill; }
+                        probe.navigate(has ? 0x50 : 0x4D);
+                    }
+                    probe.set_area_camera(prologue->camera());
+                    probe.set_area_elevation([&](int x, int y)
+                        {
+                            return prologue->battle().cell({ x, y }).elevation;
+                        });
+                    probe.set_area_valid([&](int x, int y)
+                        {
+                            return prologue->battle().skill_area_cell({ x, y });
+                        });
+                    const auto center = prologue->events.units[skillInputTarget];
+                    if (NativeDamageRecords::find(inputSkill)->raw[17] == 0 && NativeDamageRecords::find(inputSkill)->raw[18] != 7)
+                    {
+                        for (auto& victim : prologue->events.units)
+                        {
+                            if (victim.hostile() != actor.hostile() && victim.hp > 0 && (victim.status_flags & 0x80) && !(victim.status_flags & 0x20))
+                            {
+                                bool placed = false;
+                                std::vector<std::pair<int, int>> cells = probe.radial_cells(center);
+                                if (probe.selected().raw[18] <= 4)
+                                {
+                                    for (int y = actor.y - 8; y <= actor.y + 8; ++y)
+                                    {
+                                        for (int x = actor.x - 4; x <= actor.x + 4; ++x)
+                                        {
+                                            auto candidate = victim;
+                                            candidate.x = x;
+                                            candidate.y = y;
+                                            if (probe.sleep2_area(center, candidate)) { cells.emplace_back(x, y); }
+                                        }
+                                    }
+                                }
+                                for (auto [x, y] : cells)
+                                {
+                                    if ((x != actor.x || y != actor.y) && prologue->battle().skill_area_cell({ x, y }))
+                                    {
+                                        victim.x = x;
+                                        victim.y = y;
+                                        placed = true;
+                                        break;
+                                    }
+                                }
+                                if (!placed) { fatal("CONTROLLED self-centered damage has no original valid radial cell"); }
+                                std::cout << "CONTROLLED self-centered damage adjacent target relocation; not natural\n";
+                                break;
+                            }
+                        }
+                    }
+                    state.controlledAreaTargets = probe.collect_targets(actor, center, prologue->events.units, prologue->battle_turn(), [&](int x, int y)
+                        {
+                            return prologue->battle().skill_area_cell({ x, y });
+                        });
+                    auto fixtureTargets = state.controlledAreaTargets;
+                    if (NativeDamageRecords::find(inputSkill)->raw[18] == 7)
+                    {
+                        fixtureTargets.clear();
+                        for (size_t n = 0; n < prologue->events.units.size(); ++n)
+                        {
+                            const auto& unit = prologue->events.units[n];
+                            if (n != skillInputCaster && unit.hp > 0 && (unit.status_flags & 0x80) && !(unit.status_flags & 0x20)) { fixtureTargets.push_back(n); }
+                        }
+                    }
+                    for (auto index : fixtureTargets)
+                    {
+                        auto& victim = prologue->events.units[index];
+                        victim.hp = 1;
+                        victim.equipment = {};
+                        victim.initial_status = {};
+                        victim.action_status_runtime->at(0x2F) = 0;
+                        victim.action_status_runtime->at(0x39) = 2;
+                        victim.action_status_runtime->at(0x3C) = 0;
+                        victim.action_status_runtime->at(0x3D) = 0;
+                        victim.action_status_runtime->at(0x3E) = 0;
+                        victim.action_status_runtime->at(0x3F) = 0;
+                    }
+                    prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
+                        {
+                            rng.initialize(12);
+                            rng.restore_stream(14, 0);
+                            state.controlledSeed = 14;
+                            state.controlledCalls = 0;
+                            return true;
+                        });
+                    state.controlledAreaReady = true;
+                    std::cout << "CONTROLLED effect1 targets=" << state.controlledAreaTargets.size() << " HP/status/ST/proficiency/RNG injection; not natural\n";
+                }
                 if (skill94Input && !options.skillControl.empty() && !state.controlledAreaReady)
                 {
                     auto& actor = prologue->events.units[skillInputCaster];
@@ -1519,8 +1861,8 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     victim.fencing = victim.tactics = 0;
                     victim.hp = 1;
                     victim.max_hp = 5000;
-                    victim.equipment = { };
-                    victim.initial_status = { };
+                    victim.equipment = {};
+                    victim.initial_status = {};
                     victim.status39 = 0;
                     victim.status3c = victim.status3d = victim.status3f = 0;
                     victim.action_status_runtime.reset();
@@ -1535,7 +1877,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     }
 
                     std::ifstream itemFile(root / "ITEMSP.BIN", std::ios::binary);
-                    std::vector<uint8_t> items(std::istreambuf_iterator<char>(itemFile), { });
+                    std::vector<uint8_t> items(std::istreambuf_iterator<char>(itemFile), {});
                     if (items.size() < 40) { fatal("Controlled094 original item table unavailable"); }
                     if (special)
                     {
@@ -1567,6 +1909,19 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     auto& a = prologue->events.units[skillInputCaster];
                     a.abilities |= 0x20;
                     a.st = 200;
+                    if (inputSkill == 78 || inputSkill == 79)
+                    {
+                        auto& target = prologue->events.units[skillInputTarget];
+                        target.hp = std::max(1, target.max_hp / 2);
+                        if (inputSkill == 79)
+                        {
+                            target.action_state = 2;
+                            target.persistent_role6 = 1;
+                            target.action_points = 10;
+                            target.status34 = 12;
+                        }
+                        std::cout << "CONTROLLED cooperative target HP/action/role fixture; NOT natural\n";
+                    }
                     state.controlledAreaTargets = { skillInputTarget };
                     prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
                         {
@@ -1610,7 +1965,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 {
                     auto& units = prologue->events.units;
                     OriginalSkills probe(root);
-                    probe.open(units[skillInputCaster], { });
+                    probe.open(units[skillInputCaster], {});
                     while (probe.selected().id != inputSkill) { probe.navigate(0x50); }
                     const auto center = units[skillInputTarget];
                     for (size_t i = 0; i < units.size(); ++i)
@@ -1734,7 +2089,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         r[0x91] = r[0x92] = r[0x93] = r[0x94] = r[0x97] = r[0x98] = 0;
                         if (NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61)
                         {
-                            u.equipment = { };
+                            u.equipment = {};
                             u.movement_type = 0;
                             u.status39 = 0;
                             u.attack = 203;
@@ -1799,7 +2154,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     state.controlledAreaTargets = { skillInputTarget };
                     std::vector<Battle::Point> cells;
                     OriginalSkills probe(root);
-                    probe.open(actor, { });
+                    probe.open(actor, {});
                     for (unsigned n = 0; n < 150 && probe.selected().id != 2; ++n)
                     {
                         bool has = false;
@@ -1865,7 +2220,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     const auto center = units[skillInputTarget];
                     unsigned n = 0;
                     OriginalSkills probe(root);
-                    probe.open(units[skillInputCaster], { });
+                    probe.open(units[skillInputCaster], {});
                     while (probe.selected().id != inputSkill) { probe.navigate(0x50); }
                     for (auto& v : units)
                     {
@@ -1896,7 +2251,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 }
                 const auto& u = prologue->events.units[skillInputCaster];
                 auto point = prologue->screen_cell({ u.x, u.y });
-                if (NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || skill94Input || inputSkill == 32 || inputSkill == 33 || inputSkill == 1 || ((inputSkill >= 2 && inputSkill <= 10) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96))
+                if (NativeDamageRecords::ordinary_sword(inputSkill) || NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || skill94Input || inputSkill == 32 || inputSkill == 33 || inputSkill == 1 || ((inputSkill >= 2 && inputSkill <= 10) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96))
                 {
                     auto [cx, cy] = prologue->camera();
                     bool picked = false;
@@ -1921,7 +2276,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         key(SDLK_ESCAPE);
                         return true;
                     }
-                    SDL_Event e{ };
+                    SDL_Event e{};
                     e.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
                     e.button.button = SDL_BUTTON_RIGHT;
                     SDL_RenderCoordinatesToWindow(renderer, 320, 240, &e.button.x, &e.button.y);
@@ -1931,7 +2286,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 else if (prologue->battle_state() != s2ne::Battle::State::idle) { key(SDLK_ESCAPE); }
                 else if (point.x < 32 || point.x > 608 || point.y < 32 || point.y > 370)
                 {
-                    SDL_Keycode keyCode{ };
+                    SDL_Keycode keyCode{};
                     if (point.x < 32) { keyCode = SDLK_LEFT; }
                     else
                     {
@@ -1949,11 +2304,36 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 }
                 else
                 {
-                    SDL_Event e{ };
+                    SDL_Event e{};
                     e.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
                     e.button.windowID = SDL_GetWindowID(window);
                     e.button.button = SDL_BUTTON_LEFT;
+                    if (inputSkill == 29)
+                    {
+                        const auto [cx, cy] = prologue->camera();
+                        bool picked = false;
+                        for (int dy = -32; dy <= 32 && !picked; ++dy)
+                        {
+                            for (int dx = -32; dx <= 32; ++dx)
+                            {
+                                if (prologue->battle().pick_surface(float(point.x + dx), float(point.y + dy), cx, cy) == s2ne::Battle::Point{ u.x, u.y })
+                                {
+                                    point.x += dx;
+                                    point.y += dy;
+                                    picked = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!picked) { fatal("029 caster has no exposed original terrain picking surface"); }
+                    }
                     SDL_RenderCoordinatesToWindow(renderer, float(point.x), float(point.y), &e.button.x, &e.button.y);
+                    SDL_Event motion{};
+                    motion.type = SDL_EVENT_MOUSE_MOTION;
+                    motion.motion.windowID = SDL_GetWindowID(window);
+                    motion.motion.x = e.button.x;
+                    motion.motion.y = e.button.y;
+                    SDL_PushEvent(&motion);
                     SDL_PushEvent(&e);
                     skillInputPhase = skill88Positive && u.hp == u.max_hp ? 20 : 1;
                     std::cout << "INPUT select caster=" << u.id << " target=" << prologue->events.units[skillInputTarget].id << " action=" << unsigned(u.action_state) << " click=" << point.x << ',' << point.y << " xy=" << u.x << ',' << u.y << '\n';
@@ -1964,7 +2344,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
         {
             if (skillInputPhase == 30 && !context.battleMenu)
             {
-                SDL_Event retry{ };
+                SDL_Event retry{};
                 retry.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
                 retry.button.windowID = SDL_GetWindowID(window);
                 retry.button.button = SDL_BUTTON_RIGHT;
@@ -1976,7 +2356,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             {
                 s2ne::fatal("Skill production roster/menu transition failed phase=" + std::to_string(skillInputPhase) + " battle=" + std::to_string(int(prologue->battle_state())) + " menu=" + std::to_string(bool(context.battleMenu)));
             }
-            SDL_Event e{ };
+            SDL_Event e{};
             e.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
             e.button.windowID = SDL_GetWindowID(window);
             e.button.button = SDL_BUTTON_LEFT;
@@ -1995,7 +2375,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     const auto center = units[skillInputTarget];
                     unsigned n = 0;
                     OriginalSkills probe(root);
-                    probe.open(units[skillInputCaster], { });
+                    probe.open(units[skillInputCaster], {});
                     while (probe.selected().id != inputSkill) { probe.navigate(0x50); }
                     for (auto& v : units)
                     {
@@ -2047,7 +2427,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 std::cout << "INPUT33 roster locate then select id=" << u.id << " xy=" << u.x << ',' << u.y << '\n';
             }
             SDL_RenderCoordinatesToWindow(renderer, x, y, &e.button.x, &e.button.y);
-            SDL_Event motion{ };
+            SDL_Event motion{};
             motion.type = SDL_EVENT_MOUSE_MOTION;
             motion.motion.windowID = SDL_GetWindowID(window);
             motion.motion.x = e.button.x;
@@ -2058,7 +2438,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
         }
         else if (skillInputPhase == 20)
         {
-            if (prologue->battle().animating_movement()) { }
+            if (prologue->battle().animating_movement()) {}
             else if (prologue->events.units[skillInputCaster].x == 16 && prologue->events.units[skillInputCaster].y == 41)
             {
                 if (contactStep >= 5)
@@ -2091,7 +2471,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 }
                 auto [x, y] = waypoints[contactStep];
                 auto p = prologue->screen_cell({ x, y });
-                SDL_Event e{ };
+                SDL_Event e{};
                 e.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
                 e.button.windowID = SDL_GetWindowID(window);
                 e.button.button = SDL_BUTTON_LEFT;
@@ -2135,7 +2515,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 {
                     std::cout << "94 submenu selected=" << prologue->events.units.at(size_t(prologue->battle_selected())).id << " index=" << prologue->battle().attack_index() << " secondAvailable=" << skillRules.executable_available(prologue->events.units.at(size_t(prologue->battle_selected())), s2ne::OriginalSkills::Context{ .second = true }, true) << '\n';
                 }
-                if (prologue->battle().attack_index() != int((skill88Input || skill94Input || inputSkill == 96 || inputSkill == 86 || inputSkill == 92 || (NativeAbilityBuffs::find(inputSkill) && NativeAbilityBuffs::find(inputSkill)->group == 8)) ? 3 : 2))
+                if (prologue->battle().attack_index() != int(((NativeDamageRecords::ordinary_sword(inputSkill) && NativeDamageRecords::find(inputSkill)->raw[0] >= 9) || skill88Input || skill94Input || inputSkill == 96 || inputSkill == 86 || inputSkill == 92 || (NativeAbilityBuffs::find(inputSkill) && NativeAbilityBuffs::find(inputSkill)->group == 8)) ? 3 : 2))
                 {
                     key(SDLK_RIGHT);
                 }
@@ -2148,6 +2528,13 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
         }
         else if (skillInputPhase == 2 || skillInputPhase == 7)
         {
+            if (!skillMenu)
+            {
+                const auto& actor = prologue->events.units.at(size_t(prologue->battle_selected()));
+                fatal("Skill SDL activation did not open selector: actor=" + std::to_string(actor.id)
+                    + " attack=" + std::to_string(prologue->battle().attack_index())
+                    + " second=" + std::to_string(skillRules.executable_available(actor, { .second = true }, true)));
+            }
             if (skillMenu)
             {
                 if (skillMenu->page() == s2ne::OriginalSkills::Page::list)
@@ -2211,7 +2598,129 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         fatal("Controlled094 deterministic seed unavailable");
                     });
             }
+            if (NativeDamageRecords::ordinary_sword(inputSkill))
+            {
+                auto probe = *skillMenu;
+                probe.set_area_camera(prologue->camera());
+                state.controlledAreaTargets = probe.collect_targets(prologue->events.units[skillInputCaster], prologue->events.units[skillInputTarget], prologue->events.units, prologue->battle_turn(), [&](int x, int y)
+                    {
+                        return prologue->battle().skill_area_cell({ x, y });
+                    });
+            }
             skillInputBefore = prologue->events.units[skillInputCaster];
+            if ((inputSkill == 29 || inputSkill == 18 || inputSkill == 40) && !options.skillControl.empty())
+            {
+                auto& target = prologue->events.units[skillInputTarget];
+                if (inputSkill == 29 && (options.skillControl == "script82" || options.skillControl == "scriptfail82"))
+                {
+                    target.hp = 1;
+                    target.st = 1;
+                    target.status_flags &= ~0x50u;
+                    target.abilities = 0;
+                    target.status3c = target.status3d = target.status3e = target.status3f = 0;
+                    target.action_status_runtime->at(0x39) = 0;
+                    for (unsigned p = 0x3C; p <= 0x3F; ++p) { target.action_status_runtime->at(p) = 0; }
+                }
+                unsigned special = 0;
+                if (options.skillControl == "revive25") { special = 25; }
+                else if (options.skillControl == "consume28") { special = 28; }
+                else if (options.skillControl == "reverse29") { special = 29; }
+                if (special)
+                {
+                    const auto items = read_resource(root / "ITEMSP.BIN").value();
+                    unsigned item = 0;
+                    for (unsigned n = 0; n < saveItems; ++n)
+                    {
+                        if (!items.at(2 + n * 38 + 15) && items.at(2 + n * 38 + 25) == special)
+                        {
+                            item = n + 1;
+                            break;
+                        }
+                    }
+                    if (!item) { fatal("Original drain equipment fixture unavailable"); }
+                    target.equipment.fill(0);
+                    target.equipment[1] = item;
+                    target.hp = special == 29 ? 4000 : 1;
+                    target.max_hp = 5000;
+                    target.abilities = 0;
+                    target.status3c = target.status3d = target.status3e = target.status3f = 0;
+                    target.action_status_runtime->at(0x39) = 0;
+                    for (unsigned p = 0x3C; p <= 0x3F; ++p) { target.action_status_runtime->at(p) = 0; }
+                    std::cout << "CONTROLLED drain original equipment special=" << special << " item=" << item << '\n';
+                    if (special == 29)
+                    {
+                        const auto resolver = OriginalDrain::create(root).value();
+                        const OriginalPromotionTransaction drainEquipment(root);
+                        prologue->battle().mutate_combat_random([&](auto& random, uint32_t seconds)
+                            {
+                                random.initialize(12);
+                                for (unsigned seed = 0; seed < 1000; ++seed)
+                                {
+                                    auto actor = prologue->events.units[skillInputCaster], victim = target;
+                                    auto inventory = rawSave->groups[0].inventory;
+                                    auto probe = random;
+                                    probe.restore_stream(seed, 0);
+                                    OriginalSkill94Resolution::DamageContext context;
+                                    context.difficulty = prologue->events.difficulty;
+                                    auto packet = resolver.resolve(actor, victim, prologue->events, drainEquipment, inventory, probe, context, inputSkill, seconds, false);
+                                    if (packet && packet.value().reverse)
+                                    {
+                                        random.restore_stream(seed, 0);
+                                        std::cout << "CONTROLLED drain reverse29 preflight seed=" << seed << "; no live retry\n";
+                                        return true;
+                                    }
+                                }
+                                fatal("Drain reverse29 seed unavailable");
+                            });
+                    }
+                }
+                if (options.skillControl == "script82" || options.skillControl == "scriptfail82")
+                {
+                    const auto resolver = OriginalDrain::create(root).value();
+                    const OriginalPromotionTransaction drainEquipment(root);
+                    prologue->battle().mutate_combat_random([&](auto& random, uint32_t seconds)
+                        {
+                            random.initialize(12);
+                            for (unsigned seed = 0; seed < 1000; ++seed)
+                            {
+                                auto actor = prologue->events.units[skillInputCaster], victim = target;
+                                auto inventory = rawSave->groups[0].inventory;
+                                auto probe = random;
+                                probe.restore_stream(seed, 0);
+                                OriginalSkill94Resolution::DamageContext context;
+                                context.difficulty = prologue->events.difficulty;
+                                bool killed = false;
+                                if (inputSkill == 29)
+                                {
+                                    auto menu = *skillMenu;
+                                    std::vector targets{ victim };
+                                    OriginalSkills::ExecutionContext execution;
+                                    execution.difficulty = prologue->events.difficulty;
+                                    execution.seconds = seconds;
+                                    auto packet = menu.execute_pipeline(actor, targets, victim, &prologue->events, &drainEquipment, probe, execution, [](auto&, auto&, int, int, unsigned)
+                                        {
+                                            return true;
+                                        },
+                                        nullptr, nullptr, &inventory);
+                                    killed = packet && packet.value().drain_targets[0].killed;
+                                }
+                                else
+                                {
+                                    auto packet = resolver.resolve(actor, victim, prologue->events, drainEquipment, inventory, probe, context, inputSkill, seconds, true);
+                                    killed = packet && packet.value().killed;
+                                }
+                                if (killed)
+                                {
+                                    random.restore_stream(seed, 0);
+                                    std::cout << "CONTROLLED drain lethal preflight seed=" << seed << "; no live retry\n";
+                                    return true;
+                                }
+                            }
+                            fatal("Drain scripted-death seed unavailable");
+                        });
+                }
+            }
+            if (NativeDamageRecords::ordinary_sword(inputSkill) && (NativeDamageRecords::find(inputSkill)->raw[32] & 7)) { state.cooperativePartnerBefore = prologue->events.units[state.cooperativePartnerIndex]; }
             skillInputVictim = prologue->events.units[skillInputTarget];
             skillInputCommitted = snapshot("cast-before.sav");
             prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
@@ -2221,11 +2730,88 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     return false;
                 });
             key(SDLK_RETURN);
-            ++skillInputPhase;
+            if (inputSkill == 51) { skillInputPhase = 12; }
+            else
+            {
+                ++skillInputPhase;
+            }
+        }
+        else if (inputSkill == 51 && skillInputPhase == 12 && skillMenu)
+        {
+            if (snapshot("transfer-destination-cancel-before.sav") != skillInputCommitted) { fatal("051 source selection mutated save"); }
+            key(SDLK_ESCAPE);
+            skillInputPhase = 13;
+        }
+        else if (inputSkill == 51 && skillInputPhase == 13 && skillMenu)
+        {
+            if (snapshot("transfer-destination-cancel-after.sav") != skillInputCommitted) { fatal("051 destination cancellation mutated save"); }
+            key(SDLK_RETURN);
+            skillInputPhase = 14;
+            std::cout << "PASS051 destination Escape returns to source without payment/RNG/save change\n";
+        }
+        else if (inputSkill == 51 && skillInputPhase == 14 && skillMenu)
+        {
+            const auto& actor = prologue->events.units[skillInputCaster];
+            const auto& target = prologue->events.units[skillInputTarget];
+            const auto destinations = prologue->battle().spell_transfer_destinations(actor, target, prologue->events.units);
+            for (const auto cell : destinations)
+            {
+                auto point = prologue->screen_cell(cell);
+                if (point.x < 32 || point.x > 608 || point.y < 32 || point.y > 370) { continue; }
+                const auto [cx, cy] = prologue->camera();
+                if (prologue->battle().pick_surface(float(point.x), float(point.y), cx, cy) != cell) { continue; }
+                SDL_Event click{};
+                click.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
+                click.button.windowID = SDL_GetWindowID(window);
+                click.button.button = SDL_BUTTON_LEFT;
+                SDL_RenderCoordinatesToWindow(renderer, float(point.x), float(point.y), &click.button.x, &click.button.y);
+                SDL_PushEvent(&click);
+                skillInputPhase = 9;
+                return true;
+            }
+            fatal("051 no visible original legal destination in fixture");
         }
         else if (skillInputPhase == 9 && !skillMenu && !pendingSkillTarget)
         {
-            if (skill94Input && prologue->synchronous_death_active())
+            if (inputSkill == 45 && state.spiritSightActive)
+            {
+                if (skillCastVerified || prologue->original_save_boundary_ready() || snapshot("sight-unpublished.sav") != skillInputCommitted) { fatal("46864F panel paid or unlocked save before dismissal"); }
+                state.spiritSightObserved = true;
+                if (!state.spiritSightModifierChecked)
+                {
+                    SDL_Event modified{};
+                    modified.type = SDL_EVENT_KEY_DOWN;
+                    modified.key.key = SDLK_ESCAPE;
+                    modified.key.mod = SDL_KMOD_SHIFT;
+                    SDL_PushEvent(&modified);
+                    state.spiritSightModifierChecked = true;
+                    return true;
+                }
+                state.spiritSightModifierRetained = true;
+                if (!state.spiritSightAltChecked)
+                {
+                    SDL_Event modified{};
+                    modified.type = SDL_EVENT_KEY_DOWN;
+                    modified.key.key = SDLK_C;
+                    modified.key.mod = SDL_KMOD_ALT;
+                    SDL_PushEvent(&modified);
+                    state.spiritSightAltChecked = true;
+                    return true;
+                }
+                if (!isolatedSaveRoot) { fatal("045 screenshot test requires isolated SAVE"); }
+                const auto pcx = read_resource(*isolatedSaveRoot / "SAVE" / "UJ000000.PCX");
+                if (!pcx || pcx.value().size() < 897 || pcx.value()[0] != 10 || pcx.value()[3] != 8 || pcx.value()[pcx.value().size() - 769] != 12)
+                {
+                    fatal("045 Alt-C did not save native PCX while retaining modal");
+                }
+                SDL_Event dismiss{};
+                dismiss.type = SDL_EVENT_KEY_DOWN;
+                dismiss.key.key = SDLK_ESCAPE;
+                dismiss.key.mod = SDL_KMOD_CTRL;
+                SDL_PushEvent(&dismiss);
+                return true;
+            }
+            if ((inputSkill == 29 || inputSkill == 18 || inputSkill == 40 || skill94Input || NativeDamageRecords::ordinary_sword(inputSkill)) && prologue->synchronous_death_active())
             {
                 if (skillCastVerified || prologue->original_save_boundary_ready() || !prologue->battle().combat_feedback_active()) { fatal("094 script prematurely published/unlocked"); }
                 if (!state.scriptDeathObserved)
@@ -2239,6 +2825,12 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     // failure, after preflight and damage, not an event-complete shortcut.
                     prologue->events.units.clear();
                     state.scriptFailureInjected = true;
+                    if (inputSkill == 29 || inputSkill == 18 || inputSkill == 40 || skill94Input || NativeDamageRecords::ordinary_sword(inputSkill))
+                    {
+                        if (!prologue->inject_synchronous_death_failure_for_test()) { fatal("Area synchronous rollback injection unavailable"); }
+                        std::cout << "CONTROLLED area invalid dialogue index injection after entry; real Result failure and complete cast rollback\n";
+                        return true;
+                    }
                     std::cout << "CONTROLLED094 injecting runtime missing speaker after synchronous entry for script Result rollback\n";
                 }
                 key(SDLK_RETURN);
@@ -2257,20 +2849,53 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 running = false;
                 return true;
             }
-            if (prologue->battle().combat_feedback_active())
+            if (inputSkill >= 64 && inputSkill <= 74 && prologue->spell_summon_active())
             {
-                if (((NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || (inputSkill >= 2 && inputSkill <= 10) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96) || (skill94Input && !prologue->synchronous_death_active())) && snapshot("feedback-unpublished.sav") != skillInputCommitted) { fatal("Area feedback published before all targets presented"); }
+                if (skillCastVerified || prologue->original_save_boundary_ready() || snapshot("summon-unpublished.sav") != skillInputCommitted) { fatal("465E04 growth early publication/save unlock"); }
+                if (options.skillControl == "growthfail" && !state.scriptFailureInjected)
+                {
+                    if (!prologue->inject_spell_summon_failure_for_test()) { fatal("465E04 growth failure injection rejected"); }
+                    state.scriptFailureInjected = true;
+                }
+                return false;
+            }
+            if (inputSkill == 51 && prologue->teleport_active())
+            {
+                if (skillCastVerified || prologue->original_save_boundary_ready() || snapshot("transfer-unpublished.sav") != skillInputCommitted) { fatal("051 arrival published or unlocked before completion"); }
+                if (options.skillControl == "arrivalfinalfail" && !state.scriptFailureInjected)
+                {
+                    if (!prologue->inject_spell_transfer_final_failure_for_test()) { fatal("051 final renderer injection unavailable"); }
+                    state.scriptFailureInjected = true;
+                }
+                if (options.skillControl == "arrivalfail" && !state.scriptFailureInjected)
+                {
+                    if (!prologue->inject_spell_transfer_failure_for_test()) { fatal("051 staged renderer injection unavailable"); }
+                    state.scriptFailureInjected = true;
+                }
                 return true;
             }
-            if (options.skillControl == "rollback")
+            if (prologue->battle().combat_feedback_active())
             {
+                if (state.scriptDeathObserved)
+                {
+                    const auto& caster = prologue->events.units[skillInputCaster];
+                    if (skillCastVerified || caster.st != skillInputBefore->st || caster.mp != skillInputBefore->mp || caster.experience != skillInputBefore->experience) { fatal("Script death paid before final presentation"); }
+                    return true;
+                }
+                if (((inputSkill == 18 || inputSkill == 40 || NativeDamageRecords::ordinary_sword(inputSkill) || NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || (inputSkill >= 2 && inputSkill <= 10) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96) || (skill94Input && !prologue->synchronous_death_active())) && snapshot("feedback-unpublished.sav") != skillInputCommitted) { fatal("Area feedback published before all targets presented"); }
+                return true;
+            }
+            if (options.skillControl == "growthfail" || options.skillControl == "summonfail" || options.skillControl == "rollback" || options.skillControl == "panelfail" || options.skillControl == "scratchfail" || options.skillControl == "drainfail" || options.skillControl == "arrivalfail" || options.skillControl == "arrivalfinalfail")
+            {
+                if (options.skillControl == "growthfail" && !state.scriptFailureInjected) { fatal("465E04 late growth failure never injected"); }
+                if ((options.skillControl == "arrivalfail" || options.skillControl == "arrivalfinalfail") && !state.scriptFailureInjected) { fatal("051 arrival failure never injected"); }
                 if (skillCastVerified || snapshot("rollback-after.sav") != skillInputCommitted) { fatal("Controlled002 rejected award published state"); }
                 prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
                     {
                         if (rng.seed_state() != state.controlledSeed || rng.draw_count() != state.controlledCalls) { fatal("Controlled002 rejected award changed RNG"); }
                         return false;
                     });
-                std::cout << "PASS CONTROLLED production area rejected award: all targets/state/payment/reward/RNG rolled back\n";
+                std::cout << "PASS CONTROLLED production failure=" << options.skillControl << ": all targets/state/payment/reward/RNG rolled back\n";
                 state.skillInputVerified = true;
                 running = false;
                 return true;
@@ -2279,16 +2904,87 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             {
                 s2ne::fatal("Normal skill cast did not commit");
             }
+            if (options.skillControl == "scriptfail82") { fatal("Script failure mode never entered its required late Result branch"); }
+            if ((inputSkill == 18 || inputSkill == 40) && (options.skillControl == "revive25" || options.skillControl == "consume28" || options.skillControl == "reverse29"))
+            {
+                const auto& target = prologue->events.units[skillInputTarget];
+                if (options.skillControl == "reverse29")
+                {
+                    if (target.hp <= skillInputVictim->hp) { fatal("Drain reverse29 mode did not actually heal living target"); }
+                }
+                else
+                {
+                    if (target.hp != 5000 || (target.status_flags & 0x20)) { fatal("Drain resurrection mode failed maxHP restore"); }
+                    if (options.skillControl == "consume28" && target.equipment == skillInputVictim->equipment) { fatal("Drain consumption mode did not remove item28"); }
+                    if (options.skillControl == "revive25" && target.equipment != skillInputVictim->equipment) { fatal("Drain permanent resurrection item25 consumed"); }
+                }
+                std::cout << "PASS467625 actual secondary branch=" << options.skillControl << " finalHP=" << target.hp << '\n';
+            }
+            if (inputSkill == 45 || inputSkill == 50)
+            {
+                const auto& live = prologue->events.units[skillInputCaster];
+                int cost = 15;
+                if (inputSkill == 50) { cost = 25; }
+                const int proficiency = (cost + 6 - int(prologue->events.difficulty)) * 5 / 2 + 10;
+                if (live.action_points != skillInputBefore->action_points - 45 || live.learned_proficiency[4] != skillInputBefore->learned_proficiency[4] + proficiency || live.experience != skillInputBefore->experience + 6) { fatal("Dedicated sight common settlement duplicated or wrong group"); }
+            }
+            if ((inputSkill == 29 || inputSkill == 18 || inputSkill == 40 || NativeDamageRecords::ordinary_sword(inputSkill)) && options.skillControl == "script82")
+            {
+                if (!state.scriptDeathObserved || prologue->synchronous_death_active() || !prologue->original_save_boundary_ready() || (prologue->events.stage == 82 && prologue->events.flags[12] != 1)) { fatal("Original area script did not return with original flag/save boundary"); }
+                std::cout << "PASS466082 original script entry/return/flags and save unlock, deferred unique settlement\n";
+            }
+            if (NativeDamageRecords::ordinary_sword(inputSkill))
+            {
+                unsigned deaths = 0;
+                for (auto index : state.controlledAreaTargets)
+                {
+                    const auto& victim = prologue->events.units[index];
+                    if (victim.hp == 0 && (victim.status_flags & 0x20)) { ++deaths; }
+                }
+                if (deaths != state.controlledAreaTargets.size() || deaths < 1) { fatal("CONTROLLED original damage target death mismatch"); }
+                const auto& caster = prologue->events.units[skillInputCaster];
+                const auto group = NativeDamageRecords::find(inputSkill)->raw[0] - 1;
+                if (caster.learned_proficiency[group] <= skillInputBefore->learned_proficiency[group] || caster.experience <= skillInputBefore->experience || caster.action_points != skillInputBefore->action_points - 45) { fatal("466082 original group reward/AP mismatch"); }
+                std::cout << "PASS CONTROLLED466082 deaths=" << deaths << " atomic area transaction\n";
+            }
             const auto& u = prologue->events.units[skillInputCaster];
             bool payment_mismatch = false;
             int expected_mp_cost = 0;
             if (!NativeAbilityBuffs::find(inputSkill) && !NativeTimedBuffs::find(inputSkill))
             {
-                if (skill88Input || skill94Input)
+                if (skill88Input || skill94Input || NativeDamageRecords::ordinary_sword(inputSkill))
                 {
                     int st_cost = 25;
                     if (skill94Input) { st_cost = 5; }
+                    if (NativeDamageRecords::ordinary_sword(inputSkill))
+                    {
+                        const auto* record = NativeDamageRecords::find(inputSkill);
+                        st_cost = record->raw[13];
+                        if (record->raw[33] & 1)
+                        {
+                            expected_mp_cost = st_cost;
+                            if (skillInputBefore->abilities & 0x20) { expected_mp_cost /= 2; }
+                        }
+                        if (!(record->raw[33] & 2)) { st_cost = 0; }
+                    }
                     payment_mismatch = u.st != skillInputBefore->st + (u.max_st - skillInputBefore->max_st) - st_cost;
+                    if (NativeDamageRecords::ordinary_sword(inputSkill))
+                    {
+                        const auto* record = NativeDamageRecords::find(inputSkill);
+                        payment_mismatch |= u.mp != skillInputBefore->mp + skillInputMpGrowth - expected_mp_cost;
+                        if (record->raw[33] & 4) { payment_mismatch |= u.hp != std::max(1, skillInputBefore->hp - int(record->raw[13])) + (u.max_hp - skillInputBefore->max_hp); }
+                        if (record->raw[32] & 7)
+                        {
+                            const auto& before = *state.cooperativePartnerBefore;
+                            const auto& partner = prologue->events.units[state.cooperativePartnerIndex];
+                            const int cost = record->raw[13] | unsigned(record->raw[14]) << 8;
+                            int mp = 0, st = 0;
+                            if (record->raw[33] & 1) { mp = (before.abilities & 0x20) ? cost / 2 : cost; }
+                            if (record->raw[33] & 2) { st = cost; }
+                            payment_mismatch |= partner.mp != before.mp + partner.max_mp - before.max_mp - mp || partner.st != before.st + partner.max_st - before.max_st - st || partner.action_points != before.action_points - 45 || partner.experience <= before.experience || partner.learned_proficiency[record->raw[0] - 1] <= before.learned_proficiency[record->raw[0] - 1];
+                            std::cout << "PASS cooperative damage partner unique MP/ST/AP/proficiency/XP settlement ID=" << inputSkill << '\n';
+                        }
+                    }
                 }
                 else
                 {
@@ -2344,6 +3040,27 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         {
                             expected_mp_cost = 15;
                         }
+                    }
+                    else if (inputSkill >= 64 && inputSkill <= 74)
+                    {
+                        constexpr int costs[]{ 32, 32, 32, 32, 50, 50, 60, 60, 70, 70, 80 };
+                        expected_mp_cost = costs[inputSkill - 64];
+                        if (skillInputBefore->abilities & 0x20) { expected_mp_cost /= 2; }
+                    }
+                    else if (inputSkill == 29) { expected_mp_cost = 24; }
+                    else if (inputSkill == 18 || inputSkill == 40)
+                    {
+                        expected_mp_cost = inputSkill == 18 ? 45 : 25;
+                        if (skillInputBefore->abilities & 0x20) { expected_mp_cost /= 2; }
+                    }
+                    else if (inputSkill == 45 || inputSkill == 50 || inputSkill == 51)
+                    {
+                        if (inputSkill == 45) { expected_mp_cost = 15; }
+                        else
+                        {
+                            expected_mp_cost = 25;
+                        }
+                        if (skillInputBefore->abilities & 0x20) { expected_mp_cost /= 2; }
                     }
                     else if (inputSkill == 4)
                     {
@@ -2401,10 +3118,68 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     payment_mismatch = u.mp != skillInputBefore->mp + skillInputMpGrowth - expected_mp_cost;
                 }
                 int expectedFrames;
-                if (inputSkill == 8) { expectedFrames = 37; }
+                if (NativeDamageRecords::ordinary_sword(inputSkill))
+                {
+                    const auto* record = NativeDamageRecords::find(inputSkill);
+                    const int order = int16_t(record->header[6]);
+                    expectedFrames = record->header[0];
+                    if (order > 0) { expectedFrames = order; }
+                    else if (order < 0) { expectedFrames *= 1 - order; }
+                    if (record->dispatch == 9) { expectedFrames += int(state.controlledAreaTargets.size() - 1) * 3; }
+                    if (record->dispatch == 8) { expectedFrames += 14; }
+                    if (record->dispatch == 5) { expectedFrames += 16; }
+                    if (record->dispatch == 6 || record->dispatch == 10)
+                    {
+                        OriginalSkills area(root);
+                        area.open(*skillInputBefore, { .second = record->raw[0] >= 9 });
+                        for (unsigned n = 0; n < 150 && area.selected().id != inputSkill; ++n)
+                        {
+                            bool has = false;
+                            for (const auto& r : area.groups()[area.selected_group()].records) { has |= r.id == inputSkill; }
+                            area.navigate(has ? 0x50 : 0x4D);
+                        }
+                        area.set_area_elevation([&](int x, int y)
+                            {
+                                return prologue->battle().cell({ x, y }).elevation;
+                            });
+                        area.set_area_valid([&](int x, int y)
+                            {
+                                return prologue->battle().skill_area_cell({ x, y });
+                            });
+                        const auto& center = *skillInputVictim;
+                        size_t cells = 0;
+                        if (record->raw[18] == 5 || record->raw[18] == 6) { cells = area.radial_cells(center, true).size() - 1; }
+                        else
+                        {
+                            for (int y = center.y - 8; y <= center.y + 8; ++y)
+                            {
+                                for (int x = center.x - 4; x <= center.x + 4; ++x)
+                                {
+                                    auto cell = center;
+                                    cell.x = x;
+                                    cell.y = y;
+                                    if (area.sleep2_area(center, cell) && prologue->battle().skill_area_cell({ x, y })) { ++cells; }
+                                }
+                            }
+                        }
+                        if (record->dispatch == 6) { expectedFrames *= int((cells + 3) / 4); }
+                        else
+                        {
+                            expectedFrames += int(cells - 1) * 2;
+                        }
+                    }
+                }
+                else if (inputSkill == 8) { expectedFrames = 37; }
                 else if (inputSkill == 12) { expectedFrames = 32; }
+                else if (inputSkill == 18) { expectedFrames = 27; }
+                else if (inputSkill == 29) { expectedFrames = 29; }
+                else if (inputSkill == 40) { expectedFrames = 26; }
                 else if (inputSkill == 35) { expectedFrames = 22; }
                 else if (inputSkill == 39) { expectedFrames = 30; }
+                else if (inputSkill == 45) { expectedFrames = 22; }
+                else if (inputSkill == 50) { expectedFrames = 21; }
+                else if (inputSkill == 51) { expectedFrames = 13; }
+                else if (inputSkill >= 64 && inputSkill <= 74) { expectedFrames = 55; }
                 else if (inputSkill == 48) { expectedFrames = 36; }
                 else if (inputSkill == 56) { expectedFrames = 34; }
                 else if (inputSkill == 60) { expectedFrames = 33; }
@@ -2746,7 +3521,44 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 }
                 std::cout << "PASS INPUT004/005 exact status/timer and once-only MP/AP/XP/proficiency; HP unchanged\n";
             }
-            if (const auto* ability = NativeAbilityBuffs::find(inputSkill))
+            if (inputSkill == 76 || inputSkill == 78 || inputSkill == 79)
+            {
+                const auto* oracle = NativeAbilityBuffs::find(inputSkill);
+                const auto& before = *state.cooperativePartnerBefore;
+                const auto& partner = prologue->events.units[state.cooperativePartnerIndex];
+                const int cost = oracle->tail[0];
+                if (partner.mp != before.mp - cost || partner.action_points != before.action_points - 45 || partner.learned_proficiency[7] <= before.learned_proficiency[7] || u.action_points != skillInputBefore->action_points - 45 || u.mp != skillInputBefore->mp + skillInputMpGrowth - cost / 2) { fatal("Cooperative production shared payment/reward mismatch"); }
+                if (inputSkill == 76)
+                {
+                    const auto& target = prologue->events.units[skillInputTarget];
+                    if (!(target.status3c & 4) || !(target.status3d & 2) || target.action_status_runtime->at(0x60) != 5) { fatal("076 production compound status mismatch"); }
+                }
+                unsigned expectedFrames = oracle->header[6] ? oracle->header[6] : oracle->header[0];
+                if (inputSkill == 78)
+                {
+                    OriginalSkills probe(root);
+                    probe.open(u, {});
+                    for (unsigned n = 0; n < 150 && probe.selected().id != 78; ++n)
+                    {
+                        bool has = false;
+                        for (const auto& record : probe.groups()[probe.selected_group()].records) { has |= record.id == 78; }
+                        probe.navigate(has ? 0x50 : 0x4D);
+                    }
+                    probe.set_area_camera(prologue->camera());
+                    const auto targets = probe.collect_targets(u, u, prologue->events.units, prologue->battle_turn(), [&](int x, int y)
+                        {
+                            return prologue->battle().skill_area_cell({ x, y });
+                        });
+                    if (targets.empty()) { fatal("078 expected target timeline empty"); }
+                    expectedFrames += unsigned(targets.size() - 1) * 3;
+                }
+                if (skillInputFrames != expectedFrames) { fatal("Cooperative production original visual timeline mismatch"); }
+                const auto& cooperativeTarget = prologue->events.units[skillInputTarget];
+                if (inputSkill == 78 && cooperativeTarget.hp <= skillInputVictim->hp) { fatal("078 production positive healing missing"); }
+                if (inputSkill == 79 && (cooperativeTarget.action_state != 0 || cooperativeTarget.status34 != 0 || cooperativeTarget.action_points <= skillInputVictim->action_points)) { fatal("079 production eligible reactivation missing"); }
+                std::cout << "PASS CONTROLLED cooperative production ID=" << inputSkill << " partner=" << partner.id << " both MP/AP/native rewards committed once; dedicated effect adapter\n";
+            }
+            if (const auto* ability = NativeAbilityBuffs::find(inputSkill); ability && inputSkill != 76 && inputSkill != 78 && inputSkill != 79)
             {
                 const int cost = ability->tail[0];
                 const unsigned flags = ability->tail[20];
@@ -2762,6 +3574,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 else if (effect == 12) { timer = 0x60; }
                 else if (effect == 63) { timer = 0x6D; }
                 else if (effect == 84) { timer = 0x72; }
+                else if (effect == 33) { timer = 0x89; }
                 else
                 {
                     timer = 0x77;
@@ -2775,12 +3588,14 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 else if (effect == 12) { mask = 0x100; }
                 else if (effect == 63) { mask = 0x800; }
                 else if (effect == 84) { mask = 0x1000; }
+                else if (effect == 33) { mask = 0x10; }
                 else
                 {
                     mask = 0x2000;
                 }
 
-                const unsigned active = unsigned(raw[0x38]) | (unsigned(raw[0x39]) << 8);
+                const size_t statusBase = effect == 33 ? 0x3C : 0x38;
+                const unsigned active = unsigned(raw[statusBase]) | (unsigned(raw[statusBase + 1]) << 8);
                 auto signedWord = [&](size_t p)
                 {
                     return int(int16_t(unsigned(raw[p]) | (unsigned(raw[p + 1]) << 8)));
@@ -2801,6 +3616,11 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         fatal("Ability production AP delta/cap mismatch");
                     }
                 }
+                if (inputSkill == 47 && !(skillInputVictim->status3c & 0x10))
+                {
+                    if (!state.invisibilityPresentations) { fatal("466D83 missing actual scratch1 SDL presentation"); }
+                    std::cout << "PASS4748F3 actual scratch1 SDL presentation/save lock frames=" << state.invisibilityPresentations << '\n';
+                }
                 std::cout << "PASS CONTROLLED ability family ID=" << inputSkill << " original CEL, stat mask/delta/timer and unique MP/ST/HP/AP/reward transaction\n";
             }
             if (const auto* buff = NativeTimedBuffs::find(inputSkill))
@@ -2810,7 +3630,10 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 unsigned slot = 0;
                 while (!(buff->mask & (1u << slot))) { ++slot; }
                 const int duration = inputSkill == 58 ? std::max(1, skillInputBefore->st / 25) : buff->tail[12];
-                const unsigned frames = buff->header[6] ? buff->header[6] : buff->header[0];
+                const int orderCount = int16_t(buff->header[6]);
+                unsigned frames = buff->header[0];
+                if (orderCount > 0) { frames = unsigned(orderCount); }
+                else if (orderCount < 0) { frames *= unsigned(-orderCount) + 1; }
                 const unsigned flags = unsigned(r[0x3C]) | (unsigned(r[0x3D]) << 8);
                 const int cost = buff->tail[0];
                 if (!(flags & buff->mask) || r[0x85 + slot] != (inputSkill == 46 ? 255 : duration) || skillInputFrames != frames || u.action_points != skillInputBefore->action_points - 45 || u.mp != skillInputBefore->mp + skillInputMpGrowth - (buff->group == 8 ? 0 : cost / 2) || (buff->group == 8 && u.st != skillInputBefore->st - cost) || u.learned_proficiency[buff->group] <= skillInputBefore->learned_proficiency[buff->group] || v.hp != skillInputVictim->hp - (inputSkill == 92 && skillInputTarget == skillInputCaster ? cost : 0)) { fatal("Timed buff production oracle/payment/CEL mismatch"); }
@@ -2818,11 +3641,14 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             }
             skillInputCommitted = snapshot("cast-after.sav");
             unsigned int abilityGroup;
-            if (NativeTimedBuffs::find(inputSkill)) { abilityGroup = NativeTimedBuffs::find(inputSkill)->group; }
+            if (NativeDamageRecords::ordinary_sword(inputSkill)) { abilityGroup = NativeDamageRecords::find(inputSkill)->raw[0] - 1; }
+            else if (NativeTimedBuffs::find(inputSkill)) { abilityGroup = NativeTimedBuffs::find(inputSkill)->group; }
             else if (inputSkill == 8) { abilityGroup = 0; }
-            else if (inputSkill == 12) { abilityGroup = 1; }
-            else if (inputSkill == 35 || inputSkill == 39) { abilityGroup = 3; }
-            else if (inputSkill == 48) { abilityGroup = 4; }
+            else if (inputSkill == 29) { abilityGroup = 2; }
+            else if (inputSkill >= 64 && inputSkill <= 74) { abilityGroup = 6; }
+            else if (inputSkill == 12 || inputSkill == 18) { abilityGroup = 1; }
+            else if (inputSkill == 35 || inputSkill == 39 || inputSkill == 40) { abilityGroup = 3; }
+            else if (inputSkill == 45 || inputSkill == 47 || inputSkill == 48 || inputSkill == 50 || inputSkill == 51) { abilityGroup = 4; }
             else if (inputSkill == 56 || inputSkill == 60) { abilityGroup = 5; }
             else if (inputSkill == 17) { abilityGroup = 1; }
             else if (inputSkill == 25) { abilityGroup = 2; }
@@ -2855,6 +3681,27 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 s2ne::fatal("Post-cast idle input loop repeated payment or mutation");
             }
             std::cout << "PASS restored idle loop500ms no duplicate MP/AP/proficiency/XP payment; Windows SDL driver=" << SDL_GetCurrentVideoDriver() << '\n';
+            if (inputSkill == 50 && options.skillControl == "expire")
+            {
+                state.revealExpiryTurn = prologue->battle_turn();
+                key(SDLK_F10);
+                skillInputPhase = 11;
+                return true;
+            }
+            skillInputVerified = true;
+            running = false;
+        }
+        else if (skillInputPhase == 11)
+        {
+            if (prologue->campaign_modal())
+            {
+                key(SDLK_RETURN);
+                return true;
+            }
+            if (prologue->battle_turn() <= state.revealExpiryTurn) { return true; }
+            if (prologue->events.army_modes && (((*prologue->events.army_modes)[0] | (*prologue->events.army_modes)[1]) & 1)) { fatal("46044D reveal survived full production round"); }
+            snapshot("reveal-expired.sav");
+            std::cout << "PASS438AA9/46044D original SDL F10 full round expires both reveal bits and save restores\n";
             skillInputVerified = true;
             running = false;
         }
@@ -2872,7 +3719,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
         }
         auto pushPromotionClick = [&](float x, float y)
         {
-            SDL_Event click{ };
+            SDL_Event click{};
             click.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
             click.button.windowID = SDL_GetWindowID(window);
             click.button.button = SDL_BUTTON_LEFT;
@@ -2913,14 +3760,14 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             }
             if (prologue->battle().command_index() != 4)
             {
-                SDL_Event key{ };
+                SDL_Event key{};
                 key.type = SDL_EVENT_KEY_DOWN;
                 key.key.key = SDLK_RIGHT;
                 SDL_PushEvent(&key);
             }
             else
             {
-                SDL_Event key{ };
+                SDL_Event key{};
                 key.type = SDL_EVENT_KEY_DOWN;
                 key.key.key = SDLK_RETURN;
                 SDL_PushEvent(&key);
@@ -2930,7 +3777,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
         else if (promotionSmokePhase == 2 && promotionMenu)
         {
             promotionSmokeTarget = promotionMenu->selected().kind;
-            SDL_Event key{ };
+            SDL_Event key{};
             key.type = SDL_EVENT_KEY_DOWN;
             key.key.key = SDLK_RETURN;
             SDL_PushEvent(&key);

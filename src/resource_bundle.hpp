@@ -1,5 +1,6 @@
 #pragma once
 #include "runtime_error.hpp"
+#include "startup_trace.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -29,6 +30,7 @@ inline uint64_t resource_hash(std::span<const uint8_t> bytes)
 }
 inline Result<std::vector<uint8_t>> read_bundle(const std::filesystem::path& root, unsigned kind, ResourceDomain domain, unsigned id = 0)
 {
+    StartupTrace trace("Resource");
     auto fail = [](const char* message)
     {
         return Result<std::vector<uint8_t>>::failure(make_error(message));
@@ -267,6 +269,7 @@ inline Result<std::vector<uint8_t>> read_bundle(const std::filesystem::path& roo
         {
             return fail("Merged entry checksum mismatch");
         }
+        trace.mark("bundle kind=" + std::to_string(kind) + " domain=" + std::to_string(d) + " id=" + std::to_string(id) + " bytes=" + std::to_string(bytes.size()));
         return Result<std::vector<uint8_t>>::success(std::move(bytes));
     }
     std::vector<uint8_t> source(size_t(sizes[d]), uint8_t{ });
@@ -297,6 +300,7 @@ inline Result<std::vector<uint8_t>> read_bundle(const std::filesystem::path& roo
             return fail("Merged index entry checksum mismatch");
         }
     }
+    trace.mark("bundle kind=" + std::to_string(kind) + " domain=" + std::to_string(d) + " image bytes=" + std::to_string(source.size()));
     return Result<std::vector<uint8_t>>::success(std::move(source));
 }
 class ResourceBundle

@@ -3,7 +3,7 @@
 #include <array>
 namespace s2ne
 {
-inline Result<std::vector<uint8_t>> read_spell_entry(const std::filesystem::path& root, unsigned skill, unsigned visual, unsigned color, unsigned amount)
+inline Result<std::vector<uint8_t>> read_spell_entry(const std::filesystem::path& root, unsigned skill, unsigned visual, unsigned color, unsigned amount, unsigned dispatch = 0, unsigned cursor = 0)
 {
     auto pal = read_resource(root / "SUPERSP.PAL");
     if (!pal)
@@ -36,10 +36,11 @@ inline Result<std::vector<uint8_t>> read_spell_entry(const std::filesystem::path
     {
         return Result<std::vector<uint8_t>>::failure(make_error("Invalid spell dispatch extent"));
     }
-    if (b.number(table + 2 + skill - 1, 1) != visual || b.number(table + 2 + count + skill - 1, 1) != 0 || b.number(table + 2 + count * 2 + skill - 1, 1) != color || b.number(table + 2 + count * 3 + skill - 1, 1) != amount)
+    if (b.number(table + 2 + skill - 1, 1) != visual || b.number(table + 2 + count + skill - 1, 1) != dispatch || b.number(table + 2 + count * 2 + skill - 1, 1) != color || b.number(table + 2 + count * 3 + skill - 1, 1) != amount)
     {
         return Result<std::vector<uint8_t>>::failure(make_error("Unsupported original spell dispatch"));
     }
+    visual += cursor;
     if (c.number(base) < visual + 1)
     {
         return Result<std::vector<uint8_t>>::failure(make_error("Missing original spell entry"));

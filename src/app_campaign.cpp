@@ -230,6 +230,10 @@ bool AppCampaignAdapter::commit_promotion(int selected, const OriginalPromotion:
                         return false;
                     }
                     metadata = aggregate.value();
+                    if (stagedEvents.army_modes)
+                    {
+                        (*stagedEvents.army_modes)[0] = ((*stagedEvents.army_modes)[0] & ~0xFFu) | metadata;
+                    }
                     return true;
                 };
                 auto next = promotionTransaction.prepare(before, request, context, [seconds]
