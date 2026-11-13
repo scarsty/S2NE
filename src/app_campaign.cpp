@@ -31,6 +31,18 @@ OriginalEvents AppCampaignAdapter::deploy_next(const OriginalSave::State& captur
 void AppCampaignAdapter::connect()
 {
     prologue->enable_presentation_timing();
+    physicalLoot.reset();
+    prologue->set_physical_loot_finish([this](bool commit)
+        {
+            if (commit && physicalLoot)
+            {
+                auto captured = OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*physicalLoot);
+                if (!captured) { return Result<bool>::failure(captured.error()); }
+                rawSave = std::move(captured).value();
+            }
+            physicalLoot.reset();
+            return Result<bool>::success(true);
+        });
     prologue->set_physical_loot_commit([this](const auto& units, const auto& awards) -> Result<bool>
         {
             if (!rawSave) { return Result<bool>::failure(make_error("Original physical loot requires save baseline")); }
@@ -58,8 +70,7 @@ void AppCampaignAdapter::connect()
                 auto collected = OriginalCampaignPersistence::try_collect_physical_loot(staged, units[award.actor], units[award.target]);
                 if (!collected) { return collected; }
             }
-            using std::swap;
-            swap(*rawSave, staged);
+            physicalLoot = std::move(staged);
             return Result<bool>::success(true);
         });
     prologue->set_campaign_arrival_adapter([this](const auto& current, unsigned turn) -> std::optional<s2ne::Prologue::ArrivalTransaction>
@@ -142,6 +153,10 @@ void AppCampaignAdapter::connect()
             auto restored = std::move(restoreResult).value();
             auto pending = std::make_shared<s2ne::OriginalSave::State>(std::move(inserted));
             return s2ne::Prologue::ArrivalTransaction{ std::move(restored.events), [this, pending]() noexcept
+                {
+                    using std::swap;
+                    swap(*rawSave, *pending);
+                }, [this, pending]() noexcept
                 {
                     using std::swap;
                     swap(*rawSave, *pending);

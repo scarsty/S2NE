@@ -1,6 +1,7 @@
-#pragma once
+﻿#pragma once
 #include "original_confirmation.hpp"
 #include "original_progression.hpp"
+#include "original_promotion_transaction.hpp"
 #include "original_role_panel.hpp"
 #include "original_save_bridge.hpp"
 #include "original_shop_menu.hpp"
@@ -16,7 +17,9 @@ public:
         message,
         closed,
         recipients,
-        resurrection_confirm
+        resurrection_confirm,
+        promotion_recipients,
+        promotion
     };
     static constexpr std::array<OriginalInterbattle::Rect, 3> rectangles{ { { 75, 314, 163, 383 }, { 268, 305, 382, 400 }, { 495, 204, 629, 317 } } };
 
@@ -30,6 +33,9 @@ private:
     unsigned selected_ = 1, message_ = 0;
     std::string blocker_;
     std::function<bool(OriginalSave::State&)> donation_;
+    std::function<bool(OriginalSave::State&, size_t, const OriginalPromotion::Request&)> promotion_commit_;
+    std::function<void()> promotion_stop_;
+    std::optional<OriginalPromotion> promotion_;
     std::unique_ptr<OriginalRolePanel> role_panel_;
     std::unique_ptr<OriginalEvents> roles_;
     std::vector<size_t> recipients_;
@@ -51,7 +57,7 @@ private:
         value = adjustedCost;
         return unsigned(std::max(1, value));
     }
-    void load_recipients(const OriginalSave::State& state)
+    void load_recipients(OriginalSave::State& state, bool promoting = false)
     {
         if (!role_panel_)
         {
@@ -60,13 +66,23 @@ private:
         roles_ = std::make_unique<OriginalEvents>(root_, state.globals_4f7cd0.at(28));
         roles_->units.clear();
         recipients_.clear();
-        for (const auto& record : state.groups.at(0).units)
+        std::optional<OriginalPromotion> rules;
+        if (promoting) { rules.emplace(root_); }
+        for (auto& record : state.groups.at(0).units)
         {
             OriginalEvents::Unit u;
             OriginalSaveBridge::decode_unit(record, u);
             roles_->restore_unit_resources(u);
+            bool eligible = (u.status_flags & 0x20) && !(u.status_flags & 0x10);
+            if (promoting)
+            {
+                // 441706先4409B7，再排死亡／离队／召唤及WORD8==1；不要求出场80位。
+                eligible = rules->eligible(u, u.experience_threshold, int(state.globals_4f7cd0[0]))
+                    && !(u.status_flags & 0x70) && OriginalSaveBridge::get(record, 8) != 1;
+                OriginalSaveBridge::put(record, 0x113, u.experience);
+            }
             roles_->units.push_back(u);
-            if ((u.status_flags & 0x20) && !(u.status_flags & 0x10))
+            if (eligible)
             {
                 recipients_.push_back(roles_->units.size() - 1);
             }
@@ -156,6 +172,70 @@ public:
         }
     }
     void set_donation(std::function<bool(OriginalSave::State&)> transaction) { donation_ = std::move(transaction); }
+    void set_promotion(std::function<bool(OriginalSave::State&, size_t, const OriginalPromotion::Request&)> transaction) { promotion_commit_ = std::move(transaction); }
+    void set_promotion_stop(std::function<void()> stop) { promotion_stop_ = std::move(stop); }
+    bool promotion_active() const { return page_ == Page::promotion; }
+    static s2ne::Result<OriginalSave::State> try_promote(const std::filesystem::path& root, const OriginalSave::State& before,
+        size_t index, const OriginalPromotion::Request& request, OriginalRandom& random, uint32_t seconds)
+    {
+        auto fail = [] { return s2ne::Result<OriginalSave::State>::failure(make_error("Original church promotion transaction rejected")); };
+        if (request.battlefield || index >= before.groups[0].units.size()) { return fail(); }
+        auto restored = OriginalSaveBridge::try_restore(root, before);
+        if (!restored) { return s2ne::Result<OriginalSave::State>::failure(restored.error()); }
+        auto staged = std::move(restored).value();
+        auto& unit = staged.events.units.at(index);
+        if ((unit.status_flags & 0x70) || OriginalSaveBridge::get(before.groups[0].units[index], 8) == 1) { return fail(); }
+        OriginalPromotionTransaction transaction(root);
+        OriginalPromotionTransaction::State candidate{unit, before.groups[0].inventory, random};
+        OriginalPromotionTransaction::Context context;
+        context.game_mode = int(before.globals_4f7cd0[0]);
+        uint8_t metadata = before.groups[0].metadata[4];
+        context.rebuild = [&](auto& next)
+            {
+                auto ready = staged.events.try_restore_unit_resources(next.unit);
+                if (!ready) { report_error(ready.error()); return false; }
+                return true;
+            };
+        context.recalculate_army = [&](auto& next)
+            {
+                staged.events.units[index] = next.unit;
+                std::vector<int> roles;
+                for (const auto& record : before.groups[0].units) { roles.push_back(int(int16_t(OriginalSaveBridge::get(record, 8)))); }
+                auto result = transaction.try_aggregate_army_metadata(metadata,
+                    std::span<const OriginalEvents::Unit>(staged.events.units).first(roles.size()), roles, 2);
+                if (!result) { report_error(result.error()); return false; }
+                metadata = result.value();
+                return true;
+            };
+        auto next = transaction.prepare(candidate, request, context, [seconds] { return seconds; });
+        if (!next) { return fail(); }
+        auto captured = OriginalSaveBridge::try_capture_promotion(staged.events, staged.turn, staged.camera,
+            before, index, request.source_kind, next->inventory, metadata);
+        if (!captured) { return captured; }
+        auto validated = OriginalSaveBridge::try_restore(root, captured.value());
+        if (!validated) { return s2ne::Result<OriginalSave::State>::failure(validated.error()); }
+        auto encoded = OriginalSave::try_encode(captured.value(), before.groups[0].inventory.size());
+        if (!encoded) { return s2ne::Result<OriginalSave::State>::failure(encoded.error()); }
+        random = next->random;
+        return captured;
+    }
+    bool promotion_event(const OriginalSettings::Event& event, OriginalSave::State& state)
+    {
+        if (!promotion_) { return false; }
+        blocker_.clear();
+        const auto result = promotion_->event(event);
+        if (result.commit_blocked) { blocker_ = "Original church promotion transaction refused"; }
+        if (promotion_->page() == OriginalPromotion::Page::closed)
+        {
+            const bool changed = promotion_->return_code() == 2;
+            if (promotion_stop_) { promotion_stop_(); }
+            promotion_.reset();
+            if (changed) { load_recipients(state, true); }
+            page_ = recipients_.empty() ? Page::menu : Page::promotion_recipients;
+            return changed;
+        }
+        return false;
+    }
     static bool donate_native(const std::filesystem::path& root, OriginalSave::State& state, OriginalRandom& random, uint32_t seconds)
     {
         if (state.globals_4f7cd0.at(27) == 1 || !OriginalShopMenu::money(state))
@@ -242,6 +322,43 @@ public:
     }
     bool scan(unsigned code, OriginalSave::State& state)
     {
+        if (page_ == Page::promotion)
+        {
+            OriginalSettings::Event event;
+            event.type = 1;
+            event.scan = code;
+            return promotion_event(event, state);
+        }
+        if (page_ == Page::promotion_recipients)
+        {
+            if (code == 1) { page_ = Page::menu; return false; }
+            if (code == 0x48 && first_ + row_)
+            {
+                if (row_) { --row_; } else { --first_; }
+            }
+            if (code == 0x50 && first_ + row_ + 1 < recipients_.size())
+            {
+                if (row_ < 9) { ++row_; } else { ++first_; }
+            }
+            if (code == 0x1C || code == 0x39)
+            {
+                const size_t index = recipients_.at(first_ + row_);
+                auto unit = roles_->units.at(index);
+                promotion_.emplace(root_);
+                if (!promotion_->open(unit, unit.experience_threshold, [&, index](const auto& request)
+                    {
+                        if (!promotion_commit_ || !promotion_commit_(state, index, request)) { return false; }
+                        return true;
+                    }, false, int(state.globals_4f7cd0[0])))
+                {
+                    promotion_.reset();
+                    blocker_ = "Original church promotion has no available branch";
+                    return false;
+                }
+                page_ = Page::promotion;
+            }
+            return false;
+        }
         if (page_ == Page::closed)
         {
             return false;
@@ -408,8 +525,15 @@ public:
         }
         if (selected_ != 1)
         {
-            blocker_ = "41430B(1)/45954D object transaction not restored";
-            return false;
+            first_ = row_ = 0;
+            load_recipients(state, true);
+            if (recipients_.empty())
+            {
+                message_ = 210;
+                page_ = Page::message;
+            }
+            else { page_ = Page::promotion_recipients; }
+            return true;
         }
         if (state.globals_4f7cd0.at(27) == 1)
         {
@@ -434,6 +558,15 @@ public:
     }
     bool mouse(int x, int y, bool left, bool right, OriginalSave::State& state)
     {
+        if (page_ == Page::promotion)
+        {
+            OriginalSettings::Event event;
+            event.type = left || right ? 0x20 : 8;
+            event.x = x;
+            event.y = y;
+            event.buttons = right ? 2u : unsigned(left);
+            return promotion_event(event, state);
+        }
         if (right)
         {
             return scan(1, state);
@@ -447,7 +580,7 @@ public:
             confirmation_->mouse(float(x), float(y), left);
             return scan(0, state);
         }
-        if (page_ == Page::recipients)
+        if (page_ == Page::recipients || page_ == Page::promotion_recipients)
         {
             int r = (y - role_panel_->top() - 17) / 20;
             if (x >= 247 && x <= 455 && y >= role_panel_->top() + 17 && r >= 0 && r < 10 && first_ + size_t(r) < recipients_.size())
@@ -480,6 +613,14 @@ public:
     }
     std::vector<uint8_t> draw(const OriginalSave::State& state) const
     {
+        if (page_ == Page::promotion) { return promotion_->draw(background_.background()); }
+        if (page_ == Page::promotion_recipients)
+        {
+            auto image = graphics_.service_panel(153, 209, OriginalShopMenu::money(state), background_, false);
+            font_.draw_original_large(image, font_.text_bytes(211), 149, 62, 42);
+            role_panel_->draw(image, *roles_, recipients_, first_, row_);
+            return image;
+        }
         if (page_ == Page::menu || page_ == Page::closed)
         {
             auto image = background_.background();

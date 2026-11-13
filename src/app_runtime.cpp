@@ -1,4 +1,4 @@
-#ifndef NOMINMAX
+﻿#ifndef NOMINMAX
 #define NOMINMAX
 #endif
 #ifndef WIN32_LEAN_AND_MEAN
@@ -12,12 +12,15 @@
 #include "flic.hpp"
 #include "new_game.hpp"
 #include "opening_audio.hpp"
+#include "original_ani_audio.hpp"
 #include "original_battle_menu.hpp"
 #include "original_battle_reports.hpp"
 #include "original_campaign_persistence.hpp"
 #include "original_church.hpp"
 #include "original_confirmation.hpp"
+#include "original_deployment.hpp"
 #include "original_evacuation_smoke.hpp"
+#include "original_growth_panel.hpp"
 #include "original_initialization.hpp"
 #include "original_inn.hpp"
 #include "original_menu.hpp"
@@ -32,11 +35,13 @@
 #include "original_skill94_transaction.hpp"
 #include "original_skills.hpp"
 #include "original_smoke_exit.hpp"
+#include "original_spell_summon_candidate.hpp"
 #include "original_spirit_sight.hpp"
 #include "original_teleport_smoke.hpp"
 #include "prologue.hpp"
 #include "runtime_diagnostics.hpp"
 #include "startup_trace.hpp"
+#include "stdio_events.hpp"
 #include "stdio_protocol.hpp"
 #include "title_image.hpp"
 #include <SDL3/SDL.h>
@@ -63,6 +68,12 @@ int s2ne::run_application(int argc, char** argv)
     auto& texture = sdl.texture;
     {
         const s2ne::AppOptions options(argc, argv);
+        uint64_t headlessTicks = 1;
+        auto gameTicks = [&]() -> uint64_t
+        {
+            if (options.headlessSpeed) { return headlessTicks; }
+            return SDL_GetTicks();
+        };
         std::optional<s2ne::StdioProtocol> stdio;
         struct OutputRestore
         {
@@ -181,6 +192,10 @@ int s2ne::run_application(int argc, char** argv)
         {
             s2ne::fatal(SDL_GetError());
         }
+        if (options.headlessSpeed && (!SDL_GetCurrentVideoDriver() || std::string_view(SDL_GetCurrentVideoDriver()) != "dummy"))
+        {
+            s2ne::fatal("--headless-speed requires SDL dummy video");
+        }
         s2ne::OpeningAudio audio;
         startup.mark("sdl-init");
         bool audioAvailable = false;
@@ -216,8 +231,17 @@ int s2ne::run_application(int argc, char** argv)
             s2ne::fatal(SDL_GetError());
         }
         startup.mark("audio-init");
-        auto audioStart = audio.start(root / "MP3" / "SUPERSP_A02.mp3");
+        if (options.headlessSpeed && (!SDL_GetCurrentAudioDriver() || std::string_view(SDL_GetCurrentAudioDriver()) != "dummy"))
+        {
+            s2ne::fatal("--headless-speed requires SDL dummy audio");
+        }
+        auto audioStart = audio.start({});
         audioAvailable = bool(audioStart);
+        if (audioAvailable)
+        {
+            auto stopped = audio.stop_music();
+            if (!stopped) { s2ne::report_error(stopped.error()); }
+        }
         startup.mark("audio-start");
         if (!audioStart)
         {
@@ -248,13 +272,33 @@ int s2ne::run_application(int argc, char** argv)
         std::vector<uint8_t> rgba(640 * 480 * 4);
         size_t clip = 0;
         bool running = true, paused = false, inMenu = false, inSetup = false;
+        std::optional<s2ne::OriginalAniAudio> aniAudio;
+        unsigned aniFrame = 1;
+        auto stopEffects = [&]() -> s2ne::Result<bool>
+        {
+            if (!audio.effects()) { return s2ne::Result<bool>::success(true); }
+            return audio.effects()->stop();
+        };
+        auto playAni = [&](unsigned id, unsigned channel) -> s2ne::Result<unsigned>
+        {
+            if (!audio.effects()) { return s2ne::Result<unsigned>::failure(s2ne::make_error("ANI effects unavailable")); }
+            auto result = audio.effects()->play(id, channel);
+            if (result && !channel) { std::cerr << "Original ANI effect id=" << id << " channel=" << result.value() << '\n'; }
+            return result;
+        };
         auto showMenu = [&]
         {
+            if (aniAudio)
+            {
+                auto stopped = aniAudio->finish(stopEffects);
+                if (!stopped) { s2ne::report_error(stopped.error()); }
+            }
             SDL_ShowCursor();
             inMenu = true;
             paused = true;
             auto image = title;
             menu.draw(image);
+            if (stdio) { stdioLogicalFrame = image; }
             if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4))
             {
                 s2ne::fatal(SDL_GetError());
@@ -264,6 +308,7 @@ int s2ne::run_application(int argc, char** argv)
         {
             inSetup = true;
             auto image = setup.draw(title, menu);
+            if (stdio) { stdioLogicalFrame = image; }
             if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4))
             {
                 s2ne::fatal(SDL_GetError());
@@ -278,17 +323,50 @@ int s2ne::run_application(int argc, char** argv)
         std::optional<s2ne::OriginalShopMenu> shopMenu;
         std::optional<s2ne::OriginalChurch> churchMenu;
         std::optional<s2ne::OriginalInn> innMenu;
+        std::optional<s2ne::OriginalDeployment> deployment;
         std::optional<s2ne::OriginalPromotion> promotionMenu;
+        std::optional<s2ne::OriginalArmyEquipmentMenu> battleItems;
+        s2ne::OriginalItemUse itemUse(root);
+        std::optional<std::pair<size_t, unsigned>> itemTargetRequest;
+        std::optional<unsigned> itemSpellSource;
+        unsigned itemNoticeMilliseconds{};
+        std::vector<std::vector<uint8_t>> itemLearningNotices;
+        uint64_t itemLearningSince{};
+        std::function<void()> itemLearningPublish;
+        s2ne::OriginalShopMenu itemNoticeGraphics(root);
+        s2ne::OriginalMenu itemNoticeFont(root);
+        auto publishItemSpell = [&]()
+        {
+            if (!itemSpellSource || !rawSave) { return; }
+            const unsigned id = *itemSpellSource;
+            if (itemUse.targeted(id)) { --rawSave->groups[0].inventory.at(id - 1); }
+            itemSpellSource.reset();
+            battleItems.reset();
+        };
         std::vector<unsigned> usableItems;
         size_t usableItemSelection{};
         bool itemMenu = false, itemConfirmation = false;
         std::optional<s2ne::OriginalSkills> skillMenu;
         std::optional<size_t> skillTarget;
+        struct SkillGrowthPause
+        {
+            s2ne::OriginalProgression::PendingGrowth pending;
+            uint32_t seconds;
+        };
+        struct SkillGrowthAward
+        {
+            s2ne::OriginalEvents::Unit unit;
+            s2ne::OriginalRandom::State random;
+        };
+        std::vector<SkillGrowthAward> skillGrowthAwards;
+        std::optional<uint32_t> skillGrowthSeconds;
+        std::optional<s2ne::OriginalSpellSummonCandidate> skillGrowthSummon;
         std::optional<size_t> pendingSkillTarget;
         std::optional<s2ne::Battle::Point> sleepCenter;
         std::optional<size_t> transferSource;
         std::optional<s2ne::Battle::Point> transferDestination;
         bool pendingSkillVisualStarted = false;
+        bool aiSkillActive = false;
         std::optional<std::vector<uint8_t>> spiritSightImage;
         std::vector<uint8_t> spiritSightIndices;
         std::optional<unsigned> screenshotSequence;
@@ -499,6 +577,65 @@ int s2ne::run_application(int argc, char** argv)
             paused = true;
         }
         auto settingsState = s2ne::OriginalSettings::load_state(root);
+        auto playMusic = [&](unsigned id) -> s2ne::Result<bool>
+        {
+            auto domain = s2ne::ResourceDomain::primary;
+            if (prologue) { domain = prologue->music_domain(); }
+            auto current = settingsState;
+            if (settings) { current = settings->state(); }
+            if (battleMenu) { current = battleMenu->settings_state(); }
+            return audio.play_music(root, id, domain, !current.cdda);
+        };
+        auto playMidi = [&](unsigned id) -> s2ne::Result<bool>
+        {
+            auto domain = s2ne::ResourceDomain::primary;
+            if (prologue) { domain = prologue->music_domain(); }
+            return audio.play_music(root, id, domain, true);
+        };
+        auto initialMusicVolume = audio.music_volume(settingsState.cdda_volume);
+        if (!initialMusicVolume) { s2ne::report_error(initialMusicVolume.error()); }
+        if (audioAvailable)
+        {
+            auto started = audio.start_effects(root);
+            if (!started) { s2ne::report_error(started.error()); }
+            else if (!paused && options.stdioInitialSave.empty())
+            {
+                auto loaded = s2ne::OriginalAniAudio::create(root);
+                if (!loaded) { s2ne::report_error(loaded.error()); }
+                else
+                {
+                    aniAudio = std::move(loaded).value();
+                    aniAudio->play_music = playMusic;
+                    aniAudio->play_midi = playMidi;
+                    auto begun = aniAudio->begin(1, 0x400);
+                    if (!begun) { s2ne::report_error(begun.error()); }
+                    auto volume = audio.effects()->volume(settingsState.effect_volume);
+                    if (!volume) { s2ne::report_error(volume.error()); }
+                    auto advanced = aniAudio->advance(1, playAni, stopEffects);
+                    if (!advanced) { s2ne::report_error(advanced.error()); }
+                }
+            }
+        }
+        auto playEffect = [&](unsigned id)
+        {
+            if (!audio.effects()) { return; }
+            int gain = settingsState.effect_volume;
+            if (settings) { gain = settings->state().effect_volume; }
+            if (battleMenu) { gain = battleMenu->settings_state().effect_volume; }
+            if (audio.is_muted()) { gain = 0; }
+            auto volume = audio.effects()->volume(gain);
+            if (!volume)
+            {
+                s2ne::report_error(volume.error());
+                return;
+            }
+            auto played = audio.effects()->play(id);
+            if (!played) { s2ne::report_error(played.error()); }
+            else
+            {
+                std::cerr << "Original effect id=" << id << " channel=" << played.value() << '\n';
+            }
+        };
         menu.small_font = settingsState.small_font != 0;
         auto showSettings = [&]
         {
@@ -510,6 +647,7 @@ int s2ne::run_application(int argc, char** argv)
                 return;
             }
             auto image = std::move(rendered).value();
+            if (stdio) { stdioLogicalFrame = image; }
             if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4))
             {
                 s2ne::fatal(SDL_GetError());
@@ -531,6 +669,7 @@ int s2ne::run_application(int argc, char** argv)
         {
             auto image = s2ne::load_title(root, 20, false);
             exitConfirmation->draw(image, menu);
+            if (stdio) { stdioLogicalFrame = image; }
             if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4))
             {
                 s2ne::fatal(SDL_GetError());
@@ -539,6 +678,8 @@ int s2ne::run_application(int argc, char** argv)
         auto beginExitConfirmation = [&]
         {
             exitConfirmation.emplace(root, menu, 51, 200, 403, true);
+            auto stopped = stopEffects();
+            if (!stopped) { s2ne::report_error(stopped.error()); }
             showExitConfirmation();
         };
         bool prologueRedraw = false;
@@ -560,11 +701,11 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (innMenu)
             {
-                innMenu->tick(s2ne::OriginalShopMenu::wall_clock_cs());
+                innMenu->tick(options.headlessSpeed ? unsigned(gameTicks() / 10) : s2ne::OriginalShopMenu::wall_clock_cs());
             }
             if (shopMenu && rawSave)
             {
-                shopMenu->tick(s2ne::OriginalShopMenu::wall_clock_cs(), *rawSave);
+                shopMenu->tick(options.headlessSpeed ? unsigned(gameTicks() / 10) : s2ne::OriginalShopMenu::wall_clock_cs(), *rawSave);
                 if (auto point = shopMenu->take_cursor())
                 {
                     float x{}, y{};
@@ -575,12 +716,36 @@ int s2ne::run_application(int argc, char** argv)
                 }
             }
             std::vector<uint8_t> image;
-            if (innMenu && rawSave) { image = innMenu->draw(*rawSave); }
+            if (deployment) { image = deployment->draw(); deployment->frame_presented(); }
+            else if (innMenu && rawSave) { image = innMenu->draw(*rawSave); }
             else if (churchMenu && rawSave) { image = churchMenu->draw(*rawSave); }
             else if (shopMenu && rawSave) { image = shopMenu->draw(*rawSave); }
+            else if (battleItems && !itemTargetRequest && !itemSpellSource && rawSave) { image = battleItems->draw(*rawSave); }
             else
             {
-                image = prologue->draw(menu);
+                image = prologue->draw(menu, [&](auto& ground)
+                    {
+                        if (!skillMenu || pendingSkillTarget || skillMenu->page() != s2ne::OriginalSkills::Page::requested || prologue->battle_selected() < 0) { return; }
+                        auto actor = prologue->events.units.at(size_t(prologue->battle_selected()));
+                        auto camera = prologue->camera();
+                        prologue->battle().draw_skill_cells(ground, camera.first, camera.second, 0, [&](auto cell)
+                            {
+                                return skillMenu->selection_cell_in_range(actor, cell.x, cell.y);
+                            }, [&](auto& pixels, auto cell) { prologue->mask_ground_selection(pixels, cell); });
+                        if (sleepCenter && skillMenu->status_area_supported())
+                        {
+                            auto center = actor;
+                            center.x = sleepCenter->x;
+                            center.y = sleepCenter->y;
+                            prologue->battle().draw_skill_cells(ground, camera.first, camera.second, 1, [&](auto cell)
+                                {
+                                    auto target = actor;
+                                    target.x = cell.x;
+                                    target.y = cell.y;
+                                    return skillMenu->sleep2_area(center, target);
+                                }, [&](auto& pixels, auto cell) { prologue->mask_ground_selection(pixels, cell); });
+                        }
+                    });
                 if (spiritSightImage) { image = *spiritSightImage; }
             }
 
@@ -704,30 +869,6 @@ int s2ne::run_application(int argc, char** argv)
                             }
                         }
                     }
-                    for (int dy = -4; dy <= 4; ++dy)
-                    {
-                        for (int dx = -4; dx <= 4; ++dx)
-                        {
-                            auto marker = actor;
-                            marker.x += dx;
-                            marker.y += dy;
-                            marker.behavior = actor.hostile() ? 0 : 2;
-                            marker.hp = 1;
-                            marker.status_flags = 0x80;
-                            if (!skillMenu->hostile_in_range(actor, marker))
-                            {
-                                continue;
-                            }
-                            auto point = prologue->screen_cell({ marker.x, marker.y });
-                            if (point.x >= 0 && point.x < 640 && point.y >= 0 && point.y < 380)
-                            {
-                                auto p = (size_t(point.y) * 640 + point.x) * 4;
-                                image[p] = 242;
-                                image[p + 1] = 220;
-                                image[p + 2] = 64;
-                            }
-                        }
-                    }
                     if (skillTarget)
                     {
                         auto point = prologue->screen_cell({ prologue->events.units.at(*skillTarget).x, prologue->events.units.at(*skillTarget).y });
@@ -748,6 +889,23 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 skillMenu->draw(image);
             }
+            if (!itemLearningNotices.empty())
+            {
+                const int x = 320 - itemNoticeGraphics.panel_width(208) / 2;
+                const int y = 240 - itemNoticeGraphics.panel_height(208) / 2;
+                itemNoticeGraphics.panel(image, 208, x, y);
+                const auto& text = itemLearningNotices.front();
+                itemNoticeFont.draw_original_large(image, text, 320 - (int(text.size()) - 2) * 6 - 16, 228, 42);
+                if (!itemLearningSince) { itemLearningSince = gameTicks(); }
+            }
+            if (itemNoticeMilliseconds)
+            {
+                itemNoticeGraphics.shared_panel(image, 0x4F72C8, 176, 80);
+                const auto text = itemNoticeFont.text_bytes(73);
+                const unsigned panel = s2ne::OriginalShopMenu::shared_sprite(0x4F72C8);
+                itemNoticeFont.draw_original_large(image, text, 176 + itemNoticeGraphics.panel_width(panel) / 2 - int(text.size()) * 6,
+                    80 + itemNoticeGraphics.panel_height(panel) / 2 - 12, 42);
+            }
             if (itemMenu && !usableItems.empty())
             {
                 auto name = promotionTransaction.item_name(usableItems.at(usableItemSelection));
@@ -767,6 +925,45 @@ int s2ne::run_application(int argc, char** argv)
             if (overwriteConfirmation)
             {
                 overwriteConfirmation->draw(image, menu);
+            }
+            if (const auto* learnedName = prologue->learning_notice())
+            {
+                const auto& unit = prologue->reward_growth().unit();
+                auto text = unit.name;
+                text.push_back(' ');
+                auto label = menu.text_bytes(3);
+                text.insert(text.end(), label.begin(), label.end());
+                text.push_back(' ');
+                text.insert(text.end(), learnedName->begin(), learnedName->end());
+                // 原458E61以CEL208显示姓名／原学习标签／技能名，等待473420(250)。
+                auto cel = s2ne::read_resource(root / "SUPERSP.CEL");
+                auto pal = s2ne::read_resource(root / "SUPERSP.PAL");
+                if (!cel || !pal)
+                {
+                    prologue->reject_growth();
+                    if (!cel) { s2ne::report_error(cel.error()); }
+                    else { s2ne::report_error(pal.error()); }
+                    return;
+                }
+                auto panel = s2ne::draw_original_cel(image, cel.value(), pal.value(), 208, 128, 180, s2ne::OriginalZeroRun::transparent);
+                if (panel) { panel = menu.try_draw_original_large(image, text, 144, 198, 42); }
+                if (!panel)
+                {
+                    prologue->reject_growth();
+                    s2ne::report_error(panel.error());
+                    return;
+                }
+            }
+            if (auto step = prologue->growth_step())
+            {
+                auto panel = s2ne::OriginalGrowthPanel::draw(root, std::move(image), *step);
+                if (!panel)
+                {
+                    prologue->reject_growth();
+                    s2ne::report_error(panel.error());
+                    return;
+                }
+                image = std::move(panel).value();
             }
             if (stdio) { stdioLogicalFrame = image; }
             if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4))
@@ -828,6 +1025,7 @@ int s2ne::run_application(int argc, char** argv)
             }
             else
             {
+                playEffect(123);
                 showPrologue();
             }
         };
@@ -852,10 +1050,10 @@ int s2ne::run_application(int argc, char** argv)
             showPrologue();
             std::cout << "Original prologue stage=" << prologue->events.stage << ", difficulty=" << setup.confirmed << '\n';
         };
-        uint64_t next = SDL_GetTicks();
+        uint64_t next = gameTicks() + s2ne::original_ani_frame_ms(0xAF12, clips.front().delay);
         const uint64_t started = next;
         unsigned presented = 0;
-        uint64_t lastUiTick = SDL_GetTicks();
+        uint64_t lastUiTick = gameTicks();
         s2ne::OriginalEdgeScrollTiming edgeScrollTiming;
         startup.mark("event-loop");
         bool firstPresent = true;
@@ -863,12 +1061,13 @@ int s2ne::run_application(int argc, char** argv)
         bool firstInput = true;
         std::optional<s2ne::StdioProtocol::Json> stdioPending;
         uint64_t stdioReadyAt{};
+        std::vector<SDL_Event> stdioInputEvents;
         if (stdio && !options.stdioInitialSave.empty())
         {
             auto initial = s2ne::OriginalSave::load(options.stdioInitialSave, saveItems);
             auto restored = s2ne::OriginalSaveBridge::restore(root, initial);
             prologue = std::make_unique<s2ne::Prologue>(root, restored.events.difficulty);
-            prologue->restore_battle(std::move(restored.events), restored.turn);
+            prologue->restore_battle(std::move(restored.events), restored.turn, true, !restored.raw.battle_context());
             rawSave = std::move(initial);
             s2ne::OriginalSaveStore::write(*isolatedSaveRoot, 1, *rawSave, saveItems);
             inMenu = inSetup = false;
@@ -878,24 +1077,100 @@ int s2ne::run_application(int argc, char** argv)
         {
             using Json = s2ne::StdioProtocol::Json;
             Json state{ { "scene", "opening" }, { "modal", "none" }, { "units", Json::array() }, { "commands", Json::array() }, { "skills", Json::array() } };
+            state["music_id"] = audio.music_id();
+            state["music_position"] = audio.music_position();
+            state["mixed_samples"] = audio.mixed_samples();
+            if (battleItems) { state["item_id"] = battleItems->selected_item(); }
             if (inMenu) { state["scene"] = "title"; }
             if (inSetup) { state["scene"] = "setup"; }
             if (prologue)
             {
                 state["scene"] = "prologue";
+                if (prologue->temporary_text_active()) { state["modal"] = "temporary_text"; }
                 if (prologue->in_battle()) { state["scene"] = "battle"; }
                 state["stage"] = prologue->events.stage;
                 state["turn"] = prologue->battle_turn();
                 state["selected"] = prologue->battle_selected();
-                state["input_locked"] = !prologue->original_save_boundary_ready() || prologue->computer_actions() || prologue->campaign_modal();
+                state["input_locked"] = bool(itemLearningPublish) || battleItems.has_value() || itemTargetRequest.has_value() || !prologue->original_save_boundary_ready() || prologue->computer_actions() || prologue->campaign_modal();
+                if (battleItems) { state["modal"] = "items"; }
+                if (itemTargetRequest) { state["modal"] = "item_target"; state["item_id"] = itemTargetRequest->second; }
                 state["blocker"] = prologue->campaign_blocker();
+                if (deployment)
+                {
+                    state["modal"] = "deployment";
+                    state["input_locked"] = true;
+                    state["deployment_position"] = deployment->positioning();
+                    state["deployment_capacity"] = deployment->capacity();
+                    state["deployment_assignments"] = deployment->assignments();
+                    state["deployment_facing"] = deployment->facing();
+                    state["deployment_slots"] = Json::array();
+                    for (const auto& slot : deployment->slots())
+                    {
+                        auto point = deployment->cell_screen(slot.x, slot.y);
+                        state["deployment_slots"].push_back({ { "x", slot.x }, { "y", slot.y }, { "screen_x", point.first + 32 }, { "screen_y", point.second + 16 }, { "fixed", slot.fixed } });
+                    }
+                }
+                state["campaign_dialogue"] = prologue->campaign_dialogue();
+                state["campaign_defeated"] = prologue->campaign_defeated();
+                state["campaign_rewards"] = prologue->campaign_reward_report();
+                state["interbattle"] = prologue->interbattle_active();
                 if (prologue->campaign_modal()) { state["modal"] = "campaign"; }
-                if (prologue->in_battle()) { state["battle_state"] = int(prologue->battle_state()); }
+                if (const auto* name = prologue->learning_notice())
+                {
+                    state["modal"] = "learning";
+                    state["learning"] = { { "id", prologue->reward_growth().unit().id }, { "name_bytes", *name } };
+                }
+                if (auto step = prologue->growth_step())
+                {
+                    state["modal"] = "growth";
+                    state["growth"] = { { "id", step->before.id }, { "level", step->before.level }, { "xp", step->before.experience }, { "increments", step->increments } };
+                }
+                if (prologue->in_battle())
+                {
+                    state["battle_state"] = int(prologue->battle_state());
+                    state["command_index"] = prologue->battle().command_index();
+                    state["attack_index"] = prologue->battle().attack_index();
+                    state["target"] = prologue->battle().target();
+                    state["attacks"] = Json::array();
+                    for (int i = 0; i < 8; ++i)
+                    {
+                        state["attacks"].push_back({ { "id", i }, { "enabled", prologue->battle().attack_command_available(prologue->events.units, i) } });
+                    }
+                }
                 for (size_t i = 0; i < prologue->events.units.size(); ++i)
                 {
                     const auto& u = prologue->events.units[i];
-                    auto point = prologue->battle().screen_center({ u.x, u.y }, prologue->camera().first, prologue->camera().second);
+                    s2ne::Battle::Point point{};
+                    if (prologue->in_battle()) { point = prologue->battle().screen_center({ u.x, u.y }, prologue->camera().first, prologue->camera().second); }
                     state["units"].push_back({ { "index", i }, { "id", u.id }, { "hostile", u.hostile() }, { "x", u.x }, { "y", u.y }, { "screen_x", point.x }, { "screen_y", point.y }, { "hp", u.hp }, { "max_hp", u.max_hp }, { "mp", u.mp }, { "st", u.st }, { "ap", u.action_points }, { "level", u.level }, { "xp", u.experience }, { "xp_threshold", u.experience_threshold }, { "learned", u.learned }, { "proficiency", u.learned_proficiency } });
+                    state["units"].back()["controllable"] = u.controllable();
+                    state["units"].back()["present"] = u.present(prologue->battle_turn());
+                    state["units"].back()["action_state"] = u.action_state;
+                    state["units"].back()["status_flags"] = u.status_flags;
+                    if (prologue->in_battle()) { state["units"].back()["occupant"] = prologue->battle().occupant(prologue->events.units, { u.x, u.y }); }
+                    auto inputPoint = s2ne::Battle::center({ u.x, u.y });
+                    state["units"].back()["input_x"] = inputPoint.x - prologue->camera().first;
+                    state["units"].back()["input_y"] = inputPoint.y - prologue->camera().second;
+                    state["units"].back()["input_hittable"] = false;
+                    if (prologue->in_battle())
+                    {
+                        for (int dy = -24; dy <= 24 && !state["units"].back()["input_hittable"].get<bool>(); dy += 4)
+                        {
+                            for (int dx = -28; dx <= 28; dx += 4)
+                            {
+                                const int x = point.x + dx, y = point.y + dy;
+                                if (x < 0 || x >= 640 || y < 0 || y >= 480) { continue; }
+                                auto picked = prologue->battle().pick_surface(float(x), float(y), prologue->camera().first, prologue->camera().second);
+                                if (picked.x == u.x && picked.y == u.y)
+                                {
+                                    state["units"].back()["input_x"] = x;
+                                    state["units"].back()["input_y"] = y;
+                                    state["units"].back()["input_hittable"] = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
                 const int selected = prologue->battle_selected();
                 if (prologue->in_battle() && selected >= 0)
@@ -920,20 +1195,179 @@ int s2ne::run_application(int argc, char** argv)
                     state["selected_skill"] = skillMenu->selected().id;
                     state["skill_page"] = int(skillMenu->page());
                     auto probe = *skillMenu;
-                    state["selected_skill_failure"] = int(probe.select(unit));
-                    state["modal"] = "skills";
+                    auto partner = skillMenu->cooperative_partner(unit, prologue->events.units, prologue->battle_turn(), [&](int x, int y)
+                        {
+                            return prologue->battle().cell({ x, y }).elevation;
+                        });
+                    const s2ne::OriginalEvents::Unit* partnerUnit = nullptr;
+                    if (partner) { partnerUnit = &prologue->events.units[*partner]; }
+                    bool summonReady = false;
+                    if (skillMenu->summon_supported() && prologue->events.army_status)
+                    {
+                        const auto& slots = (*prologue->events.army_status)[unit.hostile() ? 1 : 0];
+                        summonReady = true;
+                        for (unsigned i = 0; i < 11; ++i)
+                        {
+                            if (slots[i * 3] == 1) { summonReady = false; }
+                        }
+                    }
+                    static constexpr const char* failures[]{ "none", "mp", "st", "action_points", "hp", "partner_unresolved", "world_unresolved", "unsupported_execution", "stale_unit" };
+                    auto selectionFailure = probe.resource_failure(unit, probe.selected());
+                    if (probe.page() == s2ne::OriginalSkills::Page::list) { selectionFailure = probe.select(unit, partnerUnit, summonReady); }
+                    state["selected_skill_failure"] = failures[int(selectionFailure)];
+                    state["skill_target"] = skillTarget ? Json(*skillTarget) : Json(nullptr);
+                    if (skillMenu->page() == s2ne::OriginalSkills::Page::requested && prologue->battle_selected() >= 0)
+                    {
+                        const auto& caster = prologue->events.units.at(size_t(prologue->battle_selected()));
+                        state["skill_cells"] = Json::array();
+                        auto camera = prologue->camera();
+                        for (int y = 0; y < 100; ++y)
+                        {
+                            for (int x = 0; x < 100; ++x)
+                            {
+                                if (!prologue->battle().skill_area_cell({ x, y }) || !skillMenu->selection_cell_in_range(caster, x, y)) { continue; }
+                                auto p = s2ne::Battle::center({ x, y });
+                                state["skill_cells"].push_back({ { "x", x }, { "y", y }, { "input_x", p.x - camera.first }, { "input_y", p.y - camera.second } });
+                            }
+                        }
+                    }
+                    if (!prologue->growth_active()) { state["modal"] = "skills"; }
                 }
             }
-            if (battleMenu) { state["modal"] = "battle_menu"; }
+            if (battleMenu)
+            {
+                state["modal"] = "battle_menu";
+                state["battle_menu_page"] = int(battleMenu->page());
+                state["battle_menu_selected"] = battleMenu->selected();
+            }
             if (promotionMenu) { state["modal"] = "promotion"; }
-            if (saveMenu) { state["modal"] = "save"; }
+            if (saveMenu)
+            {
+                state["modal"] = "save";
+                state["save_slot"] = saveMenu->selected_slot();
+            }
             if (settings) { state["modal"] = "settings"; }
             if (spiritSightImage) { state["modal"] = "spirit_sight"; }
             return state;
         };
+        s2ne::Prologue* musicPrologue = nullptr;
+        unsigned musicStage = 0;
+        unsigned musicRestoreGeneration = 0;
+        unsigned musicScene = 0;
+        bool musicCd = settingsState.cdda != 0;
         while (running)
         {
-            uint64_t nowUi = SDL_GetTicks();
+            if (options.headlessSpeed) { headlessTicks += 16; }
+            uint64_t nowUi = gameTicks();
+            auto musicSettings = settingsState;
+            if (settings) { musicSettings = settings->state(); }
+            if (battleMenu) { musicSettings = battleMenu->settings_state(); }
+            auto musicVolume = audio.music_volumes(musicSettings.midi_volume, musicSettings.cdda_volume);
+            if (!musicVolume) { s2ne::report_error(musicVolume.error()); }
+            if (musicCd != (musicSettings.cdda != 0))
+            {
+                musicCd = musicSettings.cdda != 0;
+                unsigned id = audio.music_id();
+                auto stopped = audio.stop_music();
+                if (!stopped) { s2ne::report_error(stopped.error()); }
+                else if (id)
+                {
+                    auto played = playMusic(id);
+                    if (!played) { s2ne::report_error(played.error()); }
+                }
+            }
+            unsigned scene = 0, sceneTrack = 0;
+            if (inMenu || inSetup)
+            {
+                scene = 1;
+                sceneTrack = 25;
+            }
+            if (prologue && prologue->interbattle_active())
+            {
+                scene = 2;
+                sceneTrack = 4;
+            }
+            if (churchMenu)
+            {
+                scene = 3;
+                sceneTrack = 37;
+            }
+            if (innMenu && innMenu->world_active())
+            {
+                // 原410EEE进入414D5B世界地图时切36，返回后恢复原曲4。
+                scene = 5;
+                sceneTrack = 36;
+            }
+            if (promotionMenu)
+            {
+                scene = 4;
+                sceneTrack = 0;
+            }
+            if (deployment) { scene = 6; sceneTrack = 25; }
+            if (scene != musicScene)
+            {
+                unsigned previousScene = musicScene;
+                musicScene = scene;
+                if (scene || previousScene)
+                {
+                    if (!scene && prologue) { sceneTrack = prologue->events.stage_music; }
+                    auto played = playMusic(sceneTrack);
+                    if (!played) { s2ne::report_error(played.error()); }
+                }
+            }
+            if (prologue)
+            {
+                if (!scene && (musicPrologue != prologue.get() || musicStage != prologue->events.stage || musicRestoreGeneration != prologue->music_restore_generation()))
+                {
+                    musicPrologue = prologue.get();
+                    musicStage = prologue->events.stage;
+                    musicRestoreGeneration = prologue->music_restore_generation();
+                    // 原4293AF场景构建先停曲，即便新旧关卡曲号相同也不是同曲续播。
+                    auto played = audio.stop_music();
+                    if (played) { played = playMusic(prologue->events.stage_music); }
+                    if (!played) { s2ne::report_error(played.error()); }
+                }
+                prologue->set_music_audio(playMusic, playMidi);
+                prologue->observe_music(audio.music_id());
+            }
+            else
+            {
+                musicPrologue = nullptr;
+                musicStage = 0;
+            }
+            if (prologue && prologue->ending_active() && audio.effects())
+            {
+                prologue->set_ending_effect_audio(playAni, stopEffects);
+            }
+            if (audio.effects())
+            {
+                int gain = settingsState.effect_volume;
+                if (settings) { gain = settings->state().effect_volume; }
+                if (battleMenu) { gain = battleMenu->settings_state().effect_volume; }
+                if (audio.is_muted()) { gain = 0; }
+                auto volume = audio.effects()->volume(gain);
+                if (!volume) { s2ne::report_error(volume.error()); }
+            }
+            if (prologue)
+            {
+                prologue->set_skill_effect_audio(playEffect);
+                prologue->set_script_effect_audio(playAni, stopEffects);
+                if (prologue->has_battle())
+                {
+                    prologue->battle().set_effect_audio([&](unsigned id, unsigned channel)
+                        {
+                            if (!audio.effects()) { return 0u; }
+                            auto result = audio.effects()->play(id, channel);
+                            if (!result)
+                            {
+                                s2ne::report_error(result.error());
+                                return 0u;
+                            }
+                            std::cerr << "Original action effect id=" << id << " channel=" << result.value() << '\n';
+                            return result.value();
+                        });
+                }
+            }
             if (stdio && !stdioPending)
             {
                 stdio->poll();
@@ -964,7 +1398,9 @@ int s2ne::run_application(int argc, char** argv)
                             event.key.windowID = SDL_GetWindowID(window);
                             event.key.key = key;
                             event.key.scancode = SDL_GetScancodeFromKey(key, nullptr);
-                            if (!SDL_PushEvent(&event)) { throw std::runtime_error(SDL_GetError()); }
+                            stdioInputEvents.push_back(event);
+                            event.type = SDL_EVENT_KEY_UP;
+                            stdioInputEvents.push_back(event);
                             stdioPending = response;
                             stdioReadyAt = nowUi;
                         }
@@ -977,12 +1413,13 @@ int s2ne::run_application(int argc, char** argv)
                             if (button != "left" && button != "right" && button != "move") { throw std::runtime_error("button must be left/right/move"); }
                             float wx{}, wy{};
                             if (!SDL_RenderCoordinatesToWindow(renderer, float(x), float(y), &wx, &wy)) { throw std::runtime_error(SDL_GetError()); }
+                            SDL_WarpMouseInWindow(window, wx, wy);
                             SDL_Event event{};
                             event.type = SDL_EVENT_MOUSE_MOTION;
                             event.motion.windowID = SDL_GetWindowID(window);
                             event.motion.x = wx;
                             event.motion.y = wy;
-                            SDL_PushEvent(&event);
+                            stdioInputEvents.push_back(event);
                             if (button != "move")
                             {
                                 event = {};
@@ -993,10 +1430,10 @@ int s2ne::run_application(int argc, char** argv)
                                 event.button.button = SDL_BUTTON_LEFT;
                                 if (button == "right") { event.button.button = SDL_BUTTON_RIGHT; }
                                 event.button.down = true;
-                                SDL_PushEvent(&event);
+                                stdioInputEvents.push_back(event);
                                 event.type = SDL_EVENT_MOUSE_BUTTON_UP;
                                 event.button.down = false;
-                                SDL_PushEvent(&event);
+                                stdioInputEvents.push_back(event);
                             }
                             stdioPending = response;
                             stdioReadyAt = nowUi;
@@ -1114,7 +1551,19 @@ int s2ne::run_application(int argc, char** argv)
                         }
                     }
                 }
-                if (!spiritSightImage && !battleMenu && !battleReports && !promotionMenu && !itemMenu && (!skillMenu || pendingSkillTarget))
+                if (itemLearningPublish && itemLearningSince && gameTicks() - itemLearningSince >= 2500)
+                {
+                    itemLearningNotices.erase(itemLearningNotices.begin());
+                    itemLearningSince = 0;
+                    if (itemLearningNotices.empty())
+                    {
+                        auto publish = std::move(itemLearningPublish);
+                        itemLearningPublish = {};
+                        publish();
+                    }
+                    showPrologue();
+                }
+                if (!deployment && !itemLearningPublish && (!battleItems || itemSpellSource) && !spiritSightImage && !battleMenu && !battleReports && !promotionMenu && !itemMenu && (!skillMenu || pendingSkillTarget || prologue->growth_active()))
                 {
                     unsigned int tickMilliseconds;
                     if (prologue->ending_active()) { tickMilliseconds = unsigned(nowUi - lastUiTick); }
@@ -1173,6 +1622,46 @@ int s2ne::run_application(int argc, char** argv)
                         running = false;
                     }
                 }
+                if (prologue->has_battle() && aiSkillActive && !skillMenu && !prologue->growth_active() && !prologue->skill_visual_active() && !prologue->battle().combat_feedback_active() && !prologue->synchronous_death_active())
+                {
+                    prologue->battle().finish_ai_skill();
+                    aiSkillActive = false;
+                }
+                if (prologue->has_battle() && !skillMenu && prologue->battle().ai_skill_ready() && !aiSkillActive)
+                {
+                    const auto proposal = *prologue->battle().ai_skill_request();
+                    const auto actorIndex = size_t(prologue->battle_selected());
+                    const auto& actor = prologue->events.units.at(actorIndex);
+                    s2ne::OriginalSkills::Context context{};
+                    context.second = proposal.second;
+                    context.computer = true;
+                    context.army_da_nonzero = prologue->events.army_modes && (*prologue->events.army_modes)[actor.hostile() ? 1 : 0] != 0;
+                    context.suppress_first = prologue->events.flags[8] != 0;
+                    context.suppress_second = prologue->events.flags[9] != 0;
+                    skillMenu = skillRules;
+                    skillMenu->set_ai_direction(proposal.direction);
+                    skillMenu->open(actor, context);
+                    const bool found = skillMenu->select_record(proposal.id);
+                    std::optional<size_t> partner;
+                    if (found)
+                    {
+                        partner = skillMenu->cooperative_partner(actor, prologue->events.units, prologue->battle_turn(), [&](int x, int y) { return prologue->battle().cell({ x, y }).elevation; });
+                    }
+                    if (!found || skillMenu->select(actor, partner ? &prologue->events.units[*partner] : nullptr, found && skillMenu->ai_summon_available(actor, prologue->events)) != s2ne::OriginalSkills::Failure::none)
+                    {
+                        s2ne::report_error(s2ne::make_error("470EF6 selected AI skill failed live eligibility"));
+                        prologue->battle().fail_ai_skill();
+                        skillMenu.reset();
+                    }
+                    else
+                    {
+                        aiSkillActive = true;
+                        prologue->battle().begin_ai_skill();
+                        pendingSkillTarget = proposal.target;
+                        if (skillMenu->status_area_supported()) { sleepCenter = s2ne::Battle::Point{ proposal.center_x, proposal.center_y }; }
+                        pendingSkillVisualStarted = false;
+                    }
+                }
                 if (skillMenu && pendingSkillTarget && !prologue->battle().animating_movement() && !pendingSkillVisualStarted)
                 {
                     bool visualStarted;
@@ -1224,17 +1713,23 @@ int s2ne::run_application(int argc, char** argv)
                     pendingSkillVisualStarted = visualStarted;
                     if (pendingSkillVisualStarted)
                     {
-                        nowUi = SDL_GetTicks();
+                        nowUi = gameTicks();
                     }
                     if (!pendingSkillVisualStarted)
                     {
+                        if (aiSkillActive) { prologue->battle().fail_ai_skill(); }
                         pendingSkillTarget.reset();
                         skillMenu.reset();
                         skillTarget.reset();
+                        if (itemSpellSource && battleItems)
+                        {
+                            itemSpellSource.reset();
+                            battleItems->return_from_target(*rawSave);
+                        }
                         std::cout << "Original spell32 visual rejected; no effect/payment committed\n";
                     }
                 }
-                if (skillMenu && pendingSkillTarget && pendingSkillVisualStarted && !prologue->skill_visual_active())
+                if (skillMenu && pendingSkillTarget && pendingSkillVisualStarted && !prologue->skill_visual_active() && !prologue->growth_active())
                 {
                     pendingSkillVisualStarted = false;
                     int selected = prologue->battle_selected();
@@ -1243,399 +1738,288 @@ int s2ne::run_application(int argc, char** argv)
                     s2ne::OriginalSkills::HostileResult result;
                     int pendingMpGrowth = 0;
                     bool swordFeedbackPending = false;
-                    bool applied = prologue->battle().mutate_combat_random([&](auto& rng, uint32_t seconds)
-                        {
-                            s2ne::OriginalSkills::ExecutionContext context;
-                            context.difficulty = prologue->events.difficulty;
-                            context.seconds = seconds;
-                            context.skill_payment_state = skillMenu->initial_payment_state(skillMenu->selected().id);
-                            auto award = [&](auto& unit, auto& stream, int xp, int proficiency, unsigned group)
+                    size_t growthAwardCursor = 0;
+                    bool applied = false;
+                    bool growthSuspended = false;
+                    try
+                    {
+                        applied = prologue->battle().mutate_combat_random([&](auto& rng, uint32_t seconds)
                             {
-                                if (options.skillControl == "rollback") { return false; }
-                                // 4659BD skips capped proficiency, not the remaining XP/payment transaction.
-                                promotionTransaction.award_proficiency(unit, 6 + group, unsigned(proficiency));
-                                s2ne::OriginalRandom native({ stream.seed_state(), stream.draw_count() });
-                                s2ne::OriginalProgression progression(root);
-                                int mpBeforeGrowth = unit.mp;
-                                if (!progression.award_native(unit, native, xp, promotionRules, [seconds]
-                                                    {
-                                                        return seconds;
-                                                    })
-                                        .applied)
+                                if (!skillGrowthSeconds) { skillGrowthSeconds = seconds; }
+                                seconds = *skillGrowthSeconds;
+                                s2ne::OriginalSkills::ExecutionContext context;
+                                context.difficulty = prologue->events.difficulty;
+                                context.friendly_army = !prologue->events.units.at(size_t(selected)).hostile();
+                                context.seconds = seconds;
+                                context.skill_payment_state = skillMenu->initial_payment_state(skillMenu->selected().id);
+                                auto award = [&](auto& unit, auto& stream, int xp, int proficiency, unsigned group)
                                 {
-                                    return false;
-                                }
-                                if (options.skillInputSmoke)
-                                {
-                                    pendingMpGrowth += unit.mp - mpBeforeGrowth;
-                                }
-                                auto state = native.state();
-                                stream.restore_stream(state.seed, state.calls);
-                                return true;
-                            };
-                            if (skillMenu->selected().id == 94)
-                            {
-                                auto& actor = prologue->events.units.at(size_t(selected));
-                                auto& victim = prologue->events.units.at(target);
-                                if (!rawSave || !s2ne::OriginalSkill94Transaction::target_supported(prologue->events, victim))
-                                {
-                                    return false;
-                                }
-                                s2ne::OriginalSkill94Transaction::Context sword;
-                                sword.original_second_partition = true;
-                                sword.target_runtime_known = true;
-                                sword.synchronous_death_ready = s2ne::OriginalDeathDispatch::continuation(prologue->events, victim.id).supported;
-                                sword.seconds = seconds;
-                                sword.payment_state = context.skill_payment_state;
-                                auto a = prologue->battle().original_42c88f_bytes(prologue->events, actor), b = prologue->battle().original_42c88f_bytes(prologue->events, victim);
-                                sword.hit = { actor.learned_proficiency[9], victim.learned_proficiency[9], actor.fencing, victim.fencing, victim.tactics, int(int8_t(a[1])), int(int8_t(b[2])) };
-                                sword.elevation = s2ne::original_combat::terrain_height_difference(prologue->battle().cell({ actor.x, actor.y }).elevation, prologue->battle().cell({ victim.x, victim.y }).elevation, prologue->events.difficulty == 1);
-                                auto status = [&](unsigned offset, unsigned cached)
-                                {
-                                    return victim.action_status_runtime ? unsigned(victim.action_status_runtime->at(offset)) : cached;
-                                };
-                                sword.damage.difficulty = prologue->events.difficulty;
-                                sword.damage.attack_mode = s2ne::Battle::attack_mode({ actor.x, actor.y }, { victim.x, victim.y }, victim.direction, prologue->events.difficulty == 1);
-                                sword.damage.friendly_army = true;
-                                sword.damage.target_status39 = status(0x39, victim.status39.value_or(0));
-                                sword.damage.target_status3c = status(0x3C, victim.status3c);
-                                sword.damage.target_status3d = status(0x3D, victim.status3d);
-                                sword.damage.target_status3f = status(0x3F, victim.status3f);
-                                sword.damage.target_special13 = prologue->events.equipment_special(victim, 13);
-                                auto masks = prologue->events.skill_class_masks(victim);
-                                sword.damage.profession_resistance = masks[0];
-                                sword.damage.profession_weakness = masks[1];
-                                auto stagedActor = actor, stagedVictim = victim;
-                                auto stagedInventory = rawSave->groups[0].inventory;
-                                auto stagedMenu = *skillMenu;
-                                auto stagedRandom = rng;
-                                auto outcome = sword94.execute(stagedMenu, stagedActor, stagedVictim, prologue->events, stagedRandom, sword, award, &stagedInventory, &promotionTransaction);
-                                if (outcome.applied)
-                                {
-                                    // The accepted transaction remains unpublished through468BAC's
-                                    // numbers. Do not invoke physical settlement/reward a second time.
-                                    auto finalActor = std::make_shared<s2ne::OriginalEvents::Unit>(std::move(stagedActor));
-                                    auto finalVictim = std::make_shared<s2ne::OriginalEvents::Unit>(std::move(stagedVictim));
-                                    auto inventory = std::make_shared<std::vector<uint8_t>>(std::move(stagedInventory));
-                                    auto seed = stagedRandom.seed_state(), calls = stagedRandom.draw_count();
-                                    swordFeedbackPending = prologue->battle().begin_skill94_feedback(size_t(selected), target, victim.hp, outcome.damage, [&, selected, target, finalActor, finalVictim, inventory, seed, calls, outcome]()
-                                        {
-                                            auto publish = [&, selected, target, finalActor, finalVictim, inventory, seed, calls]()
-                                            {
-                                                finalActor->animation_action = 0;
-                                                prologue->events.units.at(size_t(selected)) = std::move(*finalActor);
-                                                prologue->events.units.at(target) = std::move(*finalVictim);
-                                                rawSave->groups[0].inventory = std::move(*inventory);
-                                                prologue->battle().mutate_combat_random([&](auto& stream, uint32_t)
-                                                    {
-                                                        stream.restore_stream(seed, calls);
-                                                        return true;
-                                                    });
-                                                prologue->battle().commit_external_action();
-                                                skillCastVerified = true;
-                                                *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-                                                std::cout << "Original94 feedback/death complete; staged HP/reward/ST/AP/inventory/RNG published once\n";
-                                            };
-                                            if (finalVictim->hp == 0)
-                                            {
-                                                auto death = [&, target, publish = std::move(publish)]() mutable
-                                                {
-                                                    if (!prologue->begin_skill94_death(unsigned(target), std::move(publish)))
-                                                    {
-                                                        s2ne::fatal("Original94 death presentation rejected before settlement");
-                                                    }
-                                                };
-                                                if (!prologue->begin_synchronous_death(finalVictim->id, std::move(death), finalVictim.get()))
-                                                {
-                                                    s2ne::fatal("Original94 synchronous death rejected before settlement");
-                                                }
-                                            }
-                                            else if (outcome.revived || outcome.reverse_heal)
-                                            {
-                                                const int hp = outcome.revived ? 0 : outcome.hp_snapshot;
-                                                const int healing = outcome.revived ? finalVictim->max_hp : outcome.healed;
-                                                if (!prologue->battle().begin_healing_feedback(size_t(selected), target, hp, healing, std::move(publish)))
-                                                {
-                                                    s2ne::fatal("Original94 secondary468BAC feedback rejected before settlement");
-                                                }
-                                                std::cout << "Original94 secondary468BAC revived=" << outcome.revived << " reverse=" << outcome.reverse_heal << " consumed=" << outcome.consumed_item << " healing=" << healing << '\n';
-                                            }
-                                            else
-                                            {
-                                                publish();
-                                            }
-                                        });
-                                    if (!swordFeedbackPending)
+                                    if (options.skillControl == "rollback") { return false; }
+                                    if (growthAwardCursor < skillGrowthAwards.size())
                                     {
-                                        s2ne::fatal("94 feedback staging rejected");
+                                        const auto& saved = skillGrowthAwards[growthAwardCursor++];
+                                        unit = saved.unit;
+                                        stream.restore_stream(saved.random.seed, saved.random.calls);
+                                        return true;
                                     }
-                                }
-                                result.applied = outcome.applied;
-                                result.hit = outcome.hit;
-                                result.chance = outcome.chance;
-                                result.roll = outcome.roll;
-                                if (swordFeedbackPending)
-                                {
-                                    std::cout << "Original94 accepted and suspended for468BAC numbers; no live payment yet\n";
-                                }
-                                std::cout << "Original94 damage=" << outcome.damage << " xp=" << outcome.raw_xp << " proficiency=" << outcome.proficiency << " runtime39=" << sword.damage.target_status39 << " masks=" << masks[0] << ',' << masks[1] << " failure=" << int(outcome.failure) << '\n';
-                                return false;
-                            }
-                            if (!skillMenu->pipeline_supported() && !skillMenu->summon_supported()) { return false; }
-                            auto a = prologue->events.units.at(size_t(selected));
-                            auto center = prologue->events.units.at(target);
-                            if (sleepCenter)
-                            {
-                                center.x = sleepCenter->x;
-                                center.y = sleepCenter->y;
-                            }
-                            context.status3c = a.action_status_runtime ? uint32_t(a.action_status_runtime->at(0x3C)) | uint32_t(a.action_status_runtime->at(0x3D)) << 8 | uint32_t(a.action_status_runtime->at(0x3E)) << 16 | uint32_t(a.action_status_runtime->at(0x3F)) << 24 : uint32_t(a.status3c) | uint32_t(a.status3d) << 8 | uint32_t(a.status3e) << 16 | uint32_t(a.status3f) << 24;
-                            auto menu = *skillMenu;
-                            menu.set_area_camera(prologue->camera());
-                            menu.set_area_elevation([&](int x, int y)
-                                {
-                                    return prologue->battle().cell({ x, y }).elevation;
-                                });
-                            menu.set_area_valid([&](int x, int y)
-                                {
-                                    return prologue->battle().skill_area_cell({ x, y });
-                                });
-                            auto stream = rng;
-                            const auto handler = menu.handler(menu.summon_supported());
-                            const bool healing = handler == s2ne::OriginalSkills::Handler::healing465C14;
-                            const bool status = handler == s2ne::OriginalSkills::Handler::status4668F0;
-                            auto indices = menu.collect_targets(a, center, prologue->events.units, prologue->battle_turn(), [&](int x, int y)
-                                {
-                                    return prologue->battle().skill_area_cell({ x, y });
-                                });
-                            if (handler == s2ne::OriginalSkills::Handler::army4666C5) { indices.clear(); }
-                            if (handler == s2ne::OriginalSkills::Handler::summon465E04) { indices.clear(); }
-                            if (handler == s2ne::OriginalSkills::Handler::transfer4665D8) { indices = { target }; }
-                            std::vector<s2ne::OriginalEvents::Unit> victims;
-                            for (auto i : indices) { victims.push_back(prologue->events.units[i]); }
-                            auto partnerIndex = menu.cooperative_partner(a, prologue->events.units, prologue->battle_turn(), [&](int x, int y)
-                                {
-                                    return prologue->battle().cell({ x, y }).elevation;
-                                });
-                            std::optional<s2ne::OriginalEvents::Unit> partner;
-                            if (partnerIndex) { partner = prologue->events.units[*partnerIndex]; }
-                            if (menu.damage_supported())
-                            {
-                                if (NativeDamageRecords::ordinary_sword(options.inputSkill) && !options.skillControl.empty())
-                                {
-                                    smokeDriver.state.controlledAreaTargets = indices;
-                                    for (const auto& victim : victims) { std::cout << "CONTROLLED viewport target=" << victim.id << " hp=" << victim.hp << " status39=" << unsigned(victim.action_status_runtime->at(0x39)) << '\n'; }
-                                }
-                                std::vector<s2ne::OriginalSkill94Transaction::Context> contexts;
-                                for (const auto& victim : victims)
-                                {
-                                    s2ne::OriginalSkill94Transaction::Context damage;
-                                    damage.original_second_partition = skillMenu->request()->second;
-                                    damage.target_runtime_known = victim.action_status_runtime.has_value();
-                                    damage.synchronous_death_ready = s2ne::OriginalDeathDispatch::continuation(prologue->events, victim.id).supported;
-                                    damage.seconds = seconds;
-                                    damage.payment_state = context.skill_payment_state;
-                                    auto actorTerrain = prologue->battle().original_42c88f_bytes(prologue->events, a);
-                                    auto targetTerrain = prologue->battle().original_42c88f_bytes(prologue->events, victim);
-                                    const auto group = menu.selected().group;
-                                    damage.hit = { a.learned_proficiency[group], victim.learned_proficiency[group], a.fencing, victim.fencing, victim.tactics, int(int8_t(actorTerrain[1])), int(int8_t(targetTerrain[2])), a.st, victim.st };
-                                    damage.elevation = s2ne::original_combat::terrain_height_difference(prologue->battle().cell({ a.x, a.y }).elevation, prologue->battle().cell({ victim.x, victim.y }).elevation, prologue->events.difficulty == 1);
-                                    const auto& runtime = victim.action_status_runtime;
-                                    damage.damage.difficulty = context.difficulty;
-                                    damage.damage.attack_mode = s2ne::Battle::attack_mode({ a.x, a.y }, { victim.x, victim.y }, victim.direction, context.difficulty == 1);
-                                    damage.damage.target_status39 = runtime ? runtime->at(0x39) : victim.status39.value_or(0);
-                                    damage.damage.target_status3c = runtime ? runtime->at(0x3C) : victim.status3c;
-                                    damage.damage.target_status3d = runtime ? runtime->at(0x3D) : victim.status3d;
-                                    damage.damage.target_status3f = runtime ? runtime->at(0x3F) : victim.status3f;
-                                    damage.damage.target_special13 = prologue->events.equipment_special(victim, 13);
-                                    auto masks = prologue->events.skill_class_masks(victim);
-                                    damage.damage.profession_resistance = masks[0];
-                                    damage.damage.profession_weakness = masks[1];
-                                    contexts.push_back(damage);
-                                }
-                                auto inventory = rawSave->groups[0].inventory;
-                                auto packet = sword94.execute_area(menu, a, victims, center, prologue->events, stream, contexts, award, inventory, promotionTransaction, partner ? &*partner : nullptr);
-                                if (!packet)
-                                {
-                                    s2ne::report_error(packet.error());
-                                    return false;
-                                }
-                                auto presentation = std::make_shared<std::vector<s2ne::Prologue::DamagePresentation>>();
-                                for (size_t n = 0; n < indices.size(); ++n)
-                                {
-                                    const auto& outcome = packet.value().targets[n];
-                                    presentation->push_back({ unsigned(indices[n]), prologue->events.units[indices[n]].hp, outcome.damage, outcome.revived ? victims[n].max_hp : outcome.healed, outcome.hp_snapshot, outcome.killed, outcome.revived, outcome.reverse_heal, victims[n] });
-                                }
-                                auto seed = stream.seed_state(), calls = stream.draw_count();
-                                swordFeedbackPending = prologue->begin_damage_area_feedback(unsigned(selected), presentation, 0,
-                                    [&, selected, a = std::move(a), victims = std::move(victims), inventory = std::move(inventory), indices, seed, calls, partnerIndex, partner = std::move(partner)]() mutable
+                                    // 4659BD skips capped proficiency, not the remaining XP/payment transaction.
+                                    const auto beforeLearning = unit;
+                                    // 原4659BD电脑施法跳熟练；458B03军DA==1仍累积经验并调用459309。
+                                    if (!aiSkillActive && !skillMenu->item_source()) { promotionTransaction.award_proficiency(unit, 6 + group, unsigned(proficiency)); }
+                                    auto learnedName = promotionTransaction.newly_learned_name(beforeLearning, unit, group);
+                                    s2ne::OriginalRandom native({ stream.seed_state(), stream.draw_count() });
+                                    s2ne::OriginalProgression progression(root);
+                                    int mpBeforeGrowth = unit.mp;
+                                    const bool hostileReward = unit.hostile() && prologue->events.army_modes && (*prologue->events.army_modes)[1] == 1;
+                                    if (unit.hostile() && !hostileReward)
                                     {
-                                        a.animation_action = 0;
-                                        prologue->events.units.at(size_t(selected)) = std::move(a);
-                                        if (partnerIndex && partner)
-                                        {
-                                            partner->animation_action = 0;
-                                            prologue->events.units.at(*partnerIndex) = std::move(*partner);
-                                        }
-                                        for (size_t n = 0; n < indices.size(); ++n)
-                                        {
-                                            prologue->events.units[indices[n]] = std::move(victims[n]);
-                                            const auto& unit = prologue->events.units[indices[n]];
-                                            if (unit.status_flags & 0x20) { prologue->events.release_summon_slot(unit); }
-                                        }
-                                        rawSave->groups[0].inventory = std::move(inventory);
-                                        prologue->events.rebuild_army_modes(0);
-                                        prologue->battle().set_hostile_resources(prologue->events);
-                                        prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
-                                            {
-                                                live.restore_stream(seed, calls);
-                                                return true;
-                                            });
-                                        prologue->battle().commit_external_action();
-                                        skillCastVerified = true;
-                                        *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-                                        std::cout << "Original466082 area damage published once targets=" << indices.size() << '\n';
-                                    });
-                                if (!swordFeedbackPending) { s2ne::fatal("466082 feedback staging rejected"); }
-                                return false;
-                            }
-                            auto drainInventory = rawSave->groups[0].inventory;
-                            std::optional<s2ne::OriginalSave::State> summonedSave;
-                            std::optional<s2ne::OriginalEvents> summonedEvents;
-                            unsigned summonedIndex = 0;
-                            s2ne::OriginalSkills::SummonAdapter summonAdapter;
-                            if (handler == s2ne::OriginalSkills::Handler::summon465E04)
-                            {
-                                summonAdapter = [&](const auto& caster, unsigned slot, auto& stagedRandom)
-                                {
-                                    if (!prologue->events.army_status) { return false; }
-                                    const unsigned army = caster.hostile() ? 1 : 0;
-                                    const auto& slots = (*prologue->events.army_status)[army];
-                                    const unsigned appearance = slots[slot * 3 + 1] | unsigned(slots[slot * 3 + 2]) << 8;
-                                    const auto destination = prologue->battle().spell_summon_destination(caster, appearance, prologue->events.units);
-                                    if (!destination) { return false; }
-                                    auto before = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-                                    if (!before)
+                                        skillGrowthAwards.push_back({unit, native.state()});
+                                        ++growthAwardCursor;
+                                        return true;
+                                    }
+                                    auto pending = progression.stage(unit, native, xp, hostileReward);
+                                    if (!learnedName.empty() && unit.controllable() && !(unit.status_flags & 0x20) && (unit.status_flags & 0x80))
                                     {
-                                        s2ne::report_error(before.error());
+                                        pending.set_learning_name(std::move(learnedName));
+                                        throw SkillGrowthPause{ std::move(pending), seconds };
+                                    }
+                                    if (pending.unit().experience >= pending.unit().experience_threshold && pending.unit().level < 99)
+                                    {
+                                        throw SkillGrowthPause{ std::move(pending), seconds };
+                                    }
+                                    if (!progression.award_native(unit, native, xp, promotionRules, [seconds]
+                                                        {
+                                                            return seconds;
+                                                        }, 0, hostileReward)
+                                            .applied)
+                                    {
                                         return false;
                                     }
-                                    s2ne::OriginalInitialization initialization(root);
-                                    s2ne::OriginalPromotion promotion(root);
-                                    s2ne::OriginalRandom growth({ stagedRandom.seed_state(), stagedRandom.draw_count() });
-                                    unsigned control = caster.behavior == 0 ? 0 : 1;
-                                    if (caster.action_status_runtime) { control = unsigned(caster.action_status_runtime->at(8)) | unsigned(caster.action_status_runtime->at(9)) << 8; }
-                                    // MOV [caster+128h],SAR16 reads signed WORD12Ah (SP), not ST128h.
-                                    auto created = initialization.try_summon_role(before.value(), prologue->events, army, slot, s2ne::OriginalSkills::summon_level(caster), destination->x, destination->y, control ? 1 : 0, growth, promotion, [seconds]
-                                        {
-                                            return seconds;
-                                        });
-                                    if (!created)
+                                    if (options.skillInputSmoke)
                                     {
-                                        s2ne::report_error(created.error());
-                                        return false;
+                                        pendingMpGrowth += unit.mp - mpBeforeGrowth;
                                     }
-                                    auto restored = s2ne::OriginalSaveBridge::try_restore(root, created.value());
-                                    if (!restored)
-                                    {
-                                        s2ne::report_error(restored.error());
-                                        return false;
-                                    }
-                                    auto& units = restored.value().events.units;
-                                    auto found = std::find_if(units.begin(), units.end(), [&](const auto& unit)
-                                        {
-                                            return unit.hostile() == caster.hostile() && unit.appearance == appearance && (unit.status_flags & 0x10);
-                                        });
-                                    if (found == units.end()) { return false; }
-                                    summonedIndex = unsigned(found - units.begin());
-                                    summonedSave = std::move(created).value();
-                                    summonedEvents = std::move(restored).value().events;
-                                    stagedRandom.restore_stream(growth.state().seed, growth.state().calls);
+                                    auto state = native.state();
+                                    stream.restore_stream(state.seed, state.calls);
+                                    skillGrowthAwards.push_back({ unit, state });
+                                    ++growthAwardCursor;
                                     return true;
                                 };
-                            }
-                            auto packet = menu.execute_pipeline(a, victims, center, &prologue->events, &promotionTransaction, stream, context, award, partner ? &*partner : nullptr,
-                                &drain.value(), &drainInventory, summonAdapter);
-                            if (!packet)
-                            {
-                                s2ne::report_error(packet.error());
-                                return false;
-                            }
-                            result = packet.value();
-                            if (handler == s2ne::OriginalSkills::Handler::summon465E04)
-                            {
-                                if (!summonedSave || !summonedEvents) { return false; }
-                                const auto seed = stream.seed_state(), calls = stream.draw_count();
-                                auto staged = prologue->events;
-                                staged.units = std::move(summonedEvents->units);
-                                staged.army_status = summonedEvents->army_status;
-                                auto caster = std::find_if(staged.units.begin(), staged.units.end(), [&](const auto& unit)
-                                    {
-                                        return unit.id == a.id && unit.appearance == a.appearance && unit.hostile() == a.hostile();
-                                    });
-                                if (caster == staged.units.end()) { return false; }
-                                a.animation_action = 0;
-                                *caster = std::move(a);
-                                staged.units.at(summonedIndex).action_state = 2;
-                                if (staged.units.at(summonedIndex).action_status_runtime) { staged.units.at(summonedIndex).action_status_runtime->at(0x2D) = 2; }
-                                staged.rebuild_army_modes(0);
-                                auto captured = s2ne::OriginalSaveBridge::try_capture(staged, prologue->battle_turn(), prologue->camera(), &*summonedSave);
-                                if (!captured)
+                                if (skillMenu->selected().id == 94)
                                 {
-                                    s2ne::report_error(captured.error());
-                                    return false;
-                                }
-                                auto presentationRoster = staged.units;
-                                presentationRoster.at(summonedIndex).action_state = 0;
-                                presentationRoster.at(summonedIndex).status_flags |= 8;
-                                if (options.skillInputSmoke && options.skillControl == "summonfail") { presentationRoster.at(summonedIndex).animation_action = 8; }
-                                auto started = prologue->begin_spell_summon(std::move(presentationRoster), summonedIndex,
-                                    [&, staged = std::move(staged), saved = std::move(captured).value(), seed, calls, pendingMpGrowth]() mutable
+                                    auto& actor = prologue->events.units.at(size_t(selected));
+                                    auto& victim = prologue->events.units.at(target);
+                                    if (!rawSave || !s2ne::OriginalSkill94Transaction::target_supported(prologue->events, victim))
                                     {
-                                        prologue->events = std::move(staged);
-                                        *rawSave = std::move(saved);
-                                        smokeDriver.state.skillInputMpGrowth += pendingMpGrowth;
-                                        prologue->battle().set_hostile_resources(prologue->events);
-                                        prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
+                                        return false;
+                                    }
+                                    s2ne::OriginalSkill94Transaction::Context sword;
+                                    sword.original_second_partition = true;
+                                    sword.target_runtime_known = true;
+                                    sword.synchronous_death_ready = s2ne::OriginalDeathDispatch::continuation(prologue->events, victim.id).supported;
+                                    sword.seconds = seconds;
+                                    sword.payment_state = context.skill_payment_state;
+                                    auto a = prologue->battle().original_42c88f_bytes(prologue->events, actor), b = prologue->battle().original_42c88f_bytes(prologue->events, victim);
+                                    sword.hit = { actor.learned_proficiency[9], victim.learned_proficiency[9], actor.fencing, victim.fencing, victim.tactics, int(int8_t(a[1])), int(int8_t(b[2])) };
+                                    sword.elevation = s2ne::original_combat::terrain_height_difference(prologue->battle().cell({ actor.x, actor.y }).elevation, prologue->battle().cell({ victim.x, victim.y }).elevation, prologue->events.difficulty == 1);
+                                    auto status = [&](unsigned offset, unsigned cached)
+                                    {
+                                        return victim.action_status_runtime ? unsigned(victim.action_status_runtime->at(offset)) : cached;
+                                    };
+                                    sword.damage.difficulty = prologue->events.difficulty;
+                                    sword.damage.attack_mode = s2ne::Battle::attack_mode({ actor.x, actor.y }, { victim.x, victim.y }, victim.direction, prologue->events.difficulty == 1);
+                                    sword.damage.friendly_army = true;
+                                    sword.damage.target_status39 = status(0x39, victim.status39.value_or(0));
+                                    sword.damage.target_status3c = status(0x3C, victim.status3c);
+                                    sword.damage.target_status3d = status(0x3D, victim.status3d);
+                                    sword.damage.target_status3f = status(0x3F, victim.status3f);
+                                    sword.damage.target_special13 = prologue->events.equipment_special(victim, 13);
+                                    auto masks = prologue->events.skill_class_masks(victim);
+                                    sword.damage.profession_resistance = masks[0];
+                                    sword.damage.profession_weakness = masks[1];
+                                    auto stagedActor = actor, stagedVictim = victim;
+                                    auto stagedInventory = rawSave->groups[0].inventory;
+                                    auto stagedMenu = *skillMenu;
+                                    auto stagedRandom = rng;
+                                    auto outcome = sword94.execute(stagedMenu, stagedActor, stagedVictim, prologue->events, stagedRandom, sword, award, &stagedInventory, &promotionTransaction);
+                                    if (outcome.applied)
+                                    {
+                                        // The accepted transaction remains unpublished through468BAC's
+                                        // numbers. Do not invoke physical settlement/reward a second time.
+                                        auto finalActor = std::make_shared<s2ne::OriginalEvents::Unit>(std::move(stagedActor));
+                                        auto finalVictim = std::make_shared<s2ne::OriginalEvents::Unit>(std::move(stagedVictim));
+                                        auto inventory = std::make_shared<std::vector<uint8_t>>(std::move(stagedInventory));
+                                        auto seed = stagedRandom.seed_state(), calls = stagedRandom.draw_count();
+                                        swordFeedbackPending = prologue->battle().begin_skill94_feedback(size_t(selected), target, victim.hp, outcome.damage, [&, selected, target, finalActor, finalVictim, inventory, seed, calls, outcome]()
                                             {
-                                                live.restore_stream(seed, calls);
-                                                return true;
-                                            });
-                                        prologue->battle().commit_external_action();
-                                        skillCastVerified = true;
-                                        std::cout << "Original465E04 summon roster/payment published once\n";
-                                    });
-                                if (!started)
-                                {
-                                    s2ne::report_error(started.error());
-                                    return false;
-                                }
-                                swordFeedbackPending = true;
-                                return false;
-                            }
-                            if (handler == s2ne::OriginalSkills::Handler::transfer4665D8)
-                            {
-                                if (!transferSource || !transferDestination || indices.size() != 1 || indices[0] != *transferSource) { return false; }
-                                const auto destinations = prologue->battle().spell_transfer_destinations(prologue->events.units.at(size_t(selected)), prologue->events.units.at(*transferSource), prologue->events.units);
-                                if (std::find(destinations.begin(), destinations.end(), *transferDestination) == destinations.end()) { return false; }
-                                victims[0].x = transferDestination->x;
-                                victims[0].y = transferDestination->y;
-                                const auto seed = stream.seed_state(), calls = stream.draw_count();
-                                const auto destination = *transferDestination;
-                                const auto source = *transferSource;
-                                if (!prologue->begin_spell_transfer(unsigned(source), destination,
-                                        [&, selected, a = std::move(a), victims = std::move(victims), source, seed, calls, pendingMpGrowth]() mutable
+                                                auto publish = [&, selected, target, finalActor, finalVictim, inventory, seed, calls]()
+                                                {
+                                                    finalActor->animation_action = 0;
+                                                    prologue->events.units.at(size_t(selected)) = std::move(*finalActor);
+                                                    prologue->events.units.at(target) = std::move(*finalVictim);
+                                                    rawSave->groups[0].inventory = std::move(*inventory);
+                                                    prologue->battle().mutate_combat_random([&](auto& stream, uint32_t)
+                                                        {
+                                                            stream.restore_stream(seed, calls);
+                                                            return true;
+                                                        });
+                                                    publishItemSpell();
+                                                    prologue->battle().commit_external_action();
+                                                    skillCastVerified = true;
+                                                    *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                                    std::cout << "Original94 feedback/death complete; staged HP/reward/ST/AP/inventory/RNG published once\n";
+                                                };
+                                                if (finalVictim->hp == 0)
+                                                {
+                                                    auto death = [&, target, publish = std::move(publish)]() mutable
+                                                    {
+                                                        if (!prologue->begin_skill94_death(unsigned(target), std::move(publish)))
+                                                        {
+                                                            s2ne::fatal("Original94 death presentation rejected before settlement");
+                                                        }
+                                                    };
+                                                    if (!prologue->begin_synchronous_death(finalVictim->id, std::move(death), finalVictim.get()))
+                                                    {
+                                                        s2ne::fatal("Original94 synchronous death rejected before settlement");
+                                                    }
+                                                }
+                                                else if (outcome.revived || outcome.reverse_heal)
+                                                {
+                                                    const int hp = outcome.revived ? 0 : outcome.hp_snapshot;
+                                                    const int healing = outcome.revived ? finalVictim->max_hp : outcome.healed;
+                                                    if (!prologue->battle().begin_healing_feedback(size_t(selected), target, hp, healing, std::move(publish)))
+                                                    {
+                                                        s2ne::fatal("Original94 secondary468BAC feedback rejected before settlement");
+                                                    }
+                                                    std::cout << "Original94 secondary468BAC revived=" << outcome.revived << " reverse=" << outcome.reverse_heal << " consumed=" << outcome.consumed_item << " healing=" << healing << '\n';
+                                                }
+                                                else
+                                                {
+                                                    publish();
+                                                }
+                                            },
+                                            1, 0, 0, false, outcome.hit && outcome.damage != 0);
+                                        if (!swordFeedbackPending)
                                         {
-                                            smokeDriver.state.skillInputMpGrowth += pendingMpGrowth;
+                                            s2ne::fatal("94 feedback staging rejected");
+                                        }
+                                    }
+                                    result.applied = outcome.applied;
+                                    result.hit = outcome.hit;
+                                    result.chance = outcome.chance;
+                                    result.roll = outcome.roll;
+                                    if (swordFeedbackPending)
+                                    {
+                                        std::cout << "Original94 accepted and suspended for468BAC numbers; no live payment yet\n";
+                                    }
+                                    std::cout << "Original94 damage=" << outcome.damage << " xp=" << outcome.raw_xp << " proficiency=" << outcome.proficiency << " runtime39=" << sword.damage.target_status39 << " masks=" << masks[0] << ',' << masks[1] << " failure=" << int(outcome.failure) << '\n';
+                                    return false;
+                                }
+                                if (!skillMenu->pipeline_supported() && !skillMenu->summon_supported()) { return false; }
+                                auto a = prologue->events.units.at(size_t(selected));
+                                auto center = prologue->events.units.at(target);
+                                if (sleepCenter)
+                                {
+                                    center.x = sleepCenter->x;
+                                    center.y = sleepCenter->y;
+                                }
+                                context.status3c = a.action_status_runtime ? uint32_t(a.action_status_runtime->at(0x3C)) | uint32_t(a.action_status_runtime->at(0x3D)) << 8 | uint32_t(a.action_status_runtime->at(0x3E)) << 16 | uint32_t(a.action_status_runtime->at(0x3F)) << 24 : uint32_t(a.status3c) | uint32_t(a.status3d) << 8 | uint32_t(a.status3e) << 16 | uint32_t(a.status3f) << 24;
+                                auto menu = *skillMenu;
+                                menu.set_area_camera(prologue->camera());
+                                menu.set_area_elevation([&](int x, int y)
+                                    {
+                                        return prologue->battle().cell({ x, y }).elevation;
+                                    });
+                                menu.set_area_valid([&](int x, int y)
+                                    {
+                                        return prologue->battle().skill_area_cell({ x, y });
+                                    });
+                                auto stream = rng;
+                                const auto handler = menu.handler(menu.summon_supported());
+                                const bool healing = handler == s2ne::OriginalSkills::Handler::healing465C14;
+                                const bool status = handler == s2ne::OriginalSkills::Handler::status4668F0;
+                                auto indices = menu.collect_targets(a, center, prologue->events.units, prologue->battle_turn(), [&](int x, int y)
+                                    {
+                                        return prologue->battle().skill_area_cell({ x, y });
+                                    });
+                                if (handler == s2ne::OriginalSkills::Handler::army4666C5) { indices.clear(); }
+                                if (handler == s2ne::OriginalSkills::Handler::summon465E04) { indices.clear(); }
+                                if (handler == s2ne::OriginalSkills::Handler::transfer4665D8) { indices = { target }; }
+                                std::vector<s2ne::OriginalEvents::Unit> victims;
+                                for (auto i : indices) { victims.push_back(prologue->events.units[i]); }
+                                auto partnerIndex = menu.cooperative_partner(a, prologue->events.units, prologue->battle_turn(), [&](int x, int y)
+                                    {
+                                        return prologue->battle().cell({ x, y }).elevation;
+                                    });
+                                std::optional<s2ne::OriginalEvents::Unit> partner;
+                                if (partnerIndex) { partner = prologue->events.units[*partnerIndex]; }
+                                if (menu.damage_supported())
+                                {
+                                    if (NativeDamageRecords::ordinary_sword(options.inputSkill) && !options.skillControl.empty())
+                                    {
+                                        smokeDriver.state.controlledAreaTargets = indices;
+                                        for (const auto& victim : victims) { std::cout << "CONTROLLED viewport target=" << victim.id << " hp=" << victim.hp << " status39=" << unsigned(victim.action_status_runtime->at(0x39)) << '\n'; }
+                                    }
+                                    std::vector<s2ne::OriginalSkill94Transaction::Context> contexts;
+                                    for (const auto& victim : victims)
+                                    {
+                                        s2ne::OriginalSkill94Transaction::Context damage;
+                                        damage.computer = aiSkillActive;
+                                        damage.damage.friendly_army = !a.hostile();
+                                        damage.original_second_partition = skillMenu->request()->second;
+                                        damage.target_runtime_known = victim.action_status_runtime.has_value();
+                                        damage.synchronous_death_ready = s2ne::OriginalDeathDispatch::continuation(prologue->events, victim.id).supported;
+                                        damage.seconds = seconds;
+                                        damage.payment_state = context.skill_payment_state;
+                                        auto actorTerrain = prologue->battle().original_42c88f_bytes(prologue->events, a);
+                                        auto targetTerrain = prologue->battle().original_42c88f_bytes(prologue->events, victim);
+                                        const auto group = menu.selected().group;
+                                        damage.hit = { a.learned_proficiency[group], victim.learned_proficiency[group], a.fencing, victim.fencing, victim.tactics, int(int8_t(actorTerrain[1])), int(int8_t(targetTerrain[2])), a.st, victim.st };
+                                        damage.elevation = s2ne::original_combat::terrain_height_difference(prologue->battle().cell({ a.x, a.y }).elevation, prologue->battle().cell({ victim.x, victim.y }).elevation, prologue->events.difficulty == 1);
+                                        const auto& runtime = victim.action_status_runtime;
+                                        damage.damage.difficulty = context.difficulty;
+                                        damage.damage.attack_mode = s2ne::Battle::attack_mode({ a.x, a.y }, { victim.x, victim.y }, victim.direction, context.difficulty == 1);
+                                        damage.damage.target_status39 = runtime ? runtime->at(0x39) : victim.status39.value_or(0);
+                                        damage.damage.target_status3c = runtime ? runtime->at(0x3C) : victim.status3c;
+                                        damage.damage.target_status3d = runtime ? runtime->at(0x3D) : victim.status3d;
+                                        damage.damage.target_status3f = runtime ? runtime->at(0x3F) : victim.status3f;
+                                        damage.damage.target_special13 = prologue->events.equipment_special(victim, 13);
+                                        auto masks = prologue->events.skill_class_masks(victim);
+                                        damage.damage.profession_resistance = masks[0];
+                                        damage.damage.profession_weakness = masks[1];
+                                        contexts.push_back(damage);
+                                    }
+                                    auto inventory = rawSave->groups[a.hostile() ? 1 : 0].inventory;
+                                    auto packet = sword94.execute_area(menu, a, victims, center, prologue->events, stream, contexts, award, inventory, promotionTransaction, partner ? &*partner : nullptr);
+                                    if (!packet)
+                                    {
+                                        s2ne::report_error(packet.error());
+                                        return false;
+                                    }
+                                    auto presentation = std::make_shared<std::vector<s2ne::Prologue::DamagePresentation>>();
+                                    for (size_t n = 0; n < indices.size(); ++n)
+                                    {
+                                        const auto& outcome = packet.value().targets[n];
+                                        presentation->push_back({ unsigned(indices[n]), prologue->events.units[indices[n]].hp, outcome.damage, outcome.revived ? victims[n].max_hp : outcome.healed, outcome.hp_snapshot, outcome.killed, outcome.revived, outcome.reverse_heal, victims[n], 1, 0, 0, false, outcome.hit && outcome.damage != 0 });
+                                    }
+                                    auto seed = stream.seed_state(), calls = stream.draw_count();
+                                    swordFeedbackPending = prologue->begin_damage_area_feedback(unsigned(selected), presentation, 0,
+                                        [&, selected, a = std::move(a), victims = std::move(victims), inventory = std::move(inventory), indices, seed, calls, partnerIndex, partner = std::move(partner)]() mutable
+                                        {
                                             a.animation_action = 0;
-                                            if (source == size_t(selected))
-                                            {
-                                                a.x = victims[0].x;
-                                                a.y = victims[0].y;
-                                                victims[0] = a;
-                                            }
                                             prologue->events.units.at(size_t(selected)) = std::move(a);
-                                            prologue->events.units.at(source) = std::move(victims[0]);
+                                            if (partnerIndex && partner)
+                                            {
+                                                partner->animation_action = 0;
+                                                prologue->events.units.at(*partnerIndex) = std::move(*partner);
+                                            }
+                                            for (size_t n = 0; n < indices.size(); ++n)
+                                            {
+                                                prologue->events.units[indices[n]] = std::move(victims[n]);
+                                                const auto& unit = prologue->events.units[indices[n]];
+                                                if (unit.status_flags & 0x20) { prologue->events.release_summon_slot(unit); }
+                                            }
+                                            rawSave->groups[prologue->events.units.at(size_t(selected)).hostile() ? 1 : 0].inventory = std::move(inventory);
                                             prologue->events.rebuild_army_modes(0);
                                             prologue->battle().set_hostile_resources(prologue->events);
                                             prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
@@ -1643,179 +2027,376 @@ int s2ne::run_application(int argc, char** argv)
                                                     live.restore_stream(seed, calls);
                                                     return true;
                                                 });
+                                            publishItemSpell();
                                             prologue->battle().commit_external_action();
                                             skillCastVerified = true;
                                             *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-                                            std::cout << "Original45DB10 transfer arrival published once\n";
-                                        }))
-                                {
+                                            std::cout << "Original466082 area damage published once targets=" << indices.size() << '\n';
+                                        });
+                                    if (!swordFeedbackPending) { s2ne::fatal("466082 feedback staging rejected"); }
                                     return false;
                                 }
-                                swordFeedbackPending = true;
-                                return false;
-                            }
-                            if (handler == s2ne::OriginalSkills::Handler::drain467625 || handler == s2ne::OriginalSkills::Handler::fissure467625)
-                            {
-                                if (options.skillInputSmoke && options.skillControl == "drainfail" && !indices.empty())
+                                auto drainInventory = rawSave->groups[a.hostile() ? 1 : 0].inventory;
+                                std::optional<s2ne::OriginalSave::State> summonedSave;
+                                std::optional<s2ne::OriginalEvents> summonedEvents;
+                                unsigned summonedIndex = 0;
+                                s2ne::OriginalSkills::SummonAdapter summonAdapter;
+                                if (handler == s2ne::OriginalSkills::Handler::summon465E04)
                                 {
-                                    auto invalid = prologue->events.units;
-                                    invalid.at(indices.back()).animation_action = 8;
-                                    s2ne::OriginalMap probe(root);
-                                    probe.load(prologue->events.map_id);
-                                    const auto camera = prologue->camera();
-                                    probe.camera_x = camera.first;
-                                    probe.camera_y = camera.second;
-                                    auto image = probe.draw();
-                                    auto prepared = probe.try_draw_units(image, invalid, prologue->battle_turn());
-                                    if (prepared) { s2ne::fatal("Drain late renderer fixture unexpectedly valid"); }
-                                    s2ne::report_error(prepared.error());
-                                    return false;
-                                }
-                                auto presentation = std::make_shared<std::vector<s2ne::Prologue::DamagePresentation>>();
-                                for (size_t n = 0; n < indices.size(); ++n)
-                                {
-                                    const auto& outcome = result.drain_targets.at(n);
-                                    std::cout << "Original467625 staged damage=" << outcome.damage << " revived=" << outcome.revived << " reverse=" << outcome.reverse << " item=" << outcome.consumed_item << '\n';
-                                    presentation->push_back({ unsigned(indices[n]), prologue->events.units[indices[n]].hp, outcome.damage,
-                                        outcome.healing, outcome.snapshot, outcome.killed, outcome.revived, outcome.reverse, victims[n],
-                                        skillMenu->selected().effect(), outcome.caster_before, a.max_hp, outcome.reversed_damage, outcome.hit,
-                                        handler == s2ne::OriginalSkills::Handler::fissure467625 && outcome.hit });
-                                }
-                                const auto seed = stream.seed_state(), calls = stream.draw_count();
-                                swordFeedbackPending = prologue->begin_damage_area_feedback(unsigned(selected), presentation, 0,
-                                    [&, selected, a = std::move(a), victims = std::move(victims), inventory = std::move(drainInventory), indices, seed, calls, pendingMpGrowth]() mutable
+                                    summonAdapter = [&](const auto& caster, unsigned slot, auto& stagedRandom)
                                     {
-                                        smokeDriver.state.skillInputMpGrowth += pendingMpGrowth;
-                                        a.animation_action = 0;
-                                        prologue->events.units.at(size_t(selected)) = std::move(a);
-                                        for (size_t n = 0; n < indices.size(); ++n)
+                                        if (skillGrowthSummon)
                                         {
-                                            prologue->events.units.at(indices[n]) = std::move(victims[n]);
-                                            const auto& unit = prologue->events.units.at(indices[n]);
-                                            if (unit.status_flags & 0x20) { prologue->events.release_summon_slot(unit); }
+                                            skillGrowthSummon->resume(summonedSave, summonedEvents, summonedIndex, stagedRandom);
+                                            return true;
                                         }
-                                        rawSave->groups[0].inventory = std::move(inventory);
-                                        prologue->events.rebuild_army_modes(0);
-                                        prologue->battle().set_hostile_resources(prologue->events);
+                                        if (!prologue->events.army_status) { return false; }
+                                        const unsigned army = caster.hostile() ? 1 : 0;
+                                        const auto& slots = (*prologue->events.army_status)[army];
+                                        const unsigned appearance = slots[slot * 3 + 1] | unsigned(slots[slot * 3 + 2]) << 8;
+                                        const auto destination = prologue->battle().spell_summon_destination(caster, appearance, prologue->events.units);
+                                        if (!destination) { return false; }
+                                        auto before = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                        if (!before)
+                                        {
+                                            s2ne::report_error(before.error());
+                                            return false;
+                                        }
+                                        s2ne::OriginalInitialization initialization(root);
+                                        s2ne::OriginalPromotion promotion(root);
+                                        s2ne::OriginalRandom growth({ stagedRandom.seed_state(), stagedRandom.draw_count() });
+                                        unsigned control = caster.behavior == 0 ? 0 : 1;
+                                        if (caster.action_status_runtime) { control = unsigned(caster.action_status_runtime->at(8)) | unsigned(caster.action_status_runtime->at(9)) << 8; }
+                                        // MOV [caster+128h],SAR16 reads signed WORD12Ah (SP), not ST128h.
+                                        auto created = initialization.try_summon_role(before.value(), prologue->events, army, slot, s2ne::OriginalSkills::summon_level(caster), destination->x, destination->y, control ? 1 : 0, growth, promotion, [seconds]
+                                            {
+                                                return seconds;
+                                            });
+                                        if (!created)
+                                        {
+                                            s2ne::report_error(created.error());
+                                            return false;
+                                        }
+                                        auto restored = s2ne::OriginalSaveBridge::try_restore(root, created.value());
+                                        if (!restored)
+                                        {
+                                            s2ne::report_error(restored.error());
+                                            return false;
+                                        }
+                                        auto& units = restored.value().events.units;
+                                        auto found = std::find_if(units.begin(), units.end(), [&](const auto& unit)
+                                            {
+                                                return unit.hostile() == caster.hostile() && unit.appearance == appearance && (unit.status_flags & 0x10);
+                                            });
+                                        if (found == units.end()) { return false; }
+                                        summonedIndex = unsigned(found - units.begin());
+                                        summonedSave = std::move(created).value();
+                                        summonedEvents = std::move(restored).value().events;
+                                        stagedRandom.restore_stream(growth.state().seed, growth.state().calls);
+                                        skillGrowthSummon = s2ne::OriginalSpellSummonCandidate{ *summonedSave, *summonedEvents, summonedIndex, growth.state().seed, growth.state().calls };
+                                        return true;
+                                    };
+                                }
+                                auto packet = menu.execute_pipeline(a, victims, center, &prologue->events, &promotionTransaction, stream, context, award, partner ? &*partner : nullptr,
+                                    &drain.value(), &drainInventory, summonAdapter);
+                                if (!packet)
+                                {
+                                    s2ne::report_error(packet.error());
+                                    return false;
+                                }
+                                result = packet.value();
+                                if (handler == s2ne::OriginalSkills::Handler::summon465E04)
+                                {
+                                    if (!summonedSave || !summonedEvents) { return false; }
+                                    const auto seed = stream.seed_state(), calls = stream.draw_count();
+                                    auto staged = prologue->events;
+                                    staged.units = std::move(summonedEvents->units);
+                                    staged.army_status = summonedEvents->army_status;
+                                    auto caster = std::find_if(staged.units.begin(), staged.units.end(), [&](const auto& unit)
+                                        {
+                                            return unit.id == a.id && unit.appearance == a.appearance && unit.hostile() == a.hostile();
+                                        });
+                                    if (caster == staged.units.end()) { return false; }
+                                    a.animation_action = 0;
+                                    *caster = std::move(a);
+                                    staged.units.at(summonedIndex).action_state = 2;
+                                    if (staged.units.at(summonedIndex).action_status_runtime) { staged.units.at(summonedIndex).action_status_runtime->at(0x2D) = 2; }
+                                    staged.rebuild_army_modes(0);
+                                    auto captured = s2ne::OriginalSaveBridge::try_capture(staged, prologue->battle_turn(), prologue->camera(), &*summonedSave);
+                                    if (!captured)
+                                    {
+                                        s2ne::report_error(captured.error());
+                                        return false;
+                                    }
+                                    auto presentationRoster = staged.units;
+                                    presentationRoster.at(summonedIndex).action_state = 0;
+                                    presentationRoster.at(summonedIndex).status_flags |= 8;
+                                    if (options.skillInputSmoke && options.skillControl == "summonfail") { presentationRoster.at(summonedIndex).animation_action = 8; }
+                                    auto started = prologue->begin_spell_summon(std::move(presentationRoster), summonedIndex,
+                                        [&, staged = std::move(staged), saved = std::move(captured).value(), seed, calls, pendingMpGrowth]() mutable
+                                        {
+                                            prologue->events = std::move(staged);
+                                            *rawSave = std::move(saved);
+                                            smokeDriver.state.skillInputMpGrowth += pendingMpGrowth;
+                                            prologue->battle().set_hostile_resources(prologue->events);
+                                            prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
+                                                {
+                                                    live.restore_stream(seed, calls);
+                                                    return true;
+                                                });
+                                            publishItemSpell();
+                                            prologue->battle().commit_external_action();
+                                            skillCastVerified = true;
+                                            std::cout << "Original465E04 summon roster/payment published once\n";
+                                        });
+                                    if (!started)
+                                    {
+                                        s2ne::report_error(started.error());
+                                        return false;
+                                    }
+                                    swordFeedbackPending = true;
+                                    return false;
+                                }
+                                if (handler == s2ne::OriginalSkills::Handler::transfer4665D8)
+                                {
+                                    if (!transferSource || !transferDestination || indices.size() != 1 || indices[0] != *transferSource) { return false; }
+                                    const auto destinations = prologue->battle().spell_transfer_destinations(prologue->events.units.at(size_t(selected)), prologue->events.units.at(*transferSource), prologue->events.units);
+                                    if (std::find(destinations.begin(), destinations.end(), *transferDestination) == destinations.end()) { return false; }
+                                    victims[0].x = transferDestination->x;
+                                    victims[0].y = transferDestination->y;
+                                    const auto seed = stream.seed_state(), calls = stream.draw_count();
+                                    const auto destination = *transferDestination;
+                                    const auto source = *transferSource;
+                                    if (!prologue->begin_spell_transfer(unsigned(source), destination,
+                                            [&, selected, a = std::move(a), victims = std::move(victims), source, seed, calls, pendingMpGrowth]() mutable
+                                            {
+                                                smokeDriver.state.skillInputMpGrowth += pendingMpGrowth;
+                                                a.animation_action = 0;
+                                                if (source == size_t(selected))
+                                                {
+                                                    a.x = victims[0].x;
+                                                    a.y = victims[0].y;
+                                                    victims[0] = a;
+                                                }
+                                                prologue->events.units.at(size_t(selected)) = std::move(a);
+                                                prologue->events.units.at(source) = std::move(victims[0]);
+                                                prologue->events.rebuild_army_modes(0);
+                                                prologue->battle().set_hostile_resources(prologue->events);
+                                                prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
+                                                    {
+                                                        live.restore_stream(seed, calls);
+                                                        return true;
+                                                    });
+                                                publishItemSpell();
+                                                prologue->battle().commit_external_action();
+                                                skillCastVerified = true;
+                                                *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                                std::cout << "Original45DB10 transfer arrival published once\n";
+                                            }))
+                                    {
+                                        return false;
+                                    }
+                                    swordFeedbackPending = true;
+                                    return false;
+                                }
+                                if (handler == s2ne::OriginalSkills::Handler::drain467625 || handler == s2ne::OriginalSkills::Handler::fissure467625)
+                                {
+                                    if (options.skillInputSmoke && options.skillControl == "drainfail" && !indices.empty())
+                                    {
+                                        auto invalid = prologue->events.units;
+                                        invalid.at(indices.back()).animation_action = 8;
+                                        s2ne::OriginalMap probe(root);
+                                        probe.load(prologue->events.map_id);
+                                        const auto camera = prologue->camera();
+                                        probe.camera_x = camera.first;
+                                        probe.camera_y = camera.second;
+                                        auto image = probe.draw();
+                                        auto prepared = probe.try_draw_units(image, invalid, prologue->battle_turn());
+                                        if (prepared) { s2ne::fatal("Drain late renderer fixture unexpectedly valid"); }
+                                        s2ne::report_error(prepared.error());
+                                        return false;
+                                    }
+                                    auto presentation = std::make_shared<std::vector<s2ne::Prologue::DamagePresentation>>();
+                                    for (size_t n = 0; n < indices.size(); ++n)
+                                    {
+                                        const auto& outcome = result.drain_targets.at(n);
+                                        std::cout << "Original467625 staged damage=" << outcome.damage << " revived=" << outcome.revived << " reverse=" << outcome.reverse << " item=" << outcome.consumed_item << '\n';
+                                        presentation->push_back({ unsigned(indices[n]), prologue->events.units[indices[n]].hp, outcome.damage,
+                                            outcome.healing, outcome.snapshot, outcome.killed, outcome.revived, outcome.reverse, victims[n],
+                                            skillMenu->selected().effect(), outcome.caster_before, a.max_hp, outcome.reversed_damage, outcome.hit,
+                                            handler == s2ne::OriginalSkills::Handler::fissure467625 && outcome.hit });
+                                    }
+                                    const auto seed = stream.seed_state(), calls = stream.draw_count();
+                                    swordFeedbackPending = prologue->begin_damage_area_feedback(unsigned(selected), presentation, 0,
+                                        [&, selected, a = std::move(a), victims = std::move(victims), inventory = std::move(drainInventory), indices, seed, calls, pendingMpGrowth]() mutable
+                                        {
+                                            smokeDriver.state.skillInputMpGrowth += pendingMpGrowth;
+                                            a.animation_action = 0;
+                                            prologue->events.units.at(size_t(selected)) = std::move(a);
+                                            for (size_t n = 0; n < indices.size(); ++n)
+                                            {
+                                                prologue->events.units.at(indices[n]) = std::move(victims[n]);
+                                                const auto& unit = prologue->events.units.at(indices[n]);
+                                                if (unit.status_flags & 0x20) { prologue->events.release_summon_slot(unit); }
+                                            }
+                                            rawSave->groups[prologue->events.units.at(size_t(selected)).hostile() ? 1 : 0].inventory = std::move(inventory);
+                                            prologue->events.rebuild_army_modes(0);
+                                            prologue->battle().set_hostile_resources(prologue->events);
+                                            prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
+                                                {
+                                                    live.restore_stream(seed, calls);
+                                                    return true;
+                                                });
+                                            publishItemSpell();
+                                            prologue->battle().commit_external_action();
+                                            skillCastVerified = true;
+                                            *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                            std::cout << "Original467625 drain feedback/payment/reward published once\n";
+                                        });
+                                    if (!swordFeedbackPending) { s2ne::fatal("467625 drain feedback staging rejected"); }
+                                    return false;
+                                }
+                                const bool revealArmy = result.reveal_army;
+                                if (skillMenu->spirit45_supported() && result.hit)
+                                {
+                                    const auto& viewed = prologue->events.units.at(target);
+                                    const auto camera = prologue->camera();
+                                    s2ne::OriginalMenu sightFont(root);
+                                    auto panelTarget = viewed;
+                                    if (options.skillInputSmoke && options.skillControl == "panelfail") { panelTarget.appearance = 0; }
+                                    auto background = prologue->prepare_spirit_sight_background();
+                                    if (!background)
+                                    {
+                                        s2ne::report_error(background.error());
+                                        return false;
+                                    }
+                                    auto indices = std::move(background.value().second);
+                                    auto panel = s2ne::OriginalSpiritSight(root).draw(std::move(background.value().first), sightFont, prologue->events, panelTarget,
+                                        viewed.x * 64 + (viewed.y & 1) * 32 - camera.first, &indices);
+                                    if (!panel)
+                                    {
+                                        s2ne::report_error(panel.error());
+                                        return false;
+                                    }
+                                    spiritSightImage = std::move(panel).value();
+                                    spiritSightIndices = std::move(indices);
+                                    prologue->spirit_sight_pending = true;
+                                    smokeDriver.state.spiritSightActive = true;
+                                    const auto seed = stream.seed_state(), calls = stream.draw_count();
+                                    spiritSightCommit = [&, selected, a = std::move(a), seed, calls, pendingMpGrowth]() mutable
+                                    {
+                                        prologue->events.units.at(size_t(selected)) = std::move(a);
+                                        smokeDriver.state.skillInputMpGrowth += pendingMpGrowth;
                                         prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
                                             {
                                                 live.restore_stream(seed, calls);
                                                 return true;
                                             });
+                                        publishItemSpell();
                                         prologue->battle().commit_external_action();
                                         skillCastVerified = true;
                                         *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-                                        std::cout << "Original467625 drain feedback/payment/reward published once\n";
-                                    });
-                                if (!swordFeedbackPending) { s2ne::fatal("467625 drain feedback staging rejected"); }
-                                return false;
-                            }
-                            const bool revealArmy = result.reveal_army;
-                            if (skillMenu->spirit45_supported() && result.hit)
-                            {
-                                const auto& viewed = prologue->events.units.at(target);
-                                const auto camera = prologue->camera();
-                                s2ne::OriginalMenu sightFont(root);
-                                auto panelTarget = viewed;
-                                if (options.skillInputSmoke && options.skillControl == "panelfail") { panelTarget.appearance = 0; }
-                                auto background = prologue->prepare_spirit_sight_background();
-                                if (!background)
-                                {
-                                    s2ne::report_error(background.error());
+                                    };
+                                    swordFeedbackPending = true;
+                                    showPrologue();
                                     return false;
                                 }
-                                auto indices = std::move(background.value().second);
-                                auto panel = s2ne::OriginalSpiritSight(root).draw(std::move(background.value().first), sightFont, prologue->events, panelTarget,
-                                    viewed.x * 64 + (viewed.y & 1) * 32 - camera.first, &indices);
-                                if (!panel)
+                                std::optional<s2ne::OriginalMap> preparedInvisibility;
+                                if (revealArmy)
                                 {
-                                    s2ne::report_error(panel.error());
-                                    return false;
-                                }
-                                spiritSightImage = std::move(panel).value();
-                                spiritSightIndices = std::move(indices);
-                                prologue->spirit_sight_pending = true;
-                                smokeDriver.state.spiritSightActive = true;
-                                const auto seed = stream.seed_state(), calls = stream.draw_count();
-                                spiritSightCommit = [&, selected, a = std::move(a), seed, calls, pendingMpGrowth]() mutable
-                                {
-                                    prologue->events.units.at(size_t(selected)) = std::move(a);
-                                    smokeDriver.state.skillInputMpGrowth += pendingMpGrowth;
-                                    prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
-                                        {
-                                            live.restore_stream(seed, calls);
-                                            return true;
-                                        });
-                                    prologue->battle().commit_external_action();
-                                    skillCastVerified = true;
-                                    *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-                                };
-                                swordFeedbackPending = true;
-                                showPrologue();
-                                return false;
-                            }
-                            std::optional<s2ne::OriginalMap> preparedInvisibility;
-                            if (revealArmy)
-                            {
-                                auto prepared = prologue->prepare_army_reveal_world(a.hostile(), options.skillInputSmoke && options.skillControl == "scratchfail");
-                                if (!prepared)
-                                {
-                                    s2ne::report_error(prepared.error());
-                                    return false;
-                                }
-                                preparedInvisibility = std::move(prepared).value();
-                            }
-                            if (skillMenu->invisibility47_supported())
-                            {
-                                auto staged = prologue->events.units;
-                                for (size_t n = 0; n < indices.size(); ++n) { staged[indices[n]] = victims[n]; }
-                                if (options.skillInputSmoke && options.skillControl == "scratchfail" && !indices.empty()) { staged[indices.back()].animation_action = 8; }
-                                auto prepared = prologue->prepare_invisibility_scratch(staged, indices);
-                                if (!prepared)
-                                {
-                                    s2ne::report_error(prepared.error());
-                                    return false;
-                                }
-                                preparedInvisibility = std::move(prepared).value();
-                            }
-                            std::cout << "AREA production skill=" << skillMenu->selected().id << " center=" << center.x << "," << center.y << " targets=" << indices.size() << " stagedRNG=" << stream.draw_count() - rng.draw_count() << " unpublished=1\n";
-                            for (size_t n = 0; n < indices.size(); ++n) { std::cout << "AREA target=" << victims[n].id << " xy=" << victims[n].x << "," << victims[n].y << " feedback=" << int(result.target_hits[n]) << " status3e=" << unsigned(victims[n].status3e) << " status3f=" << unsigned(victims[n].status3f) << '\n'; }
-                            std::vector<std::pair<size_t, bool>> feedback;
-                            for (size_t i = 0; i < indices.size(); ++i) { feedback.emplace_back(indices[i], result.target_hits[i]); }
-                            if (revealArmy && feedback.empty()) { feedback.emplace_back(size_t(selected), false); }
-                            auto seed = stream.seed_state(), calls = stream.draw_count();
-                            swordFeedbackPending = prologue->battle().begin_status_area_feedback(size_t(selected), std::move(feedback), prologue->events.units, [&, selected, a = std::move(a), victims = std::move(victims), indices, seed, calls, pendingMpGrowth, partnerIndex, partner = std::move(partner), preparedInvisibility = std::move(preparedInvisibility), revealArmy]() mutable
-                                {
-                                    smokeDriver.state.skillInputMpGrowth += pendingMpGrowth;
-                                    prologue->events.units.at(size_t(selected)) = std::move(a);
-                                    if (partnerIndex && partner) { prologue->events.units.at(*partnerIndex) = std::move(*partner); }
-                                    for (size_t i = 0; i < indices.size(); ++i) { prologue->events.units.at(indices[i]) = std::move(victims[i]); }
-                                    prologue->events.rebuild_army_modes(0);
-                                    prologue->battle().set_hostile_resources(prologue->events);
-                                    if (preparedInvisibility) { prologue->commit_invisibility_scratch(std::move(*preparedInvisibility)); }
-                                    if (revealArmy)
+                                    auto prepared = prologue->prepare_army_reveal_world(a.hostile(), options.skillInputSmoke && options.skillControl == "scratchfail");
+                                    if (!prepared)
                                     {
-                                        if (!prologue->events.army_modes) { prologue->events.army_modes = std::array<uint32_t, 2>{}; }
-                                        (*prologue->events.army_modes)[prologue->events.units.at(size_t(selected)).hostile() ? 1 : 0] |= 1;
-                                        prologue->battle().set_hostile_resources(prologue->events);
+                                        s2ne::report_error(prepared.error());
+                                        return false;
                                     }
-                                    prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
+                                    preparedInvisibility = std::move(prepared).value();
+                                }
+                                if (skillMenu->invisibility47_supported())
+                                {
+                                    auto staged = prologue->events.units;
+                                    for (size_t n = 0; n < indices.size(); ++n) { staged[indices[n]] = victims[n]; }
+                                    if (options.skillInputSmoke && options.skillControl == "scratchfail" && !indices.empty()) { staged[indices.back()].animation_action = 8; }
+                                    auto prepared = prologue->prepare_invisibility_scratch(staged, indices);
+                                    if (!prepared)
+                                    {
+                                        s2ne::report_error(prepared.error());
+                                        return false;
+                                    }
+                                    preparedInvisibility = std::move(prepared).value();
+                                }
+                                std::cout << "AREA production skill=" << skillMenu->selected().id << " center=" << center.x << "," << center.y << " targets=" << indices.size() << " stagedRNG=" << stream.draw_count() - rng.draw_count() << " unpublished=1\n";
+                                for (size_t n = 0; n < indices.size(); ++n) { std::cout << "AREA target=" << victims[n].id << " xy=" << victims[n].x << "," << victims[n].y << " feedback=" << int(result.target_hits[n]) << " status3e=" << unsigned(victims[n].status3e) << " status3f=" << unsigned(victims[n].status3f) << '\n'; }
+                                std::vector<std::pair<size_t, bool>> feedback;
+                                for (size_t i = 0; i < indices.size(); ++i) { feedback.emplace_back(indices[i], result.target_hits[i]); }
+                                if (revealArmy && feedback.empty()) { feedback.emplace_back(size_t(selected), false); }
+                                auto seed = stream.seed_state(), calls = stream.draw_count();
+                                swordFeedbackPending = prologue->battle().begin_status_area_feedback(size_t(selected), std::move(feedback), prologue->events.units, [&, selected, a = std::move(a), victims = std::move(victims), indices, seed, calls, pendingMpGrowth, partnerIndex, partner = std::move(partner), preparedInvisibility = std::move(preparedInvisibility), revealArmy]() mutable
+                                    {
+                                        smokeDriver.state.skillInputMpGrowth += pendingMpGrowth;
+                                        prologue->events.units.at(size_t(selected)) = std::move(a);
+                                        if (partnerIndex && partner) { prologue->events.units.at(*partnerIndex) = std::move(*partner); }
+                                        for (size_t i = 0; i < indices.size(); ++i) { prologue->events.units.at(indices[i]) = std::move(victims[i]); }
+                                        prologue->events.rebuild_army_modes(0);
+                                        prologue->battle().set_hostile_resources(prologue->events);
+                                        if (preparedInvisibility) { prologue->commit_invisibility_scratch(std::move(*preparedInvisibility)); }
+                                        if (revealArmy)
                                         {
-                                            live.restore_stream(seed, calls);
-                                            return true;
-                                        });
-                                    prologue->battle().commit_external_action();
-                                    skillCastVerified = true;
-                                    *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-                                    std::cout << "Original area feedback complete; all statuses/timers/payment/reward/RNG published once targets=" << indices.size() << '\n';
-                                },
-                                healing || status || revealArmy, result.target_amounts, healing);
-                            return false;
-                        });
+                                            if (!prologue->events.army_modes) { prologue->events.army_modes = std::array<uint32_t, 2>{}; }
+                                            (*prologue->events.army_modes)[prologue->events.units.at(size_t(selected)).hostile() ? 1 : 0] |= 1;
+                                            prologue->battle().set_hostile_resources(prologue->events);
+                                        }
+                                        prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
+                                            {
+                                                live.restore_stream(seed, calls);
+                                                return true;
+                                            });
+                                        publishItemSpell();
+                                        prologue->battle().commit_external_action();
+                                        skillCastVerified = true;
+                                        *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                        std::cout << "Original area feedback complete; all statuses/timers/payment/reward/RNG published once targets=" << indices.size() << '\n';
+                                    },
+                                    healing || status || revealArmy, result.target_amounts, healing);
+                                return false;
+                            });
+                    } catch (SkillGrowthPause& pause)
+                    {
+                        growthSuspended = true;
+                        if (!prologue->begin_reward_growth(std::move(pause.pending), pause.seconds, [&, target](bool commit)
+                                {
+                                    if (!commit)
+                                    {
+                                        skillGrowthAwards.clear();
+                                        skillGrowthSeconds.reset();
+                                        skillGrowthSummon.reset();
+                                        pendingSkillTarget.reset();
+                                        if (aiSkillActive) { prologue->battle().fail_ai_skill(); }
+                                        skillMenu.reset();
+                                        return;
+                                    }
+                                    const auto& completed = prologue->reward_growth();
+                                    skillGrowthAwards.push_back({ completed.unit(), completed.random().state() });
+                                    pendingSkillTarget = target;
+                                    pendingSkillVisualStarted = true;
+                                }))
+                        {
+                            s2ne::fatal("Reward growth continuation already active");
+                        }
+                    }
+                    if (growthSuspended)
+                    {
+                        showPrologue();
+                        continue;
+                    }
+                    skillGrowthAwards.clear();
+                    skillGrowthSeconds.reset();
+                    skillGrowthSummon.reset();
                     std::cout << "Original skill" << skillMenu->selected().id << " target=" << prologue->events.units.at(target).id << " applied=" << applied << " hit=" << result.hit << " immune=" << result.immune << " chance=" << result.chance << " roll=" << result.roll << " removed=" << result.removed << " failure=" << int(result.failure) << '\n';
                     if (applied)
                     {
                         smokeDriver.state.skillInputMpGrowth += pendingMpGrowth;
+                        publishItemSpell();
                         prologue->battle().commit_external_action();
                         skillCastVerified = true;
                         auto snapshot = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
@@ -1835,6 +2416,16 @@ int s2ne::run_application(int argc, char** argv)
                             std::cout << "SDL hostile32 normal input cast save/reload verified checkpoint=" << path.string() << " (not ending)\n";
                         }
                         *rawSave = std::move(snapshot);
+                    }
+                    if (aiSkillActive && !applied && !swordFeedbackPending)
+                    {
+                        s2ne::report_error(s2ne::make_error("AI cast transaction rejected; controller remains locked"));
+                        prologue->battle().fail_ai_skill();
+                    }
+                    if (itemSpellSource && !applied && !swordFeedbackPending && !prologue->skill_visual_active())
+                    {
+                        itemSpellSource.reset();
+                        if (battleItems) { battleItems->return_from_target(*rawSave); }
                     }
                     skillMenu.reset();
                     sleepCenter.reset();
@@ -1878,8 +2469,35 @@ int s2ne::run_application(int argc, char** argv)
                 continue;
             }
             SDL_Event event;
-            while (SDL_PollEvent(&event))
+            std::deque<SDL_Event> orderedEvents;
+            if (stdio)
             {
+                std::vector<SDL_Event> ordinary;
+                while (SDL_PollEvent(&event)) { ordinary.push_back(event); }
+                orderedEvents = s2ne::stdio_event_order(stdioInputEvents, ordinary);
+                stdioInputEvents.clear();
+            }
+            auto nextEvent = [&]()
+            {
+                if (!stdio) { return SDL_PollEvent(&event); }
+                if (orderedEvents.empty()) { return false; }
+                event = orderedEvents.front();
+                orderedEvents.pop_front();
+                return true;
+            };
+            while (nextEvent())
+            {
+                if (stdio && (event.type == SDL_EVENT_QUIT || event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED))
+                {
+                    running = false;
+                    break;
+                }
+                if (prologue && prologue->growth_active() && event.type != SDL_EVENT_QUIT)
+                {
+                    if ((event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat) || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) { prologue->confirm_growth(); }
+                    showPrologue();
+                    continue;
+                }
                 if (spiritSightImage && event.type == SDL_EVENT_KEY_DOWN && (event.key.mod & SDL_KMOD_SHIFT)) { continue; }
                 if (spiritSightImage && event.type == SDL_EVENT_KEY_DOWN && (event.key.mod & SDL_KMOD_ALT) && event.key.key == SDLK_C)
                 {
@@ -1912,6 +2530,12 @@ int s2ne::run_application(int argc, char** argv)
                     startup.mark("first-event");
                     firstEvent = false;
                 }
+                if (prologue && prologue->temporary_text_active())
+                {
+                    if (event.type == SDL_EVENT_QUIT) { running = false; }
+                    else if ((event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE) || (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT)) { prologue->cancel_temporary_text(); }
+                    continue;
+                }
                 if (prologue && prologue->ending_active())
                 {
                     if (event.type == SDL_EVENT_QUIT)
@@ -1938,6 +2562,37 @@ int s2ne::run_application(int argc, char** argv)
                         continue;
                     }
                     running = false;
+                }
+                if (prologue && prologue->item_presentation_) { continue; }
+                if (itemLearningPublish) { continue; }
+                if (deployment)
+                {
+                    if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
+                    {
+                        unsigned code = 0;
+                        switch (event.key.key)
+                        {
+                        case SDLK_ESCAPE: code = 1; break;
+                        case SDLK_LEFT: code = 0x4B; break;
+                        case SDLK_RIGHT: code = 0x4D; break;
+                        case SDLK_UP: code = 0x48; break;
+                        case SDLK_DOWN: code = 0x50; break;
+                        case SDLK_TAB: code = 0x0F; break;
+                        case SDLK_RETURN: code = 0x1C; break;
+                        case SDLK_SPACE: code = 0x39; break;
+                        }
+                        deployment->scan(code);
+                    }
+                    if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+                    {
+                        float x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x;
+                        float y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y;
+                        float rx{}, ry{};
+                        SDL_RenderCoordinatesFromWindow(renderer, x, y, &rx, &ry);
+                        deployment->mouse(int(rx), int(ry), event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT);
+                    }
+                    showPrologue();
+                    continue;
                 }
                 if (innMenu && rawSave)
                 {
@@ -1989,7 +2644,7 @@ int s2ne::run_application(int argc, char** argv)
                     {
                         auto restored = s2ne::OriginalSaveBridge::restore(root, *loaded);
                         prologue->set_resource_domain(s2ne::app_domain_for_save(restored.raw));
-                        prologue->restore_battle(std::move(restored.events), restored.turn);
+                        prologue->restore_battle(std::move(restored.events), restored.turn, true, !restored.raw.battle_context());
                         rawSave = std::move(restored.raw);
                         connectedCampaign = nullptr;
                         autosaveBlocked = false;
@@ -2032,6 +2687,137 @@ int s2ne::run_application(int argc, char** argv)
                             {
                                 return s2ne::OriginalInterbattle::Result::unsupported;
                             });
+                    }
+                    showPrologue();
+                    continue;
+                }
+                if (battleItems && !itemTargetRequest && !itemSpellSource && prologue && rawSave)
+                {
+                    if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
+                    {
+                        unsigned scan = 0;
+                        if (event.key.key == SDLK_ESCAPE) { scan = 1; }
+                        else if (event.key.key == SDLK_RETURN) { scan = 0x1C; }
+                        else if (event.key.key == SDLK_SPACE) { scan = 0x39; }
+                        else if (event.key.key == SDLK_LEFT) { scan = 0x4B; }
+                        else if (event.key.key == SDLK_RIGHT) { scan = 0x4D; }
+                        battleItems->scan(scan, *rawSave);
+                    }
+                    else if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+                    {
+                        SDL_ConvertEventToRenderCoordinates(renderer, &event);
+                        bool down = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
+                        battleItems->mouse(int(down ? event.button.x : event.motion.x), int(down ? event.button.y : event.motion.y),
+                            down && event.button.button == SDL_BUTTON_LEFT, down && event.button.button == SDL_BUTTON_RIGHT, *rawSave);
+                    }
+                    if (battleItems->closed() && !itemTargetRequest && !itemSpellSource) { battleItems.reset(); }
+                    showPrologue();
+                    continue;
+                }
+                if (itemTargetRequest && prologue && rawSave)
+                {
+                    if (itemNoticeMilliseconds)
+                    {
+                        if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+                        {
+                            itemNoticeMilliseconds = 0;
+                            showPrologue();
+                        }
+                        continue;
+                    }
+                    bool cancel = event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE;
+                    if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN || !itemUse.targeted(itemTargetRequest->second))
+                    {
+                        const bool selfUse = !itemUse.targeted(itemTargetRequest->second);
+                        cancel = !selfUse && event.button.button == SDL_BUTTON_RIGHT;
+                        if (selfUse || event.button.button == SDL_BUTTON_LEFT)
+                        {
+                            if (!selfUse) { SDL_ConvertEventToRenderCoordinates(renderer, &event); }
+                            auto [actor, id] = *itemTargetRequest;
+                            auto snapshot = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                            if (!snapshot) { s2ne::report_error(snapshot.error()); }
+                            else
+                            {
+                                const auto camera = prologue->camera();
+                                const auto cell = prologue->battle().pick_surface(event.button.x, event.button.y, camera.first, camera.second);
+                                if (!selfUse && !prologue->battle().skill_area_cell(cell)) { showPrologue(); continue; }
+                                for (size_t target = 0; target < prologue->events.units.size(); ++target)
+                                {
+                                    const auto& unit = prologue->events.units[target];
+                                    if (selfUse ? target != actor : unit.x != cell.x || unit.y != cell.y) { continue; }
+                                    if (!(unit.status_flags & 0x80) || ((unit.status_flags & 0x20) && !(unit.status_flags & 2))) { continue; }
+                                    if (!itemUse.target_allowed(snapshot.value(), actor, target, id))
+                                    {
+                                        itemNoticeMilliseconds = 1;
+                                        break;
+                                    }
+                                    prologue->battle().mutate_combat_random([&](auto& random, uint32_t seconds)
+                                        {
+                                            const auto beforeRandom = random;
+                                            auto next = itemUse.try_prepare(snapshot.value(), actor, id, random, seconds, target);
+                                            if (!next) { s2ne::report_error(next.error()); return false; }
+                                            auto restored = s2ne::OriginalSaveBridge::try_restore(root, next.value());
+                                            if (!restored) { s2ne::report_error(restored.error()); return false; }
+                                            const auto seed = random.seed_state(), calls = random.draw_count();
+                                            const int amount = itemUse.feedback_amount(snapshot.value(), next.value(), target, id, beforeRandom, seconds);
+                                            const int hp = prologue->events.units[target].hp;
+                                            std::vector<std::vector<uint8_t>> learningNotices;
+                                            for (const auto& record : skillRules.newly_learned_records(prologue->events.units[target], restored.value().events.units[target]))
+                                            {
+                                                auto text = prologue->events.units[target].name;
+                                                text.push_back(' ');
+                                                const auto learned = itemNoticeFont.text_bytes(3);
+                                                text.insert(text.end(), learned.begin(), learned.end());
+                                                text.push_back(' ');
+                                                const auto name = record.name();
+                                                text.insert(text.end(), name.begin(), name.end());
+                                                learningNotices.push_back(std::move(text));
+                                            }
+                                            auto publish = [&, saved = std::move(next).value(), events = std::move(restored.value().events), seed, calls, id, target]() mutable
+                                                {
+                                                    using std::swap;
+                                                    swap(*rawSave, saved);
+                                                    swap(prologue->events, events);
+                                                    prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
+                                                        {
+                                                            live.restore_stream(seed, calls);
+                                                            return true;
+                                                        });
+                                                    prologue->battle().commit_external_action();
+                                                    std::cout << "Original45024C item=" << id << " target=" << target << " effect/inventory/RNG published once\n";
+                                                };
+                                            auto afterPose = [&, actor, target, hp, amount, learningNotices = std::move(learningNotices), publish = std::move(publish)]() mutable
+                                            {
+                                                if (!learningNotices.empty())
+                                                {
+                                                    itemLearningNotices = std::move(learningNotices);
+                                                    itemLearningSince = 0;
+                                                    itemLearningPublish = std::move(publish);
+                                                    return;
+                                                }
+                                                if (!amount) { publish(); return; }
+                                                if (!prologue->battle().begin_healing_feedback(actor, target, hp, amount, std::move(publish), false))
+                                                { s2ne::report_error(s2ne::make_error("451201 item number presentation failed; transaction unpublished")); }
+                                            };
+                                            auto presentation = prologue->begin_item_presentation(actor, target, itemUse.targeted(id), std::move(afterPose));
+                                            if (!presentation)
+                                            {
+                                                s2ne::report_error(presentation.error());
+                                                return false;
+                                            }
+                                            itemTargetRequest.reset();
+                                            battleItems.reset();
+                                            return false;
+                                        });
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (cancel)
+                    {
+                        itemTargetRequest.reset();
+                        if (battleItems) { battleItems->return_from_target(*rawSave); }
                     }
                     showPrologue();
                     continue;
@@ -2092,7 +2878,7 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 if (shopMenu && rawSave)
                 {
-                    shopMenu->clock(s2ne::OriginalShopMenu::wall_clock_cs());
+                    shopMenu->clock(options.headlessSpeed ? unsigned(gameTicks() / 10) : s2ne::OriginalShopMenu::wall_clock_cs());
                     if (event.type == SDL_EVENT_MOUSE_BUTTON_UP)
                     {
                         shopMenu->release_scroll();
@@ -2205,11 +2991,24 @@ int s2ne::run_application(int argc, char** argv)
                                 showPrologue();
                                 continue;
                             }
+                            if (skillMenu->page() == s2ne::OriginalSkills::Page::requested && !itemSpellSource)
+                            {
+                                skillMenu->resume();
+                                sleepCenter.reset();
+                                skillTarget.reset();
+                                showPrologue();
+                                continue;
+                            }
                             skillMenu.reset();
                             transferSource.reset();
                             transferDestination.reset();
                             sleepCenter.reset();
                             skillTarget.reset();
+                            if (itemSpellSource && battleItems)
+                            {
+                                itemSpellSource.reset();
+                                battleItems->return_from_target(*rawSave);
+                            }
                             showPrologue();
                             continue;
                         }
@@ -2227,7 +3026,8 @@ int s2ne::run_application(int argc, char** argv)
 
                             if (scan)
                             {
-                                skillMenu->navigate(scan);
+                                skillMenu->navigate(scan, (event.key.mod & SDL_KMOD_SHIFT) != 0);
+                                playEffect(100);
                                 sleepCenter.reset();
                             }
                         }
@@ -2262,24 +3062,42 @@ int s2ne::run_application(int argc, char** argv)
                                 showPrologue();
                                 continue;
                             }
+                            if (skillMenu->page() == s2ne::OriginalSkills::Page::requested && !itemSpellSource)
+                            {
+                                skillMenu->resume();
+                                sleepCenter.reset();
+                                skillTarget.reset();
+                                showPrologue();
+                                continue;
+                            }
                             skillMenu.reset();
                             transferSource.reset();
                             transferDestination.reset();
                             sleepCenter.reset();
                             skillTarget.reset();
+                            if (itemSpellSource && battleItems)
+                            {
+                                itemSpellSource.reset();
+                                battleItems->return_from_target(*rawSave);
+                            }
                             showPrologue();
                             continue;
                         }
                         int x = int(click ? event.button.x : event.motion.x), y = int(click ? event.button.y : event.motion.y);
                         if (skillMenu->page() == s2ne::OriginalSkills::Page::list)
                         {
+                            const auto oldGroup = skillMenu->selected_group();
+                            const auto oldSkill = skillMenu->selected_skill();
                             confirm = skillMenu->mouse(x, y, click && event.button.button == SDL_BUTTON_LEFT);
+                            if (oldGroup != skillMenu->selected_group() || oldSkill != skillMenu->selected_skill() || confirm) { playEffect(100); }
                         }
                         else
                         {
                             auto camera = prologue->camera();
                             auto cell = prologue->battle().pick_surface(float(x), float(y), camera.first, camera.second);
                             int target = prologue->battle().occupant(prologue->events.units, cell);
+                            skillTarget.reset();
+                            sleepCenter.reset();
                             if (skillMenu->transfer51_supported() && transferSource)
                             {
                                 const auto destinations = prologue->battle().spell_transfer_destinations(prologue->events.units.at(size_t(selected)), prologue->events.units.at(*transferSource), prologue->events.units);
@@ -2297,10 +3115,11 @@ int s2ne::run_application(int argc, char** argv)
                                 center.y = cell.y;
                                 if (skillMenu->sleep2_center_in_range(prologue->events.units.at(size_t(selected)), center))
                                 {
+                                    sleepCenter = cell;
                                     for (size_t i = 0; i < prologue->events.units.size(); ++i)
                                     {
                                         const auto& u = prologue->events.units[i];
-                                        if (skillMenu->status_area_target(center, u) && u.present(prologue->battle_turn()) && skillMenu->sleep2_area(center, u) && prologue->battle().skill_area_cell({ u.x, u.y }) && prologue->battle().target_visible(u, std::span(&center, 1), 0))
+                                        if (skillMenu->status_area_target(prologue->events.units.at(size_t(selected)), u) && u.present(prologue->battle_turn()) && skillMenu->sleep2_area(center, u) && prologue->battle().skill_area_cell({ u.x, u.y }) && prologue->battle().target_visible(u, std::span(&center, 1), 0))
                                         {
                                             sleepCenter = cell;
                                             skillTarget = i;
@@ -2620,10 +3439,12 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         else if (event.key.key == SDLK_LEFT || event.key.key == SDLK_RIGHT || event.key.key == SDLK_TAB)
                         {
+                            if (event.key.key == SDLK_TAB) { playEffect(100); }
                             exitConfirmation->toggle();
                         }
                         else if (event.key.key == SDLK_RETURN || event.key.key == SDLK_SPACE)
                         {
+                            if (event.key.key == SDLK_SPACE) { playEffect(100); }
                             exitConfirmation->confirm();
                         }
                     }
@@ -2668,6 +3489,8 @@ int s2ne::run_application(int argc, char** argv)
                         case SDLK_DOWN: input.scan = 0x50; break;
                         case SDLK_LEFT: input.scan = 0x4b; break;
                         case SDLK_RIGHT: input.scan = 0x4d; break;
+                        case SDLK_PAGEUP: input.scan = 0x49; break;
+                        case SDLK_PAGEDOWN: input.scan = 0x51; break;
                         case SDLK_RETURN: input.scan = 0x1c; break;
                         case SDLK_SPACE: input.scan = 0x39; break;
                         }
@@ -2703,7 +3526,7 @@ int s2ne::run_application(int argc, char** argv)
                     auto result = saveMenu->event(input);
                     if (result.action == s2ne::OriginalSaveMenu::Action::load)
                     {
-                        auto loadResult = s2ne::OriginalSave::try_load(s2ne::OriginalSave::slot_path(root, result.slot), saveItems);
+                        auto loadResult = s2ne::OriginalSave::try_load(s2ne::OriginalSave::slot_path(isolatedSaveRoot ? *isolatedSaveRoot : root, result.slot), saveItems);
                         if (loadResult)
                         {
                             auto state = std::move(loadResult).value();
@@ -2731,7 +3554,14 @@ int s2ne::run_application(int argc, char** argv)
                                 continue;
                             }
                             loaded->set_resource_domain(domain.value());
-                            loaded->restore_battle(std::move(restored.events), restored.turn);
+                            auto stoppedMusic = audio.stop_music();
+                            if (!stoppedMusic)
+                            {
+                                s2ne::report_error(stoppedMusic.error());
+                                saveMenu->complete(false);
+                                continue;
+                            }
+                            loaded->restore_battle(std::move(restored.events), restored.turn, true, !restored.raw.battle_context());
                             loaded->set_small_font(settingsState.small_font != 0);
                             prologue = std::move(loaded);
                             rawSave = std::move(restored.raw);
@@ -2853,6 +3683,8 @@ int s2ne::run_application(int argc, char** argv)
                     promotionMenu->event(input);
                     if (promotionMenu->page() == s2ne::OriginalPromotion::Page::closed)
                     {
+                        auto stopped = stopEffects();
+                        if (!stopped) { s2ne::report_error(stopped.error()); }
                         promotionMenu.reset();
                     }
                     showPrologue();
@@ -2871,6 +3703,8 @@ int s2ne::run_application(int argc, char** argv)
                         case SDLK_DOWN: input.scan = 0x50; break;
                         case SDLK_LEFT: input.scan = 0x4b; break;
                         case SDLK_RIGHT: input.scan = 0x4d; break;
+                        case SDLK_PAGEUP: input.scan = 0x49; break;
+                        case SDLK_PAGEDOWN: input.scan = 0x51; break;
                         case SDLK_RETURN: input.scan = 0x1c; break;
                         case SDLK_SPACE: input.scan = 0x39; break;
                         }
@@ -2912,12 +3746,14 @@ int s2ne::run_application(int argc, char** argv)
                             {
                                 overwriteConfirmation->cancel();
                             }
-                            else if (input.scan == 0x4b || input.scan == 0x4d)
+                            else if (input.scan == 0x4b || input.scan == 0x4d || input.scan == 0x0f)
                             {
+                                if (input.scan == 0x0f) { playEffect(100); }
                                 overwriteConfirmation->toggle();
                             }
                             else if (input.scan == 0x1c || input.scan == 0x39)
                             {
+                                if (input.scan == 0x39) { playEffect(100); }
                                 overwriteConfirmation->confirm();
                             }
                             else if (input.type == 8 || input.type == 0x20)
@@ -2937,6 +3773,8 @@ int s2ne::run_application(int argc, char** argv)
                         if (result.action == s2ne::OriginalSaveMenu::Action::confirm_overwrite)
                         {
                             overwriteConfirmation.emplace(root, menu, 253, 176, 76 + 30 * saveMenu->row(), true);
+                            auto stopped = stopEffects();
+                            if (!stopped) { s2ne::report_error(stopped.error()); }
                         }
                         if (result.action == s2ne::OriginalSaveMenu::Action::load || result.action == s2ne::OriginalSaveMenu::Action::save)
                         {
@@ -2946,7 +3784,7 @@ int s2ne::run_application(int argc, char** argv)
                                 {
                                     return s2ne::Result<bool>::failure(s2ne::make_error("Original synchronous settlement in progress"));
                                 }
-                                auto path = s2ne::OriginalSave::slot_path(root, result.slot);
+                                auto path = s2ne::OriginalSave::slot_path(isolatedSaveRoot ? *isolatedSaveRoot : root, result.slot);
                                 if (result.action == s2ne::OriginalSaveMenu::Action::load)
                                 {
                                     auto loaded = s2ne::OriginalSave::try_load(path, saveItems);
@@ -2962,7 +3800,7 @@ int s2ne::run_application(int argc, char** argv)
                                     }
                                     auto restored = std::move(restoreResult).value();
                                     prologue->set_resource_domain(s2ne::app_domain_for_save(restored.raw));
-                                    prologue->restore_battle(std::move(restored.events), restored.turn);
+                                    prologue->restore_battle(std::move(restored.events), restored.turn, true, !restored.raw.battle_context());
                                     rawSave = std::move(restored.raw);
                                     connectedCampaign = nullptr;
                                     autosaveBlocked = false;
@@ -3014,7 +3852,16 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     else
                     {
+                        const auto oldPage = battleMenu->page();
+                        const auto oldSelection = battleMenu->selected();
                         battleMenu->event(input);
+                        if ((oldPage == s2ne::OriginalBattleMenu::Page::root || oldPage == s2ne::OriginalBattleMenu::Page::overview || oldPage == s2ne::OriginalBattleMenu::Page::system) && battleMenu->page() == oldPage && battleMenu->selected() != oldSelection) { playEffect(100); }
+                        if (oldPage != s2ne::OriginalBattleMenu::Page::confirmation && battleMenu->page() == s2ne::OriginalBattleMenu::Page::confirmation)
+                        {
+                            auto stopped = stopEffects();
+                            if (!stopped) { s2ne::report_error(stopped.error()); }
+                        }
+                        if (oldPage == s2ne::OriginalBattleMenu::Page::confirmation && input.type == 1 && (input.scan == 0x39 || input.scan == 0x0f)) { playEffect(100); }
                     }
                     auto request = battleMenu->request();
                     if (!battleReports && (request.action == s2ne::OriginalBattleMenu::Action::conditions || request.action == s2ne::OriginalBattleMenu::Action::inspect_characters || request.action == s2ne::OriginalBattleMenu::Action::inspect_map))
@@ -3041,7 +3888,7 @@ int s2ne::run_application(int argc, char** argv)
                         overview.load(prologue->events.map_id);
                         battleReports.emplace(root, page, prologue->events, std::move(entries), prologue->draw(menu), &overview, settingsState.small_font != 0);
                     }
-                    if (!saveMenu && (request.action == s2ne::OriginalBattleMenu::Action::load || request.action == s2ne::OriginalBattleMenu::Action::save)) { saveMenu.emplace(root, request.action == s2ne::OriginalBattleMenu::Action::save ? 1 : 0, s2ne::OriginalSaveMenu::scan(root)); }
+                    if (!saveMenu && (request.action == s2ne::OriginalBattleMenu::Action::load || request.action == s2ne::OriginalBattleMenu::Action::save)) { saveMenu.emplace(root, request.action == s2ne::OriginalBattleMenu::Action::save ? 1 : 0, s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root)); }
                     if (auto code = battleMenu->return_code())
                     {
                         settingsState = battleMenu->settings_state();
@@ -3073,7 +3920,9 @@ int s2ne::run_application(int argc, char** argv)
                         float y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y;
                         if (prologue->in_battle() && event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT && prologue->battle_state() == s2ne::Battle::State::idle)
                         {
-                            auto slots = s2ne::OriginalSaveMenu::scan(root);
+                            auto stopped = stopEffects();    // 原431DE8入口停止效果音，并非所有模态窗口都停止。
+                            if (!stopped) { s2ne::report_error(stopped.error()); }
+                            auto slots = s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root);
                             s2ne::OriginalBattleMenu::Context context;
                             context.saves_present = std::any_of(slots.begin(), slots.end(), [](const auto& slot)
                                 {
@@ -3091,7 +3940,9 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (prologue->choosing() || prologue->in_battle())
                         {
+                            const bool selecting = prologue->in_battle() && prologue->battle_state() == s2ne::Battle::State::idle;
                             prologue->mouse(x, y, click);
+                            if (selecting && click && prologue->battle_state() == s2ne::Battle::State::command) { playEffect(126); }
                         }
                         else if (click)
                         {
@@ -3220,7 +4071,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (menu.selected == 1)
                         {
-                            saveMenu.emplace(root, 0, s2ne::OriginalSaveMenu::scan(root));
+                            saveMenu.emplace(root, 0, s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root));
                             continue;
                         }
                         if (menu.selected == 4)
@@ -3288,7 +4139,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (menu.selected == 1)
                         {
-                            saveMenu.emplace(root, 0, s2ne::OriginalSaveMenu::scan(root));
+                            saveMenu.emplace(root, 0, s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root));
                             continue;
                         }
                         if (menu.selected == 4)
@@ -3311,12 +4162,21 @@ int s2ne::run_application(int argc, char** argv)
                 }
             }
             auto& a = clips[clip];
-            if (!paused && SDL_GetTicks() >= next)
+            if (!paused && gameTicks() >= next)
             {
+                const auto frameStarted = gameTicks();
                 if (!a.next(rgba))
                 {
                     if (clip + 1 < clips.size())
                     {
+                        if (aniAudio)
+                        {
+                            auto stopped = aniAudio->finish(stopEffects);
+                            if (!stopped) { s2ne::report_error(stopped.error()); }
+                            auto begun = aniAudio->begin(unsigned(clip + 2), 0x400);
+                            if (!begun) { s2ne::report_error(begun.error()); }
+                        }
+                        aniFrame = 0;
                         ++clip;
                     }
                     else
@@ -3326,12 +4186,23 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 else
                 {
+                    if (aniAudio)
+                    {
+                        auto advanced = aniAudio->advance(++aniFrame, playAni, stopEffects);
+                        if (!advanced) { s2ne::report_error(advanced.error()); }
+                    }
+                    if (stdio) { stdioLogicalFrame = rgba; }
                     if (!SDL_UpdateTexture(texture, nullptr, rgba.data(), 640 * 4))
                     {
                         s2ne::fatal(SDL_GetError());
                     }
-                    next = SDL_GetTicks() + a.delay;
+                    next = frameStarted + s2ne::original_ani_frame_ms(0xAF12, a.delay);
                 }
+            }
+            if (!paused && aniAudio)
+            {
+                auto polled = aniAudio->poll(playAni);
+                if (!polled) { s2ne::report_error(polled.error()); }
             }
             if (prologue && rawSave && prologue->pending_story_route())
             {
@@ -3375,6 +4246,7 @@ int s2ne::run_application(int argc, char** argv)
                     if (request->option == 1)
                     {
                         innMenu.emplace(root, s2ne::app_domain_for_save(*rawSave));
+                        innMenu->set_save_root(isolatedSaveRoot ? *isolatedSaveRoot : root);
                         innMenu->enable_presentation_timing();
                     }
                     else if (request->option == 2)
@@ -3385,6 +4257,30 @@ int s2ne::run_application(int argc, char** argv)
                     else if (request->option == 3)
                     {
                         churchMenu.emplace(root, s2ne::app_domain_for_save(*rawSave));
+                        churchMenu->set_promotion_stop([&]
+                            {
+                                auto stopped = stopEffects();
+                                if (!stopped) { s2ne::report_error(stopped.error()); }
+                            });
+                        churchMenu->set_promotion([&](auto& save, size_t index, const auto& request)
+                            {
+                                if (request.battlefield || index >= save.groups[0].units.size()) { return false; }
+                                return prologue->interbattle_random([&](auto& rng, uint32_t seconds)
+                                    {
+                                        auto candidateRandom = rng;
+                                        auto captured = s2ne::OriginalChurch::try_promote(root, save, index, request, candidateRandom, seconds);
+                                        if (!captured) { s2ne::report_error(captured.error()); return false; }
+                                        auto validated = s2ne::OriginalSaveBridge::try_restore(root, captured.value());
+                                        if (!validated) { s2ne::report_error(validated.error()); return false; }
+                                        auto encoded = s2ne::OriginalSave::try_encode(captured.value(), saveItems);
+                                        if (!encoded) { s2ne::report_error(encoded.error()); return false; }
+                                        using std::swap;
+                                        swap(save, captured.value());
+                                        swap(prologue->events, validated.value().events);
+                                        rng = candidateRandom;
+                                        return true;
+                                    });
+                            });
                         churchMenu->set_donation([&](auto& save)
                             {
                                 if (s2ne::OriginalChurch::supported(save))
@@ -3474,7 +4370,7 @@ int s2ne::run_application(int argc, char** argv)
                     showPrologue();
                 }
             }
-            if (prologue && !rawSave && !prologue->autosave_requests().empty() && prologue->events.stage != 140)
+            if (prologue && !rawSave && (prologue->deployment_requested() || !prologue->autosave_requests().empty()) && prologue->events.stage != 140)
             {
                 auto initialized = initialization.try_fresh(root, prologue->events.stage, prologue->events.difficulty, prologue->events.flags, s2ne::OriginalInitialization::setup_from_settings(settingsState, 0));
                 if (!initialized)
@@ -3499,7 +4395,27 @@ int s2ne::run_application(int argc, char** argv)
                 rawSave = std::move(staged);
                 autosaveBlocked = false;
             }
-            if (prologue && !autosaveBlocked && !prologue->autosave_requests().empty())
+            if (prologue && rawSave && prologue->deployment_requested() && !deployment)
+            {
+                auto captured = s2ne::OriginalSaveBridge::try_capture(prologue->events, 1, prologue->camera(), &*rawSave);
+                if (!captured) { s2ne::report_error(captured.error()); return EXIT_FAILURE; }
+                deployment.emplace(root, prologue->events, std::move(captured).value(), s2ne::app_domain_for_save(*rawSave));
+                showPrologue();
+            }
+            if (deployment && deployment->done())
+            {
+                auto committed = deployment->prepare_commit();
+                if (!committed) { s2ne::report_error(committed.error()); return EXIT_FAILURE; }
+                auto restored = s2ne::OriginalSaveBridge::try_restore(root, committed.value());
+                if (!restored) { s2ne::report_error(restored.error()); return EXIT_FAILURE; }
+                auto stopped = audio.stop_music();
+                if (!stopped) { s2ne::report_error(stopped.error()); return EXIT_FAILURE; }
+                *rawSave = std::move(committed).value();
+                deployment.reset();
+                prologue->commit_deployment(std::move(restored).value().events);
+                showPrologue();
+            }
+            if (prologue && !deployment && !autosaveBlocked && !prologue->autosave_requests().empty())
             {
                 bool allSaved = true;
                 for (const auto& request : prologue->autosave_requests())
@@ -3543,6 +4459,9 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (prologue && prologue->in_battle() && !promotionMenu)
             {
+                prologue->battle().set_ai_skills(skillRules);
+                prologue->battle().set_ai_damage(sword94);
+                prologue->battle().set_ai_skill_camera(prologue->camera());
                 prologue->battle().set_command_request_availability([&](const auto& unit, int command)
                     {
                         if (!rawSave || rawSave->groups[0].inventory.size() != saveItems)
@@ -3561,14 +4480,9 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (command == 2)
                         {
-                            for (unsigned id = 1; id <= saveItems; ++id)
-                            {
-                                if (rawSave->groups[0].inventory[id - 1] && promotionTransaction.learning_item(id) && promotionTransaction.usable_item(unit, id))
-                                {
-                                    return true;
-                                }
-                            }
-                            return false;
+                            const int selected = prologue->battle_selected();
+                            if (selected < 0 || size_t(selected) >= rawSave->groups[0].units.size()) { return false; }
+                            return !itemUse.choices(*rawSave, size_t(selected)).empty();
                         }
                         if (command != 4)
                         {
@@ -3611,22 +4525,41 @@ int s2ne::run_application(int argc, char** argv)
             if (prologue && rawSave && !battleMenu && !battleReports && !promotionMenu && !itemMenu && prologue->battle_requested_command() == 2)
             {
                 prologue->clear_battle_requested_command();
-                usableItems.clear();
-                usableItemSelection = 0;
-                itemConfirmation = false;
-                int selected = prologue->battle_selected();
-                if (selected >= 0)
+                const int actor = prologue->battle_selected();
+                auto current = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                if (!current) { s2ne::report_error(current.error()); }
+                else if (actor >= 0)
                 {
-                    const auto& unit = prologue->events.units.at(size_t(selected));
-                    for (unsigned id = 1; id <= saveItems; ++id)
+                    auto page = s2ne::OriginalArmyEquipmentMenu::create(root, current.value(), true, s2ne::app_domain_for_save(*rawSave));
+                    if (!page) { s2ne::report_error(page.error()); }
+                    else
                     {
-                        if (rawSave->groups[0].inventory[id - 1] && promotionTransaction.learning_item(id) && promotionTransaction.usable_item(unit, id))
-                        {
-                            usableItems.push_back(id);
-                        }
+                        battleItems = std::move(page).value();
+                        battleItems->set_use_adapter(size_t(actor), [&](size_t role, unsigned id)
+                            {
+                                if (itemUse.spell(id))
+                                {
+                                    skillMenu = skillRules;
+                                    if (!skillMenu->open_item(prologue->events.units.at(role), itemUse.spell(id)))
+                                    {
+                                        skillMenu.reset();
+                                        return s2ne::Result<bool>::failure(s2ne::make_error("46527D item spell cooperative or invalid source rejected"));
+                                    }
+                                    const auto& actorUnit = prologue->events.units.at(role);
+                                    if (skillMenu->select(actorUnit, nullptr, skillMenu->ai_summon_available(actorUnit, prologue->events)) != s2ne::OriginalSkills::Failure::none)
+                                    {
+                                        skillMenu.reset();
+                                        return s2ne::Result<bool>::failure(s2ne::make_error("46527D item spell world condition rejected"));
+                                    }
+                                    itemSpellSource = id;
+                                    return s2ne::Result<bool>::success(true);
+                                }
+                                itemTargetRequest = {role, id};
+                                return s2ne::Result<bool>::success(true);
+                            });
+                        battleItems->refresh_items(current.value());
                     }
                 }
-                itemMenu = !usableItems.empty();
                 showPrologue();
             }
             if (prologue && !battleMenu && !battleReports && !promotionMenu && prologue->battle_requested_command() == 4)
@@ -3657,6 +4590,7 @@ int s2ne::run_application(int argc, char** argv)
                     s2ne::report_error(rendered.error());
                     saveMenu.reset();
                 }
+                if (stdio) { stdioLogicalFrame = image; }
                 if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4))
                 {
                     s2ne::fatal(SDL_GetError());
@@ -3722,21 +4656,21 @@ int s2ne::run_application(int argc, char** argv)
                             visualResource = 33;
                         }
                         std::cout << "SDL SPELLSP" << (visualResource)
-                                  << " frame=" << frame << " ticks=" << SDL_GetTicks() << '\n';
+                                  << " frame=" << frame << " ticks=" << gameTicks() << '\n';
                     }
                     previous = frame;
-                    smokeDriver.state.skillSequence << presented << ',' << SDL_GetTicks() << ',' << smokeDriver.state.skillInputPhase << ',' << prologue->battle().animating_movement() << ',' << frame << ',' << smokeDriver.state.skillInputImageHash << '\n';
+                    smokeDriver.state.skillSequence << presented << ',' << gameTicks() << ',' << smokeDriver.state.skillInputPhase << ',' << prologue->battle().animating_movement() << ',' << frame << ',' << smokeDriver.state.skillInputImageHash << '\n';
                 }
                 prologue->frame_presented();
             }
             ++presented;
-            if (stdioPending && SDL_GetTicks() >= stdioReadyAt)
+            if (stdioPending && gameTicks() >= stdioReadyAt)
             {
                 (*stdioPending)["state"] = stdioObserve();
                 stdio->respond(*stdioPending);
                 stdioPending.reset();
             }
-            if (auto delay = s2ne::original_ui_frame_delay(nowUi, SDL_GetTicks()))
+            if (auto delay = options.headlessSpeed ? 0u : s2ne::original_ui_frame_delay(nowUi, gameTicks()))
             {
                 SDL_Delay(delay);
             }

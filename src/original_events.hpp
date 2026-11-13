@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "original_combat.hpp"
 #include "resource_result.hpp"
 #include <array>
@@ -45,8 +45,11 @@ public:
     {
         int speaker;
         std::vector<uint8_t> name, text;
+        int music_before{}, music_after{};
     };
     unsigned stage{ }, first_stage{ }, alternate_stage{ };
+    unsigned stage_music{};
+    std::optional<int32_t> script_route;
     std::optional<int32_t> camera_step_delay;
     std::optional<std::array<int32_t, 2>> campaign_currencies;
     std::optional<std::array<int32_t, 5>> ending_statistics;
@@ -132,6 +135,8 @@ public:
     {
         int x{ }, y{ };
         unsigned direction{ };
+        int role{};
+        bool fixed{};
     };
     std::vector<DeploymentSlot> deployment_slots() const
     {
@@ -145,9 +150,11 @@ public:
             {
                 break;
             }
-            if (int(int8_t(bin_.at(p + 51))) == 1 && behavior == 0)
+            const int first = int(int8_t(bin_.at(p + 51))), last = int(int8_t(bin_.at(p + 52)));
+            const bool arrives = last == 0 ? first == 1 : first <= 1 && last >= 1;
+            if (arrives && (behavior == 0 || behavior == 6))
             {
-                result.push_back({ int(int16_t(word(p + 23))), int(int16_t(word(p + 25))), bin_.at(p + 50) });
+                result.push_back({ int(int16_t(word(p + 23))), int(int16_t(word(p + 25))), bin_.at(p + 50), int(int16_t(word(p))), bool(bin_.at(p + 15) & 0x10) });
             }
         }
         return result;
@@ -432,8 +439,9 @@ public:
             fatal(result.error());
         }
     }
-    Result<int> try_combat_value(const Unit& unit, int mode = 0) const
+    Result<int> try_combat_value(const Unit& unit, int mode = 0, unsigned component = 0) const
     {
+        if (component > 4) { return Result<int>::failure(make_error("Original combat value component")); }
         if (mode < 0 || (mode > 2 && (mode < 5 || mode > 8)))
         {
             return Result<int>::failure(make_error("Unsupported original combat value cache mode"));
@@ -503,20 +511,20 @@ public:
         in.configDB = config(0xDB);
         in.configDC = config(0xDC);
         in.configDF = config(0xDF);
-        if (mode >= 5)
+        if (mode >= 5 || component)
         {
             auto parts = original_combat::try_combat_value_parts(in);
             if (!parts)
             {
                 return Result<int>::failure(parts.error());
             }
-            return Result<int>::success(parts.value()[size_t(mode - 5)]);
+            return Result<int>::success(parts.value()[component ? component - 1 : size_t(mode - 5)]);
         }
         return original_combat::try_combat_value(in);
     }
-    int combat_value(const Unit& unit, int mode = 0) const
+    int combat_value(const Unit& unit, int mode = 0, unsigned component = 0) const
     {
-        auto result = try_combat_value(unit, mode);
+        auto result = try_combat_value(unit, mode, component);
         if (!result)
         {
             fatal(result.error());
@@ -1142,6 +1150,7 @@ public:
             fatal("Truncated original stage");
         }
         map_id = bin_.at(header + 9);
+        stage_music = bin_.at(header + 10);
         // 426EFC reads type-5 words from the stage's initial type/count directory.
         dynamic_object_chains.clear();
         unsigned section_count = bin_.at(header + 25);
@@ -1526,6 +1535,7 @@ public:
             return Result<bool>::failure(make_error("Invalid original event choice"));
         }
         flags[flag(event) - 1] = uint8_t(selected);
+        flags[11] = uint8_t(selected);
         complete(event);
         return Result<bool>::success(true);
     }
@@ -1582,6 +1592,8 @@ public:
         }
         size_t p = start + index * 23;
         Line result{ int(int16_t(reader.number(p))), { }, { } };
+        result.music_before = int(int16_t(reader.number(p + 2)));
+        result.music_after = int(int16_t(reader.number(p + 4)));
         for (size_t i = p + 6; i < p + 19 && bin_[i]; ++i)
         {
             result.name.push_back(bin_[i]);

@@ -102,7 +102,7 @@ private:
     {
         page_ = Page::closed;
         return_code_ = code;
-        request_ = { };
+        request_ = {};
     }
     void operation(Action action, unsigned address, int eax = 0, int edx = 0, int ebx = 0)
     {
@@ -228,7 +228,7 @@ public:
             return s2ne::Result<bool>::failure(make_error("No battlefield menu operation pending"));
         }
         Action action = request_.action;
-        request_ = { };
+        request_ = {};
         page_ = operation_parent_;
         if (action == Action::load && code != 0)
         {
@@ -383,7 +383,7 @@ public:
         }
         if (page_ == Page::operation || page_ == Page::closed)
         {
-            return { };
+            return {};
         }
         if (page_ == Page::confirmation)
         {
@@ -393,7 +393,7 @@ public:
                 {
                     cancel();
                 }
-                else if (e.scan == 0x4B || e.scan == 0x4D)
+                else if (e.scan == 0x4B || e.scan == 0x4D || e.scan == 0x0F)
                 {
                     confirmation_->toggle();
                 }
@@ -416,7 +416,7 @@ public:
                 }
                 return { true, e.buttons ? 0x10u : 0u };
             }
-            return { };
+            return {};
         }
         if (e.type == 1 || e.type == 2)
         {
@@ -457,7 +457,7 @@ public:
             }
             return { changed, 0 };
         }
-        return { };
+        return {};
     }
     s2ne::Result<std::vector<uint8_t>> try_draw(const std::vector<uint8_t>& battlefield) const
     {

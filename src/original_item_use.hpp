@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "original_combat.hpp"
 #include "original_equipment.hpp"
 #include "original_promotion_transaction.hpp"
@@ -36,7 +36,8 @@ public:
     {
         std::vector<unsigned> out;
         if (items_.empty() || role >= state.groups[0].units.size()) { return out; }
-        for (unsigned slot = 0; slot < 6; ++slot)
+        // 44FD8B在关间模式不枚举装备，只枚举军团消耗品；战场才有装备施法。
+        for (unsigned slot = 0; state.globals_4f7cd0[4] == 0 && slot < 6; ++slot)
         {
             unsigned id = word(state.groups[0].units[role], 0xCB + slot * 2);
             if (id && items_.at(offset(id) + 15)) { out.push_back(id); }
@@ -53,7 +54,50 @@ public:
         return id && role < state.groups[0].units.size() && equipment_.eligible(state.groups[0].units[role], id);
     }
     bool usable_in_inn(unsigned id) const { return id && id <= word(items_, 0) && items_.at(offset(id) + 15) == 1; }
-    Result<bool> try_apply(OriginalSave::State& state, size_t role, unsigned id, original_combat::Random& random, uint32_t seconds) const
+    unsigned spell(unsigned id) const { return id && id <= word(items_, 0) && items_.at(offset(id) + 15) == 2 ? items_.at(offset(id) + 25) : 0; }
+    bool targeted(unsigned id) const { return id && id <= word(items_, 0) && items_.at(offset(id) + 14) == 12; }
+    unsigned effect(unsigned id) const { return items_.at(offset(id) + 25); }
+    int feedback_amount(const OriginalSave::State& before, const OriginalSave::State& after, size_t target, unsigned id,
+        original_combat::Random random, uint32_t seconds) const
+    {
+        const auto& a = *target_record(before, target);
+        const auto& b = *target_record(after, target);
+        switch (effect(id))
+        {
+        case 4: case 9: case 20: case 53: case 43:
+            return random.bounded(6 - int(before.globals_4f7cd0.at(28)), seconds) + 1;
+        case 5: case 33: return std::max(0, sw(b, 0x124) - sw(a, 0x124));
+        case 6: case 10: case 34: return std::max(0, sw(b, 0x126) - sw(a, 0x126));
+        case 60: return std::max(0, sw(b, 0x128) - sw(a, 0x128));
+        case 35: return std::max({0, sw(b, 0x124) - sw(a, 0x124), sw(b, 0x126) - sw(a, 0x126), sw(b, 0x128) - sw(a, 0x128)});
+        default: return 0;
+        }
+    }
+    static const OriginalSave::UnitRecord* target_record(const OriginalSave::State& state, size_t target)
+    {
+        for (const auto& group : state.groups)
+        {
+            if (target < group.units.size()) { return &group.units[target]; }
+            target -= group.units.size();
+        }
+        return nullptr;
+    }
+    bool target_allowed(const OriginalSave::State& state, size_t actor, size_t target, unsigned id) const
+    {
+        const auto* record = target_record(state, target);
+        if (!id || id > word(items_, 0) || actor >= state.groups[0].units.size() || !record) { return false; }
+        const auto& a = state.groups[0].units[actor];
+        const auto& t = *record;
+        if (!targeted(id) || state.globals_4f7cd0[4] != 0) { return actor == target && equipment_.eligible(t, id); }
+        // 446E53按当前完整军表顺序查80；死亡20只有同时带2的残留对象可选。
+        if (!(t[0x33] & 0x80) || ((t[0x33] & 0x20) && !(t[0x33] & 2)) || !equipment_.eligible(t, id)) { return false; }
+        // 4068C5读取DWORD0D的最高字节，即BYTE10h射程，而非WORD11h效果量。
+        int ax = sw(a, 0x23), ay = sw(a, 0x27), tx = sw(t, 0x23), ty = sw(t, 0x27);
+        return std::max(std::abs(2 * (tx - ax) + (ty & 1) - (ay & 1)), std::abs(ty - ay)) <= items_.at(offset(id) + 16)
+            && (t[0x33] & 0x80);
+    }
+    Result<bool> try_apply(OriginalSave::State& state, size_t role, unsigned id, original_combat::Random& random, uint32_t seconds,
+        std::optional<size_t> target = std::nullopt) const
     {
         if (items_.size() < 2 || !id || id > word(items_, 0) || role >= state.groups[0].units.size() || state.groups[0].inventory.size() != word(items_, 0))
         {
@@ -62,12 +106,19 @@ public:
         const auto& recipient = state.groups[0].units[role];
         if ((recipient.at(0x33) & 0x70) || sw(recipient, 8) == 1) { return Result<bool>::success(false); }
         const auto available = choices(state, role);
-        if (std::find(available.begin(), available.end(), id) == available.end() || !eligible(state, role, id)) { return Result<bool>::success(false); }
+        const size_t recipient_index = target.value_or(role);
+        if (std::find(available.begin(), available.end(), id) == available.end() || !target_allowed(state, role, recipient_index, id)) { return Result<bool>::success(false); }
         size_t p = offset(id);
         if (items_[p + 15] == 2) { return Result<bool>::success(false); }
         auto staged = state;
         auto rng = random;
-        auto& r = staged.groups[0].units[role];
+        size_t recipient_group = 0, recipient_role = recipient_index;
+        while (recipient_group < staged.groups.size() && recipient_role >= staged.groups[recipient_group].units.size())
+        {
+            recipient_role -= staged.groups[recipient_group].units.size();
+            ++recipient_group;
+        }
+        auto& r = staged.groups[recipient_group].units[recipient_role];
         const unsigned effect = items_[p + 25];
         const int amount = sw(items_, p + 17), duration = rng.bounded(6 - int(state.globals_4f7cd0.at(28)), seconds) + 1;
         auto recalculate = [&]()
@@ -87,6 +138,7 @@ public:
         Result<bool> applied = Result<bool>::success(true);
         switch (effect)
         {
+        case 0: break;
         case 4: applied = original_combat::try_apply_timed_status(r, 8, duration); break;
         case 9: applied = original_combat::try_apply_timed_status(r, 0x100000, duration); break;
         case 20: applied = original_combat::try_apply_timed_status(r, 2, duration); break;
@@ -241,7 +293,7 @@ public:
         {
             auto restored = OriginalSaveBridge::try_restore(root_, staged);
             if (!restored) { return Result<bool>::failure(restored.error()); }
-            auto value = restored.value().events.try_combat_value(restored.value().events.units.at(role));
+            auto value = restored.value().events.try_combat_value(restored.value().events.units.at(recipient_index));
             if (!value) { return Result<bool>::failure(value.error()); }
             put(r, 0x113, std::min(999u, unsigned(uint16_t(word(r, 0x113) + (value.value() < 3000 ? 999 : 100)))));
             break;
@@ -253,7 +305,7 @@ public:
             if (!restored) { return Result<bool>::failure(restored.error()); }
             auto transaction = OriginalPromotionTransaction::create(root_);
             if (!transaction) { return Result<bool>::failure(transaction.error()); }
-            auto actor = restored.value().events.units.at(role);
+            auto actor = restored.value().events.units.at(recipient_index);
             if (!transaction.value().learn_range(actor, unsigned(amount), effect == 66 ? 1u : unsigned(items_[p + 19]), unsigned(items_[p + 19])))
             {
                 return Result<bool>::failure(make_error("Original451DDA item learning range rejected"));
@@ -272,6 +324,23 @@ public:
         state = std::move(staged);
         random = rng;
         return Result<bool>::success(true);
+    }
+    Result<OriginalSave::State> try_prepare(const OriginalSave::State& before, size_t role, unsigned id,
+        original_combat::Random& random, uint32_t seconds, std::optional<size_t> target = std::nullopt) const
+    {
+        auto staged = before;
+        auto rng = random;
+        auto applied = try_apply(staged, role, id, rng, seconds, target);
+        if (!applied) { return Result<OriginalSave::State>::failure(applied.error()); }
+        if (!applied.value()) { return Result<OriginalSave::State>::failure(make_error("Original45024C item source or recipient rejected")); }
+        auto restored = OriginalSaveBridge::try_restore(root_, staged);
+        if (!restored) { return Result<OriginalSave::State>::failure(restored.error()); }
+        auto captured = OriginalSaveBridge::try_capture(restored.value().events, restored.value().turn, restored.value().camera, &staged);
+        if (!captured) { return captured; }
+        auto encoded = OriginalSave::try_encode(captured.value(), staged.groups[0].inventory.size());
+        if (!encoded) { return Result<OriginalSave::State>::failure(encoded.error()); }
+        random = rng;
+        return captured;
     }
 };
 }    //namespace s2ne

@@ -321,6 +321,11 @@ public:
         }
     }
     std::vector<uint8_t> indexed_scene(const OriginalInterbattle& scene) const { return scene.indexed_background(pal_); }
+    int panel_width(unsigned id) const
+    {
+        size_t g = dword(pal_, 816) - 57;
+        return int(word(cel_, g + dword(cel_, g + 2 + (id - 142) * 8))) + 1;
+    }
     int panel_height(unsigned id) const
     {
         size_t g = dword(pal_, 816) - 57, p = g + dword(cel_, g + 2 + (id - 142) * 8);

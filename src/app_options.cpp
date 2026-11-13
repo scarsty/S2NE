@@ -1,20 +1,31 @@
 #include "app_options.hpp"
 #include "native_damage_records.hpp"
+#include "runtime_error.hpp"
 #include <SDL3/SDL.h>
 namespace s2ne
 {
 AppOptions::AppOptions(int argc, char** argv)
 {
     stdio = argc > 1 && std::string_view(argv[1]) == "--stdio";
+    for (int i = 1; i < argc; ++i)
+    {
+        if (std::string_view(argv[i]) == "--headless-speed") { headlessSpeed = true; }
+    }
+    if (headlessSpeed && !stdio) { fatal("--headless-speed requires --stdio and SDL dummy video/audio"); }
     if (stdio)
     {
-        if (argc != 5 && argc != 7) { throw std::runtime_error("Usage: --stdio <resources> --save-root <new-directory> [--load <read-only-save>]"); }
+        if (argc < 5) { throw std::runtime_error("Usage: --stdio <resources> --save-root <new-directory> [--load <read-only-save>] [--headless-speed]"); }
         if (std::string_view(argv[3]) != "--save-root") { throw std::runtime_error("--stdio requires --save-root"); }
         stdioSaveRoot = std::filesystem::absolute(argv[4]);
-        if (argc == 7)
+        bool speedSeen = false;
+        for (int i = 5; i < argc; ++i)
         {
-            if (std::string_view(argv[5]) != "--load") { throw std::runtime_error("Expected --load"); }
-            stdioInitialSave = std::filesystem::absolute(argv[6]);
+            if (std::string_view(argv[i]) == "--headless-speed" && !speedSeen) { speedSeen = true; }
+            else if (std::string_view(argv[i]) == "--load" && stdioInitialSave.empty() && i + 1 < argc)
+            {
+                stdioInitialSave = std::filesystem::absolute(argv[++i]);
+            }
+            else { throw std::runtime_error("Unexpected or repeated --stdio argument"); }
         }
     }
     verify = argc > 1 && std::string(argv[1]) == "--verify";

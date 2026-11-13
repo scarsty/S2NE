@@ -1,6 +1,7 @@
-#pragma once
+﻿#pragma once
 #include "original_events.hpp"
 #include "original_script_predicates.hpp"
+#include <functional>
 namespace s2ne
 {
 // 41C02A's ordered type3/condition2 scan. A positive dialogue count
@@ -50,6 +51,14 @@ public:
     // No pre-expanded dialogue list; predicates see flags at their call time.
     class Stack
     {
+    public:
+        using AudioHandler = std::function<Result<bool>(const OriginalEvents&, size_t)>;
+        using PresentationHandler = std::function<Result<bool>(OriginalEvents&, size_t)>;
+    private:
+        AudioHandler audio_;
+        PresentationHandler presentation_;
+        bool presentation_pending_{};
+        std::optional<size_t> choice_;
         enum class Routine
         {
             death,
@@ -70,6 +79,7 @@ public:
         bool evacuation_{ };
         bool supported_{ true };
         size_t completion_{ };
+        unsigned location_notice_{};
         static bool active(const OriginalEvents& e, size_t i)
         {
             int f = e.event_word(i, 3);
@@ -79,6 +89,33 @@ public:
 
     public:
         bool supported() const { return supported_; }
+        std::optional<size_t> choice_pending() const { return choice_; }
+        Result<bool> finish_choice(OriginalEvents& e, unsigned selected)
+        {
+            if (!choice_) { return Result<bool>::failure(make_error("No synchronous choice pending")); }
+            auto chosen = e.try_choose(*choice_, selected);
+            if (!chosen) { return chosen; }
+            choice_.reset();
+            return Result<bool>::success(true);
+        }
+        static bool presentation_supported(unsigned type, unsigned condition)
+        {
+            return (type == 12 && (condition == 10 || condition == 16)) || (type == 7 && condition == 0) || (type == 6 && condition <= 1);
+        }
+        bool presentation_pending() const { return presentation_pending_; }
+        bool finish_presentation()
+        {
+            if (!presentation_pending_) { return false; }
+            presentation_pending_ = false;
+            return true;
+        }
+        unsigned location_notice() const { return location_notice_; }
+        bool finish_location_notice(OriginalEvents&)
+        {
+            if (!location_notice_) { return false; }
+            location_notice_ = 0;
+            return true;
+        }
         bool evacuation_pending() const { return evacuation_; }
         bool finish_evacuation(OriginalEvents& e)
         {
@@ -92,7 +129,7 @@ public:
         }
         size_t depth() const { return frames_.size(); }
         Stack() = default;
-        Stack(OriginalEvents& e, size_t death)
+        Stack(OriginalEvents& e, size_t death, AudioHandler audio = {}, PresentationHandler presentation = {}) : audio_(std::move(audio)), presentation_(std::move(presentation))
         {
             event_count_ = e.event_count();
             if (death >= event_count_) { return; }
@@ -106,7 +143,7 @@ public:
         }
         std::optional<size_t> next(OriginalEvents& e)
         {
-            if (evacuation_)
+            if (evacuation_ || location_notice_ || presentation_pending_ || choice_)
             {
                 return std::nullopt;
             }
@@ -143,13 +180,67 @@ public:
                 if (f.pc == 0)
                 {
                     const unsigned type = e.type(f.index), condition = e.condition(f.index);
-                    if (f.routine == Routine::generic && active(e, f.index) && type >= 4 && type <= 16 && !(type == 9 && condition == 0) && !(type == 11 && (condition <= 6 || ((condition == 11 || condition == 12) && e.campaign_currencies))))
+                    if (f.routine == Routine::generic && active(e, f.index) && type >= 4 && type <= 16 && !(type == 5 && condition <= 2) && !(presentation_ && presentation_supported(type, condition)) && !original_death_state_handler_supported(type, condition) && !(type == 9 && condition <= 4) && !(type == 13 && (condition == 1 || condition == 2) && audio_) && !(type == 11 && (condition <= 6 || ((condition == 11 || condition == 12) && e.campaign_currencies))))
                     {
                         supported_ = false;
                         frames_.clear();
                         return std::nullopt;
                     }
                     bool eligible = e.type(f.index) == 9 && e.condition(f.index) == 0 && active(e, f.index);
+                    if (f.routine == Routine::generic && active(e, f.index) && type == 5 && condition <= 2)
+                    {
+                        if (condition == 0)
+                        {
+                            f.pc = 3;
+                            choice_ = f.index;
+                            return std::nullopt;
+                        }
+                        eligible = e.flags[11] == condition;
+                        if (eligible)
+                        {
+                            e.flags[size_t(e.event_word(f.index, 3) - 1)] = 0;
+                            e.flags[11] = 0;
+                        }
+                    }
+                    if (f.routine == Routine::generic && active(e, f.index) && presentation_ && presentation_supported(type, condition))
+                    {
+                        auto presented = presentation_(e, f.index);
+                        if (!presented)
+                        {
+                            report_error(presented.error());
+                            supported_ = false;
+                            frames_.clear();
+                            return std::nullopt;
+                        }
+                        if (presented.value())
+                        {
+                            f.pc = 6;
+                            presentation_pending_ = true;
+                            return std::nullopt;
+                        }
+                    }
+                    if (f.routine == Routine::generic && active(e, f.index) && original_death_state_handler_supported(type, condition))
+                    {
+                        auto handled = original_death_state_handler(e, f.index);
+                        if (!handled) { supported_ = false; frames_.clear(); return std::nullopt; }
+                        eligible = handled.value();
+                    }
+                    if (f.routine == Routine::generic && type == 9 && condition <= 4)
+                    {
+                        eligible = original_flag_predicate(e, f.index).value();
+                    }
+                    if (f.routine == Routine::generic && active(e, f.index) && type == 13 && (condition == 1 || condition == 2) && audio_)
+                    {
+                        auto played = audio_(e, f.index);
+                        if (!played)
+                        {
+                            report_error(played.error());
+                            supported_ = false;
+                            frames_.clear();
+                            return std::nullopt;
+                        }
+                        eligible = played.value();
+                    }
                     if (f.routine == Routine::generic && active(e, f.index) && e.type(f.index) == 11)
                     {
                         if (auto predicate = original_role_predicate(e, f.index))
@@ -171,13 +262,20 @@ public:
                         }
                     }
                 }
+                if (f.pc == 6)
+                {
+                    f.pc = 2;
+                    if (int16_t(e.line_count(f.index)) > 0) { return f.index; }
+                }
                 if (f.pc == 2)
                 {
                     unsigned flag = e.completion_flag(f.index);
                     if (flag == 1 || flag == 3)
                     {
-                        supported_ = false;
-                        frames_.clear();
+                        complete(e, f.index);
+                        location_notice_ = flag;
+                        completion_ = f.index;
+                        f.pc = 5;
                         return std::nullopt;
                     }
                     if (flag == 7)
@@ -230,23 +328,22 @@ public:
         bool supported{ };
         std::vector<size_t> dialogue;
     };
-    static Continuation continuation(const OriginalEvents& events, unsigned role)
+    static Continuation continuation(const OriginalEvents& events, unsigned role, Stack::AudioHandler audio = {}, Stack::PresentationHandler presentation = {})
     {
         auto death = inspect(events, role);
         if (death.settled())
         {
             return { true, { } };
         }
-        if (events.completion_flag(death.event) == 1 || events.completion_flag(death.event) == 3) { return { }; }
         for (size_t i = 0; i < events.event_count(); ++i)
         {
             unsigned type = events.type(i), condition = events.condition(i);
             // Non-flag handlers have independent native predicates; do not
             // infer their reachability from WORD3 alone.
-            if (type >= 4 && type <= 16 && !(type == 9 && condition == 0) && !(type == 11 && (condition <= 6 || condition == 11 || condition == 12))) { return { }; }
+            if (type >= 4 && type <= 16 && !(type == 5 && condition <= 2) && !(presentation && Stack::presentation_supported(type, condition)) && !original_death_state_handler_supported(type, condition) && !(type == 9 && condition <= 4) && !(type == 13 && (condition == 1 || condition == 2) && audio) && !(type == 11 && (condition <= 6 || condition == 11 || condition == 12))) { return { }; }
         }
         auto staged = events;
-        Stack stack(staged, death.event);
+        Stack stack(staged, death.event, std::move(audio), std::move(presentation));
         for (;;)
         {
             if (auto i = stack.next(staged))
@@ -257,9 +354,27 @@ public:
                     if (!text) { return { }; }
                 }
             }
+            else if (auto choice = stack.choice_pending())
+            {
+                if (staged.line_count(*choice) < 2) { return {}; }
+                for (size_t line = 0; line < staged.line_count(*choice); ++line)
+                {
+                    if (!staged.try_line(*choice, line)) { return {}; }
+                }
+                // 选择的后续谓词只能在真实输入后决定，不在预检伪选分支。
+                break;
+            }
+            else if (stack.presentation_pending())
+            {
+                stack.finish_presentation();
+            }
             else if (stack.evacuation_pending())
             {
                 stack.finish_evacuation(staged);
+            }
+            else if (stack.location_notice())
+            {
+                stack.finish_location_notice(staged);
             }
             else
             {

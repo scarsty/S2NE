@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "battle.hpp"
 #include "original_battle_captions.hpp"
 #include "original_campaign.hpp"
@@ -16,6 +16,7 @@
 #include "original_progression.hpp"
 #include "original_script_predicates.hpp"
 #include "original_scripted_movement.hpp"
+#include "original_scroll_text.hpp"
 #include "original_skill94_visual.hpp"
 #include "original_skills.hpp"
 #include "original_sprite.hpp"
@@ -78,6 +79,9 @@ class Prologue
     std::optional<OriginalMap> summon_map_;
     OriginalEvacuation evacuation_;
     bool evacuation_presented_{};
+    std::optional<std::pair<int, int>> death_location_;
+    unsigned death_location_ms_{};
+    bool death_location_presented_{};
     bool evacuation_camera_done_{};
     unsigned evacuation_visible_steps_{};
     std::optional<std::pair<int, int>> death_camera_baseline_;
@@ -91,6 +95,93 @@ class Prologue
     std::optional<Battle> battle_;
     std::function<Result<bool>(const std::vector<OriginalEvents::Unit>&, const std::vector<Battle::PhysicalSettlement>&)> physical_loot_commit_;
     std::optional<OriginalEvents> physical_death_baseline_;
+    std::function<Result<bool>(bool)> physical_loot_finish_;
+    std::vector<Battle::PhysicalSettlement> growth_awards_;
+    size_t growth_award_cursor_{};
+    std::vector<OriginalEvents::Unit> growth_units_;
+    std::optional<OriginalProgression::PendingGrowth> growth_;
+    OriginalRandom::State growth_random_;
+    uint32_t growth_seconds_{};
+    std::function<void(bool)> growth_finish_;
+    bool growth_presented_{};
+    unsigned growth_elapsed_{};
+    bool reward_growth_external_{};
+    void advance_growth()
+    {
+        OriginalProgression progression(root_);
+        OriginalPromotion promotion(root_);
+        while (growth_finish_)
+        {
+            if (reward_growth_external_)
+            {
+                if (!growth_->learning_name().empty())
+                {
+                    growth_presented_ = false;
+                    growth_elapsed_ = 0;
+                    return;
+                }
+                const bool prepared = growth_->prepare(promotion, [this]
+                    {
+                        return growth_seconds_;
+                    });
+                if (!prepared || !growth_->step())
+                {
+                    auto finish = std::move(growth_finish_);
+                    growth_finish_ = {};
+                    reward_growth_external_ = false;
+                    finish(prepared);
+                    // 技能结算回调读取完结果后释放，不能让下次物攻把旧施法者写入新获奖槽。
+                    if (!growth_active()) { growth_.reset(); }
+                    return;
+                }
+            }
+            if (!growth_)
+            {
+                if (growth_award_cursor_ == growth_awards_.size())
+                {
+                    events.units = std::move(growth_units_);
+                    battle_->mutate_random([&](OriginalRandom& random, uint32_t)
+                        {
+                            random.restore(growth_random_);
+                            return true;
+                        });
+                    auto finish = std::move(growth_finish_);
+                    growth_finish_ = {};
+                    finish(true);
+                    return;
+                }
+                const auto& award = growth_awards_[growth_award_cursor_];
+                growth_.emplace(progression.stage(growth_units_.at(award.actor), OriginalRandom(growth_random_), award.raw_xp));
+            }
+            if (!growth_->prepare(promotion, [this]
+                    {
+                        return growth_seconds_;
+                    }))
+            {
+                growth_.reset();
+                auto finish = std::move(growth_finish_);
+                growth_finish_ = {};
+                finish(false);
+                return;
+            }
+            if (growth_->step())
+            {
+                const auto& u = growth_->unit();
+                if (u.controllable() && !(u.status_flags & 0x20) && (u.status_flags & 0x80))
+                {
+                    growth_presented_ = false;
+                    growth_elapsed_ = 0;
+                    return;
+                }
+                growth_->confirm();
+                continue;
+            }
+            growth_units_.at(growth_awards_[growth_award_cursor_].actor) = growth_->unit();
+            growth_random_ = growth_->random().state();
+            growth_.reset();
+            ++growth_award_cursor_;
+        }
+    }
     std::optional<std::pair<int, int>> physical_death_camera_;
     std::optional<size_t> physical_departure_;
     bool physical_departure_presented_{};
@@ -112,6 +203,34 @@ class Prologue
     void connect_combat_progression()
     {
         battle_->set_physical_loot_commit(physical_loot_commit_);
+        battle_->set_physical_loot_finish(physical_loot_finish_);
+        battle_->set_physical_growth([this](auto awards, auto finish)
+            {
+                growth_awards_.clear();
+                for (const auto& award : awards)
+                {
+                    if (award.raw_xp <= 0 || events.units.at(award.actor).hostile()) { continue; }
+                    auto found = std::find_if(growth_awards_.begin(), growth_awards_.end(), [&](const auto& a)
+                        {
+                            return a.actor == award.actor;
+                        });
+                    if (found == growth_awards_.end()) { growth_awards_.push_back(award); }
+                    else
+                    {
+                        found->raw_xp += award.raw_xp;
+                    }
+                }
+                growth_units_ = events.units;
+                growth_award_cursor_ = 0;
+                battle_->mutate_random([&](OriginalRandom& random, uint32_t seconds)
+                    {
+                        growth_random_ = random.state();
+                        growth_seconds_ = seconds;
+                        return true;
+                    });
+                growth_finish_ = std::move(finish);
+                advance_growth();
+            });
         battle_->set_physical_death_presenter([this](size_t, size_t target) -> Result<bool>
             {
                 if (target >= events.units.size()) { return Result<bool>::failure(make_error("Original physical death target index")); }
@@ -144,12 +263,21 @@ class Prologue
                         battle_->lock_skill94_death(true);
                         return;
                     }
-                    if (!map_.begin_disappearance(pose, unsigned(target), battle_->turn(), animation_elapsed_, true))
+                    auto candidate = map_;
+                    if (!candidate.begin_disappearance(pose, unsigned(target), battle_->turn(), animation_elapsed_, true))
                     {
                         battle_->rollback_physical_exchange(events.units);
                         report_error(make_error("Original physical death bitmap rejected"));
                         return;
                     }
+                    auto sounded = play_death_effect();
+                    if (!sounded)
+                    {
+                        battle_->rollback_physical_exchange(events.units);
+                        report_error(sounded.error());
+                        return;
+                    }
+                    map_ = std::move(candidate);
                     skill94_death_commit_ = [this, target]()
                     {
                         finish_physical_death(target, false);
@@ -246,6 +374,8 @@ class Prologue
     };
     std::optional<OriginalCampaign> campaign_;
     std::optional<OriginalInterbattle> interbattle_;
+    bool deployment_requested_{};
+    bool deployment_completed_{};
     std::deque<size_t> script_queue_;
     unsigned arrivals_turn_{};
 
@@ -255,6 +385,7 @@ public:
         OriginalEvents events;
         // Must be noexcept: all fallible resource preparation precedes publication.
         std::function<void()> commit;
+        std::function<void()> rollback;
     };
 
 private:
@@ -350,6 +481,11 @@ private:
     bool story_movement_follow_{};
     size_t story_disappearance_event_{}, story_disappearance_unit_{};
     unsigned story_disappearance_slot_{};
+    std::optional<size_t> death_presentation_event_;
+    std::vector<std::function<void()>> death_presentation_commits_;
+    std::optional<Battle> death_battle_baseline_;
+    std::optional<OriginalMap> death_map_baseline_;
+    bool death_presentation_presented_{};
     void next_story_disappearance()
     {
         while (story_disappearance_slot_ < 3)
@@ -376,6 +512,12 @@ private:
             }
             if (!map_.begin_disappearance(events.units, unsigned(role - events.units.begin()), 1, animation_elapsed_))
             {
+                if (synchronous_death_active())
+                {
+                    rollback_synchronous_death();
+                    report_error(make_error("Original455048 synchronous disappearance unavailable"));
+                    return;
+                }
                 campaign_blocker_ = "Original455048 disappearance unavailable for role " + std::to_string(id);
                 phase_ = Phase::campaign_blocked;
                 return;
@@ -387,6 +529,13 @@ private:
         }
         event_ = story_disappearance_event_;
         line_ = 0;
+        if (synchronous_death_active())
+        {
+            phase_ = Phase::battle;
+            synchronous_death_stack_->finish_presentation();
+            continue_synchronous_death();
+            return;
+        }
         if (events.line_count(event_))
         {
             phase_ = Phase::flag_dialogue;
@@ -492,6 +641,12 @@ private:
             {
                 continue;
             }
+            if (dispatch_sound_event(i))
+            {
+                if (temporary_text_) { return; }
+                dispatch_story();
+                return;
+            }
             if (auto predicate = original_role_predicate(events, i))
             {
                 if (!*predicate)
@@ -504,6 +659,11 @@ private:
                 {
                     phase_ = Phase::flag_dialogue;
                     prepare();
+                    return;
+                }
+                if (dispatch_sound_event(i))
+                {
+                    dispatch_story();
                     return;
                 }
                 events.complete(i);
@@ -982,6 +1142,12 @@ private:
             return Result<bool>::failure(loaded.error());
         }
         auto dialogue = std::move(loaded).value();
+        if (music_audio_ && dialogue.music_before > 0)
+        {
+            auto played = music_audio_(unsigned(dialogue.music_before));
+            if (!played) { return played; }
+        }
+        dialogue_music_after_ = dialogue.music_after;
         std::vector<std::vector<Glyph>> candidatePages{ {} };
         auto oldTarget = dialogue_camera_target_;
         auto oldSubject = dialogue_camera_subject_;
@@ -1148,7 +1314,24 @@ private:
         synchronous_death_baseline_.reset();
         synchronous_death_return_ = {};
         synchronous_death_stack_.reset();
+        story_movement_.reset();
+        story_poses_.clear();
+        story_animation_event_.reset();
+        death_presentation_event_.reset();
+        if (death_map_baseline_)
+        {
+            map_ = std::move(*death_map_baseline_);
+            death_map_baseline_.reset();
+        }
+        for (auto i = death_presentation_commits_.rbegin(); i != death_presentation_commits_.rend(); ++i) { (*i)(); }
+        death_presentation_commits_.clear();
+        if (death_battle_baseline_)
+        {
+            *battle_ = std::move(*death_battle_baseline_);
+            death_battle_baseline_.reset();
+        }
         evacuation_ = OriginalEvacuation{};
+        death_location_.reset();
         if (death_camera_baseline_)
         {
             map_.camera_x = death_camera_baseline_->first;
@@ -1178,6 +1361,11 @@ private:
     }
     void enter_stage_battle()
     {
+        if (!deployment_completed_ && !events.deployment_slots().empty())
+        {
+            deployment_requested_ = true;
+            return;
+        }
         auto stagedEvents = events;
         auto adjusted = stagedEvents.try_adjust_battle_entry_stats();
         if (!adjusted)
@@ -1627,6 +1815,7 @@ private:
             {
                 continue;
             }
+            if (dispatch_sound_event(i)) { return true; }
             bool visible_script = (events.type(i) == 12 && (events.condition(i) == 10 || events.condition(i) == 16 || events.condition(i) == 1)) || (events.type(i) == 8 && events.condition(i) == 7);
             if (!visible_script)
             {
@@ -1829,6 +2018,140 @@ public:
         units[target].status_flags |= 0x20;
     }
     bool ending_active() const { return ending_.has_value(); }
+    std::function<void(unsigned)> skill_effect_audio_;
+    std::vector<uint8_t> skill_effect_sounds_;
+    std::vector<uint8_t> skill_followup_sounds_;
+    OriginalActionAudioCues skill_audio_cues_;
+    std::function<Result<bool>()> stop_effect_audio_;
+    std::function<Result<unsigned>(unsigned, unsigned)> script_effect_audio_;
+    OriginalAniAudio::Music music_audio_;
+    OriginalAniAudio::Music midi_audio_;
+    unsigned music_restore_generation_{};
+    std::optional<OriginalScrollText> temporary_text_;
+    size_t temporary_event_{};
+    unsigned current_script_music_{}, temporary_restore_music_{};
+    int dialogue_music_after_{};
+    Result<bool> begin_temporary_text(unsigned background, unsigned text, unsigned music, size_t event)
+    {
+        if (temporary_text_ || !music_audio_) { return Result<bool>::failure(make_error("Original temporary text is busy or has no music adapter")); }
+        OriginalScrollText candidate(root_, background, text, disc_);
+        auto played = music_audio_(0);
+        if (played) { played = music_audio_(music); }
+        if (!played)
+        {
+            auto restored = music_audio_(current_script_music_);
+            if (!restored) { return restored; }
+            return played;
+        }
+        temporary_restore_music_ = current_script_music_;
+        temporary_event_ = event;
+        temporary_text_.emplace(std::move(candidate));
+        return Result<bool>::success(true);
+    }
+    bool dispatch_sound_event(size_t i)
+    {
+        if (events.type(i) != 13) { return false; }
+        if (events.condition(i) == 3)
+        {
+            if (temporary_text_) { return true; }
+            if (!music_audio_) { return false; }
+            auto played = begin_temporary_text(unsigned(events.event_word(i, 5)), unsigned(events.event_word(i, 7)), unsigned(events.event_word(i, 9)), i);
+            if (!played) { fatal(played.error()); }
+            return true;
+        }
+        if (events.condition(i) == 2 && music_audio_)
+        {
+            auto played = music_audio_(unsigned(events.event_word(i, 5)));
+            if (!played)
+            {
+                report_error(played.error());
+                return false;
+            }
+            events.complete(i);
+            current_script_music_ = unsigned(events.event_word(i, 5));
+            return true;
+        }
+        if (events.condition(i) != 1) { return false; }
+        const int sound = events.event_word(i, 5);
+        if (!stop_effect_audio_ || !script_effect_audio_) { return false; }
+        auto result = original_script_sound(sound, script_effect_audio_, stop_effect_audio_);
+        if (!result)
+        {
+            report_error(result.error());
+            return false;
+        }
+        events.complete(i);
+        return true;
+    }
+    void set_script_effect_audio(OriginalAniAudio::Play play, OriginalAniAudio::Stop stop)
+    {
+        script_effect_audio_ = std::move(play);
+        stop_effect_audio_ = std::move(stop);
+    }
+    void set_music_audio(OriginalAniAudio::Music play, OriginalAniAudio::Music midi = {})
+    {
+        bool initial = !music_audio_;
+        music_audio_ = std::move(play);
+        if (initial) { current_script_music_ = events.stage_music; }
+        midi_audio_ = std::move(midi);
+        if (initial && music_audio_ && !pages_.empty() && event_ < events.event_count())
+        {
+            auto line = events.try_line(event_, line_);
+            if (line && line.value().music_before > 0)
+            {
+                auto played = music_audio_(unsigned(line.value().music_before));
+                if (!played) { report_error(played.error()); }
+            }
+        }
+    }
+    ResourceDomain music_domain() const { return disc_; }
+    unsigned music_restore_generation() const { return music_restore_generation_; }
+    bool has_battle() const { return battle_.has_value(); }
+    Result<bool> play_death_effect()
+    {
+        // 原452FB1：41C02A仅扫描condition2，返回0／18；17／19在该过滤下不可达。
+        // status40在调用者先走离场，不在这里补141；声音保持在同步事件结束之后。
+        if (!script_effect_audio_) { return Result<bool>::success(true); }
+        auto played = script_effect_audio_(141, 0);
+        if (!played) { return Result<bool>::failure(played.error()); }
+        return Result<bool>::success(true);
+    }
+    void play_skill_effect(unsigned skill)
+    {
+        if (skill_effect_audio_ && skill && skill <= skill_effect_sounds_.size() && skill_effect_sounds_[skill - 1])
+        {
+            skill_effect_audio_(skill_effect_sounds_[skill - 1]);
+        }
+    }
+    void set_skill_effect_audio(std::function<void(unsigned)> play)
+    {
+        if (skill_effect_sounds_.empty())
+        {
+            auto loaded = original_skill_sounds(root_);
+            if (!loaded)
+            {
+                report_error(loaded.error());
+                return;
+            }
+            skill_effect_sounds_ = std::move(loaded).value();
+            auto followup = original_skill_sounds(root_, 1);
+            if (!followup)
+            {
+                report_error(followup.error());
+                return;
+            }
+            skill_followup_sounds_ = std::move(followup).value();
+        }
+        skill_effect_audio_ = std::move(play);
+    }
+    void set_ending_effect_audio(OriginalAniAudio::Play play, OriginalAniAudio::Stop stop)
+    {
+        if (ending_)
+        {
+            ending_->set_music_audio(music_audio_, midi_audio_);
+            ending_->set_effect_audio(root_, std::move(play), std::move(stop));
+        }
+    }
     bool ending_done() const { return ending_ && ending_->done(); }
     size_t ending_page() const { return ending_ ? ending_->page() : 0; }
     size_t ending_pages() const { return ending_ ? ending_->pages() : 0; }
@@ -1849,10 +2172,58 @@ public:
     const std::vector<uint8_t>& last_reaction_bitmap() const { return map_.last_reaction_bitmap(); }
     std::vector<uint8_t> expected_reaction_bitmap(unsigned id, bool left) const { return map_.expected_reaction_bitmap(id, left); }
     bool interbattle_active() const { return phase_ == Phase::interbattle; }
-    const std::string& campaign_blocker() const { return campaign_blocker_; }
+    const std::string& campaign_blocker() const
+    {
+        static const std::string aiFailure = "470EF6 AI skill transaction failed; state retained, reload required";
+        if (battle_ && battle_->ai_skill_failed()) { return aiFailure; }
+        return campaign_blocker_;
+    }
     const auto& autosave_requests() const { return autosave_requests_; }
     void clear_autosave_requests() { autosave_requests_.clear(); }
     void set_campaign_reward_adapter(std::function<bool(OriginalEvents&, const OriginalCampaign::Settlement&)> callback) { campaign_reward_adapter_ = std::move(callback); }
+    void set_physical_loot_finish(std::function<Result<bool>(bool)> callback)
+    {
+        physical_loot_finish_ = std::move(callback);
+        if (battle_) { battle_->set_physical_loot_finish(physical_loot_finish_); }
+    }
+    bool growth_active() const { return bool(growth_finish_); }
+    bool begin_reward_growth(OriginalProgression::PendingGrowth pending, uint32_t seconds, std::function<void(bool)> finish)
+    {
+        if (growth_active()) { return false; }
+        reward_growth_external_ = true;
+        growth_ = std::move(pending);
+        growth_seconds_ = seconds;
+        growth_finish_ = std::move(finish);
+        advance_growth();
+        return true;
+    }
+    const OriginalProgression::PendingGrowth& reward_growth() const { return *growth_; }
+    const std::vector<uint8_t>* learning_notice() const
+    {
+        if (!growth_active() || !growth_ || growth_->learning_name().empty()) { return nullptr; }
+        return &growth_->learning_name();
+    }
+    void reject_growth()
+    {
+        if (!growth_finish_) { return; }
+        auto finish = std::move(growth_finish_);
+        growth_finish_ = {};
+        reward_growth_external_ = false;
+        finish(false);
+        growth_.reset();
+    }
+    const OriginalProgression::GrowthStep* growth_step() const
+    {
+        if (!growth_ || !growth_->step()) { return nullptr; }
+        return &*growth_->step();
+    }
+    void confirm_growth()
+    {
+        if (!growth_ || !growth_presented_) { return; }
+        if (growth_->confirm_learning()) { advance_growth(); return; }
+        growth_->confirm();
+        advance_growth();
+    }
     void set_physical_loot_commit(std::function<Result<bool>(const std::vector<OriginalEvents::Unit>&, const std::vector<Battle::PhysicalSettlement>&)> callback)
     {
         physical_loot_commit_ = std::move(callback);
@@ -2107,6 +2478,11 @@ public:
         auto candidate = map_;
         auto started = candidate.begin_summon_growth(roster, target, battle_->turn());
         if (!started) { return started; }
+        if (script_effect_audio_)
+        {
+            auto played = script_effect_audio_(136, 0);
+            if (!played) { return Result<bool>::failure(played.error()); }
+        }
         summon_map_ = std::move(candidate);
         summon_roster_ = std::move(roster);
         summon_publish_ = std::move(publish);
@@ -2180,6 +2556,111 @@ public:
             });
     }
     bool evacuation_active() const { return evacuation_.active(); }
+    Result<bool> begin_death_presentation(OriginalEvents& source, size_t event, bool dryRun)
+    {
+        const unsigned type = source.type(event), condition = source.condition(event);
+        if (!dryRun) { death_presentation_presented_ = true; }
+        if (!OriginalDeathDispatch::Stack::presentation_supported(type, condition))
+        {
+            return Result<bool>::failure(make_error("Unsupported synchronous presentation"));
+        }
+        if (type == 6)
+        {
+            if (condition == 0)
+            {
+                if (!campaign_scripted_roles_adapter_)
+                {
+                    return Result<bool>::failure(make_error("Original42012F synchronous source-role adapter unavailable"));
+                }
+                // 原raw军表只能在运行事务中连续扩充；预检不提交／模拟其副作用。
+                if (dryRun) { return Result<bool>::success(true); }
+                auto transaction = campaign_scripted_roles_adapter_(source, event);
+                if (!transaction || transaction->events.stage != source.stage)
+                {
+                    return Result<bool>::failure(make_error("Original42012F synchronous source-role transaction rejected"));
+                }
+                source = std::move(transaction->events);
+                if (!dryRun)
+                {
+                    if (!death_battle_baseline_) { death_battle_baseline_ = *battle_; }
+                    battle_->set_hostile_resources(source);
+                    if (transaction->commit)
+                    {
+                        if (!transaction->rollback) { return Result<bool>::failure(make_error("Original42012F raw-state rollback adapter unavailable")); }
+                        transaction->commit();
+                        death_presentation_commits_.push_back(std::move(transaction->rollback));
+                    }
+                }
+                return Result<bool>::success(true);
+            }
+            if (!dryRun)
+            {
+                story_disappearance_event_ = event;
+                story_disappearance_slot_ = 0;
+                death_presentation_event_ = event;
+                // 等Stack设置pending后，下一tick才开始逐角色消失。
+                phase_ = Phase::battle;
+            }
+            return Result<bool>::success(true);
+        }
+        auto* role = original_script_role(source, source.event_word(event, 5));
+        if (!role) { return Result<bool>::success(false); }
+        if (type == 7)
+        {
+            if (source.movement_class(*role) > 1)
+            {
+                return Result<bool>::failure(make_error("Original45E107 special scripted movement presentation unavailable"));
+            }
+            if (dryRun) { return Result<bool>::success(true); }
+            original_scripted_movement::Track track;
+            if (track.begin(*battle_, *role, { source.event_word(event, 7), source.event_word(event, 9) }, source.movement_class(*role)))
+            {
+                story_movement_event_ = event;
+                story_movement_unit_ = size_t(role - source.units.data());
+                story_movement_follow_ = false;
+                track.apply(*role);
+                story_movement_ = std::move(track);
+                phase_ = Phase::story_movement;
+            }
+            return Result<bool>::success(true);
+        }
+        if (!OriginalCampaign::living(*role)) { return Result<bool>::success(true); }
+        unsigned facing = unsigned(source.event_word(event, 7)) & 3;
+        if (condition == 16)
+        {
+            if (!dryRun)
+            {
+                role->direction = facing;
+                role->movement_frame = 0;
+                death_presentation_presented_ = false;
+            }
+            return Result<bool>::success(true);
+        }
+        if (role->status_flags & 0x10)
+        {
+            return Result<bool>::failure(make_error("Original440677 alternate single animation unavailable"));
+        }
+        if (!campaign_) { campaign_.emplace(root_); }
+        // 46127C的[record+5] SAR16为WORD7动作，[record+7] SAR16为WORD9方向。
+        const unsigned action = unsigned(uint16_t(source.event_word(event, 7)));
+        facing = unsigned(source.event_word(event, 9)) & 3;
+        auto frames = campaign_->try_animation_sequence_length(role->appearance, action * 4 + facing);
+        if (!frames) { return Result<bool>::failure(frames.error()); }
+        if (!dryRun)
+        {
+            story_poses_ = { { size_t(role - source.units.data()), frames.value(), action, role->action_state } };
+            story_turning_ = role->direction != facing;
+            story_pose_elapsed_ = 0;
+            story_animation_event_ = event;
+            map_.center(role->x, role->y);
+            role->direction = facing;
+            role->animation_action = story_turning_ ? 0 : action;
+            role->movement_pose = true;
+            role->movement_frame = 0;
+            phase_ = Phase::story_animation;
+        }
+        return Result<bool>::success(true);
+    }
     void continue_synchronous_death()
     {
         if (auto next = synchronous_death_stack_->next(events))
@@ -2203,6 +2684,54 @@ public:
         {
             rollback_synchronous_death();
             report_error(make_error("Original death continuation reached unsupported handler; transaction rolled back"));
+            return;
+        }
+        if (auto choice = synchronous_death_stack_->choice_pending())
+        {
+            event_ = *choice;
+            line_ = 0;
+            selection_ = 0;
+            phase_ = Phase::choice;
+            if (!prepare()) { rollback_synchronous_death(); }
+            return;
+        }
+        if (synchronous_death_stack_->presentation_pending())
+        {
+            if (phase_ == Phase::story_movement || phase_ == Phase::story_animation || phase_ == Phase::story_disappearance) { return; }
+            if (death_presentation_event_)
+            {
+                death_presentation_event_.reset();
+                next_story_disappearance();
+                return;
+            }
+            if (!death_presentation_presented_) { return; }
+            synchronous_death_stack_->finish_presentation();
+            continue_synchronous_death();
+            return;
+        }
+        if (synchronous_death_stack_->location_notice())
+        {
+            auto location = map_.try_completion_location(synchronous_death_stack_->location_notice());
+            if (!location)
+            {
+                rollback_synchronous_death();
+                report_error(location.error());
+                return;
+            }
+            death_location_ = location.value();
+            while (!map_.evacuation_camera_step(location.value().first, location.value().second)) {}
+            OriginalMenu font(root_);
+            auto image = map_.draw();
+            auto drawn = map_.draw_completion_location(font, image, location.value().first, location.value().second);
+            if (!drawn)
+            {
+                rollback_synchronous_death();
+                report_error(drawn.error());
+                return;
+            }
+            death_location_ms_ = 4000;
+            death_location_presented_ = false;
+            phase_ = Phase::battle;
             return;
         }
         if (synchronous_death_stack_->evacuation_pending())
@@ -2234,6 +2763,9 @@ public:
         synchronous_death_baseline_.reset();
         death_camera_baseline_.reset();
         synchronous_death_stack_.reset();
+        death_presentation_commits_.clear();
+        death_battle_baseline_.reset();
+        death_map_baseline_.reset();
         phase_ = Phase::battle;
         battle_->lock_skill94_death(false);
         auto resume = std::move(synchronous_death_return_);
@@ -2249,7 +2781,18 @@ public:
     }
     bool spirit_sight_pending = false;
     bool invisibility_presentation_pending() const { return map_.invisibility_present_pending(); }
-    bool original_save_boundary_ready() const { return !summon_publish_ && !spirit_sight_pending && !map_.invisibility_present_pending() && !teleport_ && !skill_visual_active() && !synchronous_death_active() && !skill94_death_commit_ && (!battle_ || (!battle_->combat_feedback_active() && !battle_->animating_movement())); }
+    bool original_save_boundary_ready() const { return !temporary_text_ && !deployment_requested_ && !growth_active() && !summon_publish_ && !spirit_sight_pending && !map_.invisibility_present_pending() && !teleport_ && !skill_visual_active() && !synchronous_death_active() && !skill94_death_commit_ && (!battle_ || (!battle_->ai_skill_pending() && !battle_->combat_feedback_active() && !battle_->animating_movement())); }
+    bool temporary_text_active() const { return temporary_text_.has_value(); }
+    void observe_music(unsigned id) { if (!temporary_text_) { current_script_music_ = id; } }
+    void cancel_temporary_text() { if (temporary_text_) { temporary_text_->cancel(); } }
+    bool deployment_requested() const { return deployment_requested_; }
+    void commit_deployment(OriginalEvents events)
+    {
+        this->events = std::move(events);
+        deployment_requested_ = false;
+        deployment_completed_ = true;
+        enter_stage_battle();
+    }
     bool begin_synchronous_death(unsigned role, std::function<void()> resume, const OriginalEvents::Unit* dying = nullptr)
     {
         if (synchronous_death_active() || !resume)
@@ -2266,7 +2809,12 @@ public:
             if (unit == staged.units.end() || dying->id != role) { return false; }
             *unit = *dying;
         }
-        auto plan = OriginalDeathDispatch::continuation(staged, role);
+        auto plan = OriginalDeathDispatch::continuation(staged, role, [this](const OriginalEvents& e, size_t i) -> Result<bool>
+            {
+                if (e.condition(i) == 1 && (!script_effect_audio_ || !stop_effect_audio_)) { return Result<bool>::failure(make_error("Original death script effect adapter unavailable")); }
+                if (e.condition(i) == 2 && !music_audio_) { return Result<bool>::failure(make_error("Original death script music adapter unavailable")); }
+                return Result<bool>::success(true);
+            }, [this](OriginalEvents& e, size_t i) { return begin_death_presentation(e, i, true); });
         if (!plan.supported)
         {
             return false;
@@ -2277,10 +2825,15 @@ public:
             return true;
         }
         death_camera_baseline_ = std::pair{ map_.camera_x, map_.camera_y };
+        death_map_baseline_ = map_;
         synchronous_death_baseline_ = events;
         events = std::move(staged);
         synchronous_death_return_ = std::move(resume);
-        synchronous_death_stack_.emplace(events, plan.dialogue.front());
+        synchronous_death_stack_.emplace(events, plan.dialogue.front(), [this](const OriginalEvents& e, size_t i) -> Result<bool>
+            {
+                if (e.condition(i) == 1) { return original_script_sound(e.event_word(i, 5), script_effect_audio_, stop_effect_audio_); }
+                return music_audio_(unsigned(e.event_word(i, 5)));
+            }, [this](OriginalEvents& e, size_t i) { return begin_death_presentation(e, i, false); });
         event_ = *synchronous_death_stack_->next(events);
         line_ = 0;
         battle_->lock_skill94_death(true);
@@ -2293,7 +2846,15 @@ public:
         auto pose = events.units;
         pose[target].status_flags &= ~0x20u;
         pose[target].hp = std::max(1, pose[target].hp);
-        if (!map_.begin_disappearance(pose, target, battle_->turn(), animation_elapsed_, true)) { return false; }
+        auto candidate = map_;
+        if (!candidate.begin_disappearance(pose, target, battle_->turn(), animation_elapsed_, true)) { return false; }
+        auto sounded = play_death_effect();
+        if (!sounded)
+        {
+            report_error(sounded.error());
+            return false;
+        }
+        map_ = std::move(candidate);
         skill94_death_commit_ = std::move(commit);
         skill94_death_presented_ = false;
         skill94_death_frame_ = 0;
@@ -2383,6 +2944,9 @@ public:
     }
     void frame_presented()
     {
+        if (item_presentation_) { item_presentation_->presented = true; }
+        if (synchronous_death_active() && synchronous_death_stack_->presentation_pending()) { death_presentation_presented_ = true; }
+        if (growth_active()) { growth_presented_ = true; }
         if (summon_map_) { summon_map_->summon_growth_presented(); }
         map_.invisibility_presented();
         idle_clock_.presented();
@@ -2392,6 +2956,7 @@ public:
             teleport_->presented = true;
         }
         if (physical_departure_) { physical_departure_presented_ = true; }
+        if (death_location_) { death_location_presented_ = true; }
         if (evacuation_.active())
         {
             evacuation_presented_ = true;
@@ -2426,7 +2991,42 @@ public:
             skill94_visual_->presented();
         }
     }
-    bool skill_visual_active() const { return skill32_visual_ || skill88_visual_ || skill94_visual_; }
+    struct ItemPresentation
+    {
+        size_t actor{}, target{};
+        unsigned frames{}, elapsed{}, step{};
+        bool presented{}, tint{};
+        OriginalEvents::Unit before;
+        std::function<void()> commit;
+    };
+    std::optional<ItemPresentation> item_presentation_;
+    Result<bool> begin_item_presentation(size_t actor, size_t target, bool tint, std::function<void()> commit)
+    {
+        if (!battle_ || item_presentation_ || skill_visual_active() || actor >= events.units.size() || target >= events.units.size() || !commit)
+        { return Result<bool>::failure(make_error("45024C item presentation unavailable")); }
+        if (!campaign_) { campaign_.emplace(root_); }
+        const auto& unit = events.units[actor];
+        const auto& recipient = events.units[target];
+        const unsigned direction = Battle::facing({unit.x, unit.y}, {recipient.x, recipient.y}, unit.direction);
+        auto frames = campaign_->try_animation_sequence_length(unit.appearance, 4 + direction);
+        if (!frames) { return Result<bool>::failure(frames.error()); }
+        auto roster = events.units;
+        if (tint && !map_.begin_teleport_arrival(roster, unsigned(target), battle_->turn(), true, animation_elapsed_, 97))
+        { return Result<bool>::failure(make_error("454ED5 item tint bitmap unavailable")); }
+        if (tint) { map_.cancel_teleport_arrival(); }
+        if (script_effect_audio_)
+        {
+            auto played = script_effect_audio_(126, 0);
+            if (!played) { map_.cancel_teleport_arrival(); return Result<bool>::failure(played.error()); }
+        }
+        item_presentation_ = ItemPresentation{actor, target, frames.value(), 0, 0, false, tint, unit, std::move(commit)};
+        events.units[actor].animation_action = 1;
+        events.units[actor].direction = direction;
+        events.units[actor].movement_pose = true;
+        events.units[actor].movement_frame = 0;
+        return Result<bool>::success(true);
+    }
+    bool skill_visual_active() const { return item_presentation_ || skill32_visual_ || skill88_visual_ || skill94_visual_; }
     Result<OriginalMap> prepare_invisibility_scratch(const std::vector<OriginalEvents::Unit>& staged, const std::vector<size_t>& targets)
     {
         auto prepared = map_;
@@ -2510,12 +3110,18 @@ public:
                     origin.y = center->y;
                 }
                 OriginalSkills menu(root_);
-                menu.open(actor, { .second = damage->raw[0] >= 9 });
-                for (unsigned n = 0; n < 150 && menu.selected().id != statusSkill; ++n)
+                OriginalSkills::Context context{};
+                context.second = damage->raw[0] >= 9;
+                context.computer = battle_->ai_skill_pending();
+                context.army_da_nonzero = events.army_modes && (*events.army_modes)[actor.hostile() ? 1 : 0] != 0;
+                context.suppress_first = events.flags[8] != 0;
+                context.suppress_second = events.flags[9] != 0;
+                menu.open(actor, context);
+                if (battle_->ai_skill_request()) { menu.set_ai_direction(battle_->ai_skill_request()->direction); }
+                if (!menu.select_record(statusSkill))
                 {
-                    bool has = false;
-                    for (const auto& r : menu.groups()[menu.selected_group()].records) { has |= r.id == statusSkill; }
-                    menu.navigate(has ? 0x50 : 0x4D);
+                    report_error(make_error("AI damage visual learned record unavailable"));
+                    return false;
                 }
                 menu.set_area_elevation([&](int x, int y)
                     {
@@ -2617,6 +3223,77 @@ public:
             skill32_target_ = caster;
             skill_area_center_ = (sleep2 || blessing3 || statusSkill == 29 || statusSkill == 18 || statusSkill == 40 || NativeDamageRecords::find(statusSkill) || NativeAbilityBuffs::find(statusSkill) || NativeTimedBuffs::find(statusSkill) || statusSkill == 8 || statusSkill == 12 || statusSkill == 35 || statusSkill == 39 || statusSkill == 48 || statusSkill == 56 || statusSkill == 60 || statusSkill == 4 || statusSkill == 6 || statusSkill == 9 || statusSkill == 13 || statusSkill == 15 || statusSkill == 53 || statusSkill == 34 || statusSkill == 38 || statusSkill == 54 || statusSkill == 96) ? center : std::nullopt;
             skill88_visual_ = std::move(visual);
+            std::vector<OriginalActionAudioCues::Cue> cues;
+            if (damage && statusSkill <= skill_effect_sounds_.size())
+            {
+                const auto sound = skill_effect_sounds_[statusSkill - 1];
+                // 原46D072：arg8=2时每三次已呈现推进启动下一目标，并再次播同视觉声音。
+                if (damage->dispatch == 9)
+                {
+                    for (size_t i = 0; i < skill78_targets_.size(); ++i) { cues.push_back({ i * 3, sound }); }
+                }
+                else if (damage->dispatch == 6)
+                {
+                    size_t previous = size_t(-1);
+                    for (const auto& cell : spell_cells_)
+                    {
+                        if (cell.start != previous)
+                        {
+                            cues.push_back({ cell.start, sound });
+                            previous = cell.start;
+                        }
+                    }
+                }
+                else if (damage->dispatch == 10)
+                {
+                    for (const auto& cell : spell_cells_) { cues.push_back({ cell.start, sound }); }
+                }
+                else if (damage->dispatch == 5 && statusSkill <= skill_followup_sounds_.size())
+                {
+                    cues.push_back({ 0, sound });
+                    cues.push_back({ spell_primary_frames_, skill_followup_sounds_[statusSkill - 1] });
+                }
+                else if (damage->dispatch == 7)
+                {
+                    cues.push_back({ 0, sound });
+                    cues.push_back({ 7, sound });
+                }
+                else if (damage->dispatch == 8)
+                {
+                    cues.push_back({ 0, sound });
+                    cues.push_back({ spell_primary_frames_, sound });
+                }
+                else if (damage->dispatch == 0 || damage->dispatch == 1 || damage->dispatch == 4) { cues.push_back({ 0, sound }); }
+            }
+            if (statusSkill == 51 && statusSkill <= skill_followup_sounds_.size())
+            {
+                cues.push_back({ 0, skill_effect_sounds_[statusSkill - 1] });
+                cues.push_back({ spell_primary_frames_, skill_followup_sounds_[statusSkill - 1] });
+            }
+            if (statusSkill == 29 && statusSkill <= skill_effect_sounds_.size())
+            {
+                const auto sound = skill_effect_sounds_[statusSkill - 1];
+                cues.push_back({ 0, sound });
+                cues.push_back({ 7, sound });
+            }
+            if (!damage && statusSkill != 29 && statusSkill != 51)
+            {
+                unsigned skill = statusSkill;
+                if (!skill)
+                {
+                    skill = 88;
+                    if (healing1) { skill = 1; }
+                    else if (sleep2) { skill = 2; }
+                    else if (blessing3) { skill = 3; }
+                }
+                if (skill <= skill_effect_sounds_.size()) { cues.push_back({ 0, skill_effect_sounds_[skill - 1] }); }
+            }
+            skill_audio_cues_.begin(std::move(cues));
+            if (script_effect_audio_)
+            {
+                auto played = skill_audio_cues_.advance(0, script_effect_audio_);
+                if (!played) { report_error(played.error()); }
+            }
             return true;
         }
     }
@@ -2635,6 +3312,7 @@ public:
             skill32_background_ = std::move(background);
             skill32_target_ = target;
             skill94_visual_ = std::move(visual);
+            play_skill_effect(94);
             return true;
         }
     }
@@ -2659,6 +3337,7 @@ public:
             skill32_background_ = std::move(background);
             skill32_target_ = target;
             skill32_visual_ = std::move(visual);
+            play_skill_effect(curse33 ? 33u : 32u);
             return true;
         }
     }
@@ -2695,6 +3374,14 @@ public:
     }
     void tick(unsigned milliseconds)
     {
+        if (growth_active())
+        {
+            if (growth_presented_) { growth_elapsed_ += milliseconds; }
+            unsigned delay = 1200;
+            if (learning_notice()) { delay = 2500; }
+            if (growth_elapsed_ >= delay) { confirm_growth(); }
+            return;
+        }
         auto result = try_tick(milliseconds);
         if (result)
         {
@@ -2711,6 +3398,67 @@ public:
     }
     Result<bool> try_tick(unsigned milliseconds)
     {
+        if (temporary_text_)
+        {
+            temporary_text_->tick(milliseconds);
+            if (!temporary_text_->done()) { return Result<bool>::success(true); }
+            auto restored = music_audio_(0);
+            if (restored) { restored = music_audio_(temporary_restore_music_); }
+            if (!restored) { return restored; }
+            current_script_music_ = temporary_restore_music_;
+            bool resume_script = temporary_event_ < events.event_count();
+            if (resume_script) { events.complete(temporary_event_); }
+            temporary_text_.reset();
+            if (resume_script)
+            {
+                if (battle_) { dispatch_campaign(); }
+                else
+                {
+                    dispatch_story();
+                }
+            }
+            return Result<bool>::success(true);
+        }
+        if (deployment_requested_) { return Result<bool>::success(true); }
+        if (item_presentation_)
+        {
+            auto& item = *item_presentation_;
+            if (!item.presented) { return Result<bool>::success(true); }
+            item.presented = false;
+            item.elapsed += std::min(milliseconds, 190u);
+            if (!item.step)
+            {
+                if (item.elapsed < 120) { return Result<bool>::success(true); }
+                item.elapsed = 0;
+                if (++events.units[item.actor].movement_frame < item.frames) { return Result<bool>::success(true); }
+                events.units[item.actor] = item.before;
+                item.step = 1;
+                if (item.tint)
+                {
+                    if (!map_.begin_teleport_arrival(events.units, unsigned(item.target), battle_->turn(), true, animation_elapsed_, 97))
+                    {
+                        item_presentation_.reset();
+                        return Result<bool>::failure(make_error("454ED5 item tint failed before publication"));
+                    }
+                    return Result<bool>::success(true);
+                }
+            }
+            if (item.tint)
+            {
+                map_.teleport_arrival_presented();
+                map_.tick_teleport_arrival(milliseconds);
+                if (map_.teleport_arrival_active()) { return Result<bool>::success(true); }
+            }
+            auto commit = std::move(item.commit);
+            item_presentation_.reset();
+            commit();
+            return Result<bool>::success(true);
+        }
+        if (synchronous_death_active() && synchronous_death_stack_->presentation_pending() && phase_ == Phase::battle && death_presentation_presented_)
+        {
+            continue_synchronous_death();
+            return Result<bool>::success(true);
+        }
         if (summon_publish_)
         {
             auto image = summon_map_->draw();
@@ -2783,6 +3531,15 @@ public:
                     return Result<bool>::success(true);
                 }
                 u.action_state = 1;
+                if (!spell_transfer_publish_ && events.movement_class(u) == 2 && script_effect_audio_)
+                {
+                    auto played = script_effect_audio_(104, 0);
+                    if (!played)
+                    {
+                        rollback_teleport();
+                        return Result<bool>::failure(played.error());
+                    }
+                }
                 t.phase = 1;
                 return Result<bool>::success(true);
             }
@@ -2796,6 +3553,15 @@ public:
                 u.y = t.destination.y;
                 // 45DB10 keeps2D=1 throughout454ED5, restoring it only after arrival.
                 u.action_state = 1;
+                if (!spell_transfer_publish_ && events.movement_class(u) == 2 && script_effect_audio_)
+                {
+                    auto played = script_effect_audio_(104, 0);
+                    if (!played)
+                    {
+                        rollback_teleport();
+                        return Result<bool>::failure(played.error());
+                    }
+                }
                 if (!map_.begin_teleport_arrival(roster, t.target, battle_->turn(), false, t.pose_time))
                 {
                     rollback_teleport();
@@ -2832,6 +3598,19 @@ public:
             teleport_map_baseline_.reset();
             spell_transfer_roster_.clear();
             if (publish) { publish(); }
+            return Result<bool>::success(true);
+        }
+        if (death_location_)
+        {
+            if (!death_location_presented_) { return Result<bool>::success(true); }
+            death_location_presented_ = false;
+            death_location_ms_ -= std::min(milliseconds, death_location_ms_);
+            if (!death_location_ms_)
+            {
+                death_location_.reset();
+                synchronous_death_stack_->finish_location_notice(events);
+                continue_synchronous_death();
+            }
             return Result<bool>::success(true);
         }
         if (evacuation_.active())
@@ -2927,8 +3706,14 @@ public:
         if (skill88_visual_)
         {
             skill88_visual_->tick(milliseconds);
+            if (!skill88_visual_->done() && script_effect_audio_)
+            {
+                auto played = skill_audio_cues_.advance(skill88_visual_->frame(), script_effect_audio_);
+                if (!played) { return played; }
+            }
             if (skill88_visual_->done())
             {
+                skill_audio_cues_.cancel();
                 skill88_visual_.reset();
                 skill32_background_.clear();
             }
@@ -3002,6 +3787,13 @@ public:
                 return Result<bool>::success(true);
             }
             story_movement_.reset();
+            if (synchronous_death_active())
+            {
+                phase_ = Phase::battle;
+                synchronous_death_stack_->finish_presentation();
+                continue_synchronous_death();
+                return Result<bool>::success(true);
+            }
             event_ = story_movement_event_;
             line_ = 0;
             if (events.line_count(event_))
@@ -3106,6 +3898,13 @@ public:
             {
                 size_t event = *story_animation_event_;
                 story_animation_event_.reset();
+                if (synchronous_death_active())
+                {
+                    phase_ = Phase::battle;
+                    synchronous_death_stack_->finish_presentation();
+                    continue_synchronous_death();
+                    return Result<bool>::success(true);
+                }
                 event_ = event;
                 line_ = 0;
                 if (events.line_count(event))
@@ -3208,7 +4007,7 @@ public:
         if (in_battle())
         {
             const bool was_moving = battle_->animating_movement();
-            battle_->tick_movement(milliseconds);
+            battle_->tick_movement(events.units, milliseconds);
             battle_->tick_combat_feedback(events.units, milliseconds);
             if (dispatch_campaign())
             {
@@ -3550,8 +4349,17 @@ public:
     }
     Battle::State battle_state() const { return battle_ ? battle_->state() : Battle::State::idle; }
     std::pair<int, int> camera() const { return { map_.camera_x, map_.camera_y }; }
-    void restore_battle(OriginalEvents restored, unsigned turn, bool resume_story = true)
+    void restore_battle(OriginalEvents restored, unsigned turn, bool resume_story = true, bool interbattle = false)
     {
+        deployment_requested_ = false;
+        deployment_completed_ = false;
+        // 原4367CB／4293AF在载入、场景重建前停曲；不将普通模态关闭当场景重建。
+        if (music_audio_)
+        {
+            auto stopped = music_audio_(0);
+            if (!stopped) { report_error(stopped.error()); }
+        }
+        ++music_restore_generation_;
         summon_map_.reset();
         summon_roster_.clear();
         summon_publish_ = {};
@@ -3597,6 +4405,14 @@ public:
         first_banner_ = false;
         finished = true;
         restored_story_pending_ = resume_story && story_stage();
+        if (interbattle)
+        {
+            if (!campaign_) { campaign_.emplace(root_); }
+            interbattle_.emplace(root_, disc_);
+            campaign_settled_ = true;
+            restored_story_pending_ = false;
+            phase_ = Phase::interbattle;
+        }
     }
     void show_objectives()
     {
@@ -3728,7 +4544,8 @@ public:
     }
     Result<bool> try_advance()
     {
-        if (teleport_ || evacuation_.active())
+        if (deployment_requested_) { return Result<bool>::success(true); }
+        if (teleport_ || evacuation_.active() || death_location_)
         {
             return Result<bool>::success(true);
         }
@@ -3798,6 +4615,17 @@ public:
         if (choosing())
         {
             chosen_ = unsigned(selection_ + 1);
+            if (synchronous_death_active())
+            {
+                auto chosen = synchronous_death_stack_->finish_choice(events, chosen_);
+                if (!chosen)
+                {
+                    rollback_synchronous_death();
+                    return chosen;
+                }
+                continue_synchronous_death();
+                return Result<bool>::success(true);
+            }
             events.choose(event_, chosen_);
             if (story_stage())
             {
@@ -3894,6 +4722,11 @@ public:
             revealed_glyphs_ = 0;
             text_elapsed_ = 0;
             return Result<bool>::success(true);
+        }
+        if (music_audio_ && dialogue_music_after_ > 0)
+        {
+            auto played = music_audio_(unsigned(dialogue_music_after_));
+            if (!played) { return played; }
         }
         if (++line_ < events.line_count(event_))
         {
@@ -4016,9 +4849,19 @@ public:
             font.draw_small(image, { number.begin(), number.end() }, i ? 607 : 556, panel_y + 92, 137, true);
         }
     }
-    std::vector<uint8_t> draw(const OriginalMenu& font) const
+    void mask_ground_selection(std::vector<uint8_t>& pixels, Battle::Point cell) const { map_.mask_selection(pixels, cell.x, cell.y); }
+    std::vector<uint8_t> draw(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay = {}) const
     {
+        if (temporary_text_) { return temporary_text_->draw(); }
         map_.set_army_modes(events.army_modes);
+        if (death_location_)
+        {
+            auto image = map_.draw();
+            map_.draw_units(image, events.units, battle_->turn(), animation_elapsed_);
+            auto result = map_.draw_completion_location(font, image, death_location_->first, death_location_->second);
+            if (!result) { report_error(result.error()); }
+            return image;
+        }
         if (map_.invisibility_present_pending()) { return map_.present_invisibility_viewport(); }
         if (skill94_visual_)
         {
@@ -4298,6 +5141,7 @@ public:
             {
                 reaction = unsigned(feedback.target);
             }
+            if (groundOverlay) { groundOverlay(image); }
             map_.draw_units(image, rendered_units, battle_->turn(), animation_elapsed_, std::nullopt, reaction);
             if (computer_actions())
             {

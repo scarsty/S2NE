@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "original_item_use.hpp"
 #include "original_role_panel.hpp"
 #include "original_save_bridge.hpp"
@@ -14,6 +14,8 @@ class OriginalArmyEquipmentMenu
     OriginalRolePanel panel_;
     OriginalItemUse use_;
     bool item_mode_ = false;
+    std::function<Result<bool>(size_t, unsigned)> use_adapter_;
+    std::optional<size_t> fixed_role_;
     original_combat::Random random_{ 1 };
     std::optional<OriginalConfirmation> confirmation_;
     OriginalEvents events_;
@@ -115,6 +117,24 @@ public:
     }
     bool transitioning() const { return fade_step_ < 16; }
     bool closed() const { return closed_; }
+    void set_use_adapter(size_t role, std::function<Result<bool>(size_t, unsigned)> adapter)
+    {
+        fixed_role_ = role;
+        use_adapter_ = std::move(adapter);
+        auto found = std::find(roles_.begin(), roles_.end(), role);
+        if (found == roles_.end()) { closed_ = true; return; }
+        size_t row = size_t(found - roles_.begin());
+        first_role_ = row > 9 ? row - 9 : 0;
+        role_row_ = row - first_role_;
+        closed_ = false;
+    }
+    void refresh_items(const OriginalSave::State& state) { refresh(state); }
+    void return_from_target(const OriginalSave::State& state)
+    {
+        closed_ = false;
+        confirmation_.reset();
+        refresh(state);
+    }
     bool take_changed() { return std::exchange(changed_, false); }
     size_t selected_role() const { return roles_.at(first_role_ + role_row_); }
     size_t selected_slot() const { return slot_; }
@@ -150,6 +170,13 @@ public:
     }
     Result<bool> use_selected(OriginalSave::State& state)
     {
+        if (use_adapter_)
+        {
+            auto applied = use_adapter_(selected_role(), selected_item());
+            if (!applied || !applied.value()) { return applied; }
+            closed_ = true;
+            return applied;
+        }
         auto staged = state;
         auto rng = random_;
         auto applied = use_.try_apply(staged, selected_role(), selected_item(), rng, uint32_t(std::time(nullptr)));
@@ -212,10 +239,10 @@ public:
             if (x >= 45 && x <= 244 && y >= top + 37 && y < top + 212)
             {
                 size_t row = size_t(y - top - 37) / 35;
-                if (first_ + row >= choices_.size() || !use_.eligible(state, selected_role(), choices_[first_ + row])) { return; }
+                if (first_ + row >= choices_.size() || (!use_adapter_ && !use_.eligible(state, selected_role(), choices_[first_ + row]))) { return; }
                 bool same = row_ == row;
                 row_ = row;
-                if (left && same && use_.usable_in_inn(selected_item())) { confirmation_.emplace(root_, font_, 80, 200, 400, true); }
+                if (left && same && (use_adapter_ || use_.usable_in_inn(selected_item()))) { confirmation_.emplace(root_, font_, 80, 200, 400, true); }
                 return;
             }
             if (!left) { return; }
@@ -272,7 +299,7 @@ public:
                 }
             }
         }
-        if (x >= 250 && x <= 445 && y >= 22 && y < 222)
+        if (!fixed_role_ && x >= 250 && x <= 445 && y >= 22 && y < 222)
         {
             size_t row = size_t(y - 22) / 20;
             if (first_role_ + row < roles_.size())
@@ -283,7 +310,7 @@ public:
             }
             return;
         }
-        if (x >= 218 && x <= 237 && y >= 15 && y < 228)
+        if (!fixed_role_ && x >= 218 && x <= 237 && y >= 15 && y < 228)
         {
             if (y <= 38 || y >= 205) { move(first_role_, role_row_, roles_.size(), 10, y >= 205); }
             else if (roles_.size() > 10 && y >= 40 && y <= 203)
@@ -319,7 +346,7 @@ public:
             {
                 unsigned id = choices_[first_ + row];
                 int color;
-                if (use_.eligible(state, selected_role(), id))
+                if (use_adapter_ || use_.eligible(state, selected_role(), id))
                 {
                     if (row == row_) { color = 242; }
                     else
@@ -346,7 +373,7 @@ public:
             int thumb = top + 42;
             if (!choices_.empty() && first_ + row_) { thumb += int((first_ + row_ + 1) * 134 / choices_.size()); }
             graphics_.shared_panel(image, 0x4F72AC, 15, thumb);
-            if (selected_item() && selected_item() < item_help_.size() && use_.eligible(state, selected_role(), selected_item()))
+            if (selected_item() && selected_item() < item_help_.size() && (use_adapter_ || use_.eligible(state, selected_role(), selected_item())))
             {
                 const auto& caption = item_help_[0];
                 font_.draw_original_large(image, caption, 446 - int(caption.size()) * 6, top + 27, 45);

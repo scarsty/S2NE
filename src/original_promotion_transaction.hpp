@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "original_promotion.hpp"
 #include <algorithm>
 
@@ -567,6 +567,22 @@ public:
             u.learned[group] |= uint16_t(1u << (bit & 31));
         }
         return true;
+    }
+    std::vector<uint8_t> newly_learned_name(const Unit& before, const Unit& after, unsigned group) const
+    {
+        std::vector<uint8_t> name;
+        if (group >= group_count_) { return name; }
+        const unsigned first = bin_.at(groups_ + group * 2), count = bin_.at(groups_ + group * 2 + 1);
+        for (unsigned bit = 0; bit < count; ++bit)
+        {
+            const unsigned mask = 1u << bit;
+            const size_t p = actions_ + size_t(first + bit) * 37;
+            // 原4659BD只将非合作的新招式名传给458B03，多项同时取得时保留最后一项。
+            if ((before.learned[group] & mask) || !(after.learned[group] & mask) || (bin_.at(p + 32) & 6)) { continue; }
+            name.clear();
+            for (size_t n = 2; n < 13 && bin_.at(p + n); ++n) { name.push_back(bin_.at(p + n)); }
+        }
+        return name;
     }
     void learn_relations(Unit& u) const
     {

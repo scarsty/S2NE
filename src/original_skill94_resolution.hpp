@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "original_skill94_formula.hpp"
 namespace s2ne
 {
@@ -180,7 +180,7 @@ public:
     // 018/040: 466544 ->467625 uses the generic ST branch46DBA9,
     // not effect1's proficiency-weighted46D999 or471F51 zero promotion.
     Result<Resolution> try_resolve_drain(int actor_st, int target_st, int raw, int target_hp,
-        const DamageContext& ctx, original_combat::Random& random, uint32_t seconds, int hit_power) const
+        const DamageContext& ctx, original_combat::Random& random, uint32_t seconds, int hit_power, bool randomized = true) const
     {
         if ((ctx.effect != 41 && ctx.effect != 42) || target_hp <= 0 || target_hp > 32767
             || actor_st < -32768 || actor_st > 32767 || target_st < -32768 || target_st > 32767
@@ -196,21 +196,21 @@ public:
         if (!excluded)
         {
             chance = OriginalSkill94Formula::hit_curve(actor_st - target_st + hit_power - 100);
-            chance = chance * (config_[10] + staged.bounded(config_[11] + 3, seconds)) / 10;
+            chance = chance * (config_[10] + (randomized ? staged.bounded(config_[11] + 3, seconds) : (config_[11] + 3) / 2)) / 10;
             if (ctx.friendly_army && !ctx.conditions_mode) { chance = chance * (100 + config_[0xF3 + ctx.difficulty]) / 100; }
             chance = std::clamp(chance, 1, 99);
-            auto modified = try_modified_damage(raw, ctx, staged, seconds);
+            auto modified = try_modified_damage(raw, ctx, staged, seconds, randomized);
             if (!modified) { return Result<Resolution>::failure(modified.error()); }
             damage = std::clamp(modified.value(), 0, target_hp);
         }
-        const int roll = staged.percent(seconds);
+        const int roll = randomized ? staged.percent(seconds) : 0;
         random = staged;
         return Result<Resolution>::success({ chance, damage, roll, roll <= chance });
     }
     // effect1: 4654A6 ->466082 ->46618D ->471F51 ->46D431.
     // 471F51 caps damage to HP, promotes zero to1, THEN draws47328B.
     // Arithmetic packet only: no HP, rewards or payment; RNG commits on success.
-    Result<Resolution> try_resolve(const HitInput& in, int raw, int target_hp, int elevation, const DamageContext& ctx, original_combat::Random& rng, uint32_t seconds, int hit_power = 50, bool guaranteed_hit = false, bool elevation_enabled = true, unsigned hit_flags = 2) const
+    Result<Resolution> try_resolve(const HitInput& in, int raw, int target_hp, int elevation, const DamageContext& ctx, original_combat::Random& rng, uint32_t seconds, int hit_power = 50, bool guaranteed_hit = false, bool elevation_enabled = true, unsigned hit_flags = 2, bool randomized = true) const
     {
         if (target_hp < 0 || target_hp > 32767 || ctx.difficulty < 1 || ctx.difficulty > 5 || ctx.profession_resistance > 65535 || ctx.profession_weakness > 65535 || ctx.target_movement_class > 5 || ctx.target_immunity2f > 255)
         {
@@ -227,7 +227,7 @@ public:
         if (immune) { hit = Result<int>::success(0); }
         else if (!guaranteed_hit)
         {
-            if (hit_flags == 2) { hit = try_final_hit_from_dd11(base.value(), elevation_enabled ? elevation : 0, ctx.difficulty, ctx.friendly_army, ctx.conditions_mode, staged, seconds); }
+            if (hit_flags == 2) { hit = try_final_hit_from_dd11(base.value(), elevation_enabled ? elevation : 0, ctx.difficulty, ctx.friendly_army, ctx.conditions_mode, staged, seconds, randomized); }
             else if (hit_flags == 1 || hit_flags == 3 || hit_flags == 5)
             {
                 const int proficiency = std::max(10u, in.actor_proficiency / 10);
@@ -244,7 +244,7 @@ public:
                 {
                     curve = 1;
                 }
-                const int factor = config_[6] + staged.bounded(config_[7] + 3, seconds);
+                const int factor = config_[6] + (randomized ? staged.bounded(config_[7] + 3, seconds) : (config_[7] + 3) / 2);
                 int accumulator = hit_flags == 5 ? hit_power : 0;
                 accumulator = accumulator * factor / 10;
                 if (ctx.friendly_army && !ctx.conditions_mode) { accumulator = accumulator * (100 + config_[0xF3 + ctx.difficulty]) / 100; }
@@ -253,7 +253,7 @@ public:
                 if (hit_flags == 3)
                 {
                     // 46D748 randomizes the accumulated ST result before adding DD11.
-                    const int second_factor = config_[6] + staged.bounded(config_[7] + 3, seconds);
+                    const int second_factor = config_[6] + (randomized ? staged.bounded(config_[7] + 3, seconds) : (config_[7] + 3) / 2);
                     chance = chance * second_factor / 10;
                     if (ctx.friendly_army && !ctx.conditions_mode) { chance = chance * (100 + config_[0xF3 + ctx.difficulty]) / 100; }
                     chance = std::clamp(chance, 1, 99);
@@ -276,7 +276,7 @@ public:
         int damage = 0;
         if (chance)
         {
-            auto value = try_modified_damage(raw, ctx, staged, seconds);
+            auto value = try_modified_damage(raw, ctx, staged, seconds, randomized);
             if (!value)
             {
                 return Result<Resolution>::failure(value.error());
@@ -284,11 +284,11 @@ public:
             damage = value.value();
         }
         damage = std::min(target_hp, damage);
-        if (damage == 0 && ctx.effect != 41 && ctx.effect != 42)
+        if (randomized && damage == 0 && ctx.effect != 41 && ctx.effect != 42)
         {
             damage = 1;
         }
-        int roll = staged.percent(seconds);
+        int roll = randomized ? staged.percent(seconds) : 0;
         rng = staged;
         return Result<Resolution>::success({ chance, damage, roll, roll <= chance });
     }

@@ -36,13 +36,14 @@ class OriginalInn
     OriginalSettings::State settings_initial_;
     std::optional<OriginalSettings::State> settings_result_;
     std::filesystem::path root_;
+    std::filesystem::path save_root_;
     static unsigned word(const auto& bytes, size_t p) { return bytes.at(p) | (unsigned(bytes.at(p + 1)) << 8); }
     static unsigned dword(const auto& bytes, size_t p) { return word(bytes, p) | (word(bytes, p + 2) << 16); }
 
 public:
     static constexpr std::array<unsigned, 10> labels{ 193, 194, 128, 129, 195, 192, 80, 131, 123, 190 };
     static constexpr std::array<OriginalInterbattle::Rect, 10> rectangles{ { { 473, 60, 562, 176 }, { 310, 106, 380, 216 }, { 534, 184, 617, 303 }, { 455, 179, 530, 299 }, { 292, 243, 412, 479 }, { 292, 206, 352, 240 }, { 398, 209, 420, 252 }, { 48, 167, 120, 302 }, { 250, 158, 294, 202 }, { 121, 151, 266, 444 } } };
-    explicit OriginalInn(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one) : font_(root), background_(root, disc, 13), graphics_(root, disc), root_(root), domain_(disc)
+    explicit OriginalInn(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one) : font_(root), background_(root, disc, 13), graphics_(root, disc), root_(root), save_root_(root), domain_(disc)
     {
         auto result = try_load_towns(root);
         if (!result)
@@ -85,6 +86,7 @@ public:
         return Result<std::vector<uint8_t>>::success({ bin.value().begin() + p, bin.value().begin() + p + n - 14 });
     }
     bool closed() const { return closed_; }
+    void set_save_root(const std::filesystem::path& root) { save_root_ = root; }
     bool title_requested() const { return title_requested_; }
     bool title_confirmation_active() const { return title_confirm_.has_value(); }
     void finish_title_confirmation()
@@ -233,7 +235,7 @@ public:
             auto count = state.groups[0].inventory.size();
             if (result.action == OriginalSaveMenu::Action::save)
             {
-                auto written = OriginalSaveStore::try_write(root_, result.slot, state, count);
+                auto written = OriginalSaveStore::try_write(save_root_, result.slot, state, count);
                 saves_->complete(bool(written));
                 if (!written)
                 {
@@ -242,14 +244,23 @@ public:
             }
             else
             {
-                auto loaded = OriginalSave::try_load(OriginalSave::slot_path(root_, result.slot), count);
-                saves_->complete(bool(loaded));
+                auto loaded = OriginalSave::try_load(OriginalSave::slot_path(save_root_, result.slot), count);
                 if (loaded)
                 {
+                    auto restored = OriginalSaveBridge::try_restore(root_, loaded.value());
+                    if (!restored)
+                    {
+                        blocker_ = restored.error().message;
+                        report_error(restored.error());
+                        saves_->complete(false);
+                        return;
+                    }
                     loaded_ = std::move(loaded).value();
+                    saves_->complete(true);
                 }
                 else
                 {
+                    saves_->complete(false);
                     report_error(loaded.error());
                 }
             }
@@ -272,8 +283,13 @@ public:
             auto_confirm_.reset();
             if (*yes)
             {
-                OriginalEquipment(root_).auto_equip(state);
-                equipment_changed_ = true;
+                auto equipped = OriginalEquipment(root_).try_auto_equip(state);
+                if (!equipped)
+                {
+                    blocker_ = equipped.error().message;
+                    report_error(equipped.error());
+                }
+                else { equipment_changed_ = true; }
             }
         }
     }
@@ -388,7 +404,7 @@ public:
         }
         if (selected_ == 3 || selected_ == 4)
         {
-            auto slots = OriginalSaveMenu::scan(root_);
+            auto slots = OriginalSaveMenu::scan(save_root_);
             if (selected_ == 3 && !std::any_of(slots.begin(), slots.end(), [](const auto& slot)
                     {
                         return slot.occupied();

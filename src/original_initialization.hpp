@@ -1183,6 +1183,7 @@ public:
         raw.groups[1] = empty_group();
         raw.flags_4f7d10 = deployed.flags;
         raw.event_states = deployed.save_event_states();
+        OriginalSaveBridge::put(raw.globals_4f7cd0, 4, 0, 4);
         size_t h = table + 2 + (deployed.stage - 1) * 30, data = table + get(bin_, h, 4);
         OriginalSaveBridge::put(raw.globals_4f7cd0, 8, deployed.stage, 4);
         OriginalSaveBridge::put(raw.globals_4f7cd0, 12, 1, 4);

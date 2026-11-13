@@ -11,7 +11,7 @@ ResourceDomain app_domain_for_save(const OriginalSave::State& state);
 class AppCampaignAdapter
 {
 public:
-    AppCampaignAdapter(const std::filesystem::path& root, std::unique_ptr<Prologue>& prologue, std::optional<OriginalSave::State>& rawSave) : root(root), prologue(prologue), rawSave(rawSave), initialization(root), campaignPersistence(root) { }
+    AppCampaignAdapter(const std::filesystem::path& root, std::unique_ptr<Prologue>& prologue, std::optional<OriginalSave::State>& rawSave) : root(root), prologue(prologue), rawSave(rawSave), initialization(root), campaignPersistence(root) {}
     void connect();
     bool commit_promotion(int selected, const OriginalPromotion::Request& request, size_t saveItems, const OriginalPromotionTransaction& promotionTransaction, const OriginalMap& promotionMap);
     OriginalEvents deploy_next(const OriginalSave::State& captured) const;
@@ -22,5 +22,6 @@ private:
     std::optional<OriginalSave::State>& rawSave;
     OriginalInitialization initialization;
     OriginalCampaignPersistence campaignPersistence;
+    std::optional<OriginalSave::State> physicalLoot;
 };
 }    //namespace s2ne

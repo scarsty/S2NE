@@ -1,4 +1,5 @@
-#pragma once
+﻿#pragma once
+#include "original_action_audio.hpp"
 #include "original_ai.hpp"
 #include "original_combat.hpp"
 #include "original_combat_visual.hpp"
@@ -6,6 +7,8 @@
 #include "original_events.hpp"
 #include "original_promotion_transaction.hpp"
 #include "original_random.hpp"
+#include "original_skills.hpp"
+#include "original_skill94_transaction.hpp"
 #include <algorithm>
 #include <cmath>
 #include <ctime>
@@ -22,6 +25,44 @@ namespace s2ne
 class Battle
 {
 public:
+    struct AiSkill
+    {
+        unsigned id{};
+        size_t target{};
+        bool second{};
+        original_ai::Score score{};
+        int destination_record{};
+        int center_x{}, center_y{};
+        std::optional<unsigned> direction;
+    };
+private:
+    std::shared_ptr<OriginalSkills> ai_skills_;
+    std::shared_ptr<OriginalSkill94Transaction> ai_damage_;
+    std::pair<int, int> ai_skill_camera_{};
+    std::optional<AiSkill> ai_skill_;
+    bool ai_skill_waiting_ = false, ai_skill_failed_ = false, ai_skill_replan_ = false;
+public:
+    struct AiUnscoredSkill { unsigned actor{}, skill{}, effect{}, shape{}; };
+    std::vector<AiUnscoredSkill> ai_unscored_skills;
+    void set_ai_skills(const OriginalSkills& rules) { if (!ai_skills_) { ai_skills_ = std::make_shared<OriginalSkills>(rules); } }
+    void set_ai_damage(const OriginalSkill94Transaction& rules) { if (!ai_damage_) { ai_damage_ = std::make_shared<OriginalSkill94Transaction>(rules); } }
+    void set_ai_skill_camera(std::pair<int, int> camera) { ai_skill_camera_ = camera; }
+    bool ai_skill_pending() const { return ai_skill_.has_value() || ai_skill_waiting_ || ai_skill_failed_; }
+    const std::optional<AiSkill>& ai_skill_request() const { return ai_skill_; }
+    bool ai_skill_ready() const { return !ai_skill_failed_ && ai_skill_ && !animating_movement() && hostile_path_cursor_ >= hostile_path_.size(); }
+    void begin_ai_skill() { ai_skill_waiting_ = true; }
+    void fail_ai_skill() { ai_skill_failed_ = true; }
+    bool ai_skill_failed() const { return ai_skill_failed_; }
+    void finish_ai_skill()
+    {
+        ai_skill_.reset();
+        ai_skill_waiting_ = false;
+        hostile_path_.clear();
+        hostile_path_cursor_ = 0;
+        hostile_target_ = -1;
+        hostile_attack_slot_ = -1;
+        ai_skill_replan_ = true;
+    }
     struct Cell
     {
         int elevation{}, ground{}, object{};
@@ -36,6 +77,23 @@ private:
     unsigned width_{}, height_{};
     std::vector<Cell> cells_;
     std::vector<unsigned> ground_attributes_, object_attributes_;
+    std::function<unsigned(unsigned, unsigned)> effect_audio_;
+    unsigned movement_sound_channel_{}, movement_sound_id_{};
+    int movement_sound_frame_ = -1;
+    int physical_sound_{};
+    void movement_sound(const OriginalEvents::Unit& pose)
+    {
+        if (!effect_audio_) { return; }
+        unsigned cls = 0;
+        if (hostile_resources_) { cls = hostile_resources_->movement_class(pose); }
+        const auto& tile = cell({ pose.x, pose.y });
+        unsigned terrain = 0;
+        if (tile.ground > 0 && size_t(tile.ground) <= ground_attributes_.size()) { terrain = ground_attributes_[size_t(tile.ground - 1)] >> 8; }
+        const unsigned id = original_movement_sound(cls, pose.movement_type, tile.ground, terrain);
+        if (id != movement_sound_id_) { movement_sound_channel_ = 0; }
+        movement_sound_id_ = id;
+        movement_sound_channel_ = effect_audio_(id, movement_sound_channel_);
+    }
     std::vector<Point> teleport_pads_;
     std::function<bool(unsigned, Point)> teleport_presenter_;
     size_t teleport_cursor_{};
@@ -61,6 +119,20 @@ private:
     unsigned projectile_elapsed_{};
 
 public:
+    void set_effect_audio(std::function<unsigned(unsigned, unsigned)> callback) { effect_audio_ = std::move(callback); }
+    unsigned scripted_movement_sound_id(const OriginalEvents::Unit& pose) const
+    {
+        if (!hostile_resources_) { return 0; }
+        const auto& tile = cell({ pose.x, pose.y });
+        unsigned terrain = 0;
+        if (tile.ground > 0 && size_t(tile.ground) <= ground_attributes_.size()) { terrain = ground_attributes_[size_t(tile.ground - 1)] >> 8; }
+        // 原45E450／461808只认42CD63返回1；不能沿用普通移动同时接受2的分支。
+        if (hostile_resources_->movement_class(pose) == 1) { return 122; }
+        if (tile.ground > 0 && tile.ground <= 4 && terrain == 1) { return 131; }
+        if (pose.movement_type == 4) { return 124; }
+        return 103;
+    }
+    unsigned scripted_effect_sound(unsigned id, unsigned channel) const { return effect_audio_ && id ? effect_audio_(id, channel) : 0; }
     bool projectile_active() const { return projectile_.has_value(); }
 
 private:
@@ -113,6 +185,8 @@ private:
     std::function<Result<bool>(const std::vector<OriginalEvents::Unit>&, const std::vector<PhysicalSettlement>&)> physical_loot_commit_;
     std::function<Result<bool>(size_t, size_t)> physical_death_presenter_;
     std::function<void(bool)> physical_transaction_finish_;
+    std::function<void(std::vector<PhysicalSettlement>, std::function<void(bool)>)> physical_growth_;
+    std::function<Result<bool>(bool)> physical_loot_finish_;
     std::shared_ptr<OriginalEvents> hostile_resources_;
     std::shared_ptr<OriginalPromotionTransaction> physical_equipment_;
     std::vector<int> ai_kind_classes_;
@@ -144,6 +218,9 @@ public:
     {
         unsigned actor{}, target{}, action{};
         int chance{}, damage{}, value{};
+        int counter_action{ -1 }, counter_chance{}, counter_damage{}, counter_value{}, weighted_value{};
+        int score{};
+        bool rejected_counter{};
     };
     std::vector<AiCandidateDiagnostic> ai_candidate_diagnostics;
     struct PhysicalDiagnostic
@@ -1652,11 +1729,23 @@ public:
             skill94_feedback_presented_ = true;
         }
     }
-    bool begin_skill94_feedback(size_t actor, size_t target, int hp, int damage, std::function<void()> commit, unsigned effect = 1, int caster_hp = 0, int caster_max_hp = 0, bool reverse = false)
+    bool begin_skill94_feedback(size_t actor, size_t target, int hp, int damage, std::function<void()> commit, unsigned effect = 1, int caster_hp = 0, int caster_max_hp = 0, bool reverse = false, bool hit_flash = false)
     {
         if (combat_feedback_active() || !commit || damage < 0 || damage > hp)
         {
             return false;
+        }
+        // 原46618D在471F51非零后先118／452E7F，再进入468BAC；MISS只显示数字。
+        if (hit_flash)
+        {
+            return begin_curse33_feedback(actor, target, hp, true,
+                [this, actor, target, hp, damage, commit = std::move(commit), effect, caster_hp, caster_max_hp, reverse]() mutable
+                {
+                    if (!begin_skill94_feedback(actor, target, hp, damage, std::move(commit), effect, caster_hp, caster_max_hp, reverse))
+                    {
+                        report_error(make_error("46618D post-flash feedback rejected"));
+                    }
+                });
         }
         combat_feedback_.begin(actor, target, hp, damage, damage == 0, false);
         // 468BAC starts directly at number step0: no physical452E7F flash.
@@ -1671,9 +1760,10 @@ public:
         skill94_feedback_commit_ = std::move(commit);
         return true;
     }
-    bool begin_healing_feedback(size_t actor, size_t target, int hp, int healing, std::function<void()> commit)
+    bool begin_healing_feedback(size_t actor, size_t target, int hp, int healing, std::function<void()> commit, bool sound = true)
     {
         if (combat_feedback_active() || !commit || healing < 0) { return false; }
+        if (sound && healing > 0 && effect_audio_) { effect_audio_(118, 0); }
         combat_feedback_.begin(actor, target, hp, -healing, healing == 0, false, hp + healing);
         combat_feedback_.phase = original_combat::Feedback::Phase::numbers;
         combat_feedback_.consume();
@@ -1688,6 +1778,7 @@ public:
         if (!begin_skill94_feedback(actor, target, hp, 0, std::move(commit))) { return false; }
         // 4677D7: miss goes to468BAC(0); success uses452E7F without a number.
         curse33_feedback_ = hit;
+        if (hit && effect_audio_) { effect_audio_(118, 0); }
         if (hit) { combat_feedback_.phase = original_combat::Feedback::Phase::flash; }
         return true;
     }
@@ -1764,6 +1855,8 @@ public:
     }
     void set_death_settlement(std::function<void(std::vector<OriginalEvents::Unit>&, size_t, size_t)> callback) { death_settlement_ = std::move(callback); }
     void set_physical_settlement(std::function<void(std::vector<OriginalEvents::Unit>&, const PhysicalSettlement&)> callback) { physical_settlement_ = std::move(callback); }
+    void set_physical_growth(std::function<void(std::vector<PhysicalSettlement>, std::function<void(bool)>)> callback) { physical_growth_ = std::move(callback); }
+    void set_physical_loot_finish(std::function<Result<bool>(bool)> callback) { physical_loot_finish_ = std::move(callback); }
     void set_physical_loot_commit(std::function<Result<bool>(const std::vector<OriginalEvents::Unit>&, const std::vector<PhysicalSettlement>&)> callback) { physical_loot_commit_ = std::move(callback); }
     void set_physical_death_presenter(std::function<Result<bool>(size_t, size_t)> callback, std::function<void(bool)> finish)
     {
@@ -1804,6 +1897,7 @@ private:
         std::optional<std::pair<size_t, size_t>> death;
         bool death_started{};
         bool reverse{}, group_presented{}, group_status_applied{};
+        bool growth_pending{};
     };
     std::optional<PhysicalExchange> physical_exchange_;
     std::optional<OriginalEvents::ActionRecord> pending_action_status_;
@@ -2070,6 +2164,11 @@ public:
             }
             feedback.phase = original_combat::Feedback::Phase::flash;
             feedback.elapsed = 0;
+            if (effect_audio_ && physical_sound_ > 0)
+            {
+                effect_audio_(unsigned(physical_sound_), 0);
+                physical_sound_ = 0;
+            }
             return;
         }
         feedback.elapsed += std::min(milliseconds, 1000u);
@@ -2116,7 +2215,7 @@ public:
     void enable_movement_animation() { movement_animation_enabled_ = true; }
     bool animating_movement() const { return moving_unit_ >= 0; }
     bool attack_animation_active() const { return attack_animation_ && animating_movement(); }
-    void tick_movement(unsigned milliseconds)
+    void tick_movement(std::vector<OriginalEvents::Unit>& units, unsigned milliseconds)
     {
         if (!animating_movement())
         {
@@ -2125,6 +2224,11 @@ public:
         // 452167 resets its clock after each presented pose. Discard frame
         // overruns instead of carrying them into (or skipping) the next pose.
         unsigned frame = movement_elapsed_ / movement_interval_;
+        if (!attack_animation_ && movement_sound_frame_ != int(frame))
+        {
+            movement_sound(movement_poses_.at(frame));
+            movement_sound_frame_ = int(frame);
+        }
         unsigned elapsed = movement_elapsed_ % movement_interval_ + std::min(milliseconds, movement_interval_);
         if (elapsed >= movement_interval_)
         {
@@ -2137,13 +2241,26 @@ public:
             ++frame;
             if (frame >= movement_poses_.size())
             {
+                // Complete the route before an attack/reward can capture its unit.
+                // Intermediate controller edges retain the walking frame sequence.
+                if (!attack_animation_ && (moving_unit_ != hostile_actor_ || hostile_path_cursor_ >= hostile_path_.size()))
+                {
+                    idle_pose(units.at(size_t(moving_unit_)));
+                }
                 moving_unit_ = -1;
+                movement_sound_frame_ = -1;
+                movement_sound_channel_ = movement_sound_id_ = 0;
                 movement_poses_.clear();
                 movement_elapsed_ = 0;
                 attack_animation_ = false;
                 return;
             }
             movement_elapsed_ = frame * movement_interval_;
+            if (!attack_animation_)
+            {
+                movement_sound(movement_poses_.at(frame));
+                movement_sound_frame_ = int(frame);
+            }
         }
         else
         {
@@ -2709,6 +2826,7 @@ public:
             {
                 return false;
             }
+            if (effect_audio_) { effect_audio_(100, 0); }
             if (attack_index_ == 2 && command_request_available_ && command_request_available_(units[size_t(selected_)], 6))
             {
                 requested_command_ = 6;
@@ -3201,6 +3319,7 @@ public:
         movement_elapsed_ = 0;
         movement_interval_ = 12 * 10;
         attack_animation_ = true;
+        if (effect_audio_) { effect_audio_(second ? 99u : 98u, 0); }
         return true;
     }
     bool mutate_random(const std::function<bool(OriginalRandom&, uint32_t)>& transaction)
@@ -3213,6 +3332,47 @@ public:
         auto state = staged.state();
         random_.restore_stream(state.seed, state.calls);
         return true;
+    }
+    bool preview_action_weight(const OriginalEvents& resources, const OriginalEvents::Unit& actor,
+        const OriginalEvents::Unit& target, const OriginalEvents::ActionRecord& action)
+    {
+        // 原40883D是附加效果价值，不是4096F3实击连击概率；预估也保留原抽签顺序。
+        if ((physical_status(target, 0x3E) & 0x10) || (target.abilities & 0x4000)) { return false; }
+        if (action.fields[0] <= 10)
+        {
+            int value = 0;
+            if ((resources.equipment_special(actor, 3) || (target.abilities & 0x80000)) && !(target.abilities & 0x1000) && target.runtime_role_selector != 1)
+            {
+                value = 30;
+            }
+            if (!value && resources.equipment_special(actor, 7) && target.runtime_role_selector != 1) { value = 30; }
+            if (!value && (actor.abilities & 0x100000) && !(target.runtime_role_selector & 3)) { value = 30; }
+            if (actor.abilities & 0x800000) { return true; }
+            if (resources.equipment_special(target, 14)) { value /= 2; }
+            if (value > 30 && percent() > 50) { return true; }
+        }
+        if (!action.fields[17]) { return false; }
+        int value = action.fields[18];
+        if (resources.equipment_special(target, 14)) { value /= 2; }
+        if ((target.runtime_role_selector & 3) && action.fields[17] == 8) { value = value * 7 / 10; }
+        if (value < 30 || percent() < 50) { return false; }
+        auto flags = physical_status_dword(target);
+        switch (action.fields[17])
+        {
+        case 1: return !(target.abilities & 0x1000) && !(physical_status(target, 0x39) & 4) && target.runtime_role_selector != 1;
+        case 2: return !(physical_status(target, 0x39) & 2) && !(flags & 0x2A000) && target.runtime_role_selector != 1;
+        case 3: return !(physical_status(target, 0x39) & 2) && !(target.runtime_role_selector & 3);
+        case 4: return !(physical_status(target, 0x39) & 2) && !(flags & 0x2B000) && target.runtime_role_selector != 1;
+        // 原408B42取45CFBB类别2的分量1/3；不是结算快照类别1或不存在的类别3。
+        case 5: return !(physical_status(target, 0x38) & 2) && !(physical_status(target, 0x39) & 2) && !(flags & 0x2B000) && resources.combat_value(target, 2, 1) > 2 * resources.combat_value(target, 2, 3);
+        case 6: return target.runtime_role_selector != 1 && !(physical_status(target, 0x3E) & 1);
+        case 7: return true;
+        case 8: return !(physical_status(target, 0x39) & 2) && !(flags & 0x22000);
+        case 9: return resources.action_status_kind(target) == 14 && target.runtime_role_selector != 1;
+        case 10: return !(target.runtime_role_selector & 3);
+        case 11: return !(physical_status(target, 0x3E) & 4);
+        default: return false;
+        }
     }
     std::array<uint8_t, 3> original_42c88f_bytes(const OriginalEvents& resources, const OriginalEvents::Unit& unit) const { return terrain_effect(resources, unit, { unit.x, unit.y }).bytes; }
     unsigned turn() const { return turn_; }
@@ -3231,6 +3391,7 @@ public:
         in.player_side = !actor.hostile();
         in.difficulty_bonus = ai_config_[0xF3 + std::min(5u, resources.difficulty)];
         int mode = int(attack_mode({ actor.x, actor.y }, { defender.x, defender.y }, defender.direction, resources.difficulty == 1));
+        if (!counter && counter_mode) { mode = counter_mode; }
         in.counter = counter;
         in.counter_fixed_damage = counter && (actor.abilities & 0x400);
         in.counter_fixed_value = actor.strikeback;
@@ -3266,9 +3427,9 @@ public:
         auto defending_terrain = terrain_effect(resources, defender, { defender.x, defender.y });
         in.attacker_terrain_bonus = resources.difficulty == 1 ? 0 : int(int8_t(attacking_terrain.bytes[1]));
         in.defender_terrain_bonus = resources.difficulty == 1 ? 0 : int(int8_t(defending_terrain.bytes[2]));
-        in.attacker_3c = actor.status3c;
+        in.attacker_3c = physical_status(actor, 0x3C);
         in.attacker_118 = uint8_t(actor.abilities >> 24);
-        in.defender_kind = uint8_t(defender.kind_attribute);
+        in.defender_kind = uint8_t(defender.runtime_role_selector);
         uint8_t status3d = defender.action_status_runtime ? (*defender.action_status_runtime)[0x3D] : defender.status3d;
         in.immune = (defender.abilities & 0x01000000u) || (status3d & 8);
         // 409BBA+4C1 -> 407C35 uses damage bytes 0/1, not hit bytes 2/3.
@@ -3358,13 +3519,14 @@ public:
     // Returns true only after the last actor has finished and side AP is reset.
     bool tick_hostile_actions(std::vector<OriginalEvents::Unit>& units, unsigned milliseconds)
     {
+        if (ai_skill_failed_) { return false; }
         if (!hostile_actions_active_)
         {
             return true;
         }
         if (animating_movement())
         {
-            tick_movement(milliseconds);
+            tick_movement(units, milliseconds);
             return false;
         }
         if (combat_feedback_active())
@@ -3372,6 +3534,7 @@ public:
             tick_combat_feedback(units, milliseconds);
             return false;
         }
+        if (ai_skill_waiting_) { return false; }
         if (hostile_wait_)
         {
             hostile_wait_ -= std::min(hostile_wait_, milliseconds);
@@ -3380,12 +3543,23 @@ public:
         if (hostile_actor_ >= 0)
         {
             auto& actor = units.at(hostile_actor_);
+            if (ai_skill_replan_)
+            {
+                ai_skill_replan_ = false;
+                plan_hostile(units, size_t(hostile_actor_));
+                return false;
+            }
             if (actor.present(turn_) && hostile_path_cursor_ < hostile_path_.size())
             {
                 Point next = hostile_path_[hostile_path_cursor_++];
                 if (!advance_hostile(units, size_t(hostile_actor_), next))
                 {
                     hostile_path_cursor_ = hostile_path_.size();
+                    if (ai_skill_)
+                    {
+                        report_error(make_error("AI selected spell movement failed; cast remains locked"));
+                        fail_ai_skill();
+                    }
                 }
                 return false;
             }
@@ -3403,6 +3577,7 @@ public:
             }
             if (actor.present(turn_) && !hostile_retreat_ && !hostile_special_)
             {
+                if (ai_skill_) { return false; }
                 int victim = hostile_target_ >= 0 && can_attack(units, size_t(hostile_actor_), size_t(hostile_target_), hostile_attack_slot_) ? hostile_target_ : hostile_contact_target(units, size_t(hostile_actor_));
                 if (victim >= 0 && strike(units, size_t(hostile_actor_), size_t(victim), hostile_attack_slot_))
                 {
@@ -3413,6 +3588,7 @@ public:
                     hostile_path_cursor_ = 0;
                     hostile_target_ = -1;
                     hostile_attack_slot_ = -1;
+                    ai_skill_.reset();
                     return false;
                 }
             }
@@ -3439,7 +3615,9 @@ public:
                 eligible = units[index].controllable();
             }
 
-            if (!eligible || !units[index].present(turn_) || units[index].action_state != 0)
+            // 原439265／43927F只调度33h的80h已登场单位，剧情待入场NPC不能提前行动。
+            if (!eligible || !units[index].present(turn_) || units[index].action_state != 0
+                || (original_rules_ && (!(units[index].status_flags & 0x80) || (units[index].status_flags & 0x20))))
             {
                 continue;
             }
@@ -3454,6 +3632,7 @@ public:
             hostile_attack_slot_ = -1;
             hostile_retreat_ = false;
             hostile_special_ = false;
+            ai_skill_.reset();
             plan_hostile(units, index);
             return false;
         }
@@ -3582,9 +3761,10 @@ private:
             return;
         }
         ai_candidate_diagnostics.clear();
+        ai_unscored_skills.clear();
         const auto& actor = units[index];
         using namespace original_ai;
-        if (actor.action_points < attack_cost(actor))
+        if (actor.action_points < attack_cost(actor) && (!ai_skills_ || actor.action_points < ai_skills_->action_cost(actor)))
         {
             return;
         }
@@ -3696,8 +3876,183 @@ private:
                 }
             }
         }
+        int reach = maximum_route_depth(routes), own_value = hostile_resources_->combat_value(actor);
+        bool nearby = nearby_threat(origin, reach, own_value, lookup), ranged = false;
+        int kind = actor.appearance && actor.appearance <= ai_kind_classes_.size() ? ai_kind_classes_[actor.appearance - 1] : 0;
+        if (!nearby)
+        {
+            if (auto target = original_target(targets, origin, 3, original_ai::multiply(own_value, 2)))
+            {
+                const auto& u = units[target->token];
+                ranged = target_threat(original_ai::original_distance(origin, target->position), u.base_action_points, u.carry_points, config_[0], config_[6], config_[7], config_[1], hostile_resources_->maximum_action_range(u), reach, false);
+            }
+        }
+        int mode = movement_mode(nearby, ranged);
         Selection attack_selection;
-        auto scan = [&](Position position, int record)
+        std::optional<AiSkill> skillSelection;
+        if (ai_skills_ && !(physical_status(actor, 0x38) & 2))
+        {
+            auto scanSkills = [&](Position position, int record)
+            {
+                auto caster = actor;
+                caster.x = position.x;
+                caster.y = position.y;
+                if (record)
+                {
+                    caster.action_points = routes.records.at(size_t(record - 1)).route.remaining;
+                }
+                for (bool second : { false, true })
+                {
+                    OriginalSkills::Context context{};
+                    context.second = second;
+                    context.computer = true;
+                    context.army_da_nonzero = hostile_resources_->army_modes && (*hostile_resources_->army_modes)[controller_hostile_ ? 1 : 0] != 0;
+                    context.suppress_first = hostile_resources_->flags[8] != 0;
+                    context.suppress_second = hostile_resources_->flags[9] != 0;
+                    if (!ai_skills_->ai_group_available(caster, context)) { continue; }
+                    auto probe = *ai_skills_;
+                    probe.open(caster, context);
+                    for (const auto& group : probe.groups())
+                    {
+                        for (const auto& skill : group.records)
+                        {
+                            if (!probe.select_record(skill.id) || probe.resource_failure(caster, skill) != OriginalSkills::Failure::none) { continue; }
+                            if (probe.ai_original_unselected()) { continue; }
+                            // 原406695恢复族；合作方沿464679/46AC80复核，不借恢复评分放行其它族。
+                            const bool damageFamily = (probe.damage_supported() || probe.drain_supported() || probe.fissure29_supported()) && ai_damage_;
+                            const bool statusFamily = probe.ai_status_supported();
+                            const bool summonFamily = probe.summon_supported();
+                            if (summonFamily && !probe.ai_summon_available(caster, *hostile_resources_)) { continue; }
+                            if (!(probe.healing1_supported() || probe.area_healing_supported() || skill.id == 88 || damageFamily || statusFamily || summonFamily))
+                            {
+                                if (std::none_of(ai_unscored_skills.begin(), ai_unscored_skills.end(), [&](const auto& item) { return item.skill == skill.id; }))
+                                {
+                                    ai_unscored_skills.push_back({ actor.id, skill.id, skill.effect(), skill.raw[18] });
+                                }
+                                continue;
+                            }
+                            auto proposedUnits = units;
+                            proposedUnits[index] = caster;
+                            const OriginalEvents::Unit* partner = nullptr;
+                            if (skill.raw[32] & 7)
+                            {
+                                auto p = probe.cooperative_partner(caster, proposedUnits, turn_, [&](int x, int y) { return cell({ x, y }).elevation; });
+                                if (!p || probe.resource_failure(proposedUnits[*p], skill) != OriginalSkills::Failure::none) { continue; }
+                                partner = &proposedUnits[*p];
+                            }
+                            probe.set_area_camera(ai_skill_camera_);
+                            probe.set_area_valid([&](int x, int y) { return skill_area_cell({ x, y }); });
+                            probe.set_area_elevation([&](int x, int y) { return cell({ x, y }).elevation; });
+                            for (auto [cx, cy] : probe.ai_centers(caster, [&](int x, int y) { return skill_area_cell({ x, y }); }))
+                            {
+                              const bool directional = damageFamily && (skill.raw[18] == 5 || skill.raw[18] == 8);
+                              for (unsigned direction = 0; direction < (directional ? 4u : 1u); ++direction)
+                              {
+                                probe.set_ai_direction(directional ? std::optional<unsigned>(direction) : std::nullopt);
+                                auto centerUnit = caster;
+                                centerUnit.x = cx;
+                                centerUnit.y = cy;
+                                const auto affected = probe.collect_targets(caster, centerUnit, proposedUnits, turn_, [&](int x, int y) { return skill_area_cell({ x, y }); });
+                                int value = 0;
+                                int kills = 0, priorityKills = 0;
+                                int statusRank = 0;
+                                for (auto target : affected)
+                                {
+                                    if (statusFamily)
+                                    {
+                                        auto score = probe.ai_status_value(caster, proposedUnits[target], *hostile_resources_);
+                                        if (!statusRank) { statusRank = score.first; }
+                                        value += score.second;
+                                        continue;
+                                    }
+                                    if (damageFamily)
+                                    {
+                                        const auto& victim = proposedUnits[target];
+                                        OriginalSkill94Transaction::Context preview;
+                                        preview.partner = partner;
+                                        auto actorTerrain = original_42c88f_bytes(*hostile_resources_, caster);
+                                        auto targetTerrain = original_42c88f_bytes(*hostile_resources_, victim);
+                                        preview.hit = { caster.learned_proficiency[skill.group], victim.learned_proficiency[skill.group], caster.fencing, victim.fencing, victim.tactics, int(int8_t(actorTerrain[1])), int(int8_t(targetTerrain[2])), caster.st, victim.st };
+                                        preview.elevation = original_combat::terrain_height_difference(cell({caster.x, caster.y}).elevation, cell({victim.x, victim.y}).elevation, hostile_resources_->difficulty == 1);
+                                        preview.damage.difficulty = hostile_resources_->difficulty;
+                                        preview.damage.friendly_army = !caster.hostile();
+                                        preview.damage.attack_mode = attack_mode({caster.x, caster.y}, {victim.x, victim.y}, victim.direction, hostile_resources_->difficulty == 1);
+                                        preview.damage.target_status39 = physical_status(victim, 0x39);
+                                        preview.damage.target_status3c = physical_status(victim, 0x3C);
+                                        preview.damage.target_status3d = physical_status(victim, 0x3D);
+                                        preview.damage.target_status3f = physical_status(victim, 0x3F);
+                                        preview.damage.target_special13 = hostile_resources_->equipment_special(victim, 13);
+                                        auto masks = hostile_resources_->skill_class_masks(victim);
+                                        preview.damage.profession_resistance = masks[0];
+                                        preview.damage.profession_weakness = masks[1];
+                                        auto packet = ai_damage_->preview(skill, caster, victim, *hostile_resources_, preview);
+                                        if (!packet) { report_error(packet.error()); fail_ai_skill(); return; }
+                                        const int chance = packet.value().chance, amount = packet.value().damage;
+                                        const bool priority = victim.id == 1 || victim.id == 11 || (victim.runtime_role_selector & 3);
+                                        int weighted = chance * amount;
+                                        if (priority) { weighted *= uint8_t(ai_config_[0x100 + std::min(5u, hostile_resources_->difficulty)]); }
+                                        if (victim.hostile() == caster.hostile())
+                                        {
+                                            if (victim.hp < amount || (victim.max_hp > 0 && (victim.hp - amount) * 100 / victim.max_hp < 20)) { value = 0; kills = priorityKills = 0; break; }
+                                            value -= weighted * (100 + amount * 100 / victim.hp) / 100;
+                                        }
+                                        else
+                                        {
+                                            if (skill.effect() == 41 && (amount < victim.hp || chance <= 50)) { weighted = 0; }
+                                            if (amount >= victim.hp && chance > 50)
+                                            {
+                                                ++kills;
+                                                if (priority) { ++priorityKills; }
+                                                weighted *= uint8_t(ai_config_[0x105 + std::min(5u, hostile_resources_->difficulty)]);
+                                            }
+                                            value += weighted;
+                                            if (skill.effect() == 42) { value += chance * std::min(amount, caster.max_hp - caster.hp); }
+                                        }
+                                        continue;
+                                    }
+                                    auto score = probe.ai_healing_value(caster, proposedUnits[target], *hostile_resources_, unsigned(uint8_t(ai_config_[0x100 + std::min(5u, hostile_resources_->difficulty)])), partner);
+                                    if (!score) { report_error(score.error()); ai_skill_failed_ = true; return; }
+                                    value += score.value();
+                                }
+                                original_ai::Score candidate{3, value, 0};
+                                if (statusFamily) { candidate = { statusRank, value, 0 }; }
+                                // 原40646D只在敌方mode2设置rank；召唤mode0虽通过464679，原评分不会选中。
+                                if (summonFamily) { candidate = {}; value = 0; }
+                                if (damageFamily) { candidate = { priorityKills ? 1 : 2, value, kills }; }
+                                const int campaignCount = hostile_resources_->ending_statistics ? (*hostile_resources_->ending_statistics)[0] : 0;
+                                const int threshold = uint8_t(ai_config_[0x10B]) * 100 + campaignCount * uint8_t(ai_config_[0x10C]);
+                                if (value > 0 && (!skillSelection || original_ai::improves_skill(candidate, skillSelection->score, threshold)))
+                                {
+                                    size_t target = index;
+                                    if (!affected.empty()) { target = affected.front(); }
+                                    skillSelection = AiSkill{ skill.id, target, second, candidate, record, cx, cy };
+                                    if (directional) { skillSelection->direction = direction; }
+                                }
+                              }
+                            }
+                        }
+                    }
+                }
+            };
+            scanSkills(origin, 0);
+            if (ai_skill_failed_) { return; }
+            static constexpr std::array<int, 6> thresholds{ 100, 5, 30, 50, 80, 100 };
+            bool moveSkills = percent() <= thresholds[std::min(5u, hostile_resources_->difficulty)];
+            if (moveSkills && !(actor.status34 & 1))
+            {
+                for (const auto& route : routes.candidates())
+                {
+                    if (route.index && route.marker && route.category >= 2)
+                    {
+                        scanSkills(route.position, route.index + 1);
+                        if (ai_skill_failed_) { return; }
+                    }
+                }
+            }
+            if (skillSelection && !original_ai::skill_route_allowed(skillSelection->score, mode)) { skillSelection.reset(); }
+            if (skillSelection) { attack_selection.score = skillSelection->score; }
+        }
+        auto scan = [&](const OriginalEvents::ActionRecord& action, Position position, int record)
         {
             auto moved_actor = actor;
             moved_actor.x = position.x;
@@ -3719,80 +4074,127 @@ private:
                 opponents.push_back(units[t.token]);
                 tokens.push_back(t.token);
             }
-            for (const auto& action : hostile_resources_->action_records(actor))
+            std::vector<Candidate> candidates;
+            for (const auto& target : action_targets(*hostile_resources_, moved_actor, action, opponents, moved_observers, 0))
             {
-                if (executable_attack_slot(action) < 0)
+                const auto& defender = opponents[target.unit_index];
+                if (executable_attack_slot(action) == 0 && (!adjacent({ position.x, position.y }, { defender.x, defender.y }) || cell({ position.x, position.y }).elevation != cell({ defender.x, defender.y }).elevation))
                 {
                     continue;
                 }
-                std::vector<Candidate> candidates;
-                for (const auto& target : action_targets(*hostile_resources_, moved_actor, action, opponents, moved_observers, 0))
+                int previewMode = int(attack_mode({ position.x, position.y }, { defender.x, defender.y }, defender.direction, hostile_resources_->difficulty == 1));
+                if (defender.abilities & 0x2000) { previewMode = 1; }
+                int damage = physical_action_preview(*hostile_resources_, moved_actor, defender, action, false, previewMode);
+                original_combat::HitChanceInput hit{};
+                hit.preview = true;
+                hit.attacker_tactics = actor.tactics;
+                hit.defender_evasion = defender.strikeback;
+                hit.height_difference = original_combat::terrain_height_difference(cell({ position.x, position.y }).elevation, cell({ defender.x, defender.y }).elevation, hostile_resources_->difficulty == 1);
+                hit.attack_mode = previewMode;
+                hit.context_bonus = int(hostile_resources_->action_proficiency(actor, action));
+                hit.random_multiplier = original_combat::preview_multiplier(ai_config_[2], ai_config_[3]);
+                hit.player_side = !actor.hostile();
+                hit.difficulty_bonus = ai_config_[0xF3 + std::min(5u, hostile_resources_->difficulty)];
+                hit.modifiers.action_type = 21;
+                hit.modifiers.action_bonus = hostile_resources_->action_accuracy_bonus(actor, action);
+                hit.modifiers.defender_equipment_penalty = hostile_resources_->equipment_evasion(defender);
+                hit.modifiers.defender_115 = uint8_t(defender.abilities);
+                hit.modifiers.defender_3c = defender.status3c;
+                hit.modifiers.defender_equipment_16 = hostile_resources_->equipment_special(defender, 0x16);
+                hit.defender_39 = defender.status39.value_or(0);
+                hit.defender_3d = defender.status3d;
+                hit.defender_status3c_dword = defender.status3c;
+                if (defender.action_status_runtime)
                 {
-                    const auto& defender = opponents[target.unit_index];
-                    if (executable_attack_slot(action) == 0 && (!adjacent({ position.x, position.y }, { defender.x, defender.y }) || cell({ position.x, position.y }).elevation != cell({ defender.x, defender.y }).elevation))
+                    hit.defender_39 = (*defender.action_status_runtime)[0x39];
+                    hit.defender_3d = (*defender.action_status_runtime)[0x3D];
+                    hit.defender_status3c_dword = 0;
+                    for (unsigned i = 0; i < 4; ++i)
                     {
-                        continue;
+                        hit.defender_status3c_dword |= uint32_t((*defender.action_status_runtime)[0x3C + i]) << (8 * i);
                     }
-                    int damage = physical_action_preview(*hostile_resources_, moved_actor, defender, action);
-                    original_combat::HitChanceInput hit{};
-                    hit.preview = true;
-                    hit.attacker_tactics = actor.tactics;
-                    hit.defender_evasion = defender.strikeback;
-                    hit.height_difference = original_combat::terrain_height_difference(cell({ position.x, position.y }).elevation, cell({ defender.x, defender.y }).elevation, hostile_resources_->difficulty == 1);
-                    hit.attack_mode = int(attack_mode({ position.x, position.y }, { defender.x, defender.y }, defender.direction, hostile_resources_->difficulty == 1));
-                    hit.context_bonus = int(hostile_resources_->action_proficiency(actor, action));
-                    hit.random_multiplier = original_combat::preview_multiplier(ai_config_[2], ai_config_[3]);
-                    hit.player_side = !actor.hostile();
-                    hit.difficulty_bonus = ai_config_[0xF3 + std::min(5u, hostile_resources_->difficulty)];
-                    hit.modifiers.action_type = 21;
-                    hit.modifiers.action_bonus = hostile_resources_->action_accuracy_bonus(actor, action);
-                    hit.modifiers.defender_equipment_penalty = hostile_resources_->equipment_evasion(defender);
-                    hit.modifiers.defender_115 = uint8_t(defender.abilities);
-                    hit.modifiers.defender_3c = defender.status3c;
-                    hit.modifiers.defender_equipment_16 = hostile_resources_->equipment_special(defender, 0x16);
-                    hit.defender_39 = defender.status39.value_or(0);
-                    hit.defender_3d = defender.status3d;
-                    hit.defender_status3c_dword = defender.status3c;
-                    if (defender.action_status_runtime)
+                }
+                hit.preview_immune = (defender.abilities & 0x01000000u) != 0;
+                int chance = original_combat::hit_chance(hit);
+                MeleePreview preview{};
+                preview.attack_value = physical_preview_value(chance, damage);
+                preview.attack_damage = damage;
+                preview.attack_chance = chance;
+                preview.target_hp = defender.hp;
+                preview.attacker_hp = actor.hp;
+                preview.target_kind = int(defender.id);
+                preview.target_flags2f = defender.runtime_role_selector;
+                preview.attacker_status38_02 = (physical_status(actor, 0x38) & 2) != 0;
+                int counterAction = -1;
+                auto counters = counter_actions(*hostile_resources_, defender, { position.x, position.y },
+                    std::span<const OriginalEvents::Unit>(&moved_actor, 1), opponents, 0,
+                    physical_status(defender, 0x39), physical_status_dword(defender));
+                if (!counters.empty())
+                {
+                    // 原409A2D每次候选预估也抽反击池，不能取最大值或保留RNG不变。
+                    unsigned selected = counters[size_t(roll(int(counters.size())))];
+                    counterAction = int(selected);
+                    for (const auto& counter : hostile_resources_->action_records(defender))
                     {
-                        hit.defender_39 = (*defender.action_status_runtime)[0x39];
-                        hit.defender_3d = (*defender.action_status_runtime)[0x3D];
-                        hit.defender_status3c_dword = 0;
-                        for (unsigned i = 0; i < 4; ++i)
+                        if (counter.index != selected) { continue; }
+                        int mode = previewMode;
+                        auto reverse = hit;
+                        reverse.counter_preview = true;
+                        reverse.attacker_tactics = defender.tactics;
+                        reverse.defender_evasion = actor.strikeback;
+                        reverse.height_difference = -hit.height_difference;
+                        reverse.attack_mode = mode;
+                        reverse.context_bonus = int(hostile_resources_->action_proficiency(defender, counter));
+                        reverse.player_side = !defender.hostile();
+                        reverse.counter_accuracy_penalty = (physical_status(defender, 0x3D) & 0x10) != 0;
+                        reverse.modifiers.action_bonus = hostile_resources_->action_accuracy_bonus(defender, counter);
+                        reverse.modifiers.defender_equipment_penalty = hostile_resources_->equipment_evasion(actor);
+                        reverse.modifiers.defender_115 = uint8_t(actor.abilities);
+                        reverse.modifiers.defender_3c = physical_status(actor, 0x3C);
+                        reverse.modifiers.defender_equipment_16 = hostile_resources_->equipment_special(actor, 16);
+                        reverse.defender_39 = physical_status(actor, 0x39);
+                        reverse.defender_3d = physical_status(actor, 0x3D);
+                        reverse.defender_status3c_dword = physical_status_dword(actor);
+                        reverse.preview_immune = (actor.abilities & 0x01000000u) != 0;
+                        preview.counter_chance = original_combat::hit_chance(reverse);
+                        preview.counter_damage = physical_action_preview(*hostile_resources_, defender, moved_actor, counter, true, mode);
+                        if (preview_action_weight(*hostile_resources_, moved_actor, defender, action))
                         {
-                            hit.defender_status3c_dword |= uint32_t((*defender.action_status_runtime)[0x3C + i]) << (8 * i);
+                            preview.attack_value = original_ai::physical_preview_value(chance + 10, damage);
                         }
+                        int weight = preview_action_weight(*hostile_resources_, defender, moved_actor, counter) ? 10 : 0;
+                        preview.counter_value = original_ai::physical_preview_value(preview.counter_chance + weight, preview.counter_damage);
+                        break;
                     }
-                    hit.preview_immune = (defender.abilities & 0x01000000u) != 0;
-                    int chance = original_combat::hit_chance(hit);
-                    MeleePreview preview{};
-                    preview.attack_value = physical_preview_value(chance, damage);
-                    preview.attack_damage = damage;
-                    preview.attack_chance = chance;
-                    preview.target_hp = defender.hp;
-                    preview.attacker_hp = actor.hp;
-                    preview.target_kind = int(defender.id);
-                    ai_candidate_diagnostics.push_back({ actor.id, defender.id, action.index, chance, damage, preview.attack_value });
-                    candidates.push_back({ tokens[target.unit_index], record, preview, int(action.index) });
+                }
+                else if (preview_action_weight(*hostile_resources_, moved_actor, defender, action))
+                {
+                    preview.attack_value = original_ai::physical_preview_value(chance + 10, damage);
                 }
                 unsigned difficulty = std::min(5u, hostile_resources_->difficulty);
-                if (scan_melee_position(candidates, { uint8_t(ai_config_[0x100 + difficulty]), uint8_t(ai_config_[0x105 + difficulty]) }, attack_selection))
-                {
-                    return true;
-                }
+                auto score = original_ai::score_melee(preview, { uint8_t(ai_config_[0x100 + difficulty]), uint8_t(ai_config_[0x105 + difficulty]) });
+                ai_candidate_diagnostics.push_back({ actor.id, defender.id, action.index, chance, damage, original_ai::physical_preview_value(chance, damage), counterAction, preview.counter_chance, preview.counter_damage, preview.counter_value, preview.attack_value, score ? score->value : 0,
+                    preview.counter_damage > actor.hp && preview.counter_chance > 50 && !preview.attacker_status38_02 });
+                candidates.push_back({ tokens[target.unit_index], record, preview, int(action.index) });
+            }
+            unsigned difficulty = std::min(5u, hostile_resources_->difficulty);
+            const int campaignCount = hostile_resources_->ending_statistics ? (*hostile_resources_->ending_statistics)[0] : 0;
+            if (scan_melee_position(candidates, { uint8_t(ai_config_[0x100 + difficulty]), uint8_t(ai_config_[0x105 + difficulty]) }, attack_selection,
+                uint8_t(ai_config_[0x10B]) * 100 + campaignCount * uint8_t(ai_config_[0x10C])))
+            {
+                return true;
             }
             return false;
         };
-        bool stop = scan(origin, 0);
-        for (const auto& record : routes.candidates())
+        // 原40B5B3先遍历动作，每个动作先原地再遍历路线；rank1立即结束整个扫描。
+        // 若先遍历位置，后一个动作的原地击杀会错误抢在前一个动作的移动击杀之前。
+        for (const auto& action : hostile_resources_->action_records(actor))
         {
-            if (stop)
+            if (executable_attack_slot(action) < 0) { continue; }
+            if (original_ai::scan_action_positions(routes.candidates(), (actor.status34 & 1) != 0,
+                    [&](Position position, int record) { return scan(action, position, record); }, origin))
             {
                 break;
-            }
-            if (melee_route_candidate(record.marker, record.category, (actor.status34 & 1) != 0))
-            {
-                stop = scan(record.position, record.index + 1);
             }
         }
         if (attack_selection.candidate)
@@ -3814,18 +4216,17 @@ private:
             std::reverse(hostile_path_.begin(), hostile_path_.end());
             return;
         }
-        int reach = maximum_route_depth(routes), own_value = hostile_resources_->combat_value(actor);
-        bool nearby = nearby_threat(origin, reach, own_value, lookup), ranged = false;
-        int kind = actor.appearance && actor.appearance <= ai_kind_classes_.size() ? ai_kind_classes_[actor.appearance - 1] : 0;
-        if (!nearby)
+        if (skillSelection)
         {
-            if (auto target = original_target(targets, origin, 3, original_ai::multiply(own_value, 2)))
+            ai_skill_ = skillSelection;
+            for (int node = skillSelection->destination_record - 1; node > 0; node = routes.records.at(node).parent)
             {
-                const auto& u = units[target->token];
-                ranged = target_threat(original_ai::original_distance(origin, target->position), u.base_action_points, u.carry_points, config_[0], config_[6], config_[7], config_[1], hostile_resources_->maximum_action_range(u), reach, false);
+                auto position = routes.records.at(node).route.position;
+                hostile_path_.push_back({ position.x, position.y });
             }
+            std::reverse(hostile_path_.begin(), hostile_path_.end());
+            return;
         }
-        int mode = movement_mode(nearby, ranged);
         // 40AED5 reads the high WORD at runtime+8 (+0Ah), not control+8.
         auto dispatch = dispatch_40AED5(actor.status34, actor.action_status_runtime ? (*actor.action_status_runtime)[0x38] : 0, actor.ai_role10 >= 0 ? actor.ai_role10 : actor.behavior, int(hostile_resources_->difficulty), 0, controller_hostile_ ? 1 : 0);
         ai_plan_diagnostic_ = AiPlanDiagnostic{ actor.id, actor.behavior, kind, int(dispatch), dispatch == Default40AED5::goal_43939D, dispatch == Default40AED5::special_40D351, true };
@@ -4223,6 +4624,11 @@ public:
             movement_elapsed_ = 0;
             movement_interval_ = 120;
             attack_animation_ = true;
+            if (effect_audio_)
+            {
+                int sound = original_action_pose_sound(action.fields);
+                if (sound > 0) { effect_audio_(unsigned(sound), 0); }
+            }
             return;
         }
     }
@@ -4238,6 +4644,12 @@ public:
     {
         reaction_pose_.reset();
         units[b].ending_combat_value = units[b].hp;
+        const bool waiting = attack_animation_active() || projectile_active();
+        if (!movement_animation_enabled_ || !waiting)
+        {
+            if (effect_audio_ && physical_sound_ > 0) { effect_audio_(unsigned(physical_sound_), 0); }
+            physical_sound_ = 0;
+        }
         if (movement_animation_enabled_)
         {
             combat_feedback_.begin(a, b, units[b].hp, damage, miss, attack_animation_active() || projectile_active(), units[b].max_hp);
@@ -4533,6 +4945,7 @@ public:
     }
     void advance_physical_exchange(std::vector<OriginalEvents::Unit>& units)
     {
+        if (physical_exchange_ && physical_exchange_->growth_pending) { return; }
         while (physical_exchange_ && !combat_feedback_.active() && !animating_movement())
         {
             auto& exchange = *physical_exchange_;
@@ -4598,6 +5011,12 @@ public:
                         entry.damage = apply_physical_status_tail(units, source, victim, record, entry.damage);
                     }
                     damage = step.damage;
+                }
+                const auto& soundRecord = step.reverse ? *step.context.counter : step.context.action;
+                physical_sound_ = 111;
+                if (damage > 0)
+                {
+                    physical_sound_ = int(int16_t(uint16_t(uint8_t(soundRecord.fields[15])) | uint16_t(uint8_t(soundRecord.fields[16])) << 8));
                 }
                 physical_feedback(units, actor, target, damage, damage == 0);
                 if (movement_animation_enabled_ || !physical_exchange_ || physical_exchange_->death) { return; }
@@ -4682,6 +5101,48 @@ public:
                     return;
                 }
             }
+            if (physical_growth_)
+            {
+                std::vector<PhysicalSettlement> awards = counter_awards;
+                for (const auto& award : forward_awards)
+                {
+                    if (!(units[award.actor].status_flags & 0x20)) { awards.push_back(award); }
+                }
+                exchange.growth_pending = true;
+                physical_growth_(std::move(awards), [this, &units](bool commit)
+                    {
+                        if (!commit)
+                        {
+                            rollback_physical_exchange(units);
+                            return;
+                        }
+                        if (physical_loot_finish_)
+                        {
+                            auto finished = physical_loot_finish_(true);
+                            if (!finished || !finished.value())
+                            {
+                                auto error = finished ? make_error("Original physical loot publication refused") : finished.error();
+                                rollback_physical_exchange(units);
+                                report_error(error);
+                                return;
+                            }
+                        }
+                        physical_exchange_.reset();
+                        if (physical_transaction_finish_) { physical_transaction_finish_(true); }
+                    });
+                return;
+            }
+            if (physical_loot_finish_)
+            {
+                auto finished = physical_loot_finish_(true);
+                if (!finished || !finished.value())
+                {
+                    auto error = finished ? make_error("Original physical loot publication refused") : finished.error();
+                    rollback_physical_exchange(units);
+                    report_error(error);
+                    return;
+                }
+            }
             auto deaths = std::move(exchange.deaths);
             physical_exchange_.reset();
             if (physical_transaction_finish_) { physical_transaction_finish_(true); }
@@ -4722,6 +5183,7 @@ public:
     void rollback_physical_exchange(std::vector<OriginalEvents::Unit>& units)
     {
         if (!physical_exchange_) { return; }
+        if (physical_loot_finish_) { physical_loot_finish_(false); }
         auto& baseline = physical_exchange_->baseline_units;
         if (units.size() == baseline.size()) { std::copy(baseline.begin(), baseline.end(), units.begin()); }
         else
@@ -4732,6 +5194,7 @@ public:
         physical_exchange_.reset();
         physical_exchange_diagnostics_.clear();
         pending_action_status_.reset();
+        physical_sound_ = 0;
         if (physical_transaction_finish_) { physical_transaction_finish_(false); }
     }
     bool strike(std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, int slot = -1)
@@ -5048,6 +5511,31 @@ public:
                 for (unsigned k = 0; k < 3; ++k)
                 {
                     image[p + k] = uint8_t(unsigned(effect_palette_[color * 3 + k]) * 255 / 63);
+                }
+            }
+        }
+    }
+    void draw_skill_cells(std::vector<uint8_t>& image, int cx, int cy, unsigned category, const std::function<bool(Point)>& includes, const std::function<void(std::vector<uint8_t>&, Point)>& mask = {}) const
+    {
+        const auto& tile = movement_effects_.at(category);
+        for (int y = 0; y < height_; ++y)
+        {
+            for (int x = 0; x < width_; ++x)
+            {
+                if (!skill_area_cell({ x, y }) || !includes({ x, y })) { continue; }
+                auto pixels = tile;
+                if (mask) { mask(pixels, { x, y }); }
+                auto point = center({ x, y });
+                for (int row = 0; row < 32; ++row)
+                {
+                    for (int col = 0; col < 64; ++col)
+                    {
+                        unsigned color = pixels[size_t(row) * 64 + col];
+                        int px = point.x - cx - 32 + col, py = point.y - cy - 16 + row;
+                        if (!color || px < 0 || px >= 640 || py < 120 || py >= 480) { continue; }
+                        auto dst = (size_t(py) * 640 + px) * 4;
+                        for (unsigned k = 0; k < 3; ++k) { image[dst + k] = uint8_t(unsigned(effect_palette_[color * 3 + k]) * 255 / 63); }
+                    }
                 }
             }
         }

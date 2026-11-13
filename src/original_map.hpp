@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "native_invisibility.hpp"
 #include "original_combat_visual.hpp"
 #include "original_disc.hpp"
@@ -1282,6 +1282,42 @@ public:
         return Result<std::pair<int, int>>::success({ x * 64 + (y & 1) * 32 - camera_x, y * 16 - camera_y - std::max(0, h - 1) * 16 });
     }
     std::pair<int, int> screen_position(int x, int y) const { return try_screen_position(x, y).value(); }
+    Result<std::pair<int, int>> try_completion_location(unsigned completion) const
+    {
+        unsigned category = completion == 1 ? 6u : 11u;
+        size_t base = item(6, map_id - 1) + 28;
+        std::pair<int, int> selected{};
+        // 原42D3B4按行列扫描全部匹配对象，输出最后一项，不按角色位置替代。
+        for (unsigned y = 0; y < height * 2; ++y)
+        {
+            for (unsigned x = 0; x < width; ++x)
+            {
+                unsigned object = word(prg_, base + (size_t(y) * width + x) * 5 + 3);
+                if (object && object <= object_attributes_.size() && (object_attributes_[object - 1] >> 8) == category)
+                {
+                    selected = { int(x), int(y) };
+                }
+                if (selected.first || selected.second) { return Result<std::pair<int, int>>::success(selected); }
+            }
+        }
+        return Result<std::pair<int, int>>::failure(make_error("E070 original completion map object missing"));
+    }
+    Result<bool> draw_completion_location(const OriginalMenu& font, std::vector<uint8_t>& image, int x, int y) const
+    {
+        size_t base = item(6, map_id - 1) + 28;
+        unsigned object = word(prg_, base + (size_t(y) * width + unsigned(x)) * 5 + 3);
+        if (!object || object > object_attributes_.size()) { return Result<bool>::failure(make_error("Original completion object name unavailable")); }
+        unsigned local = object_attributes_[object - 1] & 255;
+        if (!local || local > terrain_object_names_) { return Result<bool>::failure(make_error("Original completion object name index")); }
+        size_t start = size_t(terrain_ground_names_ + local - 1) * 11;
+        std::vector<uint8_t> name;
+        for (size_t i = start; i < start + 11 && terrain_names_.at(i); ++i) { name.push_back(terrain_names_[i]); }
+        auto p = try_screen_position(x, y);
+        if (!p) { return Result<bool>::failure(p.error()); }
+        int sx = std::clamp(p.value().first + 32 - int(name.size()) * 6, 5, 510);
+        int sy = std::clamp(p.value().second, 5, 450);
+        return font.try_draw_original_large(image, name, sx, sy, 99, 167);
+    }
     bool dialogue_visible(int x, int y, unsigned mode = 2) const
     {
         int half = camera_x / 32, row = camera_y / 16;
@@ -1400,7 +1436,7 @@ public:
         const auto& b = unit_bitmaps_.at(id);
         return { b.left, b.top, int(b.w), int(b.h) };
     }
-    bool begin_teleport_arrival(const std::vector<OriginalEvents::Unit>& roster, unsigned target, unsigned turn = 1, bool departure = false, uint64_t elapsed = 0)
+    bool begin_teleport_arrival(const std::vector<OriginalEvents::Unit>& roster, unsigned target, unsigned turn = 1, bool departure = false, uint64_t elapsed = 0, unsigned color = 0)
     {
         if (arrival_target_ || target >= roster.size())
         {
@@ -1416,6 +1452,7 @@ public:
         arrival_target_ = target;
         arrival_departure_ = departure;
         arrival_color_ = departure ? 254 : 194;
+        if (color) { arrival_color_ = color; }
         arrival_frame_ = arrival_elapsed_ = 0;
         arrival_presented_ = false;
         arrival_pose_time_ = idle_pose_time_.value_or(elapsed);

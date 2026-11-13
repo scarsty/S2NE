@@ -1,5 +1,6 @@
-#pragma once
+﻿#pragma once
 #include "flic.hpp"
+#include "original_ani_audio.hpp"
 #include "original_campaign.hpp"
 #include "original_disc.hpp"
 #include "original_events.hpp"
@@ -84,12 +85,17 @@ class OriginalEnding
     }
     OriginalEvents events_;
     std::vector<unsigned> roles_;
-    size_t page_{ };
-    unsigned variant_{ };
+    size_t page_{};
+    unsigned variant_{};
     std::vector<std::vector<uint8_t>> illustrations_;
     std::vector<unsigned> illustration_pages_;
-    unsigned scroll_{ }, elapsed_{ }, movie_frames_{ };
+    unsigned scroll_{}, elapsed_{}, movie_frames_{};
     std::optional<Flic> movie_;
+    std::optional<OriginalAniAudio> movie_audio_;
+    OriginalAniAudio::Play play_audio_;
+    OriginalAniAudio::Stop stop_audio_;
+    OriginalAniAudio::Music music_audio_;
+    OriginalAniAudio::Music midi_audio_;
     std::filesystem::path root_;
     OriginalDisc disc_;
     std::vector<uint8_t> movie_image_;
@@ -97,12 +103,33 @@ class OriginalEnding
     {
         int role{ -1 };
         int illustration{ -1 };
-        unsigned movie{ }, text{ };
-        bool relationship{ }, summary{ };
+        unsigned movie{}, text{};
+        bool relationship{}, summary{};
     };
     std::vector<Page> sequence_;
+    bool role_music_started_{};
+    void enter_music()
+    {
+        if (done() || !midi_audio_) { return; }
+        const auto& page = sequence_[page_];
+        unsigned id = 0;
+        // 原41F5DD在整段角色／插画序列前只播一次20，随后41EDD4统计页切13。
+        if (!role_music_started_ && (page.role >= 0 || page.illustration >= 0)) { id = 20; }
+        else if (page.summary) { id = 13; }
+        if (id)
+        {
+            auto played = midi_audio_(id);
+            if (!played) { report_error(played.error()); }
+            else if (id == 20) { role_music_started_ = true; }
+        }
+    }
     void enter()
     {
+        if (movie_audio_ && stop_audio_)
+        {
+            auto stopped = movie_audio_->finish(stop_audio_);
+            if (!stopped) { report_error(stopped.error()); }
+        }
         elapsed_ = 0;
         movie_.reset();
         movie_frames_ = 0;
@@ -112,6 +139,7 @@ class OriginalEnding
             return;
         }
         const auto& p = sequence_[page_];
+        enter_music();
         if (p.illustration >= 0)
         {
             scroll_ = unsigned(illustrations_.at(p.illustration).size() / (640 * 4)) - 480;
@@ -120,6 +148,11 @@ class OriginalEnding
         {
             movie_.emplace(Flic::from_disc(root_, 20 + p.movie, disc_));
             movie_->delay = std::max(10u, (movie_->delay * 10 / 48) * 10);
+            if (movie_audio_)
+            {
+                auto begun = movie_audio_->begin(p.movie, 0);
+                if (!begun) { report_error(begun.error()); }
+            }
         }
     }
     bool scrolling() const { return std::find(illustration_pages_.begin(), illustration_pages_.end(), unsigned(page_)) != illustration_pages_.end(); }
@@ -143,7 +176,8 @@ class OriginalEnding
         }
         return result;
     }
-    s2ne::Result<std::vector<uint8_t>> try_pcx(const std::filesystem::path& root, unsigned id, OriginalDisc disc)
+public:
+    static s2ne::Result<std::vector<uint8_t>> try_pcx(const std::filesystem::path& root, unsigned id, OriginalDisc disc)
     {
         auto b = OriginalDiscResources(root).dat_entry(disc, id);
         if (b.size() < 897 || b[0] != 10 || b[2] != 1 || b[3] != 8 || b[65] != 1 || word(b, 8) != 639 || word(b, 10) < 479)
@@ -192,6 +226,7 @@ class OriginalEnding
         }
         return s2ne::Result<std::vector<uint8_t>>::success(out);
     }
+private:
     std::vector<uint8_t> pcx(const std::filesystem::path& root, unsigned id, OriginalDisc disc)
     {
         auto result = try_pcx(root, id, disc);
@@ -250,7 +285,7 @@ public:
     struct InitializationTag
     {
     };
-    OriginalEnding(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc, InitializationTag) : font_(root), events_(events), root_(root), disc_((events.stage == 61 || events.stage == 131) ? OriginalDisc::two : disc) { }
+    OriginalEnding(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc, InitializationTag) : font_(root), events_(events), root_(root), disc_((events.stage == 61 || events.stage == 131) ? OriginalDisc::two : disc) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc)
     {
         disc = disc_;
@@ -369,7 +404,7 @@ public:
     }
     static s2ne::Result<std::unique_ptr<OriginalEnding>> create(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc)
     {
-        auto result = std::make_unique<OriginalEnding>(root, events, disc, InitializationTag{ });
+        auto result = std::make_unique<OriginalEnding>(root, events, disc, InitializationTag{});
         auto ready = result->initialize(root, events, disc);
         if (!ready)
         {
@@ -384,6 +419,38 @@ public:
     bool done() const { return page_ >= pages(); }
     bool automatic() const { return !done() && (movie_.has_value() || scrolling()); }
     unsigned movie_frames() const { return movie_frames_; }
+    void set_effect_audio(const std::filesystem::path& root, OriginalAniAudio::Play play, OriginalAniAudio::Stop stop)
+    {
+        if (movie_audio_) { return; }
+        auto loaded = OriginalAniAudio::create(root);
+        if (!loaded)
+        {
+            report_error(loaded.error());
+            return;
+        }
+        movie_audio_ = std::move(loaded).value();
+        movie_audio_->play_music = music_audio_;
+        movie_audio_->play_midi = midi_audio_;
+        play_audio_ = std::move(play);
+        stop_audio_ = std::move(stop);
+        if (movie_)
+        {
+            auto begun = movie_audio_->begin(sequence_[page_].movie, 0);
+            if (!begun) { report_error(begun.error()); }
+        }
+    }
+    void set_music_audio(OriginalAniAudio::Music play, OriginalAniAudio::Music midi = {})
+    {
+        bool initial = !music_audio_;
+        music_audio_ = std::move(play);
+        midi_audio_ = std::move(midi);
+        if (movie_audio_)
+        {
+            movie_audio_->play_music = music_audio_;
+            movie_audio_->play_midi = midi_audio_;
+        }
+        if (initial) { enter_music(); }
+    }
     std::string phase_description() const
     {
         if (done())
@@ -418,16 +485,21 @@ public:
         elapsed_ += milliseconds;
         if (movie_)
         {
-            while (elapsed_ >= movie_->delay)
+            if (elapsed_ >= movie_->delay)
             {
-                elapsed_ -= movie_->delay;
+                elapsed_ = 0;
                 if (!movie_->next(movie_image_))
                 {
                     ++page_;
                     enter();
-                    break;
+                    return;
                 }
                 ++movie_frames_;
+                if (movie_audio_ && play_audio_ && stop_audio_)
+                {
+                    auto played = movie_audio_->advance(movie_frames_, play_audio_, stop_audio_);
+                    if (!played) { report_error(played.error()); }
+                }
             }
         }
         else

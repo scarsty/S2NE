@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "battle.hpp"
 namespace s2ne::original_scripted_movement
 {
@@ -7,9 +7,11 @@ class Track
 {
     std::vector<Battle::Point> path_;
     OriginalEvents::Unit pose_;
-    size_t cursor_{ };
-    unsigned elapsed_{ };
-    bool active_{ };
+    size_t cursor_{};
+    unsigned elapsed_{};
+    bool active_{};
+    unsigned sound_channel_{};
+    std::shared_ptr<std::array<unsigned, 4>> group_channels_;
     void advance(const Battle& battle)
     {
         auto next = path_.at(cursor_);
@@ -19,10 +21,22 @@ class Track
         pose_.direction = direction;
         pose_.x = next.x;
         pose_.y = next.y;
+        const auto id = battle.scripted_movement_sound_id(pose_);
+        // 原45E450共用一个返回通道；461808则在全组角色间按四个分支各自复用。
+        unsigned* channel = &sound_channel_;
+        if (group_channels_)
+        {
+            unsigned branch = 3;
+            if (id == 122) { branch = 0; }
+            else if (id == 131) { branch = 1; }
+            else if (id == 124) { branch = 2; }
+            channel = &group_channels_->at(branch);
+        }
+        *channel = battle.scripted_effect_sound(id, *channel);
     }
 
 public:
-    bool begin(const Battle& battle, const OriginalEvents::Unit& unit, Battle::Point destination, unsigned movement_class)
+    bool begin(const Battle& battle, const OriginalEvents::Unit& unit, Battle::Point destination, unsigned movement_class, std::shared_ptr<std::array<unsigned, 4>> group_channels = {})
     {
         if (active_ || movement_class > 1)
         {
@@ -36,6 +50,8 @@ public:
         path_ = std::move(*path);
         pose_ = unit;
         cursor_ = elapsed_ = 0;
+        sound_channel_ = 0;
+        group_channels_ = group_channels;
         active_ = !path_.empty();
         pose_.animation_action = 1;
         pose_.movement_frame = 0;
@@ -92,7 +108,8 @@ class Group
 {
     std::vector<Track> tracks_;
     std::vector<size_t> actors_;
-    unsigned mode_{ };
+    unsigned mode_{};
+    std::shared_ptr<std::array<unsigned, 4>> sound_channels_;
 
 public:
     bool begin(const Battle& battle, const OriginalEvents& events, const std::vector<std::pair<size_t, Battle::Point>>& roles, unsigned mode)
@@ -103,6 +120,7 @@ public:
         }
         std::vector<Track> tracks;
         std::vector<size_t> actors;
+        sound_channels_ = std::make_shared<std::array<unsigned, 4>>();
         for (auto [index, destination] : roles)
         {
             if (index >= events.units.size())
@@ -115,7 +133,7 @@ public:
             {
                 continue;
             }
-            if (!track.begin(battle, events.units[index], destination, events.movement_class(events.units[index])))
+            if (!track.begin(battle, events.units[index], destination, events.movement_class(events.units[index]), sound_channels_))
             {
                 continue;
             }

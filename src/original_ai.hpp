@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "runtime_error.hpp"
 #include <algorithm>
 #include <array>
@@ -64,8 +64,7 @@ inline std::optional<Score> score_melee(const MeleePreview& p, Weights w)
     }
     return Score{ priority && kill ? 1 : 2, value, kill ? 1 : 0 };
 }
-// Exact sub_40814F subset for an initially empty, ordinary-melee-only scan.
-// No abilities/area candidates may be mixed into this state.
+// 原40814F物攻候选比较，允许已有rank3恢复候选；其它技能rank仍由各族比较器处理。
 inline bool improves_melee(Score candidate, Score current)
 {
     if (candidate.rank != 1 && candidate.rank != 2)
@@ -75,6 +74,10 @@ inline bool improves_melee(Score candidate, Score current)
     if (current.rank == 0)
     {
         return true;
+    }
+    if (current.rank == 3 && candidate.rank == 2)
+    {
+        return candidate.kills > 0 || candidate.value > current.value;
     }
     if (candidate.rank == 1)
     {
@@ -89,6 +92,32 @@ inline bool improves_melee(Score candidate, Score current)
         return candidate.kills > current.kills || (candidate.kills == current.kills && candidate.value > current.value);
     }
     return current.kills == 0 && candidate.value > current.value;
+}
+inline bool improves_skill(Score candidate, Score current, int threshold)
+{
+    if (candidate.rank <= 0) { return false; }
+    if (!current.rank) { return true; }
+    if (candidate.rank == 1) { return current.rank != 1 || candidate.value > current.value; }
+    if (candidate.rank == 2)
+    {
+        if (candidate.kills > 0)
+        {
+            if (current.rank > 2) { return true; }
+            return current.rank == 2 && (candidate.kills > current.kills || (candidate.kills == current.kills && candidate.value > current.value));
+        }
+        if (current.rank == 2) { return !current.kills && candidate.value > current.value; }
+        if (current.rank == 3) { return candidate.value > current.value; }
+        return current.rank > 3 && (candidate.value > threshold || (candidate.value < threshold && candidate.value > current.value));
+    }
+    if (candidate.rank == 3)
+    {
+        if (current.rank == 2) { return !current.kills && candidate.value > current.value; }
+        if (current.rank == 3) { return candidate.value > current.value; }
+        return current.rank > 3 && (candidate.value > threshold / 2 || (candidate.value < threshold / 2 && candidate.value > current.value));
+    }
+    if (current.rank == 2) { return current.value < threshold && candidate.value > current.value; }
+    if (current.rank == 3) { return current.value < threshold / 2 && candidate.value > current.value; }
+    return current.rank > 3 && candidate.value > current.value;
 }
 struct Candidate
 {
@@ -105,12 +134,12 @@ struct Selection
 // Call in original action-definition order, current position then ordered routes.
 // Each call supplies ALL targets at one position in original enumeration order.
 // true means stop the outer position/action scan (40B6B2 / 40B78F).
-inline bool scan_melee_position(std::span<const Candidate> candidates, Weights weights, Selection& selected)
+inline bool scan_melee_position(std::span<const Candidate> candidates, Weights weights, Selection& selected, int skill_threshold = 0)
 {
     for (const auto& candidate : candidates)
     {
         auto score = score_melee(candidate.preview, weights);
-        if (score && improves_melee(*score, selected.score))
+        if (score && improves_skill(*score, selected.score, skill_threshold))
         {
             selected.score = *score;
             selected.candidate = candidate;
@@ -122,6 +151,11 @@ inline bool scan_melee_position(std::span<const Candidate> candidates, Weights w
 inline bool melee_route_candidate(int signed_record7, unsigned category12, bool movement_used)
 {
     return !movement_used && signed_record7 != 0 && category12 >= 1;
+}
+// 原40B538在全部技能扫描结束后才过滤，不在各候选阶段提前丢弃。
+inline bool skill_route_allowed(const Score& score, int movement_mode)
+{
+    return (score.rank < 30 || movement_mode == 1) && (score.rank <= 0 || score.value != 0);
 }
 // sub_40C906 dispatch only; inputs MUST be results of its two original helpers.
 inline int movement_mode(bool helper40CAFE, bool helper40C956)
@@ -172,6 +206,16 @@ struct RouteNode
     std::array<int, 4> children{ -1, -1, -1, -1 };    // record +Ah/+Ch/+Eh/+10h
     bool live = true;
 };
+template <class Scan>
+bool scan_action_positions(std::span<const RouteRecord> routes, bool moved, Scan scan, Position origin)
+{
+    if (scan(origin, 0)) { return true; }
+    for (const auto& record : routes)
+    {
+        if (melee_route_candidate(record.marker, record.category, moved) && scan(record.position, record.index + 1)) { return true; }
+    }
+    return false;
+}
 struct OrderedRoutes
 {
     std::vector<RouteNode> records;

@@ -83,6 +83,10 @@ public:
     Result<RewardState> try_settle(OriginalEvents events, const OriginalCampaign::Settlement& plan,
         const OriginalSave::State& baseline, unsigned turn, OriginalRandom& random, uint32_t seconds) const
     {
+        if (!baseline.battle_context())
+        {
+            return Result<RewardState>::failure(make_error("Campaign rewards already settled in interbattle scene"));
+        }
         auto campaignResult = OriginalCampaign::create(root_);
         if (!campaignResult)
         {
@@ -196,6 +200,11 @@ public:
             return Result<RewardState>::failure(final.error());
         }
         raw = std::move(final).value();
+        if (plan.next && campaign.stage(plan.next).mode != 3)
+        {
+            put(raw.globals_4f7cd0, 4, 1, 4);
+            raw.event_states.clear();
+        }
         random = std::move(staged_random);
         return Result<RewardState>::success({ std::move(events), std::move(raw) });
     }

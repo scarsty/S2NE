@@ -31,9 +31,9 @@ class OriginalSaveBridge
 
     static Result<bool> try_validate(const OriginalSave::State& raw)
     {
-        if (!raw.battle_context())
+        if (get(raw.globals_4f7cd0, 4, 4) > 1)
         {
-            return Result<bool>::failure(make_error("Save bridge supports battle context only"));
+            return Result<bool>::failure(make_error("Unsupported original save scene"));
         }
         if (get(raw.globals_4f7cd0, 0, 4) != 0)
         {
@@ -379,12 +379,16 @@ public:
                 events.units.push_back(std::move(u));
             }
         }
-        auto states = events.try_restore_event_states(raw.event_states);
-        if (!states)
+        if (raw.battle_context())
         {
-            return Result<Restored>::failure(states.error());
+            auto states = events.try_restore_event_states(raw.event_states);
+            if (!states)
+            {
+                return Result<Restored>::failure(states.error());
+            }
         }
         events.flags = raw.flags_4f7d10;
+        events.script_route = int32_t(get(raw.globals_4f7cd0, 0x10, 4));
         events.campaign_currencies = std::array<int32_t, 2>{ int32_t(get(raw.stage_4fb478, 0, 4)), int32_t(get(raw.stage_4fb478, 4, 4)) };
         events.ending_statistics = std::array<int32_t, 5>{ int32_t(get(raw.stage_4fb478, 8, 4)), int32_t(int8_t(raw.globals_4f7cd0[28])), int32_t(get(raw.stage_4fb478, 0, 4)), int32_t(get(raw.stage_4fb478, 4, 4)), int32_t(get(raw.groups[0].metadata, 8, 4)) };
         return Result<Restored>::success({ std::move(events), get(raw.globals_4f7cd0, 12, 4), restored_camera, raw });
@@ -472,7 +476,9 @@ public:
                 const auto& u = events.units[index++];
                 if (u.id != get(record, 2) || u.appearance != get(record, 4) || (group == 1) != u.hostile())
                 {
-                    return Result<OriginalSave::State>::failure(make_error("Native unit identity/order/group changed"));
+                    return Result<OriginalSave::State>::failure(make_error("Native unit identity/order/group changed: slot=" + std::to_string(index - 1)
+                        + " raw=" + std::to_string(get(record, 2)) + "/" + std::to_string(get(record, 4)) + "/" + std::to_string(group)
+                        + " live=" + std::to_string(u.id) + "/" + std::to_string(u.appearance) + "/" + std::to_string(unsigned(u.hostile()))));
                 }
                 auto patched = try_patch_unit(record, u);
                 if (!patched)
@@ -505,12 +511,14 @@ public:
             }
         }
         result.flags_4f7d10 = events.flags;
-        result.event_states = events.save_event_states();
+        result.event_states.clear();
+        if (result.battle_context()) { result.event_states = events.save_event_states(); }
         if (result.event_states.size() != baseline->event_states.size())
         {
             return Result<OriginalSave::State>::failure(make_error("Stage event set changed"));
         }
         put(result.globals_4f7cd0, 12, turn, 4);
+        if (events.script_route) { put(result.globals_4f7cd0, 0x10, uint32_t(*events.script_route), 4); }
         return Result<OriginalSave::State>::success(std::move(result));
     }
     static OriginalSave::State capture(const OriginalEvents& events, unsigned turn, std::pair<int, int> camera, const OriginalSave::State* baseline = nullptr)

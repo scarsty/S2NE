@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "native_ability_buffs.hpp"
 #include "native_damage_records.hpp"
 #include "native_effect55.hpp"
@@ -12,6 +12,7 @@
 #include "original_menu.hpp"
 #include "original_promotion_transaction.hpp"
 #include "original_sprite.hpp"
+#include "original_skill94_formula.hpp"
 #include <functional>
 #include <optional>
 
@@ -65,7 +66,7 @@ public:
     {
         bool second{}, suppress_first{}, suppress_second{}, army_da_nonzero{};
         bool status3d_40{};    // Original full runtime status unavailable in Unit.status3c byte.
-        bool debug{};
+        bool debug{}, computer{}, item_cast{};
     };
     struct Request
     {
@@ -103,8 +104,10 @@ private:
     size_t header_{};
     int ap_base_{}, ap_repeat_{};
     std::array<int, 256> config_{};
+    unsigned ai_status_weight_{};
     unsigned owner_id_{}, owner_appearance_{};
     Context context_;
+    bool item_source_{};
     std::pair<int, int> area_camera_{};
     Page page_{ Page::closed };
     size_t group_{}, skill_{};
@@ -190,6 +193,7 @@ public:
                 return s2ne::Result<OriginalSkills>::failure(make_error("Invalid skill group name"));
             }
         }
+        result.ai_status_weight_ = result.bin_.at(data.config + 0x10D);
         for (size_t i = 0; i < result.config_.size(); ++i)
         {
             result.config_[i] = int(int8_t(result.bin_[data.config + i]));
@@ -215,7 +219,11 @@ public:
     bool entry_available(const OriginalEvents::Unit& unit, Context context) const
     {
         unsigned begin = context.second ? bin_.at(header_ + 2) : 0, end = context.second ? begin + bin_.at(header_ + 3) : bin_.at(header_ + 2);
-        if (context.debug || context.status3d_40 || ((unit.action_status_runtime ? unit.action_status_runtime->at(0x3D) : unit.status3d) & 0x40) || (context.second ? context.suppress_second : context.suppress_first) || unit.action_points < action_cost(unit))
+        bool suppressed = context.second ? context.suppress_second : context.suppress_first;
+        bool silenced = context.status3d_40 || ((unit.action_status_runtime ? unit.action_status_runtime->at(0x3D) : unit.status3d) & 0x40);
+        if (context.computer && context.army_da_nonzero) { suppressed = false; }
+        if (context.computer && context.second) { silenced = false; }
+        if (context.debug || silenced || suppressed || unit.action_points < action_cost(unit))
         {
             return false;
         }
@@ -230,6 +238,7 @@ public:
     }
     void open(const OriginalEvents::Unit& unit, Context context)
     {
+        item_source_ = false;
         context_ = context;
         owner_id_ = unit.id;
         owner_appearance_ = unit.appearance;
@@ -283,8 +292,180 @@ public:
     size_t selected_group() const { return group_; }
     size_t selected_skill() const { return skill_; }
     const Record& selected() const { return groups_.at(group_).records.at(skill_); }
+    bool select_record(unsigned id)
+    {
+        if (page_ != Page::list) { return false; }
+        for (size_t g = 0; g < groups_.size(); ++g)
+        {
+            for (size_t s = 0; s < groups_[g].records.size(); ++s)
+            {
+                if (groups_[g].records[s].id == id) { group_ = g; skill_ = s; return true; }
+            }
+        }
+        return false;
+    }
+    // 原401146先自身，再逐圈上下交替、左右交替；空格也必须参与面积中心评分。
+    template<class Valid>
+    std::vector<std::pair<int, int>> ai_centers(const OriginalEvents::Unit& actor, Valid valid) const
+    {
+        std::vector<std::pair<int, int>> cells{ { actor.x, actor.y } };
+        int radius = selected().raw[17];
+        if (selected().id == 88 || selected().raw[18] == 5 || selected().raw[18] == 8) { radius = 0; }
+        int x = actor.x, y = actor.y;
+        for (int r = 1; r <= radius; ++r)
+        {
+            if (!(y & 1)) { --x; }
+            --y;
+            for (int col = x; col <= x + r; ++col)
+            {
+                if (valid(col, y)) { cells.emplace_back(col, y); }
+                if (valid(col, y + 2 * r)) { cells.emplace_back(col, y + 2 * r); }
+            }
+            for (int row = y + 2; row <= y + 2 * r - 2; row += 2)
+            {
+                if (valid(x, row)) { cells.emplace_back(x, row); }
+                if (valid(x + r, row)) { cells.emplace_back(x + r, row); }
+            }
+        }
+        return cells;
+    }
+    // 原443235只查学习组；470EF6才检查AP、禁用与3D40，不能借玩家菜单可用性代替。
+    bool ai_group_available(const OriginalEvents::Unit& unit, Context context) const
+    {
+        if (!context.army_da_nonzero && (context.second ? context.suppress_second : context.suppress_first)) { return false; }
+        unsigned begin = context.second ? bin_.at(header_ + 2) : 0;
+        unsigned end = context.second ? begin + bin_.at(header_ + 3) : bin_.at(header_ + 2);
+        for (unsigned g = begin; g < end; ++g) { if (unit.learned.at(g)) { return true; } }
+        return false;
+    }
+    s2ne::Result<int> ai_healing_value(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& target,
+        const OriginalEvents& events, unsigned priority, const OriginalEvents::Unit* partner = nullptr) const
+    {
+        if ((selected().effect() != 18 && selected().effect() != 90) || ((selected().raw[32] & 7) && !partner) || (selected().raw[31] != 1 && selected().id != 88))
+        {
+            return s2ne::Result<int>::failure(make_error("406695 unsupported healing preview family"));
+        }
+        if (target.hp >= target.max_hp || target.max_hp <= 0) { return s2ne::Result<int>::success(0); }
+        unsigned status = target.action_status_runtime ? target.action_status_runtime->at(0x3E) : target.status3e;
+        int chance = (status & 1) ? 0 : selected().word(23);
+        int offset = 0;
+        switch (selected().raw[20])
+        {
+        case 1: offset = 0x13; break;
+        case 4: offset = 0x19; break;
+        case 6: offset = 0x1F; break;
+        case 41: offset = 0x8F; break;
+        case 0: if (selected().effect() == 90) { offset = 0; break; } [[fallthrough]];
+        default: return s2ne::Result<int>::failure(make_error("46E858 healing formula unavailable"));
+        }
+        if (offset && !config_[offset]) { return s2ne::Result<int>::failure(make_error("46E858 healing preview divisor")); }
+        int source = actor.st + (events.equipment_special(actor, 18) ? actor.st / 5 : 0);
+        if (partner) { source = (source + partner->st + (events.equipment_special(*partner, 18) ? partner->st / 5 : 0)) / 2; }
+        source = std::max(1, source);
+        if (selected().raw[20] == 41) { source = std::max(1, actor.fencing); }
+        int amount = selected().word(21);
+        if (offset) { amount += source * config_[offset - 1] / config_[offset]; }
+        if (selected().raw[20] == 41)
+        {
+            if (!config_[0x91]) { return s2ne::Result<int>::failure(make_error("470460 self-healing preview divisor")); }
+            amount -= std::max(1, target.fencing) * config_[0x90] / config_[0x91];
+        }
+        if (status & 1) { amount = 0; }
+        else
+        {
+            if (events.equipment_special(target, 19)) { amount *= 2; }
+            amount = std::max(1, amount * original_combat::preview_multiplier(config_[12], config_[13]) / 10);
+            if (actor.hostile()) { amount = std::max(1, amount * (100 + config_[0xF3 + events.difficulty]) / 100); }
+        }
+        amount = std::min(amount, target.max_hp - target.hp);
+        int value = chance * amount * ((target.max_hp - target.hp) * 100 / target.max_hp + 50) / 100;
+        if (target.id == 1 || target.id == 11 || (target.runtime_role_selector & 3)) { value *= int(priority); }
+        return s2ne::Result<int>::success(value);
+    }
+    bool ai_summon_available(const OriginalEvents::Unit& actor, const OriginalEvents& events) const
+    {
+        if (!summon_supported() || !events.army_status) { return false; }
+        const auto& slots = (*events.army_status)[actor.hostile() ? 1 : 0];
+        for (unsigned i = 0; i < 11; ++i) { if (slots[i * 3] == 1) { return false; } }
+        return true;
+    }
+    bool ai_status_supported() const
+    {
+        switch (selected().effect())
+        {
+        case 5: case 8: case 13: case 15: case 16: case 17: case 43: case 46: case 55: case 56: case 61: case 67: case 69:
+            return true;
+        default: return false;
+        }
+    }
+    bool ai_original_unselected() const
+    {
+        const auto effect = selected().effect();
+        if (effect == 4 || (effect >= 21 && effect <= 31)) { return true; }
+        if (effect == 1 || effect == 3 || effect == 36 || effect == 41 || effect == 42 || effect == 48 || effect == 64
+            || effect == 18 || effect == 49 || effect == 90) { return false; }
+        // 原40646D只有mode2累计正分并设置rank，mode0/1/3只扣友方分。
+        if (selected().raw[31] != 2) { return true; }
+        switch (effect)
+        {
+            case 11: case 32: case 34: case 35: case 38: case 39: case 50: case 51: case 52: case 53: case 54:
+            case 58: case 59: case 66: case 68: case 71: case 72: case 73: case 74: case 75: case 77: case 78:
+            case 79: case 80: case 81: case 82: case 83: return true;
+            default: return false;
+        }
+    }
+    // 原471585免疫／已有状态门控，4714E4使用WORD35而不是效果威力。
+    std::pair<int, int> ai_status_value(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& target,
+        const OriginalEvents& events) const
+    {
+        if (!ai_status_supported() || selected().raw[31] != 2 || target.hostile() == actor.hostile()) { return {}; }
+        const auto byte = [&](unsigned p) -> unsigned
+        {
+            if (target.action_status_runtime) { return target.action_status_runtime->at(p); }
+            if (p == 0x38) { return 0; }
+            if (p == 0x39) { return target.status39.value_or(0); }
+            if (p == 0x3C) { return target.status3c; }
+            if (p == 0x3D) { return target.status3d; }
+            if (p == 0x3E) { return target.status3e; }
+            return target.status3f;
+        };
+        const unsigned status = byte(0x3C) | byte(0x3D) << 8 | byte(0x3E) << 16 | byte(0x3F) << 24;
+        const unsigned word38 = byte(0x38) | byte(0x39) << 8;
+        bool blocked = false;
+        switch (selected().effect())
+        {
+        case 5: blocked = (byte(0x39) & 2) || (byte(0x3E) & 0x10) || (target.abilities & 0x4000); break;
+        case 8: blocked = (byte(0x39) & 2) || (status & 0x1AB000) || (target.abilities & 0x4000); break;
+        case 13: blocked = (byte(0x39) & 2) || (status & 0x12B000) || (target.abilities & 0x4000); break;
+        case 15: blocked = (word38 & 8) || (byte(0x3E) & 0x10) || (target.abilities & 0x4000); break;
+        case 16: blocked = (byte(0x39) & 4) || (byte(0x3E) & 0x10) || (target.abilities & 0x5000); break;
+        case 17:
+            blocked = (byte(0x3D) & 0x40) || (byte(0x3E) & 0x10) || (target.abilities & 0x4000)
+                || events.combat_value(target, 0, 1) < events.combat_value(target, 0, 2)
+                || events.combat_value(target, 0, 1) < events.combat_value(target, 0, 3)
+                || events.combat_value(target, 0, 1) < events.combat_value(target, 0, 4);
+            break;
+        case 43: case 61: case 67: blocked = (byte(0x39) & 2) || (status & 0x1AB000) || (target.abilities & 0x4000); break;
+        case 46: blocked = (word38 & 0x280) || (status & 0x12B000) || (target.abilities & 0x4000); break;
+        case 55: blocked = (byte(0x39) & 2) || (status & 0x13B000) || (target.abilities & 0x4000); break;
+        case 56: blocked = (byte(0x39) & 6) || (status & 0x13F000) || (target.abilities & 0x4000); break;
+        case 69: blocked = (byte(0x39) & 2) || (status & 0x16F000) || (target.abilities & 0x4000); break;
+        }
+        if (blocked) { return {}; }
+        const unsigned exclusions = selected().raw[29];
+        if (((exclusions & 1) && events.skill_target_class(target, byte(0x3C)))
+            || ((exclusions & 2) && target.runtime_role_selector == 1)
+            || ((exclusions & 32) && target.runtime_role_selector == 2)) { return {}; }
+        int chance = OriginalSkill94Formula::hit_curve(actor.st - target.st + selected().word(23) - 100);
+        chance = chance * original_combat::preview_multiplier(config_[10], config_[11]) / 10;
+        if (!actor.hostile()) { chance = chance * (100 + config_[0xF3 + events.difficulty]) / 100; }
+        chance = std::clamp(chance, 1, 99);
+        return { selected().raw[34], selected().word(35) * (100 + ai_status_weight_) / 100 * chance };
+    }
     Failure resource_failure(const OriginalEvents::Unit& unit, const Record& record) const
     {
+        // 46527D直接进入465342，不经过469F04的学习／资源菜单筛选。
+        if (item_source_) { return Failure::none; }
         int cost = record.word(13);
         unsigned flags = record.raw[33];
         if ((flags & 1) && unit.mp < ((unit.abilities & 0x20) ? cost / 2 : cost))
@@ -310,6 +491,8 @@ public:
     {
         const auto& record = selected();
         if (!(record.raw[32] & 7)) { return std::nullopt; }
+        // 原+38h是4651EA道具施法模式，不是角色／地图字段；普通4650B4置0。
+        if (context_.item_cast) { return std::nullopt; }
         const int right = actor.x + int(actor.y & 1), left = right - 1;
         const std::array<std::pair<int, int>, 4> positions{ { { right, actor.y - 1 }, { left, actor.y + 1 }, { left, actor.y - 1 }, { right, actor.y + 1 } } };
         for (auto [x, y] : positions)
@@ -332,6 +515,7 @@ public:
     }
     bool cooperative_pair(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& partner) const
     {
+        if (context_.item_cast) { return false; }
         if (actor.id == partner.id && actor.appearance == partner.appearance) { return false; }
         if (actor.hostile() != partner.hostile() || !(partner.status_flags & 0x80) || (partner.status_flags & 0x20) || partner.action_state != 0 || !(partner.learned[selected().group] & (1u << selected().bit))) { return false; }
         const int right = actor.x + int(actor.y & 1), left = right - 1;
@@ -349,11 +533,11 @@ public:
         {
             return Failure::world_unresolved;
         }
-        if (unit.id != owner_id_ || unit.appearance != owner_appearance_ || !(unit.learned.at(selected().group) & (1u << selected().bit)))
+        if (unit.id != owner_id_ || unit.appearance != owner_appearance_ || !source_authorized(unit, selected().group, selected().bit))
         {
             return Failure::stale_unit;
         }
-        if (!entry_available(unit, context_))
+        if (!item_source_ && !entry_available(unit, context_))
         {
             return Failure::world_unresolved;
         }
@@ -381,6 +565,56 @@ public:
         return Failure::none;
     }
     const std::optional<Request>& request() const { return request_; }
+    bool item_source() const { return item_source_; }
+    std::vector<Record> newly_learned_records(const OriginalEvents::Unit& before, const OriginalEvents::Unit& after) const
+    {
+        std::vector<Record> out;
+        const unsigned count = bin_.at(header_ + 1);
+        const size_t records = header_ + 9 + count * 2;
+        for (unsigned group = 0; group < count; ++group)
+        {
+            const unsigned first = bin_.at(header_ + 9 + group * 2), length = bin_.at(header_ + 10 + group * 2);
+            for (unsigned bit = 0; bit < length; ++bit)
+            {
+                if (!(after.learned[group] & ~before.learned[group] & (1u << bit))) { continue; }
+                Record record{first + bit + 1, group, bit, {}};
+                std::copy_n(bin_.begin() + records + (record.id - 1) * 37, 37, record.raw.begin());
+                out.push_back(record);
+            }
+        }
+        return out;
+    }
+    bool source_authorized(const OriginalEvents::Unit& unit, unsigned group, unsigned bit) const
+    {
+        return (item_source_ && unit.id == owner_id_ && unit.appearance == owner_appearance_)
+            || (unit.learned.at(group) & (1u << bit));
+    }
+    bool open_item(const OriginalEvents::Unit& unit, unsigned id)
+    {
+        open(unit, {});
+        groups_.clear();
+        request_.reset();
+        page_ = Page::closed;
+        if (!id || id > bin_.at(header_ + 7)) { return false; }
+        const unsigned count = bin_.at(header_ + 1);
+        const size_t records = header_ + 9 + count * 2;
+        for (unsigned g = 0; g < count; ++g)
+        {
+            const unsigned first = bin_.at(header_ + 9 + g * 2), length = bin_.at(header_ + 10 + g * 2);
+            if (id <= first || id > first + length) { continue; }
+            Record record{ id, g, id - first - 1, {} };
+            std::copy_n(bin_.begin() + records + (id - 1) * 37, 37, record.raw.begin());
+            if (record.raw[32] & 7) { return false; }
+            groups_.push_back({g, {}, {record}});
+            group_ = skill_ = 0;
+            context_.second = g >= bin_.at(header_ + 2);
+            // +576=1与+38不是同一字段；它跳熟练结算，不赋予学习位。
+            item_source_ = true;
+            page_ = Page::list;
+            return true;
+        }
+        return false;
+    }
     s2ne::Result<unsigned> try_initial_payment_state(unsigned id) const
     {
         size_t p = entry(10);
@@ -420,7 +654,7 @@ public:
         original_combat::Random& random, ExecutionContext context, const AwardAdapter& award)
     {
         if (&unit != &target || selected().id != 88 || (context.status3c & 255) != unit.status3c) { return { false, Failure::world_unresolved }; }
-        if (!request_ || unit.id != request_->unit_id || unit.appearance != request_->appearance || !(unit.learned[request_->group] & (1u << request_->bit))) { return { false, Failure::stale_unit }; }
+        if (!request_ || unit.id != request_->unit_id || unit.appearance != request_->appearance || !source_authorized(unit, request_->group, request_->bit)) { return { false, Failure::stale_unit }; }
         if (auto failure = resource_failure(unit, selected()); failure != Failure::none) { return { false, failure }; }
         return execute_single_healing(unit, unit, events, random, context, award);
     }
@@ -429,6 +663,19 @@ public:
     {
         int dx = 2 * (target.x - actor.x) + int(target.y & 1) - int(actor.y & 1), dy = target.y - actor.y;
         return healing1_supported() && actor.hostile() == target.hostile() && target.hp > 0 && (target.status_flags & 0x80) && !(target.status_flags & 0x20) && std::max(std::abs(dx), std::abs(dy)) <= 5;
+    }
+    bool selection_cell_in_range(const OriginalEvents::Unit& actor, int x, int y) const
+    {
+        auto center = actor;
+        center.x = x;
+        center.y = y;
+        if (status_area_supported()) { return sleep2_center_in_range(actor, center); }
+        const int dx = 2 * (x - actor.x) + (y & 1) - (actor.y & 1), dy = y - actor.y;
+        if (selected().id == 88 || reveal50_supported()) { return x == actor.x && y == actor.y; }
+        int radius = selected().raw[17];
+        if (healing1_supported()) { radius = 5; }
+        if (transfer51_supported()) { radius = 2; }
+        return std::max(std::abs(dx), std::abs(dy)) <= radius;
     }
     Result execute_healing1(OriginalEvents::Unit& actor, OriginalEvents::Unit& target, const OriginalEvents& events,
         original_combat::Random& random, ExecutionContext context, const AwardAdapter& award)
@@ -616,6 +863,8 @@ public:
     bool friendly_status_supported() const { return invisibility47_supported() || cooperative_supported() || ability_buff_supported() || timed_buff_supported() || blessing3_supported() || strengthening4_supported() || protection5_supported() || restoration_supported(); }
     void pay_staged(OriginalEvents::Unit& actor, ExecutionContext context, uint32_t payment_abilities) const
     {
+        // 46527D返回45024C，不调用普通4650B4尾部的464CFA支付。
+        if (item_source_) { return; }
         const unsigned mask = request_->second ? 8 : 4;
         actor.action_points -= ap_base_ + ((actor.status34 & mask) ? ap_repeat_ : 0);
         actor.status34 |= uint8_t(mask);
@@ -641,8 +890,49 @@ public:
     std::function<bool(int, int)> area_valid_;
     void set_area_elevation(std::function<int(int, int)> elevation) { area_elevation_ = std::move(elevation); }
     void set_area_valid(std::function<bool(int, int)> valid) { area_valid_ = std::move(valid); }
+    std::optional<unsigned> ai_direction_;
+    void set_ai_direction(std::optional<unsigned> direction) { ai_direction_ = direction; }
+    std::vector<std::pair<int, int>> ai_direction_cells(const OriginalEvents::Unit& center, unsigned direction) const
+    {
+        std::vector<std::pair<int, int>> cells;
+        int x = center.x, y = center.y;
+        for (int n = 0; n < selected().raw[17]; ++n)
+        {
+            if (direction == 0 || direction == 3) { if (!(y & 1)) { --x; } }
+            else if (y & 1) { ++x; }
+            y += direction < 2 ? 1 : -1;
+            bool axialValid = !area_valid_ || area_valid_(x, y);
+            if (area_elevation_)
+            {
+                const int delta = area_elevation_(center.x, center.y) - area_elevation_(x, y);
+                if (selected().raw[18] == 5) { axialValid &= delta >= -2 && delta <= 3; }
+                else { axialValid &= std::abs(delta) <= 10; }
+            }
+            if (axialValid) { cells.emplace_back(x, y); }
+            if (selected().raw[18] == 5)
+            {
+                if (!axialValid) { break; }
+                continue;
+            }
+            int rightX = x, rightY = y, leftX = x, leftY = y;
+            for (int k = 0; k < n; ++k)
+            {
+                if (direction < 2) { if (rightY & 1) { ++rightX; } }
+                else if (!(rightY & 1)) { --rightX; }
+                rightY += (direction == 0 || direction == 3) ? 1 : -1;
+                if (direction < 2) { if (!(leftY & 1)) { --leftX; } }
+                else if (leftY & 1) { ++leftX; }
+                leftY += (direction == 0 || direction == 3) ? -1 : 1;
+                if ((!area_valid_ || area_valid_(rightX, rightY)) && (!area_elevation_ || std::abs(area_elevation_(center.x, center.y) - area_elevation_(rightX, rightY)) <= 10)) { cells.emplace_back(rightX, rightY); }
+                if ((!area_valid_ || area_valid_(leftX, leftY)) && (!area_elevation_ || std::abs(area_elevation_(center.x, center.y) - area_elevation_(leftX, leftY)) <= 10)) { cells.emplace_back(leftX, leftY); }
+            }
+            if (!axialValid) { break; }
+        }
+        return cells;
+    }
     std::vector<std::pair<int, int>> radial_cells(const OriginalEvents::Unit& center, bool preserve_ray_slots = false) const
     {
+        if (ai_direction_ && (selected().raw[18] == 5 || selected().raw[18] == 8)) { return ai_direction_cells(center, *ai_direction_); }
         std::vector<std::pair<int, int>> cells{ { center.x, center.y } };
         const unsigned mode = selected().raw[18];
         const int radius = mode == 6 ? 6 : selected().raw[17];
@@ -944,7 +1234,7 @@ public:
             return s2ne::Result<HostileResult>::failure(make_error("Original cast pipeline rejected request/target/resources/adapter"));
         };
         const auto kind = handler(bool(summon));
-        if (kind == Handler::damage466082 || kind == Handler::unavailable || page_ != Page::requested || !request_ || request_->unit_id != actor.id || request_->appearance != actor.appearance || !(actor.learned[request_->group] & (1u << request_->bit)) || !entry_available(actor, context_) || resource_failure(actor, selected()) != Failure::none || !context.friendly_army || context.difficulty < 1 || context.difficulty > 5 || !award || (targets.empty() && kind != Handler::army4666C5 && kind != Handler::summon465E04)) { return fail(); }
+        if (kind == Handler::damage466082 || kind == Handler::unavailable || page_ != Page::requested || !request_ || request_->unit_id != actor.id || request_->appearance != actor.appearance || !source_authorized(actor, request_->group, request_->bit) || (!item_source_ && !entry_available(actor, context_)) || resource_failure(actor, selected()) != Failure::none || (!context.friendly_army && !context_.computer) || context.difficulty < 1 || context.difficulty > 5 || !award || (targets.empty() && kind != Handler::army4666C5 && kind != Handler::summon465E04)) { return fail(); }
         if (context.conditions_mode && (kind == Handler::healing465C14 || kind == Handler::status4668F0)) { return fail(); }
         if ((kind == Handler::healing465C14 || strengthening4_supported() || ability_buff_supported()) && !events) { return fail(); }
         if (kind == Handler::equipment467625 && !equipment) { return fail(); }
@@ -1126,7 +1416,7 @@ public:
                     else
                     {
                         unsigned offset = 0x1F;
-                        if (selected().raw[20] == 1) { offset = 0x12; }
+                        if (selected().raw[20] == 1) { offset = 0x13; }
                         else if (selected().raw[20] == 4) { offset = 0x19; }
                         if (config_[offset] <= 0) { return fail(); }
                         const int st = actor.st + (events->equipment_special(actor, 18) ? actor.st / 5 : 0);
@@ -1134,6 +1424,7 @@ public:
                     }
                     if (events->equipment_special(t, 19)) { amount *= 2; }
                     amount = std::max(1, amount * (config_[12] + stream.bounded(config_[13] + 3, context.seconds)) / 10);
+                    if (actor.hostile()) { amount = std::max(1, amount * (100 + config_[0xF3 + context.difficulty]) / 100); }
                 }
                 const bool feedback = t.hp < t.max_hp;
                 int healed = 0;
@@ -1410,23 +1701,23 @@ public:
         request_.reset();
         page_ = Page::closed;
     }
-    void navigate(unsigned scan)
+    void navigate(unsigned scan, bool change_group = true)
     {
         if (page_ != Page::list)
         {
             return;
         }
-        if (scan == 0x4B || scan == 0x4D)
+        if ((scan == 0x4B || scan == 0x4D) && change_group)
         {
             group_ = scan == 0x4B ? (group_ + groups_.size() - 1) % groups_.size() : (group_ + 1) % groups_.size();
             skill_ = 0;
         }
-        else if (scan == 0x48 || scan == 0x50)
+        else if (scan == 0x48 || scan == 0x50 || scan == 0x4B || scan == 0x4D)
         {
             size_t n = groups_[group_].records.size();
             if (n)
             {
-                skill_ = scan == 0x48 ? (skill_ + n - 1) % n : (skill_ + 1) % n;
+                skill_ = (scan == 0x48 || scan == 0x4B) ? (skill_ + n - 1) % n : (skill_ + 1) % n;
             }
         }
     }
@@ -1441,12 +1732,8 @@ public:
             size_t index = size_t(x - 26) / 34;
             if (index < groups_[group_].records.size())
             {
-                bool same = skill_ == index;
-                if (!click)
-                {
-                    skill_ = index;
-                }
-                return click && same;
+                skill_ = index;
+                return click;
             }
         }
         for (size_t g = 0; g < groups_.size(); ++g)
@@ -1454,7 +1741,7 @@ public:
             int cx = 508 + int(g % 3) * 45, cy = 394 + int(g / 3) * 28;
             if (x >= cx - 22 && x <= cx + 22 && y >= cy && y < cy + 16)
             {
-                if (!click)
+                if (click)
                 {
                     group_ = g;
                     skill_ = 0;
@@ -1466,7 +1753,7 @@ public:
     }
     s2ne::Result<bool> try_draw(std::vector<uint8_t>& image) const
     {
-        if (page_ == Page::closed)
+        if (page_ != Page::list)
         {
             return s2ne::Result<bool>::success(true);
         }

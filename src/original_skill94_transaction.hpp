@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "original_death_dispatch.hpp"
 #include "original_skill94_resolution.hpp"
 #include "original_skills.hpp"
@@ -21,7 +21,7 @@ public:
         int elevation{ };
         uint32_t seconds{ };
         unsigned payment_state{ };
-        bool original_second_partition{ }, target_runtime_known{ }, synchronous_death_ready{ };
+        bool original_second_partition{ }, target_runtime_known{ }, synchronous_death_ready{ }, computer{};
         const OriginalEvents::Unit* partner{ };
     };
     enum class Failure
@@ -95,6 +95,78 @@ public:
         std::vector<Result> targets;
         int raw_xp{ }, proficiency{ };
     };
+    // 原46D431预估模式不抽签、不执行死亡／支付；复用实击公式与修正器。
+    s2ne::Result<OriginalSkill94Resolution::Resolution> preview(const OriginalSkills::Record& record,
+        const OriginalEvents::Unit& actor, const OriginalEvents::Unit& target, const OriginalEvents& resources, Context ctx) const
+    {
+        if (record.effect() == 3)
+        {
+            auto modifiers = ctx.damage;
+            modifiers.effect = 41;
+            modifiers.terrain_flags = 2;
+            modifiers.target_immunity2f = target.runtime_role_selector;
+            original_combat::Random unused(1);
+            auto result = resolution_.try_resolve_drain(actor.st, target.st, target.hp, target.hp, modifiers, unused, 0, record.word(23), false);
+            if (result) { result.value().damage = result.value().chance ? target.hp : 0; }
+            return result;
+        }
+        NativeDamageFormula::Input input;
+        int attack = 0, defense = 0, count = 0, actorCount = 0;
+        if (record.raw[33] & 1)
+        {
+            attack += actor.st + (resources.equipment_special(actor, 18) ? actor.st / 5 : 0);
+            defense += target.st + (resources.equipment_special(target, 18) ? target.st / 5 : 0);
+            ++count; ++actorCount;
+            if (ctx.partner) { attack += ctx.partner->st + (resources.equipment_special(*ctx.partner, 18) ? ctx.partner->st / 5 : 0); ++actorCount; }
+        }
+        if (record.raw[33] & 2)
+        {
+            attack += actor.fencing; defense += target.fencing; ++count; ++actorCount;
+            if (ctx.partner) { attack += ctx.partner->fencing; ++actorCount; }
+        }
+        if (!count || !actorCount) { return s2ne::Result<OriginalSkill94Resolution::Resolution>::failure(make_error("46E858 AI damage source unavailable")); }
+        input.actor_value = std::max(1, attack / actorCount);
+        input.target_value = std::max(1, defense / count);
+        input.proficiency = actor.learned_proficiency[record.group];
+        if (ctx.partner) { input.proficiency = ((input.proficiency / 10 + ctx.partner->learned_proficiency[record.group] / 10) / 2) * 10; }
+        input.target_defense = target.defense;
+        input.target_attribute = target.kind_attribute + (resources.equipment_special(target, 64) ? 10 : 0);
+        input.actor_hp = actor.hp; input.target_hp = target.hp;
+        input.actor_combat_value = actor.ending_combat_value.value_or(resources.combat_value(actor));
+        auto raw = damage_formula_.raw(record.id, input);
+        if (record.effect() == 41 || record.effect() == 42)
+        {
+            input.actor_value = std::max(1, actor.st + (resources.equipment_special(actor, 18) ? actor.st / 5 : 0));
+            input.target_value = std::max(1, target.st + (resources.equipment_special(target, 18) ? target.st / 5 : 0));
+            raw = NativeDamageFormula::evaluate(record.raw[20], record.word(21), input, config_);
+        }
+        if (!raw) { return s2ne::Result<OriginalSkill94Resolution::Resolution>::failure(raw.error()); }
+        auto& modifiers = ctx.damage;
+        modifiers.target_direction_guard = target.abilities & 0x2000;
+        modifiers.damage_mask = record.word(27);
+        modifiers.original_group = record.raw[0];
+        modifiers.formula_flags = record.raw[33];
+        modifiers.bypass_modifiers = record.raw[29] & 64;
+        modifiers.terrain_flags = record.raw[29];
+        modifiers.target_movement_class = resources.skill_target_class(target, modifiers.target_status3c);
+        modifiers.target_immunity2f = target.runtime_role_selector;
+        modifiers.target_magic_guard = target.abilities & 0x10;
+        modifiers.actor_spell_boost = actor.abilities & 0x400000;
+        modifiers.target_spell_armor = target.abilities & 0x2000000;
+        modifiers.target_equipment11 = resources.equipment_special(target, 11);
+        modifiers.effect = record.effect();
+        const unsigned status3e = target.action_status_runtime ? target.action_status_runtime->at(0x3E) : target.status3e;
+        original_combat::Random unused(1);
+        if (record.effect() == 41 || record.effect() == 42)
+        {
+            modifiers.terrain_flags = 0;
+            modifiers.formula_flags = 1;
+            return resolution_.try_resolve_drain(actor.st, target.st, raw.value(), target.hp, modifiers, unused, 0, record.word(23), false);
+        }
+        return resolution_.try_resolve(ctx.hit, raw.value(), target.hp, ctx.elevation, modifiers, unused, 0,
+            record.word(23), (modifiers.target_status39 & 2) || (modifiers.target_status3d & 0x20) || (status3e & 2),
+            record.raw[33] & 128, record.raw[33] & 7, false);
+    }
     s2ne::Result<AreaResult> execute_area(OriginalSkills& menu, OriginalEvents::Unit& actor,
         std::vector<OriginalEvents::Unit>& targets, const OriginalEvents::Unit& center, const OriginalEvents& resources,
         original_combat::Random& random, const std::vector<Context>& contexts, const Award& award,
@@ -185,13 +257,13 @@ public:
         const auto request = *menu.request();
         const auto record = menu.selected();
         const bool family = area_target && menu.damage_supported();
-        if ((!family && !menu.sword94_supported()) || ((record.raw[32] & 7) && !ctx.partner) || request.unit_id != actor.id || request.appearance != actor.appearance || request.group != record.group || request.bit != record.bit || request.second != ctx.original_second_partition || !award || !(actor.learned[record.group] & (1u << record.bit)) || !actor.controllable() || !(actor.status_flags & 0x80) || (actor.status_flags & 0x20) || actor.hp <= 0 || target.hp <= 0 || (record.raw[31] == 2 && actor.hostile() == target.hostile()) || (actor.id == target.id && actor.appearance == target.appearance) || !(target.status_flags & 0x80) || (target.status_flags & 0x20) || ctx.damage.difficulty < 1 || ctx.damage.difficulty > 5 || !ctx.damage.friendly_army || ctx.damage.conditions_mode || menu.resource_failure(actor, record) != OriginalSkills::Failure::none)
+        if ((!family && !menu.sword94_supported()) || ((record.raw[32] & 7) && !ctx.partner) || request.unit_id != actor.id || request.appearance != actor.appearance || request.group != record.group || request.bit != record.bit || request.second != ctx.original_second_partition || !award || !menu.source_authorized(actor, record.group, record.bit) || (!actor.controllable() && !ctx.computer) || !(actor.status_flags & 0x80) || (actor.status_flags & 0x20) || actor.hp <= 0 || target.hp <= 0 || (record.raw[31] == 2 && actor.hostile() == target.hostile()) || (actor.id == target.id && actor.appearance == target.appearance) || !(target.status_flags & 0x80) || (target.status_flags & 0x20) || ctx.damage.difficulty < 1 || ctx.damage.difficulty > 5 || (!ctx.damage.friendly_army && !ctx.computer) || ctx.damage.conditions_mode || menu.resource_failure(actor, record) != OriginalSkills::Failure::none)
         {
             return out;
         }
         int dx = 2 * (target.x - actor.x) + int(target.y & 1) - int(actor.y & 1), dy = target.y - actor.y;
         unsigned status3d = actor.action_status_runtime ? actor.action_status_runtime->at(0x3D) : actor.status3d;
-        if ((!family && std::max(std::abs(dx), std::abs(dy)) > 3) || (status3d & 0x40))
+        if ((!family && std::max(std::abs(dx), std::abs(dy)) > 3) || ((status3d & 0x40) && !request.second))
         {
             return out;
         }

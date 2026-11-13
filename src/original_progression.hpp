@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "original_events.hpp"
 #include "original_promotion_transaction.hpp"
 #include "original_random.hpp"
@@ -8,9 +8,73 @@ namespace s2ne
 {
 class OriginalProgression
 {
-    int scale_{ };
+    int scale_{};
 
 public:
+    struct GrowthStep
+    {
+        OriginalEvents::Unit before;
+        std::array<int, 9> increments{};
+    };
+    // A single4593CC invocation. RNG and stat writes stay in this candidate
+    // across473420; only confirm applies45C3E0 and permits the next draw.
+    class PendingGrowth
+    {
+        OriginalEvents::Unit unit_;
+        OriginalRandom random_;
+        std::optional<GrowthStep> step_;
+        std::vector<uint8_t> learning_name_;
+        bool failed_{};
+
+    public:
+        PendingGrowth(const OriginalEvents::Unit& unit, OriginalRandom random) : unit_(unit), random_(random) {}
+        const auto& unit() const { return unit_; }
+        const auto& random() const { return random_; }
+        const auto& step() const { return step_; }
+        bool failed() const { return failed_; }
+        const auto& learning_name() const { return learning_name_; }
+        void set_learning_name(std::vector<uint8_t> name) { learning_name_ = std::move(name); }
+        bool confirm_learning()
+        {
+            if (learning_name_.empty()) { return false; }
+            learning_name_.clear();
+            return true;
+        }
+        bool prepare(const OriginalPromotion& promotion, const OriginalRandom::TimeSource& time)
+        {
+            if (step_ || failed_) { return !failed_; }
+            if (unit_.experience < unit_.experience_threshold || unit_.level >= 99) { return true; }
+            if (!unit_.experience_threshold)
+            {
+                failed_ = true;
+                return false;
+            }
+            ++unit_.level;
+            auto growth = promotion.try_growth(unit_.appearance, unit_.level, random_, time);
+            if (!growth)
+            {
+                failed_ = true;
+                report_error(growth.error());
+                return false;
+            }
+            unit_.experience = unsigned(uint16_t(unit_.experience - unit_.experience_threshold));
+            step_ = GrowthStep{ unit_, growth.value() };
+            return true;
+        }
+        bool confirm()
+        {
+            if (!step_ || failed_) { return false; }
+            OriginalPromotionTransaction::apply_stat_increments(unit_, step_->increments);
+            step_.reset();
+            return true;
+        }
+    };
+    PendingGrowth stage(const OriginalEvents::Unit& unit, OriginalRandom random, int raw, bool hostile_reward = false) const
+    {
+        auto staged = unit;
+        if (raw && (!unit.hostile() || hostile_reward)) { staged.experience = std::min(999u, unsigned(uint16_t(staged.experience + experience_award(staged, raw)))); }
+        return PendingGrowth(staged, random);
+    }
     using Growth = std::function<bool(OriginalEvents::Unit&, OriginalRandom&)>;
     struct Result
     {
@@ -40,7 +104,7 @@ public:
         }
         *this = std::move(result).value();
     }
-    Result award_native(OriginalEvents::Unit& unit, OriginalRandom& random, int raw, const OriginalPromotion& promotion, const OriginalRandom::TimeSource& time = { }, int game_mode = 0) const
+    Result award_native(OriginalEvents::Unit& unit, OriginalRandom& random, int raw, const OriginalPromotion& promotion, const OriginalRandom::TimeSource& time = {}, int game_mode = 0, bool hostile_reward = false) const
     {
         return award(unit, random, raw, [&](auto& staged, auto& rng)
             {
@@ -53,7 +117,7 @@ public:
                 OriginalPromotionTransaction::apply_stat_increments(staged, growth.value());
                 return true;
             },
-            game_mode);
+            game_mode, hostile_reward);
     }
     int experience_award(const OriginalEvents::Unit& unit, int raw) const
     {
@@ -68,11 +132,11 @@ public:
         return std::clamp(raw * scale_ / 10, 1, 999);
     }
     // 458B03 and 459309/4593CC: publish neither XP nor RNG if growth cannot complete.
-    Result award(OriginalEvents::Unit& unit, OriginalRandom& random, int raw, const Growth& grow, int game_mode = 0) const
+    Result award(OriginalEvents::Unit& unit, OriginalRandom& random, int raw, const Growth& grow, int game_mode = 0, bool hostile_reward = false) const
     {
-        if (game_mode || unit.hostile())
+        if (game_mode || (unit.hostile() && !hostile_reward))
         {
-            return { };
+            return {};
         }
         auto staged = unit;
         auto staged_random = random;
@@ -86,7 +150,7 @@ public:
         {
             if (!staged.experience_threshold || !grow)
             {
-                return { };
+                return {};
             }
             do
             {
@@ -94,7 +158,7 @@ public:
                 staged.experience = unsigned(uint16_t(staged.experience - staged.experience_threshold));
                 if (!grow(staged, staged_random))
                 {
-                    return { };
+                    return {};
                 }
                 ++result.levels;
             } while (staged.experience >= staged.experience_threshold && staged.level < 99);

@@ -6,6 +6,7 @@ namespace s2ne
 struct AppOptions
 {
     bool stdio{};
+    bool headlessSpeed{};
     std::filesystem::path stdioSaveRoot, stdioInitialSave;
     bool verify;
     bool teleportSmoke;
