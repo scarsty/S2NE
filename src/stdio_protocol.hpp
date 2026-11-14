@@ -21,6 +21,52 @@ class StdioProtocol
 
 public:
     using Json = nlohmann::json;
+    static std::optional<std::string> mismatch(const Json& state, const Json& expected)
+    {
+        if (!expected.is_object()) { return "expected state must be an object"; }
+        for (const auto& [key, value] : expected.items())
+        {
+            if (!state.contains(key) || state.at(key) != value) { return "state mismatch: " + key; }
+        }
+        return {};
+    }
+    static void verify_response(Json& response)
+    {
+        if (!response.contains("expect_after")) { return; }
+        auto expected = std::move(response["expect_after"]);
+        response.erase("expect_after");
+        if (!response.value("ok", false)) { return; }
+        if (auto error = mismatch(response.at("state"), expected))
+        {
+            response["ok"] = false;
+            response["error"] = *error;
+            response["postcondition_met"] = false;
+        }
+        else
+        {
+            response["postcondition_met"] = true;
+        }
+    }
+    class Progress
+    {
+        Json previous_;
+        uint64_t changed_at_{};
+
+    public:
+        Json sample(Json state, uint64_t now)
+        {
+            state.erase("mixed_samples");
+            state.erase("music_position");
+            const bool changed = previous_ != state;
+            if (changed)
+            {
+                previous_ = std::move(state);
+                changed_at_ = now;
+            }
+            const auto unchanged = now - changed_at_;
+            return { { "changed", changed }, { "unchanged_ms", unchanged } };
+        }
+    };
     bool eof() const { return eof_ && lines_.empty(); }
     void respond(const Json& response)
     {

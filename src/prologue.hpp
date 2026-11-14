@@ -151,7 +151,7 @@ class Prologue
                     return;
                 }
                 const auto& award = growth_awards_[growth_award_cursor_];
-                growth_.emplace(progression.stage(growth_units_.at(award.actor), OriginalRandom(growth_random_), award.raw_xp));
+                growth_.emplace(progression.stage(growth_units_.at(award.actor), OriginalRandom(growth_random_), award.raw_xp, false, events.difficulty));
             }
             if (!growth_->prepare(promotion, [this]
                     {
@@ -336,7 +336,8 @@ class Prologue
                         return progression.award_native(units[result.actor], random, result.raw_xp, promotion, [seconds]
                                               {
                                                   return seconds;
-                                              })
+                                              },
+                                              0, false, events.difficulty)
                             .applied;
                     });
                 if (!applied && !units[result.actor].hostile())
@@ -2220,7 +2221,11 @@ public:
     void confirm_growth()
     {
         if (!growth_ || !growth_presented_) { return; }
-        if (growth_->confirm_learning()) { advance_growth(); return; }
+        if (growth_->confirm_learning())
+        {
+            advance_growth();
+            return;
+        }
         growth_->confirm();
         advance_growth();
     }
@@ -2783,8 +2788,14 @@ public:
     bool invisibility_presentation_pending() const { return map_.invisibility_present_pending(); }
     bool original_save_boundary_ready() const { return !temporary_text_ && !deployment_requested_ && !growth_active() && !summon_publish_ && !spirit_sight_pending && !map_.invisibility_present_pending() && !teleport_ && !skill_visual_active() && !synchronous_death_active() && !skill94_death_commit_ && (!battle_ || (!battle_->ai_skill_pending() && !battle_->combat_feedback_active() && !battle_->animating_movement())); }
     bool temporary_text_active() const { return temporary_text_.has_value(); }
-    void observe_music(unsigned id) { if (!temporary_text_) { current_script_music_ = id; } }
-    void cancel_temporary_text() { if (temporary_text_) { temporary_text_->cancel(); } }
+    void observe_music(unsigned id)
+    {
+        if (!temporary_text_) { current_script_music_ = id; }
+    }
+    void cancel_temporary_text()
+    {
+        if (temporary_text_) { temporary_text_->cancel(); }
+    }
     bool deployment_requested() const { return deployment_requested_; }
     void commit_deployment(OriginalEvents events)
     {
@@ -2792,6 +2803,21 @@ public:
         deployment_requested_ = false;
         deployment_completed_ = true;
         enter_stage_battle();
+    }
+    bool synchronous_death_supported(unsigned role)
+    {
+        auto staged = events;
+        return OriginalDeathDispatch::continuation(staged, role, [this](const OriginalEvents& e, size_t i) -> Result<bool>
+            {
+                if (e.condition(i) == 1 && (!script_effect_audio_ || !stop_effect_audio_)) { return Result<bool>::failure(make_error("Original death script effect adapter unavailable")); }
+                if (e.condition(i) == 2 && !music_audio_) { return Result<bool>::failure(make_error("Original death script music adapter unavailable")); }
+                return Result<bool>::success(true);
+            },
+            [this](OriginalEvents& e, size_t i)
+            {
+                return begin_death_presentation(e, i, true);
+            })
+            .supported;
     }
     bool begin_synchronous_death(unsigned role, std::function<void()> resume, const OriginalEvents::Unit* dying = nullptr)
     {
@@ -2814,7 +2840,11 @@ public:
                 if (e.condition(i) == 1 && (!script_effect_audio_ || !stop_effect_audio_)) { return Result<bool>::failure(make_error("Original death script effect adapter unavailable")); }
                 if (e.condition(i) == 2 && !music_audio_) { return Result<bool>::failure(make_error("Original death script music adapter unavailable")); }
                 return Result<bool>::success(true);
-            }, [this](OriginalEvents& e, size_t i) { return begin_death_presentation(e, i, true); });
+            },
+            [this](OriginalEvents& e, size_t i)
+            {
+                return begin_death_presentation(e, i, true);
+            });
         if (!plan.supported)
         {
             return false;
@@ -2833,7 +2863,11 @@ public:
             {
                 if (e.condition(i) == 1) { return original_script_sound(e.event_word(i, 5), script_effect_audio_, stop_effect_audio_); }
                 return music_audio_(unsigned(e.event_word(i, 5)));
-            }, [this](OriginalEvents& e, size_t i) { return begin_death_presentation(e, i, false); });
+            },
+            [this](OriginalEvents& e, size_t i)
+            {
+                return begin_death_presentation(e, i, false);
+            });
         event_ = *synchronous_death_stack_->next(events);
         line_ = 0;
         battle_->lock_skill94_death(true);
@@ -3003,23 +3037,31 @@ public:
     Result<bool> begin_item_presentation(size_t actor, size_t target, bool tint, std::function<void()> commit)
     {
         if (!battle_ || item_presentation_ || skill_visual_active() || actor >= events.units.size() || target >= events.units.size() || !commit)
-        { return Result<bool>::failure(make_error("45024C item presentation unavailable")); }
+        {
+            return Result<bool>::failure(make_error("45024C item presentation unavailable"));
+        }
         if (!campaign_) { campaign_.emplace(root_); }
         const auto& unit = events.units[actor];
         const auto& recipient = events.units[target];
-        const unsigned direction = Battle::facing({unit.x, unit.y}, {recipient.x, recipient.y}, unit.direction);
+        const unsigned direction = Battle::facing({ unit.x, unit.y }, { recipient.x, recipient.y }, unit.direction);
         auto frames = campaign_->try_animation_sequence_length(unit.appearance, 4 + direction);
         if (!frames) { return Result<bool>::failure(frames.error()); }
         auto roster = events.units;
         if (tint && !map_.begin_teleport_arrival(roster, unsigned(target), battle_->turn(), true, animation_elapsed_, 97))
-        { return Result<bool>::failure(make_error("454ED5 item tint bitmap unavailable")); }
+        {
+            return Result<bool>::failure(make_error("454ED5 item tint bitmap unavailable"));
+        }
         if (tint) { map_.cancel_teleport_arrival(); }
         if (script_effect_audio_)
         {
             auto played = script_effect_audio_(126, 0);
-            if (!played) { map_.cancel_teleport_arrival(); return Result<bool>::failure(played.error()); }
+            if (!played)
+            {
+                map_.cancel_teleport_arrival();
+                return Result<bool>::failure(played.error());
+            }
         }
-        item_presentation_ = ItemPresentation{actor, target, frames.value(), 0, 0, false, tint, unit, std::move(commit)};
+        item_presentation_ = ItemPresentation{ actor, target, frames.value(), 0, 0, false, tint, unit, std::move(commit) };
         events.units[actor].animation_action = 1;
         events.units[actor].direction = direction;
         events.units[actor].movement_pose = true;
@@ -3342,6 +3384,9 @@ public:
         }
     }
     bool showing_objectives() const { return phase_ == Phase::objectives; }
+    int diagnostic_phase() const { return int(phase_); }
+    size_t diagnostic_event() const { return event_; }
+    size_t diagnostic_line() const { return line_; }
     void set_small_font(bool enabled)
     {
         if (small_font_ != enabled)
@@ -4118,7 +4163,12 @@ public:
     void select_ordered_player(bool restart)
     {
         sync_movement_contexts();
-        if (battle_->select_next_player_unit(events.units, restart))
+        unsigned context = 0;
+        if (events.army_modes)
+        {
+            context = unsigned((*events.army_modes)[0]);
+        }
+        if (battle_->select_next_player_unit(events.units, restart, context))
         {
             const auto& unit = events.units.at(size_t(battle_->selected()));
             map_.center(unit.x, unit.y);
@@ -4209,7 +4259,12 @@ public:
             }
             sync_movement_contexts();
             auto before = battle_->state();
-            battle_->mouse(events.units, x, y, click, map_.camera_x, map_.camera_y);
+            unsigned context = 0;
+            if (events.army_modes)
+            {
+                context = unsigned((*events.army_modes)[0]);
+            }
+            battle_->mouse(events.units, x, y, click, map_.camera_x, map_.camera_y, context);
             begin_finish_confirmation();
             if (!battle_->animating_movement() && battle_->state() == Battle::State::command && before != Battle::State::command && battle_->selected() >= 0)
             {
@@ -4570,8 +4625,9 @@ public:
             settlement.next = campaign_->selected_route(events);
             auto staged = events;
             bool terminal = settlement.next == 0;
+            bool next_story = !terminal && campaign_->stage(settlement.next).mode == 3;
             std::optional<OriginalInterbattle> staged_hub;
-            if (!terminal)
+            if (!terminal && !next_story)
             {
                 staged_hub.emplace(root_, disc_);
             }
@@ -4589,6 +4645,14 @@ public:
                 ending_.emplace(root_, events, disc_);
                 campaign_blocker_.clear();
                 phase_ = Phase::campaign_blocked;
+                return Result<bool>::success(true);
+            }
+            if (next_story)
+            {
+                // 原410478的4104B9–4104D8：下一关mode3直接41610D，不进入经营。
+                story_route_ = settlement.next;
+                phase_ = Phase::story_ready;
+                campaign_blocker_.clear();
                 return Result<bool>::success(true);
             }
             interbattle_ = std::move(staged_hub);

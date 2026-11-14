@@ -516,7 +516,7 @@ public:
     bool cooperative_pair(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& partner) const
     {
         if (context_.item_cast) { return false; }
-        if (actor.id == partner.id && actor.appearance == partner.appearance) { return false; }
+        if (actor.id == partner.id && actor.appearance == partner.appearance && actor.x == partner.x && actor.y == partner.y) { return false; }
         if (actor.hostile() != partner.hostile() || !(partner.status_flags & 0x80) || (partner.status_flags & 0x20) || partner.action_state != 0 || !(partner.learned[selected().group] & (1u << selected().bit))) { return false; }
         const int right = actor.x + int(actor.y & 1), left = right - 1;
         if ((partner.y != actor.y - 1 && partner.y != actor.y + 1) || (partner.x != left && partner.x != right)) { return false; }
@@ -1279,7 +1279,7 @@ public:
             auto& t = staged[i];
             for (size_t n = 0; n < i; ++n)
             {
-                if (staged[n].id == t.id && staged[n].appearance == t.appearance) { return fail(); }
+                if (staged[n].id == t.id && staged[n].appearance == t.appearance && staged[n].x == t.x && staged[n].y == t.y) { return fail(); }
             }
             if (t.hp <= 0 || !(t.status_flags & 0x80) || (t.status_flags & 0x20)) { return fail(); }
             if (status_area_supported())

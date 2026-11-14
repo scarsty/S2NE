@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "original_campaign.hpp"
 #include "original_progression.hpp"
 #include "original_save_bridge.hpp"
@@ -204,6 +204,11 @@ public:
         {
             put(raw.globals_4f7cd0, 4, 1, 4);
             raw.event_states.clear();
+            auto hub = OriginalSaveBridge::try_restore(root_, raw);
+            if (!hub) { return Result<RewardState>::failure(hub.error()); }
+            auto restored = std::move(hub).value();
+            events = std::move(restored.events);
+            raw = std::move(restored.raw);
         }
         random = std::move(staged_random);
         return Result<RewardState>::success({ std::move(events), std::move(raw) });

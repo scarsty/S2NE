@@ -25,9 +25,10 @@ public:
         std::optional<GrowthStep> step_;
         std::vector<uint8_t> learning_name_;
         bool failed_{};
+        bool enabled_ = true;
 
     public:
-        PendingGrowth(const OriginalEvents::Unit& unit, OriginalRandom random) : unit_(unit), random_(random) {}
+        PendingGrowth(const OriginalEvents::Unit& unit, OriginalRandom random, bool enabled = true) : unit_(unit), random_(random), enabled_(enabled) {}
         const auto& unit() const { return unit_; }
         const auto& random() const { return random_; }
         const auto& step() const { return step_; }
@@ -43,6 +44,7 @@ public:
         bool prepare(const OriginalPromotion& promotion, const OriginalRandom::TimeSource& time)
         {
             if (step_ || failed_) { return !failed_; }
+            if (!enabled_) { return true; }
             if (unit_.experience < unit_.experience_threshold || unit_.level >= 99) { return true; }
             if (!unit_.experience_threshold)
             {
@@ -69,11 +71,19 @@ public:
             return true;
         }
     };
-    PendingGrowth stage(const OriginalEvents::Unit& unit, OriginalRandom random, int raw, bool hostile_reward = false) const
+    static int apply_difficulty_reward(int raw, unsigned difficulty)
+    {
+        if (difficulty == 1) { return raw * 3; }
+        if (difficulty == 2) { return raw * 2; }
+        return raw;
+    }
+    PendingGrowth stage(const OriginalEvents::Unit& unit, OriginalRandom random, int raw, bool hostile_reward = false, unsigned difficulty = 3) const
     {
         auto staged = unit;
-        if (raw && (!unit.hostile() || hostile_reward)) { staged.experience = std::min(999u, unsigned(uint16_t(staged.experience + experience_award(staged, raw)))); }
-        return PendingGrowth(staged, random);
+        int reward = experience_award(staged, raw);
+        if (!unit.hostile()) { reward = apply_difficulty_reward(reward, difficulty); }
+        if (raw && (!unit.hostile() || hostile_reward)) { staged.experience = std::min(999u, unsigned(uint16_t(staged.experience + reward))); }
+        return PendingGrowth(staged, random, !unit.hostile() || hostile_reward);
     }
     using Growth = std::function<bool(OriginalEvents::Unit&, OriginalRandom&)>;
     struct Result
@@ -104,7 +114,7 @@ public:
         }
         *this = std::move(result).value();
     }
-    Result award_native(OriginalEvents::Unit& unit, OriginalRandom& random, int raw, const OriginalPromotion& promotion, const OriginalRandom::TimeSource& time = {}, int game_mode = 0, bool hostile_reward = false) const
+    Result award_native(OriginalEvents::Unit& unit, OriginalRandom& random, int raw, const OriginalPromotion& promotion, const OriginalRandom::TimeSource& time = {}, int game_mode = 0, bool hostile_reward = false, unsigned difficulty = 3) const
     {
         return award(unit, random, raw, [&](auto& staged, auto& rng)
             {
@@ -117,7 +127,7 @@ public:
                 OriginalPromotionTransaction::apply_stat_increments(staged, growth.value());
                 return true;
             },
-            game_mode, hostile_reward);
+            game_mode, hostile_reward, difficulty);
     }
     int experience_award(const OriginalEvents::Unit& unit, int raw) const
     {
@@ -132,7 +142,7 @@ public:
         return std::clamp(raw * scale_ / 10, 1, 999);
     }
     // 458B03 and 459309/4593CC: publish neither XP nor RNG if growth cannot complete.
-    Result award(OriginalEvents::Unit& unit, OriginalRandom& random, int raw, const Growth& grow, int game_mode = 0, bool hostile_reward = false) const
+    Result award(OriginalEvents::Unit& unit, OriginalRandom& random, int raw, const Growth& grow, int game_mode = 0, bool hostile_reward = false, unsigned difficulty = 3) const
     {
         if (game_mode || (unit.hostile() && !hostile_reward))
         {
@@ -142,6 +152,7 @@ public:
         auto staged_random = random;
         Result result;
         result.experience_award = experience_award(staged, raw);
+        if (!unit.hostile()) { result.experience_award = apply_difficulty_reward(result.experience_award, difficulty); }
         if (raw)
         {
             staged.experience = std::min(999u, unsigned(uint16_t(staged.experience + result.experience_award)));

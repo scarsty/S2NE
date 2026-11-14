@@ -7,8 +7,8 @@
 #include "original_events.hpp"
 #include "original_promotion_transaction.hpp"
 #include "original_random.hpp"
-#include "original_skills.hpp"
 #include "original_skill94_transaction.hpp"
+#include "original_skills.hpp"
 #include <algorithm>
 #include <cmath>
 #include <ctime>
@@ -35,23 +35,44 @@ public:
         int center_x{}, center_y{};
         std::optional<unsigned> direction;
     };
+
 private:
     std::shared_ptr<OriginalSkills> ai_skills_;
     std::shared_ptr<OriginalSkill94Transaction> ai_damage_;
     std::pair<int, int> ai_skill_camera_{};
     std::optional<AiSkill> ai_skill_;
     bool ai_skill_waiting_ = false, ai_skill_failed_ = false, ai_skill_replan_ = false;
+
 public:
-    struct AiUnscoredSkill { unsigned actor{}, skill{}, effect{}, shape{}; };
+    struct AiUnscoredSkill
+    {
+        unsigned actor{}, skill{}, effect{}, shape{};
+    };
     std::vector<AiUnscoredSkill> ai_unscored_skills;
-    void set_ai_skills(const OriginalSkills& rules) { if (!ai_skills_) { ai_skills_ = std::make_shared<OriginalSkills>(rules); } }
-    void set_ai_damage(const OriginalSkill94Transaction& rules) { if (!ai_damage_) { ai_damage_ = std::make_shared<OriginalSkill94Transaction>(rules); } }
+    void set_ai_skills(const OriginalSkills& rules)
+    {
+        if (!ai_skills_) { ai_skills_ = std::make_shared<OriginalSkills>(rules); }
+    }
+    void set_ai_damage(const OriginalSkill94Transaction& rules)
+    {
+        if (!ai_damage_) { ai_damage_ = std::make_shared<OriginalSkill94Transaction>(rules); }
+    }
     void set_ai_skill_camera(std::pair<int, int> camera) { ai_skill_camera_ = camera; }
     bool ai_skill_pending() const { return ai_skill_.has_value() || ai_skill_waiting_ || ai_skill_failed_; }
     const std::optional<AiSkill>& ai_skill_request() const { return ai_skill_; }
     bool ai_skill_ready() const { return !ai_skill_failed_ && ai_skill_ && !animating_movement() && hostile_path_cursor_ >= hostile_path_.size(); }
     void begin_ai_skill() { ai_skill_waiting_ = true; }
-    void fail_ai_skill() { ai_skill_failed_ = true; }
+    void fail_ai_skill()
+    {
+        ai_skill_failed_ = false;
+        ai_skill_waiting_ = false;
+        ai_skill_.reset();
+        hostile_path_.clear();
+        hostile_path_cursor_ = 0;
+        hostile_target_ = -1;
+        hostile_attack_slot_ = -1;
+        ai_skill_replan_ = true;
+    }
     bool ai_skill_failed() const { return ai_skill_failed_; }
     void finish_ai_skill()
     {
@@ -159,6 +180,14 @@ private:
     bool movement_animation_enabled_ = false;
     bool attack_animation_ = false;
     original_combat::Feedback combat_feedback_;
+    struct RestFeedback
+    {
+        size_t target{};
+        std::array<int, 3> amounts{};
+        unsigned step{}, elapsed{};
+        bool presented{};
+    };
+    std::optional<RestFeedback> rest_feedback_;
     bool curse33_feedback_{};
     bool skill94_feedback_{}, skill94_feedback_presented_{}, skill94_death_lock_{};
     unsigned skill_feedback_effect_{};
@@ -210,6 +239,7 @@ private:
     std::optional<original_combat::Random> teleport_random_baseline_;
     std::optional<uint32_t> random_seconds_;
     int selected_ = -1;
+    unsigned selected_context_ = 0;
     bool auto_selection_ = false;
     size_t next_player_unit_ = 0;
 
@@ -278,6 +308,45 @@ private:
     uint32_t random_seconds() const { return random_seconds_.value_or(uint32_t(std::time(nullptr))); }
     int percent() { return random_.percent(random_seconds()); }
     int roll(int n) { return random_.bounded(n, random_seconds()); }
+    void recover_rest(std::vector<OriginalEvents::Unit>& units, size_t index)
+    {
+        auto& unit = units.at(index);
+        if (physical_status(unit, 0x3E) & 1) { return; }
+        const int percentage = roll(11) + 10;
+        auto restore = [percentage](int& current, int maximum, int limit, bool doubled)
+        {
+            if (maximum <= 0 || current >= maximum) { return 0; }
+            int amount = maximum * percentage / 100;
+            if (doubled) { amount *= 2; }
+            amount = std::min({ std::max(5, amount), maximum - current, limit });
+            current = int(int16_t(current + amount));
+            return amount;
+        };
+        // 原45424D：同一次随机比例，MP仅装备特殊码63翻倍。
+        std::array amounts{
+            restore(unit.hp, unit.max_hp, 300, false),
+            restore(unit.mp, unit.max_mp, 100, hostile_resources_ && hostile_resources_->equipment_special(unit, 63)),
+            restore(unit.st, unit.max_st, 100, false)
+        };
+        if (std::none_of(amounts.begin(), amounts.end(), [](int amount)
+                {
+                    return amount != 0;
+                })
+            || (unit.ai_role10 >= 0 ? unit.ai_role10 : unit.behavior) == 1)
+        {
+            return;
+        }
+        if (unit.hostile() && hostile_resources_ && hostile_resources_->army_modes && (*hostile_resources_->army_modes)[1] == 1)
+        {
+            std::vector<OriginalEvents::Unit> observers;
+            for (const auto& observer : units)
+            {
+                if (!observer.hostile()) { observers.push_back(observer); }
+            }
+            if (!target_visible(unit, observers, 0)) { return; }
+        }
+        rest_feedback_ = RestFeedback{ index, amounts };
+    }
 
 public:
     Battle(unsigned w, unsigned h, std::vector<Cell> cells) : width_(w), height_(h), cells_(std::move(cells))
@@ -1467,6 +1536,7 @@ public:
         {
             unit.action_points = int(int16_t(unit.action_points - config_[8]));
             unit.carry_points = std::min(unit.carry_points, unit.action_points);
+            recover_rest(units, size_t(selected_));
         }
         idle_pose(unit);
         unit.status34 |= 0x80;
@@ -1498,11 +1568,16 @@ public:
         }
     }
     int selected() const { return selected_; }
+    bool player_controlled(const OriginalEvents::Unit& unit, size_t index) const
+    {
+        return unit.controllable() || (selected_ == int(index) && !hostile_side_ && !hostile_actions_active_ && unit.behavior == 1 && (selected_context_ & 0x20));
+    }
     // sub_4372EF reads 4F7D04's high byte (SET field four), not field six.
     void set_auto_selection(bool enabled) { auto_selection_ = enabled; }
     bool player_selection_eligible(const OriginalEvents::Unit& unit, unsigned context_flags = 0) const
     {
-        if (!unit.present(turn_) || !unit.controllable() || !(unit.status_flags & 0x80) || (unit.status_flags & 0x20) || unit.action_state == 2)
+        const bool allied_control = unit.controllable() || (unit.behavior == 1 && (context_flags & 0x20));
+        if (!unit.present(turn_) || !allied_control || !(unit.status_flags & 0x80) || (unit.status_flags & 0x20) || unit.action_state == 2)
         {
             return false;
         }
@@ -1527,17 +1602,18 @@ public:
         }
         return valid({ unit.x, unit.y });
     }
-    bool select_unit(std::vector<OriginalEvents::Unit>& units, size_t index)
+    bool select_unit(std::vector<OriginalEvents::Unit>& units, size_t index, unsigned context_flags = 0)
     {
         if (hostile_side_ || hostile_actions_active_ || animating_movement() || combat_feedback_active() || state_ != State::idle || index >= units.size())
         {
             return false;
         }
-        if (!units[index].present(turn_) || !units[index].controllable() || units[index].action_state == 2 || !valid({ units[index].x, units[index].y }))
+        if (!player_selection_eligible(units[index], context_flags))
         {
             return false;
         }
         selected_ = int(index);
+        selected_context_ = context_flags;
         before_move_ = units[index];
         moved_ = acted_ = false;
         command_ = 0;
@@ -1571,7 +1647,7 @@ public:
             {
                 continue;
             }
-            if (!select_unit(units, index))
+            if (!select_unit(units, index, context_flags))
             {
                 return false;
             }
@@ -1584,6 +1660,15 @@ public:
     State state() const { return state_; }
     int command_index() const { return command_; }
     int target() const { return target_; }
+    bool select_attack_target(const std::vector<OriginalEvents::Unit>& units, size_t index)
+    {
+        if (state_ != State::attack_target || selected_ < 0 || index >= units.size() || !can_attack(units, size_t(selected_), index, attack_index_))
+        {
+            return false;
+        }
+        target_ = int(index);
+        return true;
+    }
     // This is the six-bit portion of dword_50049C consumed by sub_43AE24.
     // It deliberately exposes availability rather than inventing labels: the
     // renderer uses the same source icon IDs and marks unavailable slots.
@@ -1594,7 +1679,7 @@ public:
             return 0;
         }
         const auto& u = units.at(selected_);
-        if (!u.present(turn_) || !u.controllable() || (original_rules_ && (!(u.status_flags & 0x80) || (u.status_flags & 0x20))))
+        if (!u.present(turn_) || !player_controlled(u, size_t(selected_)) || (original_rules_ && (!(u.status_flags & 0x80) || (u.status_flags & 0x20))))
         {
             return 0;
         }
@@ -1720,10 +1805,11 @@ public:
     }
     const auto& physical_exchange_diagnostics() const { return physical_exchange_diagnostics_; }
     const original_combat::Feedback& combat_feedback() const { return combat_feedback_; }
-    bool combat_feedback_active() const { return combat_feedback_.active() || skill94_death_lock_ || physical_exchange_.has_value(); }
+    bool combat_feedback_active() const { return rest_feedback_.has_value() || combat_feedback_.active() || skill94_death_lock_ || physical_exchange_.has_value(); }
     void lock_skill94_death(bool locked) { skill94_death_lock_ = locked; }
     void feedback_presented()
     {
+        if (rest_feedback_) { rest_feedback_->presented = true; }
         if (skill94_feedback_)
         {
             skill94_feedback_presented_ = true;
@@ -1833,6 +1919,28 @@ public:
     template <class ScreenPosition, class Silhouette, class Text>
     void render_combat_feedback(const std::vector<OriginalEvents::Unit>& units, ScreenPosition screen_position, Silhouette silhouette, Text text) const
     {
+        if (rest_feedback_ && rest_feedback_->target < units.size())
+        {
+            const auto& rest = *rest_feedback_;
+            const auto position = screen_position(units[rest.target]);
+            const std::array<const char*, 3> labels{ "HP ", "MP ", "ST " };
+            int x = position.x;
+            int y = position.y - 64 - int(rest.step) * 4;
+            bool first = true;
+            for (size_t i = 0; i < rest.amounts.size(); ++i)
+            {
+                if (rest.amounts[i] <= 0) { continue; }
+                auto label = labels[i] + std::to_string(rest.amounts[i]);
+                if (first)
+                {
+                    x += 32 - int(label.size()) * 8;
+                    first = false;
+                }
+                text(label, x, y, i == 0 ? 0x68u : 0x26u, 0u);
+                y += 24;
+            }
+            return;
+        }
         const auto& f = combat_feedback_;
         if (!f.active() || f.target >= units.size())
         {
@@ -2097,6 +2205,17 @@ private:
 public:
     void tick_combat_feedback(std::vector<OriginalEvents::Unit>& units, unsigned milliseconds)
     {
+        if (rest_feedback_)
+        {
+            auto& rest = *rest_feedback_;
+            rest.elapsed += std::min(milliseconds, 1000u);
+            // 原45455F：16次实际呈现，每次等待3个百分秒，不补跳帧。
+            if (!rest.presented || rest.elapsed < 30) { return; }
+            rest.elapsed = 0;
+            rest.presented = false;
+            if (++rest.step == 16) { rest_feedback_.reset(); }
+            return;
+        }
         auto& feedback = combat_feedback_;
         if (!feedback.active())
         {
@@ -2243,10 +2362,9 @@ public:
             {
                 // Complete the route before an attack/reward can capture its unit.
                 // Intermediate controller edges retain the walking frame sequence.
-                if (!attack_animation_ && (moving_unit_ != hostile_actor_ || hostile_path_cursor_ >= hostile_path_.size()))
-                {
-                    idle_pose(units.at(size_t(moving_unit_)));
-                }
+                // The original route completion leaves the final movement
+                // cursor visible; command cancellation is responsible for
+                // restoring the idle pose.
                 moving_unit_ = -1;
                 movement_sound_frame_ = -1;
                 movement_sound_channel_ = movement_sound_id_ = 0;
@@ -2948,7 +3066,7 @@ public:
         }
         return -1;
     }
-    bool mouse(std::vector<OriginalEvents::Unit>& units, float x, float y, bool pressed, int cx, int cy)
+    bool mouse(std::vector<OriginalEvents::Unit>& units, float x, float y, bool pressed, int cx, int cy, unsigned context_flags = 0)
     {
         mouse_position_ = { int(x), int(y) };
         if (animating_movement() || combat_feedback_active())
@@ -2987,7 +3105,16 @@ public:
         }
         auto p = pick_surface(x, y, cx, cy);
         hover(units, p);
-        return pressed ? click(units, p) : false;
+        if (!pressed)
+        {
+            return false;
+        }
+        if (state_ == State::idle)
+        {
+            int hit = occupant(units, p);
+            return hit >= 0 && select_unit(units, size_t(hit), context_flags);
+        }
+        return click(units, p);
     }
     int occupant(const std::vector<OriginalEvents::Unit>& units, Point p) const
     {
@@ -3070,7 +3197,7 @@ public:
     }
     bool can_step(const std::vector<OriginalEvents::Unit>& units, size_t index, Point to) const
     {
-        if (index >= units.size() || !units[index].present(turn_) || !units[index].controllable() || (original_rules_ && (!(units[index].status_flags & 0x80) || (units[index].status_flags & 0x20))))
+        if (index >= units.size() || !units[index].present(turn_) || !player_controlled(units[index], index) || (original_rules_ && (!(units[index].status_flags & 0x80) || (units[index].status_flags & 0x20))))
         {
             return false;
         }
@@ -3202,7 +3329,7 @@ public:
     {
         if (!can_step(units, index, to))
         {
-            if (!allied_transit || index >= units.size() || !units[index].controllable() || !units[index].present(turn_) || !(units[index].status_flags & 0x80) || (units[index].status_flags & 0x20) || !player_route_passable(units, units[index], to))
+            if (!allied_transit || index >= units.size() || !player_controlled(units[index], index) || !units[index].present(turn_) || !(units[index].status_flags & 0x80) || (units[index].status_flags & 0x20) || !player_route_passable(units, units[index], to))
             {
                 return false;
             }
@@ -3596,6 +3723,7 @@ public:
             {
                 actor.action_points = int(int16_t(actor.action_points - config_[8]));
                 actor.carry_points = std::min(actor.carry_points, actor.action_points);
+                recover_rest(units, size_t(hostile_actor_));
             }
             idle_pose(actor);
             actor.action_state = 2;
@@ -3925,7 +4053,10 @@ private:
                             if (summonFamily && !probe.ai_summon_available(caster, *hostile_resources_)) { continue; }
                             if (!(probe.healing1_supported() || probe.area_healing_supported() || skill.id == 88 || damageFamily || statusFamily || summonFamily))
                             {
-                                if (std::none_of(ai_unscored_skills.begin(), ai_unscored_skills.end(), [&](const auto& item) { return item.skill == skill.id; }))
+                                if (std::none_of(ai_unscored_skills.begin(), ai_unscored_skills.end(), [&](const auto& item)
+                                        {
+                                            return item.skill == skill.id;
+                                        }))
                                 {
                                     ai_unscored_skills.push_back({ actor.id, skill.id, skill.effect(), skill.raw[18] });
                                 }
@@ -3936,99 +4067,133 @@ private:
                             const OriginalEvents::Unit* partner = nullptr;
                             if (skill.raw[32] & 7)
                             {
-                                auto p = probe.cooperative_partner(caster, proposedUnits, turn_, [&](int x, int y) { return cell({ x, y }).elevation; });
+                                auto p = probe.cooperative_partner(caster, proposedUnits, turn_, [&](int x, int y)
+                                    {
+                                        return cell({ x, y }).elevation;
+                                    });
                                 if (!p || probe.resource_failure(proposedUnits[*p], skill) != OriginalSkills::Failure::none) { continue; }
                                 partner = &proposedUnits[*p];
                             }
                             probe.set_area_camera(ai_skill_camera_);
-                            probe.set_area_valid([&](int x, int y) { return skill_area_cell({ x, y }); });
-                            probe.set_area_elevation([&](int x, int y) { return cell({ x, y }).elevation; });
-                            for (auto [cx, cy] : probe.ai_centers(caster, [&](int x, int y) { return skill_area_cell({ x, y }); }))
+                            probe.set_area_valid([&](int x, int y)
+                                {
+                                    return skill_area_cell({ x, y });
+                                });
+                            probe.set_area_elevation([&](int x, int y)
+                                {
+                                    return cell({ x, y }).elevation;
+                                });
+                            for (auto [cx, cy] : probe.ai_centers(caster, [&](int x, int y)
+                                     {
+                                         return skill_area_cell({ x, y });
+                                     }))
                             {
-                              const bool directional = damageFamily && (skill.raw[18] == 5 || skill.raw[18] == 8);
-                              for (unsigned direction = 0; direction < (directional ? 4u : 1u); ++direction)
-                              {
-                                probe.set_ai_direction(directional ? std::optional<unsigned>(direction) : std::nullopt);
-                                auto centerUnit = caster;
-                                centerUnit.x = cx;
-                                centerUnit.y = cy;
-                                const auto affected = probe.collect_targets(caster, centerUnit, proposedUnits, turn_, [&](int x, int y) { return skill_area_cell({ x, y }); });
-                                int value = 0;
-                                int kills = 0, priorityKills = 0;
-                                int statusRank = 0;
-                                for (auto target : affected)
+                                const bool directional = damageFamily && (skill.raw[18] == 5 || skill.raw[18] == 8);
+                                for (unsigned direction = 0; direction < (directional ? 4u : 1u); ++direction)
                                 {
-                                    if (statusFamily)
-                                    {
-                                        auto score = probe.ai_status_value(caster, proposedUnits[target], *hostile_resources_);
-                                        if (!statusRank) { statusRank = score.first; }
-                                        value += score.second;
-                                        continue;
-                                    }
-                                    if (damageFamily)
-                                    {
-                                        const auto& victim = proposedUnits[target];
-                                        OriginalSkill94Transaction::Context preview;
-                                        preview.partner = partner;
-                                        auto actorTerrain = original_42c88f_bytes(*hostile_resources_, caster);
-                                        auto targetTerrain = original_42c88f_bytes(*hostile_resources_, victim);
-                                        preview.hit = { caster.learned_proficiency[skill.group], victim.learned_proficiency[skill.group], caster.fencing, victim.fencing, victim.tactics, int(int8_t(actorTerrain[1])), int(int8_t(targetTerrain[2])), caster.st, victim.st };
-                                        preview.elevation = original_combat::terrain_height_difference(cell({caster.x, caster.y}).elevation, cell({victim.x, victim.y}).elevation, hostile_resources_->difficulty == 1);
-                                        preview.damage.difficulty = hostile_resources_->difficulty;
-                                        preview.damage.friendly_army = !caster.hostile();
-                                        preview.damage.attack_mode = attack_mode({caster.x, caster.y}, {victim.x, victim.y}, victim.direction, hostile_resources_->difficulty == 1);
-                                        preview.damage.target_status39 = physical_status(victim, 0x39);
-                                        preview.damage.target_status3c = physical_status(victim, 0x3C);
-                                        preview.damage.target_status3d = physical_status(victim, 0x3D);
-                                        preview.damage.target_status3f = physical_status(victim, 0x3F);
-                                        preview.damage.target_special13 = hostile_resources_->equipment_special(victim, 13);
-                                        auto masks = hostile_resources_->skill_class_masks(victim);
-                                        preview.damage.profession_resistance = masks[0];
-                                        preview.damage.profession_weakness = masks[1];
-                                        auto packet = ai_damage_->preview(skill, caster, victim, *hostile_resources_, preview);
-                                        if (!packet) { report_error(packet.error()); fail_ai_skill(); return; }
-                                        const int chance = packet.value().chance, amount = packet.value().damage;
-                                        const bool priority = victim.id == 1 || victim.id == 11 || (victim.runtime_role_selector & 3);
-                                        int weighted = chance * amount;
-                                        if (priority) { weighted *= uint8_t(ai_config_[0x100 + std::min(5u, hostile_resources_->difficulty)]); }
-                                        if (victim.hostile() == caster.hostile())
+                                    probe.set_ai_direction(directional ? std::optional<unsigned>(direction) : std::nullopt);
+                                    auto centerUnit = caster;
+                                    centerUnit.x = cx;
+                                    centerUnit.y = cy;
+                                    const auto affected = probe.collect_targets(caster, centerUnit, proposedUnits, turn_, [&](int x, int y)
                                         {
-                                            if (victim.hp < amount || (victim.max_hp > 0 && (victim.hp - amount) * 100 / victim.max_hp < 20)) { value = 0; kills = priorityKills = 0; break; }
-                                            value -= weighted * (100 + amount * 100 / victim.hp) / 100;
+                                            return skill_area_cell({ x, y });
+                                        });
+                                    int value = 0;
+                                    int kills = 0, priorityKills = 0;
+                                    int statusRank = 0;
+                                    for (auto target : affected)
+                                    {
+                                        if (statusFamily)
+                                        {
+                                            auto score = probe.ai_status_value(caster, proposedUnits[target], *hostile_resources_);
+                                            if (!statusRank) { statusRank = score.first; }
+                                            value += score.second;
+                                            continue;
                                         }
-                                        else
+                                        if (damageFamily)
                                         {
-                                            if (skill.effect() == 41 && (amount < victim.hp || chance <= 50)) { weighted = 0; }
-                                            if (amount >= victim.hp && chance > 50)
+                                            const auto& victim = proposedUnits[target];
+                                            OriginalSkill94Transaction::Context preview;
+                                            preview.partner = partner;
+                                            auto actorTerrain = original_42c88f_bytes(*hostile_resources_, caster);
+                                            auto targetTerrain = original_42c88f_bytes(*hostile_resources_, victim);
+                                            preview.hit = { caster.learned_proficiency[skill.group], victim.learned_proficiency[skill.group], caster.fencing, victim.fencing, victim.tactics, int(int8_t(actorTerrain[1])), int(int8_t(targetTerrain[2])), caster.st, victim.st };
+                                            preview.elevation = original_combat::terrain_height_difference(cell({ caster.x, caster.y }).elevation, cell({ victim.x, victim.y }).elevation, hostile_resources_->difficulty == 1);
+                                            preview.damage.difficulty = hostile_resources_->difficulty;
+                                            preview.damage.friendly_army = !caster.hostile();
+                                            preview.damage.attack_mode = attack_mode({ caster.x, caster.y }, { victim.x, victim.y }, victim.direction, hostile_resources_->difficulty == 1);
+                                            preview.damage.target_status39 = physical_status(victim, 0x39);
+                                            preview.damage.target_status3c = physical_status(victim, 0x3C);
+                                            preview.damage.target_status3d = physical_status(victim, 0x3D);
+                                            preview.damage.target_status3f = physical_status(victim, 0x3F);
+                                            preview.damage.target_special13 = hostile_resources_->equipment_special(victim, 13);
+                                            auto masks = hostile_resources_->skill_class_masks(victim);
+                                            preview.damage.profession_resistance = masks[0];
+                                            preview.damage.profession_weakness = masks[1];
+                                            auto packet = ai_damage_->preview(skill, caster, victim, *hostile_resources_, preview);
+                                            if (!packet)
                                             {
-                                                ++kills;
-                                                if (priority) { ++priorityKills; }
-                                                weighted *= uint8_t(ai_config_[0x105 + std::min(5u, hostile_resources_->difficulty)]);
+                                                report_error(packet.error());
+                                                fail_ai_skill();
+                                                return;
                                             }
-                                            value += weighted;
-                                            if (skill.effect() == 42) { value += chance * std::min(amount, caster.max_hp - caster.hp); }
+                                            const int chance = packet.value().chance, amount = packet.value().damage;
+                                            const bool priority = victim.id == 1 || victim.id == 11 || (victim.runtime_role_selector & 3);
+                                            int weighted = chance * amount;
+                                            if (priority) { weighted *= uint8_t(ai_config_[0x100 + std::min(5u, hostile_resources_->difficulty)]); }
+                                            if (victim.hostile() == caster.hostile())
+                                            {
+                                                if (victim.hp < amount || (victim.max_hp > 0 && (victim.hp - amount) * 100 / victim.max_hp < 20))
+                                                {
+                                                    value = 0;
+                                                    kills = priorityKills = 0;
+                                                    break;
+                                                }
+                                                value -= weighted * (100 + amount * 100 / victim.hp) / 100;
+                                            }
+                                            else
+                                            {
+                                                if (skill.effect() == 41 && (amount < victim.hp || chance <= 50)) { weighted = 0; }
+                                                if (amount >= victim.hp && chance > 50)
+                                                {
+                                                    ++kills;
+                                                    if (priority) { ++priorityKills; }
+                                                    weighted *= uint8_t(ai_config_[0x105 + std::min(5u, hostile_resources_->difficulty)]);
+                                                }
+                                                value += weighted;
+                                                if (skill.effect() == 42) { value += chance * std::min(amount, caster.max_hp - caster.hp); }
+                                            }
+                                            continue;
                                         }
-                                        continue;
+                                        auto score = probe.ai_healing_value(caster, proposedUnits[target], *hostile_resources_, unsigned(uint8_t(ai_config_[0x100 + std::min(5u, hostile_resources_->difficulty)])), partner);
+                                        if (!score)
+                                        {
+                                            report_error(score.error());
+                                            ai_skill_failed_ = true;
+                                            return;
+                                        }
+                                        value += score.value();
                                     }
-                                    auto score = probe.ai_healing_value(caster, proposedUnits[target], *hostile_resources_, unsigned(uint8_t(ai_config_[0x100 + std::min(5u, hostile_resources_->difficulty)])), partner);
-                                    if (!score) { report_error(score.error()); ai_skill_failed_ = true; return; }
-                                    value += score.value();
+                                    original_ai::Score candidate{ 3, value, 0 };
+                                    if (statusFamily) { candidate = { statusRank, value, 0 }; }
+                                    // 原40646D只在敌方mode2设置rank；召唤mode0虽通过464679，原评分不会选中。
+                                    if (summonFamily)
+                                    {
+                                        candidate = {};
+                                        value = 0;
+                                    }
+                                    if (damageFamily) { candidate = { priorityKills ? 1 : 2, value, kills }; }
+                                    const int campaignCount = hostile_resources_->ending_statistics ? (*hostile_resources_->ending_statistics)[0] : 0;
+                                    const int threshold = uint8_t(ai_config_[0x10B]) * 100 + campaignCount * uint8_t(ai_config_[0x10C]);
+                                    if (value > 0 && (!skillSelection || original_ai::improves_skill(candidate, skillSelection->score, threshold)))
+                                    {
+                                        size_t target = index;
+                                        if (!affected.empty()) { target = affected.front(); }
+                                        skillSelection = AiSkill{ skill.id, target, second, candidate, record, cx, cy };
+                                        if (directional) { skillSelection->direction = direction; }
+                                    }
                                 }
-                                original_ai::Score candidate{3, value, 0};
-                                if (statusFamily) { candidate = { statusRank, value, 0 }; }
-                                // 原40646D只在敌方mode2设置rank；召唤mode0虽通过464679，原评分不会选中。
-                                if (summonFamily) { candidate = {}; value = 0; }
-                                if (damageFamily) { candidate = { priorityKills ? 1 : 2, value, kills }; }
-                                const int campaignCount = hostile_resources_->ending_statistics ? (*hostile_resources_->ending_statistics)[0] : 0;
-                                const int threshold = uint8_t(ai_config_[0x10B]) * 100 + campaignCount * uint8_t(ai_config_[0x10C]);
-                                if (value > 0 && (!skillSelection || original_ai::improves_skill(candidate, skillSelection->score, threshold)))
-                                {
-                                    size_t target = index;
-                                    if (!affected.empty()) { target = affected.front(); }
-                                    skillSelection = AiSkill{ skill.id, target, second, candidate, record, cx, cy };
-                                    if (directional) { skillSelection->direction = direction; }
-                                }
-                              }
                             }
                         }
                     }
@@ -4180,7 +4345,7 @@ private:
             unsigned difficulty = std::min(5u, hostile_resources_->difficulty);
             const int campaignCount = hostile_resources_->ending_statistics ? (*hostile_resources_->ending_statistics)[0] : 0;
             if (scan_melee_position(candidates, { uint8_t(ai_config_[0x100 + difficulty]), uint8_t(ai_config_[0x105 + difficulty]) }, attack_selection,
-                uint8_t(ai_config_[0x10B]) * 100 + campaignCount * uint8_t(ai_config_[0x10C])))
+                    uint8_t(ai_config_[0x10B]) * 100 + campaignCount * uint8_t(ai_config_[0x10C])))
             {
                 return true;
             }
@@ -4191,8 +4356,11 @@ private:
         for (const auto& action : hostile_resources_->action_records(actor))
         {
             if (executable_attack_slot(action) < 0) { continue; }
-            if (original_ai::scan_action_positions(routes.candidates(), (actor.status34 & 1) != 0,
-                    [&](Position position, int record) { return scan(action, position, record); }, origin))
+            if (original_ai::scan_action_positions(routes.candidates(), (actor.status34 & 1) != 0, [&](Position position, int record)
+                    {
+                        return scan(action, position, record);
+                    },
+                    origin))
             {
                 break;
             }
@@ -4634,7 +4802,7 @@ public:
     }
     bool attack(std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, int slot = -1)
     {
-        if (a >= units.size() || !units[a].controllable() || !can_attack(units, a, b, slot) || animating_movement())
+        if (a >= units.size() || !player_controlled(units[a], a) || !can_attack(units, a, b, slot) || animating_movement())
         {
             return false;
         }

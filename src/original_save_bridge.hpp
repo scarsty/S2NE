@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "original_events.hpp"
 #include "original_save.hpp"
 #include <optional>
@@ -176,7 +176,7 @@ class OriginalSaveBridge
             }
             put(r, p, value);
         };
-        if (u.movement_pose || u.movement_frame)
+        if (u.movement_pose)
         {
             return Result<bool>::failure(make_error("Cannot save during a native movement animation"));
         }
@@ -305,6 +305,17 @@ class OriginalSaveBridge
     }
 
 public:
+    static void compact_interbattle_members(OriginalSave::State& state)
+    {
+        if (state.battle_context()) { return; }
+        auto& units = state.groups[0].units;
+        // 原410478先44A4A9：WORD8==1且死亡或非离队保留者清职业，再44A662删除并重排序号。
+        std::erase_if(units, [](const auto& record)
+            {
+                return get(record, 8) == 1 && ((record[0x33] & 0x20) || !(record[0x33] & 0x40));
+            });
+        for (size_t i = 0; i < units.size(); ++i) { put(units[i], 0, unsigned(i + 1)); }
+    }
     struct Restored
     {
         OriginalEvents events;
@@ -314,13 +325,15 @@ public:
     };
     // Camera is not in sub_4362B4's serialized fields. Original map reload resets it.
     static constexpr std::pair<int, int> restored_camera{ 32, 16 };
-    static Result<Restored> try_restore(const std::filesystem::path& root, const OriginalSave::State& raw)
+    static Result<Restored> try_restore(const std::filesystem::path& root, const OriginalSave::State& input)
     {
+        auto raw = input;
         auto valid = try_validate(raw);
         if (!valid)
         {
             return Result<Restored>::failure(valid.error());
         }
+        compact_interbattle_members(raw);
         auto created = OriginalEvents::create(root, raw.globals_4f7cd0[28]);
         if (!created)
         {

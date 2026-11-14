@@ -42,6 +42,10 @@ BGM首个源码节点已取消固定A02，按原两盘曲号表／CD1、CD2文�
 
 统一范围与约束见 [PROGRESS：准许保留的差异](PROGRESS.md#approved-differences)，不在本页重复维护。双人对战排除不影响单人合作技能待办；音视频后端／编解码／播放实现可现代化，但不得自行更换内容或删除事件。资源合并去重与免换盘已获准；经证据确认的明显原版错误可修，须逐项记录原行为、修正原因与影响，不得泛化为任意改规则。箭头纠正、最终输出柔化及上述例外均以集中差异表为准。音频完整还原仅暂缓，与现代后端许可不矛盾，非永久省略。
 
+## 战斗核查状态
+
+简单难度战斗核查：第16关原资源未启用入场强度调整（baseline/divisor均为0），敌军存档数值与资源一致，并非漏乘统一减益。简单×3／较易×2经验只适用于我方；已修正敌方显式技能经验误用倍率。休息已补HP／MP／ST数值恢复及AP门槛，原恢复数字展示仍缺；详细原址、验证范围与历史纠偏见[进度记录](PROGRESS.md)。
+
 ## 显示
 
 游戏保持原始 640×480 逻辑画面，默认窗口 960×720 按比例铺满，不裁切；宽屏仅添加保持 4:3 所必需的黑边。最终 SDL 纹理使用线性采样轻柔化，原 PAL 索引、透明遮挡与游戏像素帧不作滤镜改写。
@@ -81,6 +85,12 @@ CMake 兼容构建也默认不向资源根目录发布；仅显式配置 `-DS2NE
 
 ### JSONL实操接口
 
+每条命令（包括错误响应）均附带当前 `state`；不输出周期心跳。已取消10秒无输出报警及协议的`progress.suspected_stall`字段；`changed/unchanged_ms`仅提供观察数据，不据此判定卡死或跳过动作。续行驱动仍保留单请求60秒传输超时，超时只报告失败，不改变游戏状态。
+
+普通序幕的`modal=none`不代表无需输入：`text_revealing`、`dialogue_scrolling`、`choosing`、`battle_intro`及`showing_objectives`分别报告文字展开、镜头滚动、剧情选择、回合提示及任务目标状态；原回车／空格推进非战斗文本，Alt展开文字，镜头滚动期间不抢输入。移动页`reachable_cells`为全地图原路径判定可达格，`movement_cells`仅为当前镜头内通过地表pick校验的可点击格；空屏幕列表不等于全地图无路，`camera_x/y`用于诊断镜头。所有字段只观察现有状态，不放宽规则。
+
+经营子菜单分别报告 `modal=inn/church/shop`，不再被统称为 `campaign`；旅馆另含 `inn_saves/equipment/world/settings/roster`，教会／商店含当前页。驱动必须确认返回经营根页及出发后的关卡变化，不得仅凭 `interbattle=true` 重复结算事务。原战场根菜单索引3（返回代码6）为自动战斗，索引4（返回代码3）为结束回合。
+
 自动验证可显式追加`--headless-speed`，仅接受`--stdio`且SDL视频和音频驱动均为`dummy`，否则报错退出。此选项按原循环逐帧推进统一16ms虚拟游戏时钟，取消真实帧sleep；`wait`使用相同游戏时钟，仍保留逐帧present确认、脚本顺序、输入锁和成长确认。不固定／注入RNG，实际秒数仍按原随机源读取；不同运行不保证相同随机结果。这是无界面验证加速，不授权改变正常游戏规则；默认可见游玩与默认发布速度不变。
 
 `--stdio <资源根> --save-root <全新隔离目录> [--load <只读初始sav>]`保持正常可见SDL窗口、原音频及用户键鼠；不默认dummy，不绕过动画或输入锁。stdin必须为pipe或文件，逐行JSON对象，stdout仅JSON响应，诊断在stderr。EOF处理完待响应后退出；隔离存档保留，原始sav不改写。可见交互控制器：
@@ -95,12 +105,15 @@ python .\tools\play-stdio.py .\out\manual-session .\out\growth-check\legal\eligi
 {"cmd":"observe","id":1}
 {"cmd":"mouse","x":320,"y":240,"button":"move"}
 {"cmd":"key","key":"Down"}
+{"cmd":"key","key":"Down","modifiers":["Left Shift"]}
 {"cmd":"wait","ms":1000}
 {"cmd":"screenshot"}
 {"cmd":"quit"}
 ```
 
 `mouse`坐标为640×480逻辑帧，button为left/right/move；`key`使用SDL键名。`wait`允许0–10000毫秒并持续正常tick/present。截图为隔离目录frame.bmp。observe含场景／模态／输入锁、人物HP/AP/XP/级别、原菜单可用掩码及技能资源拒绝原因；selected_skill_failure另按生产合作伙伴／召唤条件探测。`screen_x/y`为绘制中心，`input_x/y`及input_hittable为原地表pick判定的可点击位置；occupant与status_flags可区分HP尚有数值但原状态已死亡／不占地的角色。自动检查`tools\check-stdio.py`显式使用dummy，**不证明用户看见窗口或硬件音频**。控制器持有子进程直至quit/EOF/Ctrl+C；不留无人控制后台自动战斗。
+
+`key.modifiers`为可选数组，支持SDL名称Left/Right Shift、Ctrl、Alt、GUI，只作用于当前按键事件，不留下全局按住状态。此前单独发送修饰键不能为后续按键提供`event.key.mod`，因此技能页Shift导航、设置页左右Ctrl分支及Alt+C无法完整表达；现可发送组合键。普通点击、右键取消、鼠标移动及原菜单键盘路径已有入口；本次输入分派检查不等于全游戏每个菜单均已实测，尚未实现的游戏功能不会因协议支持键鼠而自动补齐。
 
 运行 `powershell -NoProfile -ExecutionPolicy Bypass -File S2NE\tools\package-game.ps1` 可在资源根目录生成 `S2NE-game-win64.zip`。解压后使用 `run-game.cmd` 启动；需要 Windows x64 及 Microsoft Visual C++ x64 运行库。包中仅保留运行依赖与当前使用资源，不含个人存档、源码或验证产物。
 

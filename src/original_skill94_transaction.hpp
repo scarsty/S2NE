@@ -43,7 +43,10 @@ public:
     };
     static bool target_supported(const OriginalEvents& events, const OriginalEvents::Unit& target)
     {
-        return !(target.status_flags & 0x50) && OriginalDeathDispatch::continuation(events, target.id).supported && (target.action_status_runtime.has_value() || target.status39.has_value());
+        (void)events;
+        // 46618D needs target runtime for hit/status resolution. 41C02A is
+        // only relevant after damage actually reduces the target to zero.
+        return !(target.status_flags & 0x50) && (target.action_status_runtime.has_value() || target.status39.has_value());
     }
     using Award = OriginalSkills::AwardAdapter;
     OriginalSkill94Transaction() = default;

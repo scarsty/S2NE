@@ -266,6 +266,12 @@ public:
         return c;
     }
     unsigned experience_threshold(unsigned kind) const { return word(record(kind) + 14); }
+    unsigned innate_ability(unsigned kind) const
+    {
+        unsigned index = kinds_.at(record(kind) + 19);
+        if (!index) { return 0; }
+        return 1u << ((index - 1) & 31);
+    }
     // 4409B7 mutates EXP only for a terminal class, after level/mode gates.
     bool eligible(OriginalEvents::Unit& unit, unsigned runtime_threshold, int game_mode = 0) const
     {

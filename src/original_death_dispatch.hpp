@@ -335,13 +335,7 @@ public:
         {
             return { true, { } };
         }
-        for (size_t i = 0; i < events.event_count(); ++i)
-        {
-            unsigned type = events.type(i), condition = events.condition(i);
-            // Non-flag handlers have independent native predicates; do not
-            // infer their reachability from WORD3 alone.
-            if (type >= 4 && type <= 16 && !(type == 5 && condition <= 2) && !(presentation && Stack::presentation_supported(type, condition)) && !original_death_state_handler_supported(type, condition) && !(type == 9 && condition <= 4) && !(type == 13 && (condition == 1 || condition == 2) && audio) && !(type == 11 && (condition <= 6 || condition == 11 || condition == 12))) { return { }; }
-        }
+        // 41FF30按实际旗标进入41B9A3；拒绝由Stack在可达事件处执行，不能扫描无关未激活事件提前拒绝。
         auto staged = events;
         Stack stack(staged, death.event, std::move(audio), std::move(presentation));
         for (;;)

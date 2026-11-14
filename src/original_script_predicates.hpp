@@ -17,7 +17,7 @@ inline OriginalEvents::Unit* original_script_role(OriginalEvents& events, int id
 }
 inline bool original_death_state_handler_supported(unsigned type, unsigned condition)
 {
-    return (type == 14 && condition <= 1) || (type == 12 && condition == 25) || (type == 9 && condition == 6);
+    return (type == 14 && condition <= 1) || (type == 12 && condition == 25) || (type == 9 && condition == 6) || (type == 8 && condition == 8);
 }
 inline Result<bool> original_death_state_handler(OriginalEvents& events, size_t event)
 {
@@ -25,6 +25,8 @@ inline Result<bool> original_death_state_handler(OriginalEvents& events, size_t 
     {
         return Result<bool>::failure(make_error("Unsupported synchronous state handler"));
     }
+    // 4209C4仅重绘战场，420A20返回成功；事件消耗及完成旗标仍由41BA56执行。
+    if (events.type(event) == 8) { return Result<bool>::success(true); }
     if (events.type(event) == 9)
     {
         events.script_route = events.event_word(event, 5);
