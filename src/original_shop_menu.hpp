@@ -106,7 +106,7 @@ private:
         unsigned town = unsigned(state.globals_4f7cd0[24]) | (unsigned(state.globals_4f7cd0[25]) << 8);
         if (!town || town > word(towns_, 0) || option_ < 1 || option_ > 3)
         {
-            return s2ne::Result<std::vector<unsigned>>::success({ });
+            return s2ne::Result<std::vector<unsigned>>::success({});
         }
         size_t record = 2 + size_t(town - 1) * 14;
         unsigned count = towns_.at(record + 10 + option_);
@@ -222,7 +222,7 @@ public:
     struct InitializationTag
     {
     };
-    OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc, InitializationTag) : root_(root), shop_(root), font_(root), background_(root, disc, 14), cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")) { }
+    OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc, InitializationTag) : root_(root), shop_(root), font_(root), background_(root, disc, 14), cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, OriginalDisc disc)
     {
         auto bin = read(root / "SUPERSP.BIN");
@@ -258,7 +258,7 @@ public:
     }
     static s2ne::Result<std::unique_ptr<OriginalShopMenu>> create(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one)
     {
-        auto result = std::make_unique<OriginalShopMenu>(root, disc, InitializationTag{ });
+        auto result = std::make_unique<OriginalShopMenu>(root, disc, InitializationTag{});
         auto ready = result->initialize(root, disc);
         if (!ready)
         {
@@ -348,7 +348,56 @@ public:
     }
     Page page() const { return page_; }
     int selected() const { return option_; }
+    const auto& listed_items() const { return items_; }
+    unsigned listed_price(const OriginalSave::State& state, unsigned id) const { return unit_price(state, id); }
+    bool select_category(unsigned index, OriginalSave::State& state)
+    {
+        if (transitioning() || page_ != Page::shop || index >= 4 || insufficient_) { return false; }
+        option_ = int(index + 1);
+        buying_ = option_ != 4;
+        auto items = buying_ ? offers(state) : shop_.sale_items(state);
+        if (buying_ && items.empty()) { return false; }
+        items_ = std::move(items);
+        first_ = row_ = 0;
+        page_ = Page::sale;
+        cursor_request_ = std::pair{ 224, 356 };
+        begin_entry();
+        return true;
+    }
+    bool return_parent()
+    {
+        if (transitioning() || insufficient_) { return false; }
+        if (page_ == Page::quantity) { page_ = Page::sale; }
+        else if (page_ == Page::sale) { page_ = Page::shop; }
+        else if (page_ == Page::shop) { page_ = Page::closed; }
+        else
+        {
+            return false;
+        }
+        held_scroll_ = 0;
+        return true;
+    }
     unsigned quantity() const { return quantity_; }
+    bool select_item(unsigned id, OriginalSave::State& state)
+    {
+        if (transitioning() || page_ != Page::sale || insufficient_) { return false; }
+        auto found = std::find(items_.begin(), items_.end(), id);
+        if (found == items_.end() || (buying_ && unit_price(state, id) > money(state))) { return false; }
+        first_ = int(found - items_.begin());
+        row_ = 0;
+        scan(0x1C, state);
+        return page_ == Page::quantity || page_ == Page::equipment;
+    }
+    bool commit_quantity(OriginalSave::State& state)
+    {
+        if (page_ != Page::quantity || !item()) { return false; }
+        if (!(buying_ ? shop_.buy(state, item(), quantity_) : shop_.sell(state, item(), quantity_))) { return false; }
+        items_ = buying_ ? offers(state) : shop_.sale_items(state);
+        first_ = std::max(0, std::min(first_, int(items_.size()) - 8));
+        row_ = std::max(0, std::min(row_, int(items_.size()) - first_ - 1));
+        page_ = Page::sale;
+        return true;
+    }
     unsigned item() const { return items_.empty() ? 0 : items_.at(size_t(first_ + row_)); }
     void enable_presentation_timing() { presentation_driven_ = true; }
     bool transitioning() const { return fade_step_ < 16; }
@@ -364,7 +413,7 @@ public:
     {
         auto now = std::chrono::system_clock::now();
         auto seconds = std::chrono::system_clock::to_time_t(now);
-        std::tm local{ };
+        std::tm local{};
         localtime_s(&local, &seconds);
         auto fraction = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() % 1000;
         return unsigned((local.tm_min * 60 + local.tm_sec) * 100 + fraction / 10);
@@ -504,15 +553,7 @@ public:
         }
         if (code == 1)
         {
-            s2ne::OriginalShopMenu::Page parentPage;
-            if (page_ == Page::quantity) { parentPage = Page::sale; }
-            else if (page_ == Page::sale) { parentPage = Page::shop; }
-            else
-            {
-                parentPage = Page::closed;
-            }
-
-            page_ = parentPage;
+            return_parent();
             return false;
         }
         if (page_ == Page::shop)
@@ -523,14 +564,7 @@ public:
             }
             if (code == 0x1C || code == 0x39)
             {
-                buying_ = option_ != 4;
-                auto items = buying_ ? offers(state) : shop_.sale_items(state);
-                if (!buying_ || !items.empty())
-                {
-                    items_ = std::move(items);
-                    first_ = row_ = 0;
-                    page_ = Page::sale;
-                }
+                select_category(unsigned(option_ - 1), state);
             }
         }
         else if (page_ == Page::sale)
@@ -592,14 +626,7 @@ public:
             {
                 ++quantity_;
             }
-            if ((code == 0x1C || (buying_ && code == 0x39)) && (buying_ ? shop_.buy(state, item(), quantity_) : shop_.sell(state, item(), quantity_)))
-            {
-                items_ = buying_ ? offers(state) : shop_.sale_items(state);
-                first_ = std::max(0, std::min(first_, int(items_.size()) - 8));
-                row_ = std::max(0, std::min(row_, int(items_.size()) - first_ - 1));
-                page_ = Page::sale;
-                return true;
-            }
+            if (code == 0x1C || (buying_ && code == 0x39)) { return commit_quantity(state); }
         }
         if (page_ == Page::sale && (code == 0x4B || code == 0x4D))
         {

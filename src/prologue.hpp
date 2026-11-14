@@ -2272,6 +2272,12 @@ public:
         disc_ = disc;
     }
     void set_interbattle_adapter(std::function<OriginalInterbattle::Result(OriginalInterbattle::Request)> callback) { interbattle_adapter_ = std::move(callback); }
+    bool select_interbattle_option(unsigned index)
+    {
+        if (!interbattle_active() || !interbattle_ || !interbattle_->select_option(index)) { return false; }
+        if (interbattle_adapter_) { interbattle_->dispatch(interbattle_adapter_); }
+        return true;
+    }
     void campaign_scan(unsigned scan)
     {
         if (interbattle_ && interbattle_active())

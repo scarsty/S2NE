@@ -343,6 +343,54 @@ public:
     auto cell_screen(int x, int y) const { return map_.screen_position(x, y); }
     size_t selected_role() const { return selected(); }
     size_t option() const { return option_; }
+    bool select_option(size_t option)
+    {
+        if (done_ || equipment_ || report_ || confirmation_ || position_ || notice_ || option > 4) { return false; }
+        buttons_ = true;
+        option_ = option;
+        activate();
+        return true;
+    }
+    bool select_role(size_t role)
+    {
+        if (done_ || equipment_ || report_ || confirmation_ || position_ || notice_) { return false; }
+        auto found = std::find(roles_.begin(), roles_.end(), role);
+        if (found == roles_.end()) { return false; }
+        first_ = size_t(found - roles_.begin());
+        row_ = 0;
+        buttons_ = false;
+        toggle_role();
+        return true;
+    }
+    bool select_cell(Battle::Point cell)
+    {
+        if (!position_ || facing_ || inspect_ || confirmation_) { return false; }
+        bool available = false;
+        for (size_t s = 0; s < capacity(); ++s)
+        {
+            if (assignment_[s] < 0 && slots_[s].x == cell.x && slots_[s].y == cell.y)
+            {
+                available = true;
+                break;
+            }
+        }
+        if (!available) { return false; }
+        cursor_ = cell;
+        choose_position();
+        return facing_;
+    }
+    bool respond_confirmation(bool yes)
+    {
+        if (!confirmation_) { return false; }
+        if (yes) { confirmation_->confirm(); }
+        else
+        {
+            confirmation_->cancel();
+        }
+        resolve_confirmation();
+        return true;
+    }
+    bool confirmation_pending() const { return confirmation_.has_value(); }
     void frame_presented()
     {
         if (equipment_) { equipment_->frame_presented(); }

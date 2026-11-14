@@ -12,7 +12,7 @@ class OriginalInterbattle
     OriginalMenu font_;
     std::vector<uint8_t> background_, palette_, indices_;
     int selected_{ 1 }, pointer_x_{ 298 }, pointer_y_{ 253 };
-    bool pending_{ }, closed_{ };
+    bool pending_{}, closed_{};
     static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& p) { return read_resource(p); }
     static std::vector<uint8_t> read(const std::filesystem::path& p) { return try_read(p).value(); }
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
@@ -47,7 +47,7 @@ public:
     };
     struct Request
     {
-        unsigned option{ }, label{ }, address{ };
+        unsigned option{}, label{}, address{};
     };
     enum class Result
     {
@@ -63,7 +63,7 @@ public:
     struct InitializationTag
     {
     };
-    OriginalInterbattle(const std::filesystem::path& root, OriginalDisc disc, unsigned resource, InitializationTag) : font_(root) { }
+    OriginalInterbattle(const std::filesystem::path& root, OriginalDisc disc, unsigned resource, InitializationTag) : font_(root) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, OriginalDisc disc, unsigned resource)
     {
         if (resource != 17 && resource != 14 && resource != 15 && resource != 13)
@@ -149,7 +149,7 @@ public:
     }
     static s2ne::Result<std::unique_ptr<OriginalInterbattle>> create(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one, unsigned resource = 17)
     {
-        auto result = std::make_unique<OriginalInterbattle>(root, disc, resource, InitializationTag{ });
+        auto result = std::make_unique<OriginalInterbattle>(root, disc, resource, InitializationTag{});
         auto ready = result->initialize(root, disc, resource);
         if (!ready)
         {
@@ -212,6 +212,13 @@ public:
                 pending_ = true;
             }
         }
+    }
+    bool select_option(unsigned index)
+    {
+        if (closed_ || pending_ || index >= labels.size()) { return false; }
+        selected_ = int(index + 1);
+        pending_ = true;
+        return true;
     }
     void scan(unsigned code)
     {

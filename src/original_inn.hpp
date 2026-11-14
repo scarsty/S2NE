@@ -86,6 +86,12 @@ public:
         return Result<std::vector<uint8_t>>::success({ bin.value().begin() + p, bin.value().begin() + p + n - 14 });
     }
     bool closed() const { return closed_; }
+    bool leave_root()
+    {
+        if (closed_ || reading_ || roster_ || equipment_menu_ || world_ || settings_ || auto_confirm_ || title_confirm_ || saves_ || overwrite_) { return false; }
+        closed_ = true;
+        return true;
+    }
     void set_save_root(const std::filesystem::path& root) { save_root_ = root; }
     bool title_requested() const { return title_requested_; }
     bool title_confirmation_active() const { return title_confirm_.has_value(); }
@@ -137,7 +143,7 @@ public:
         unsigned town = unsigned(state.globals_4f7cd0.at(24)) | (unsigned(state.globals_4f7cd0.at(25)) << 8);
         if (!town || town > word(towns_, 0))
         {
-            return { };
+            return {};
         }
         size_t record = 2 + size_t(town - 1) * 14, p = dword(towns_, record);
         while (towns_.at(p))
@@ -289,7 +295,10 @@ public:
                     blocker_ = equipped.error().message;
                     report_error(equipped.error());
                 }
-                else { equipment_changed_ = true; }
+                else
+                {
+                    equipment_changed_ = true;
+                }
             }
         }
     }
