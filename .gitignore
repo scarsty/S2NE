@@ -1,0 +1,14 @@
+/build/
+/out/
+/.vs/
+*.vcxproj.user
+/analysis/ida/
+*.idb
+*.i64
+*.id0
+*.id1
+*.id2
+*.nam
+*.til
+tests
+tools/__pycache__

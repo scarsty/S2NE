@@ -8,14 +8,14 @@ namespace s2ne
 class OriginalSkill88Visual
 {
     std::vector<OriginalSkill32Visual::Frame> frames_;
-    std::array<int, 256> amounts_{ };
-    size_t frame_{ };
-    uint64_t elapsed_{ };
+    std::array<int, 256> amounts_{};
+    size_t frame_{};
+    uint64_t elapsed_{};
     int anchor_x_{ 89 }, anchor_y_{ 124 };
     unsigned tint_amount_{ 50 }, tint_source_{ 233 };
-    bool presented_{ };
+    bool presented_{};
     unsigned frame_delay_{ 50 };
-    unsigned prefix_frames_{ };
+    unsigned prefix_frames_{};
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
 
@@ -257,7 +257,7 @@ public:
         if (!loaded) { return Result<OriginalSkill88Visual>::failure(loaded.error()); }
         const auto& entry = loaded.value();
         ResourceReader reader(entry);
-        std::array<unsigned, 8> header{ };
+        std::array<unsigned, 8> header{};
         if (damage) { header = damage->header; }
         else if (summon) { header = std::array<unsigned, 8>{ 46, 0, 0, 192, 290, 0, 55, 4 }; }
         else if (skill == 51 && !cursor) { header = std::array<unsigned, 8>{ 7, 0, 0, 70, 123, 0, 0, 3 }; }
@@ -392,17 +392,27 @@ public:
     size_t frame() const { return frame_; }
     bool done() const { return frame_ == frames_.size(); }
     void presented() { presented_ = true; }
-    void tick(unsigned ms)
+    void tick(unsigned ms, bool accelerated = false)
     {
         if (done())
         {
             return;
         }
         elapsed_ += ms;
-        if (presented_ && elapsed_ >= (frame_ < prefix_frames_ ? 20u : frame_delay_))
+        unsigned delay = frame_ < prefix_frames_ ? 20u : frame_delay_;
+        if (accelerated) { delay = std::max(1u, delay / 4); }
+        if (presented_ && elapsed_ >= delay)
         {
-            ++frame_;
-            elapsed_ = 0;
+            if (accelerated)
+            {
+                ++frame_;
+                elapsed_ = 0;
+            }
+            else
+            {
+                ++frame_;
+                elapsed_ = 0;
+            }
             presented_ = false;
         }
     }

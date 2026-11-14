@@ -13,18 +13,18 @@ class OriginalSkill32Visual
 public:
     struct Frame
     {
-        unsigned width{ }, height{ };
+        unsigned width{}, height{};
         std::vector<uint8_t> pixels;
     };
 
 private:
     std::vector<Frame> frames_;
-    unsigned duration_{ };
-    std::array<int, 256> amounts_{ };
-    bool curse_{ };
-    size_t frame_{ };
-    uint64_t elapsed_{ };
-    bool presented_{ };
+    unsigned duration_{};
+    std::array<int, 256> amounts_{};
+    bool curse_{};
+    size_t frame_{};
+    uint64_t elapsed_{};
+    bool presented_{};
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
 
@@ -40,7 +40,7 @@ public:
         {
             return Result<Frame>::failure(make_error("Unsupported original spell33 frame extent"));
         }
-        Frame result{ unsigned(w), unsigned(h), { } };
+        Frame result{ unsigned(w), unsigned(h), {} };
         size_t size = size_t(w) * h;
         result.pixels.reserve(size);
         for (size_t p = 4; p < bytes.size();)
@@ -208,23 +208,32 @@ public:
     bool done() const { return frame_ == frames_.size(); }
     unsigned duration_ms() const { return duration_; }
     void presented() { presented_ = true; }
-    void tick(unsigned milliseconds)
+    void tick(unsigned milliseconds, bool accelerated = false)
     {
         if (done())
         {
             return;
         }
         elapsed_ += milliseconds;
-        if (presented_ && elapsed_ >= duration_)
+        const unsigned delay = accelerated ? std::max(1u, duration_ / 4) : duration_;
+        if (presented_ && elapsed_ >= delay)
         {
-            ++frame_;
-            elapsed_ = 0;
+            if (accelerated)
+            {
+                ++frame_;
+                elapsed_ = 0;
+            }
+            else
+            {
+                ++frame_;
+                elapsed_ = 0;
+            }
             presented_ = false;
         }
     }
     static void tint(std::vector<uint8_t>& indexed, const OriginalPalette& palette)
     {
-        std::array<uint8_t, 256> colors{ };
+        std::array<uint8_t, 256> colors{};
         for (unsigned i = 1; i < 256; ++i)
         {
             colors[i] = palette.blend_index(i, 140, 45);

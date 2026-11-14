@@ -26,6 +26,7 @@ public:
         std::vector<uint8_t> learning_name_;
         bool failed_{};
         bool enabled_ = true;
+        int experience_notice_{};
 
     public:
         PendingGrowth(const OriginalEvents::Unit& unit, OriginalRandom random, bool enabled = true) : unit_(unit), random_(random), enabled_(enabled) {}
@@ -34,6 +35,14 @@ public:
         const auto& step() const { return step_; }
         bool failed() const { return failed_; }
         const auto& learning_name() const { return learning_name_; }
+        int experience_notice() const { return experience_notice_; }
+        void set_experience_notice(int value) { experience_notice_ = value; }
+        bool confirm_experience()
+        {
+            if (experience_notice_ <= 0) { return false; }
+            experience_notice_ = 0;
+            return true;
+        }
         void set_learning_name(std::vector<uint8_t> name) { learning_name_ = std::move(name); }
         bool confirm_learning()
         {
@@ -77,13 +86,15 @@ public:
         if (difficulty == 2) { return raw * 2; }
         return raw;
     }
-    PendingGrowth stage(const OriginalEvents::Unit& unit, OriginalRandom random, int raw, bool hostile_reward = false, unsigned difficulty = 3) const
+    PendingGrowth stage(const OriginalEvents::Unit& unit, OriginalRandom random, int raw, bool hostile_reward = false, unsigned difficulty = 3, bool present_experience = false) const
     {
         auto staged = unit;
         int reward = experience_award(staged, raw);
         if (!unit.hostile()) { reward = apply_difficulty_reward(reward, difficulty); }
         if (raw && (!unit.hostile() || hostile_reward)) { staged.experience = std::min(999u, unsigned(uint16_t(staged.experience + reward))); }
-        return PendingGrowth(staged, random, !unit.hostile() || hostile_reward);
+        PendingGrowth pending(staged, random, !unit.hostile() || hostile_reward);
+        if (present_experience && !unit.hostile() && reward > 0) { pending.set_experience_notice(reward); }
+        return pending;
     }
     using Growth = std::function<bool(OriginalEvents::Unit&, OriginalRandom&)>;
     struct Result

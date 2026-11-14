@@ -414,6 +414,20 @@ class OriginalMap
     }
 
 public:
+    std::vector<std::pair<int, int>> visible_exit_cells() const
+    {
+        std::vector<std::pair<int, int>> cells;
+        if (!event_flags_[0]) { return cells; }
+        for (unsigned y = 0; y < height * 2; ++y)
+        {
+            for (unsigned x = 0; x < width - (y & 1); ++x)
+            {
+                unsigned object = object_at(int(x), int(y));
+                if (object && (object_attributes_.at(object - 1) >> 8) == 6) { cells.emplace_back(int(x), int(y)); }
+            }
+        }
+        return cells;
+    }
     bool remove_dynamic_object(int x, int y)
     {
         auto found = std::find_if(dynamic_objects_.begin(), dynamic_objects_.end(), [&](const auto& object)
@@ -2429,6 +2443,8 @@ public:
         OriginalPalette palette(pal_);
         top -= camera_y + std::max(0, elevation - 1) * 16;
         left -= camera_x;
+        std::vector<int16_t> blended;
+        if (visual) { blended.assign(256 * 256, -1); }
         for (unsigned yy = 0; yy < frame.height; ++yy)
         {
             for (unsigned xx = 0; xx < frame.width; ++xx)
@@ -2443,7 +2459,9 @@ public:
                 {
                     size_t p = (size_t(dy) * 640 + dx) * 4;
                     unsigned destinationColor = skill88_indexed_.at(p / 4);
-                    c = uint8_t(palette.blend_index(destinationColor, c, visual->amount(c)));
+                    auto& cached = blended[destinationColor * 256 + c];
+                    if (cached < 0) { cached = palette.blend_index(destinationColor, c, visual->amount(c)); }
+                    c = uint8_t(cached);
                 }
                 for (unsigned k = 0; k < 3; ++k)
                 {
@@ -2466,13 +2484,11 @@ public:
         }
         draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, std::nullopt, &indexed);
         OriginalPalette palette(pal_);
+        std::array<uint8_t, 256> tint{};
+        for (unsigned c = 0; c < tint.size(); ++c) { tint[c] = c ? palette.blend_index(c, tint_source, tint_amount) : 0; }
         for (size_t p = 0; p < indexed.size(); ++p)
         {
-            unsigned c = indexed[p];
-            if (c)
-            {
-                c = palette.blend_index(c, tint_source, tint_amount);
-            }
+            unsigned c = tint[indexed[p]];
             indexed[p] = uint8_t(c);
             for (unsigned k = 0; k < 3; ++k)
             {
@@ -2518,6 +2534,7 @@ public:
         if (visual.anchor_y() == -1) { top = 0; }
         int elevation = prg_.at(item(6, map_id - 1) + 28 + (size_t(actor.y) * width + actor.x) * 5);
         if (visual.anchor_y() != -1) { top -= std::max(0, elevation - 1) * 16; }
+        std::vector<int16_t> blended(256 * 256, -1);
         for (unsigned y = 0; y < frame.height; ++y)
         {
             for (unsigned x = 0; x < frame.width; ++x)
@@ -2531,7 +2548,10 @@ public:
                 size_t p = (size_t(dy) * 640 + dx) * 4;
                 if (visual.amount(c) >= 0)
                 {
-                    c = palette.blend_index(skill88_indexed_.at(p / 4), c, visual.amount(c));
+                    const unsigned source = skill88_indexed_.at(p / 4);
+                    auto& cached = blended[source * 256 + c];
+                    if (cached < 0) { cached = palette.blend_index(source, c, visual.amount(c)); }
+                    c = unsigned(cached);
                 }
                 for (unsigned k = 0; k < 3; ++k)
                 {

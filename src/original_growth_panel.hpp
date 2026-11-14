@@ -45,7 +45,6 @@ public:
         auto background = draw_original_cel(image, cel.value(), pal.value(), 239, x, y, OriginalZeroRun::transparent);
         if (!background) { return Result<std::vector<uint8_t>>::failure(background.error()); }
         OriginalMenu font(root);
-        OriginalShopMenu graphics(root);
         auto text = step.before.name;
         text.push_back(' ');
         auto label = font.text_bytes(5);
@@ -79,7 +78,8 @@ public:
             auto old = std::to_string(values[i]);
             auto oldResult = font.try_draw_original_large(image, { old.begin(), old.end() }, x + 136, row, 104);
             if (!oldResult) { return Result<std::vector<uint8_t>>::failure(oldResult.error()); }
-            graphics.shared_panel(image, 0x4F72B0, x + 201, row + 7);
+            auto arrow = draw_original_cel(image, cel.value(), pal.value(), 148, x + 201, row + 10, OriginalZeroRun::transparent);
+            if (!arrow) { return Result<std::vector<uint8_t>>::failure(arrow.error()); }
             auto next = std::to_string(values[i] + step.increments[i]);
             auto nextResult = font.try_draw_original_large(image, { next.begin(), next.end() }, x + 260, row, 36);
             if (!nextResult) { return Result<std::vector<uint8_t>>::failure(nextResult.error()); }

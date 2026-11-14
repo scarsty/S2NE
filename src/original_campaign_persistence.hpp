@@ -288,7 +288,8 @@ public:
             }
             // 44A4A9 ->45DDA6 resets current pools/temporary statuses before462224.
             bool removed = get(raw.groups[0].units[i], 8) == 1 && ((u.status_flags & 0x20) || !(u.status_flags & 0x40));
-            bool deployable = !removed && OriginalCampaign::living(u) && !(u.status_flags & 0x50);
+            // 44A4A9会保留离队成员的持久化记录，但0x20/0x40成员不进入下一关的初始部署槽。
+            bool deployable = !removed && OriginalCampaign::living(u) && !(u.status_flags & 0x70);
             u.status_flags &= 0x73;
             u.status34 = 0;
             u.status3c = 0;

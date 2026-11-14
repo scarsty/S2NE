@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "battle.hpp"
 #include "original_battle_captions.hpp"
 #include "original_campaign.hpp"
@@ -92,6 +92,10 @@ class Prologue
     std::function<void()> synchronous_death_return_;
     std::filesystem::path root_;
     OriginalDisc disc_{ OriginalDisc::one };
+    std::vector<OriginalSkill32Visual::Frame> defeat_frames_;
+    size_t defeat_frame_{};
+    unsigned defeat_clock_{};
+    mutable bool defeat_presented_{};
     std::optional<Battle> battle_;
     std::function<Result<bool>(const std::vector<OriginalEvents::Unit>&, const std::vector<Battle::PhysicalSettlement>&)> physical_loot_commit_;
     std::optional<OriginalEvents> physical_death_baseline_;
@@ -112,6 +116,12 @@ class Prologue
         OriginalPromotion promotion(root_);
         while (growth_finish_)
         {
+            if (growth_ && growth_->experience_notice() > 0)
+            {
+                growth_presented_ = false;
+                growth_elapsed_ = 0;
+                return;
+            }
             if (reward_growth_external_)
             {
                 if (!growth_->learning_name().empty())
@@ -151,7 +161,8 @@ class Prologue
                     return;
                 }
                 const auto& award = growth_awards_[growth_award_cursor_];
-                growth_.emplace(progression.stage(growth_units_.at(award.actor), OriginalRandom(growth_random_), award.raw_xp, false, events.difficulty));
+                growth_.emplace(progression.stage(growth_units_.at(award.actor), OriginalRandom(growth_random_), award.raw_xp, false, events.difficulty, true));
+                if (growth_->experience_notice() > 0) { continue; }
             }
             if (!growth_->prepare(promotion, [this]
                     {
@@ -313,7 +324,8 @@ class Prologue
                     synchronous_death_baseline_.reset();
                     death_camera_baseline_.reset();
                     battle_->lock_skill94_death(false);
-                    phase_ = Phase::battle;
+                    campaign_blocker_ = "Original physical death transaction rolled back; continuation failed";
+                    phase_ = Phase::campaign_blocked;
                 }
                 physical_death_baseline_.reset();
                 physical_death_camera_.reset();
@@ -373,6 +385,7 @@ class Prologue
         interbattle,
         campaign_blocked
     };
+    Phase synchronous_death_phase_ = Phase::battle;
     std::optional<OriginalCampaign> campaign_;
     std::optional<OriginalInterbattle> interbattle_;
     bool deployment_requested_{};
@@ -1936,6 +1949,49 @@ private:
         campaign_decision_ = decision;
         if (decision.outcome == OriginalCampaign::Outcome::defeat)
         {
+            auto pal = read_resource(root_ / "SUPERSP.PAL");
+            auto bin = read_resource(root_ / "SUPERSP.BIN");
+            auto cel = read_resource(root_ / "SUPERSP.CEL");
+            if (!pal || !bin || !cel)
+            {
+                report_error(make_error("Original defeat resources unavailable"));
+                return false;
+            }
+            ResourceReader p(pal.value()), b(bin.value()), c(cel.value());
+            size_t config = p.number(920, 4) - 20;
+            config += 2 + 4 * size_t(b.number(config));
+            config += 2 + b.number(config);
+            config += 2;
+            unsigned id = b.number(config + 0xFD, 1);
+            size_t base = p.number(808, 4) - 56;
+            size_t entry = base + c.number(base + 2 + id * 8, 4);
+            unsigned count = c.number(entry), width = c.number(entry + 6), height = c.number(entry + 8);
+            if (!p || !b || !c || c.number(entry + 10) || c.number(entry + 12))
+            {
+                report_error(make_error("Unsupported defeat animation layout"));
+                return false;
+            }
+            std::vector<OriginalSkill32Visual::Frame> frames;
+            size_t data = entry + 16 + count * 8;
+            for (unsigned i = 0; i < count; ++i)
+            {
+                size_t offset = data + c.number(entry + 16 + i * 8, 4), length = c.number(entry + 20 + i * 8, 4);
+                if (!c.extent(offset, length))
+                {
+                    report_error(c.error());
+                    return false;
+                }
+                auto decoded = OriginalSkill32Visual::try_decode({ cel.value().begin() + offset, cel.value().begin() + offset + length }, width, height);
+                if (!decoded)
+                {
+                    report_error(decoded.error());
+                    return false;
+                }
+                frames.push_back(std::move(decoded).value());
+            }
+            defeat_frames_ = std::move(frames);
+            defeat_frame_ = defeat_clock_ = 0;
+            defeat_presented_ = false;
             phase_ = Phase::campaign_defeat;
             return true;
         }
@@ -2166,10 +2222,12 @@ public:
     bool campaign_modal() const { return phase_ == Phase::campaign_dialogue || phase_ == Phase::campaign_rewards || phase_ == Phase::campaign_defeat || phase_ == Phase::interbattle || phase_ == Phase::campaign_blocked; }
     bool campaign_dialogue() const { return phase_ == Phase::campaign_dialogue; }
     bool campaign_defeated() const { return phase_ == Phase::campaign_defeat; }
+    bool defeat_finished() const { return campaign_defeated() && !defeat_frames_.empty() && defeat_frame_ >= defeat_frames_.size(); }
     bool campaign_reward_report() const { return phase_ == Phase::campaign_rewards; }
     unsigned last_reaction_target() const { return map_.last_reaction_target(); }
     bool last_reaction_left() const { return map_.last_reaction_left(); }
     uint64_t reaction_draws() const { return map_.reaction_draws(); }
+    auto visible_exit_cells() const { return map_.visible_exit_cells(); }
     const std::vector<uint8_t>& last_reaction_bitmap() const { return map_.last_reaction_bitmap(); }
     std::vector<uint8_t> expected_reaction_bitmap(unsigned id, bool left) const { return map_.expected_reaction_bitmap(id, left); }
     bool interbattle_active() const { return phase_ == Phase::interbattle; }
@@ -2199,6 +2257,33 @@ public:
         return true;
     }
     const OriginalProgression::PendingGrowth& reward_growth() const { return *growth_; }
+    int experience_notice() const { return growth_active() && growth_ ? growth_->experience_notice() : 0; }
+    Result<bool> draw_experience_notice(const OriginalMenu& font, std::vector<uint8_t>& image) const
+    {
+        const auto& unit = growth_->unit();
+        auto text = font.text_bytes(2);
+        auto replace = [&](const char* marker, const std::vector<uint8_t>& value)
+        {
+            auto found = std::search(text.begin(), text.end(), marker, marker + 2);
+            if (found == text.end()) { return false; }
+            auto offset = found - text.begin();
+            text.erase(found, found + 2);
+            text.insert(text.begin() + offset, value.begin(), value.end());
+            return true;
+        };
+        const auto amount = std::to_string(experience_notice());
+        if (!replace("%s", unit.name) || !replace("%d", { amount.begin(), amount.end() })) { return Result<bool>::failure(make_error("Original experience notice format mismatch")); }
+        const size_t panel = sprite_offset(2, 208 - 142);
+        const int width = int(word(cel_, panel)) + 1, height = int(word(cel_, panel + 2)) + 1;
+        auto [sx, sy] = map_.screen_position(unit.x, unit.y);
+        int top = sy + 32 - int(map_.unit_height(unit.appearance, unit.direction, unit.animation_action)) - height;
+        if (top < 0) { top = sy + 32; }
+        top = std::clamp(top, 0, 470 - height);
+        const int left = std::clamp(sx + 32 - width / 2, 16, 634 - width);
+        auto drawn = try_sprite(image, panel, false, left, top);
+        if (!drawn) { return drawn; }
+        return font.try_draw_original_large(image, text, left + width / 2 - (int(text.size()) - 3) * 6 - 24, top + height / 2 - 12, 42);
+    }
     const std::vector<uint8_t>* learning_notice() const
     {
         if (!growth_active() || !growth_ || growth_->learning_name().empty()) { return nullptr; }
@@ -2221,6 +2306,11 @@ public:
     void confirm_growth()
     {
         if (!growth_ || !growth_presented_) { return; }
+        if (growth_->confirm_experience())
+        {
+            advance_growth();
+            return;
+        }
         if (growth_->confirm_learning())
         {
             advance_growth();
@@ -2575,6 +2665,79 @@ public:
         {
             return Result<bool>::failure(make_error("Unsupported synchronous presentation"));
         }
+        if (type == 12 && (condition == 1 || condition == 22 || condition == 27 || condition == 28))
+        {
+            if (!campaign_scripted_roles_adapter_) { return Result<bool>::failure(make_error("Original461110 synchronous control adapter unavailable")); }
+            if (dryRun) { return Result<bool>::success(true); }
+            auto transaction = campaign_scripted_roles_adapter_(source, event);
+            if (!transaction || transaction->events.stage != source.stage)
+            {
+                return Result<bool>::failure(make_error("Original461110 synchronous control transaction rejected"));
+            }
+            if (transaction->commit && !transaction->rollback)
+            {
+                return Result<bool>::failure(make_error("Original461110 synchronous control rollback adapter unavailable"));
+            }
+            if (!death_battle_baseline_) { death_battle_baseline_ = *battle_; }
+            source = std::move(transaction->events);
+            battle_->set_hostile_resources(source);
+            if (transaction->commit)
+            {
+                transaction->commit();
+                death_presentation_commits_.push_back(std::move(transaction->rollback));
+            }
+            return Result<bool>::success(true);
+        }
+        if (type == 11 && condition == 7)
+        {
+            auto role = std::find_if(source.units.begin(), source.units.end(), [&](const auto& unit)
+                {
+                    return !unit.hostile() && int(unit.id) == source.event_word(event, 5);
+                });
+            if (role == source.units.end()) { return Result<bool>::success(false); }
+            if (dryRun) { return Result<bool>::success(true); }
+            const size_t index = size_t(role - source.units.begin());
+            auto candidate = *role;
+            // 421416 -> 462D2E直接ADD WORD，不走战斗经验倍率及999钳位。
+            candidate.experience = uint16_t(candidate.experience + source.event_word(event, 7));
+            std::optional<OriginalProgression::PendingGrowth> pending;
+            uint32_t seconds = 0;
+            battle_->mutate_random([&](OriginalRandom& random, uint32_t now)
+                {
+                    pending.emplace(candidate, random);
+                    seconds = now;
+                    return true;
+                });
+            phase_ = Phase::battle;
+            death_presentation_presented_ = false;
+            if (!begin_reward_growth(std::move(*pending), seconds, [this, index](bool committed)
+                    {
+                        if (!committed)
+                        {
+                            rollback_synchronous_death();
+                            report_error(make_error("Original462D2E synchronous growth rejected"));
+                            return;
+                        }
+                        events.units.at(index) = reward_growth().unit();
+                        battle_->mutate_random([&](OriginalRandom& random, uint32_t)
+                            {
+                                random.restore(reward_growth().random().state());
+                                return true;
+                            });
+                        death_presentation_presented_ = true;
+                    }))
+            {
+                return Result<bool>::failure(make_error("Original462D2E growth already pending"));
+            }
+            return Result<bool>::success(true);
+        }
+        if (type == 8 && condition == 2)
+        {
+            auto* role = original_script_role(source, source.event_word(event, 5));
+            if (!role) { return Result<bool>::success(false); }
+            if (!dryRun) { map_.movement_camera(role->x, role->y); }
+            return Result<bool>::success(true);
+        }
         if (type == 6)
         {
             if (condition == 0)
@@ -2777,7 +2940,7 @@ public:
         death_presentation_commits_.clear();
         death_battle_baseline_.reset();
         death_map_baseline_.reset();
-        phase_ = Phase::battle;
+        phase_ = synchronous_death_phase_;
         battle_->lock_skill94_death(false);
         auto resume = std::move(synchronous_death_return_);
         resume();
@@ -2860,6 +3023,7 @@ public:
             resume();
             return true;
         }
+        synchronous_death_phase_ = phase_;
         death_camera_baseline_ = std::pair{ map_.camera_x, map_.camera_y };
         death_map_baseline_ = map_;
         synchronous_death_baseline_ = events;
@@ -3075,6 +3239,19 @@ public:
         return Result<bool>::success(true);
     }
     bool skill_visual_active() const { return item_presentation_ || skill32_visual_ || skill88_visual_ || skill94_visual_; }
+    std::optional<Battle::Point> skill_camera_target_;
+    bool prepare_skill_camera(int x, int y)
+    {
+        // 原468BAC先对受术者做42ADC7，再经42B6C3逐格滚屏，之后才捕获法术背景。
+        if (!skill_camera_target_)
+        {
+            if (map_.dialogue_visible(x, y, 0)) { return true; }
+            skill_camera_target_ = Battle::Point{ x, y };
+        }
+        if (!map_.evacuation_camera_step(skill_camera_target_->x, skill_camera_target_->y)) { return false; }
+        skill_camera_target_.reset();
+        return true;
+    }
     Result<OriginalMap> prepare_invisibility_scratch(const std::vector<OriginalEvents::Unit>& staged, const std::vector<size_t>& targets)
     {
         auto prepared = map_;
@@ -3429,6 +3606,7 @@ public:
         {
             if (growth_presented_) { growth_elapsed_ += milliseconds; }
             unsigned delay = 1200;
+            if (experience_notice() > 0) { delay = 900; }
             if (learning_notice()) { delay = 2500; }
             if (growth_elapsed_ >= delay) { confirm_growth(); }
             return;
@@ -3449,6 +3627,17 @@ public:
     }
     Result<bool> try_tick(unsigned milliseconds)
     {
+        if (campaign_defeated() && !defeat_finished())
+        {
+            defeat_clock_ += milliseconds;
+            if (defeat_presented_ && defeat_clock_ >= 50)
+            {
+                ++defeat_frame_;
+                defeat_clock_ = 0;
+                defeat_presented_ = false;
+            }
+            return Result<bool>::success(true);
+        }
         if (temporary_text_)
         {
             temporary_text_->tick(milliseconds);
@@ -3746,7 +3935,7 @@ public:
         }
         if (skill94_visual_)
         {
-            skill94_visual_->tick(milliseconds);
+            skill94_visual_->tick(milliseconds, true);
             if (skill94_visual_->done())
             {
                 skill94_visual_.reset();
@@ -3756,7 +3945,7 @@ public:
         }
         if (skill88_visual_)
         {
-            skill88_visual_->tick(milliseconds);
+            skill88_visual_->tick(milliseconds, true);
             if (!skill88_visual_->done() && script_effect_audio_)
             {
                 auto played = skill_audio_cues_.advance(skill88_visual_->frame(), script_effect_audio_);
@@ -3772,7 +3961,7 @@ public:
         }
         if (skill32_visual_)
         {
-            skill32_visual_->tick(milliseconds);
+            skill32_visual_->tick(milliseconds, true);
             if (skill32_visual_->done())
             {
                 skill32_visual_.reset();
@@ -4007,7 +4196,7 @@ public:
             }
 
             const int actor = battle_->moving_unit() >= 0 ? battle_->moving_unit() : previous_actor;
-            if (actor >= 0)
+            if (actor >= 0 && !battle_->ai_skill_pending())
             {
                 auto poses = battle_->render_units(events.units);
                 const auto& pose = poses.at(size_t(actor));
@@ -5047,6 +5236,21 @@ public:
         }
         if (phase_ == Phase::campaign_defeat || phase_ == Phase::campaign_blocked || phase_ == Phase::story_ready)
         {
+            if (campaign_defeated() && defeat_frame_ < defeat_frames_.size())
+            {
+                const auto& frame = defeat_frames_[defeat_frame_];
+                for (unsigned y = 0; y < frame.height; ++y)
+                {
+                    for (unsigned x = 0; x < frame.width; ++x)
+                    {
+                        unsigned color = frame.pixels[y * frame.width + x];
+                        if (!color) { continue; }
+                        size_t dst = (size_t(y) * 640 + x) * 4;
+                        for (unsigned k = 0; k < 3; ++k) { image[dst + k] = uint8_t(unsigned(pal_.at(color * 3 + k)) * 255 / 63); }
+                    }
+                }
+                defeat_presented_ = true;
+            }
             return image;
         }
         if (battle_intro() || showing_objectives())

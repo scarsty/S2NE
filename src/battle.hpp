@@ -783,6 +783,18 @@ public:
         auto object = cell(p).object;
         return object > 0 && size_t(object) <= object_attributes_.size() ? object_attributes_[size_t(object - 1)] >> 8 : 0;
     }
+    std::vector<Point> object_cells(unsigned category) const
+    {
+        std::vector<Point> result;
+        for (int y = 0; y < int(height_); ++y)
+        {
+            for (int x = 0; x < int(width_) - (y & 1); ++x)
+            {
+                if (object_category({ x, y }) == category) { result.push_back({ x, y }); }
+            }
+        }
+        return result;
+    }
     // 455828 allied control mode0 excludes ordinary NPC selector1.
     void settle_object_flags(OriginalEvents& events) const
     {
@@ -3149,6 +3161,15 @@ public:
             return -1;
         }
         int climb = b.elevation - a.elevation;
+        const unsigned movementClass = hostile_resources_ ? hostile_resources_->movement_class(u) : 0;
+        if (movementClass == 1 || movementClass == 2)
+        {
+            if (std::abs(climb) > 10 || to.y - b.elevation < 0) { return -1; }
+            auto effect = terrain_effect(*hostile_resources_, u, to);
+            if (!effect.result) { return -1; }
+            if ((physical_status(u, 0x117) & 1) || (physical_status(u, 0x3D) & 4)) { climb = 0; }
+            return ai_config_[0xE9] + ai_config_[0xEA] * std::max(0, climb);
+        }
         if (climb > 3 || climb < -4 || to.y - b.elevation < 0 || b.ground <= 0)
         {
             return -1;
@@ -3912,7 +3933,8 @@ private:
             },
             [&](Position p)
             {
-                return occupied_unit(p) ? 0 : 1;
+                if (occupied_unit(p)) { return 0; }
+                return terrain_effect(*hostile_resources_, actor, { p.x, p.y }).result == 1 ? 1 : 0;
             },
             [&]
             {
@@ -4624,6 +4646,69 @@ private:
             ai_plan_diagnostic_->target_hidden = targets.front().same_side;
         }
         auto destination = select_40D25A(records, targets, origin, behavior == Behavior40D171::approach_urgent, config_[5], config_[8], blocked_terrain, adjacent_opponent);
+        if (!actor.hostile() && !targets.empty())
+        {
+            // 获准差异：用合法地形的剩余路程代替直线接近，允许先远离目标绕上高地。
+            std::vector<int> remaining(cells_.size(), std::numeric_limits<int>::max());
+            using Node = std::pair<int, int>;
+            std::priority_queue<Node, std::vector<Node>, std::greater<Node>> queue;
+            for (const auto& target : targets)
+            {
+                if (target.same_side) { continue; }
+                Point p{ target.position.x, target.position.y };
+                if (!valid(p)) { continue; }
+                int cellIndex = p.y * int(width_) + p.x;
+                remaining[cellIndex] = 0;
+                queue.push({ 0, cellIndex });
+            }
+            while (!queue.empty())
+            {
+                auto [cost, cellIndex] = queue.top();
+                queue.pop();
+                if (remaining[cellIndex] != cost) { continue; }
+                Point to{ cellIndex % int(width_), cellIndex / int(width_) };
+                for (int dy : { -1, 1 })
+                {
+                    for (int dx : { 0, (to.y & 1) ? 1 : -1 })
+                    {
+                        Point from{ to.x + dx, to.y + dy };
+                        if (!valid(from)) { continue; }
+                        int edge = step_cost(actor, from, to);
+                        if (edge < 0) { continue; }
+                        int next = from.y * int(width_) + from.x;
+                        if (cost + edge < remaining[next])
+                        {
+                            remaining[next] = cost + edge;
+                            queue.push({ cost + edge, next });
+                        }
+                    }
+                }
+            }
+            int best = remaining[origin.y * int(width_) + origin.x];
+            const RouteRecord* chosen = nullptr;
+            for (const auto& record : records)
+            {
+                if (!record.marker || occupied_unit(record.position)) { continue; }
+                int cost = remaining[record.position.y * int(width_) + record.position.x];
+                if (cost < best)
+                {
+                    best = cost;
+                    chosen = &record;
+                }
+            }
+            if (chosen)
+            {
+                hostile_path_.clear();
+                ai_plan_diagnostic_->destination_record = chosen->index + 1;
+                for (int node = chosen->index; node > 0; node = routes.records.at(node).parent)
+                {
+                    auto p = routes.records.at(node).route.position;
+                    hostile_path_.push_back({ p.x, p.y });
+                }
+                std::reverse(hostile_path_.begin(), hostile_path_.end());
+                return;
+            }
+        }
         if (!destination)
         {
             return;

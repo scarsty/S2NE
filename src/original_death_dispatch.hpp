@@ -11,7 +11,7 @@ class OriginalDeathDispatch
 public:
     struct Record
     {
-        unsigned type{ }, condition{ }, role{ }, lines{ };
+        unsigned type{}, condition{}, role{}, lines{};
     };
     enum class Kind
     {
@@ -22,8 +22,8 @@ public:
     struct Plan
     {
         Kind kind{ Kind::none };
-        size_t event{ };
-        unsigned native_return{ };
+        size_t event{};
+        unsigned native_return{};
         bool settled() const { return kind != Kind::synchronous_script; }
     };
     static Plan inspect(std::span<const Record> records, unsigned role)
@@ -45,7 +45,7 @@ public:
             // The reachable native return is hexadecimal12 (decimal18).
             return { Kind::synchronous_script, i, 0x12 };
         }
-        return { };
+        return {};
     }
     // Explicit native call frames:41FF30 ->41C33E ->41B9A3 ->41C33E.
     // No pre-expanded dialogue list; predicates see flags at their call time.
@@ -54,6 +54,7 @@ public:
     public:
         using AudioHandler = std::function<Result<bool>(const OriginalEvents&, size_t)>;
         using PresentationHandler = std::function<Result<bool>(OriginalEvents&, size_t)>;
+
     private:
         AudioHandler audio_;
         PresentationHandler presentation_;
@@ -69,16 +70,16 @@ public:
         struct Frame
         {
             Routine routine;
-            size_t index{ };
-            unsigned pc{ };
-            bool changed{ };
+            size_t index{};
+            unsigned pc{};
+            bool changed{};
         };
         std::vector<Frame> frames_;
-        size_t event_count_{ };
-        bool returned_change_{ };
-        bool evacuation_{ };
+        size_t event_count_{};
+        bool returned_change_{};
+        bool evacuation_{};
         bool supported_{ true };
-        size_t completion_{ };
+        size_t completion_{};
         unsigned location_notice_{};
         static bool active(const OriginalEvents& e, size_t i)
         {
@@ -100,7 +101,7 @@ public:
         }
         static bool presentation_supported(unsigned type, unsigned condition)
         {
-            return (type == 12 && (condition == 10 || condition == 16)) || (type == 7 && condition == 0) || (type == 6 && condition <= 1);
+            return (type == 12 && (condition == 1 || condition == 10 || condition == 16 || condition == 22 || condition == 27 || condition == 28)) || (type == 7 && condition == 0) || (type == 6 && condition <= 1) || (type == 8 && condition == 2) || (type == 11 && condition == 7);
         }
         bool presentation_pending() const { return presentation_pending_; }
         bool finish_presentation()
@@ -182,6 +183,7 @@ public:
                     const unsigned type = e.type(f.index), condition = e.condition(f.index);
                     if (f.routine == Routine::generic && active(e, f.index) && type >= 4 && type <= 16 && !(type == 5 && condition <= 2) && !(presentation_ && presentation_supported(type, condition)) && !original_death_state_handler_supported(type, condition) && !(type == 9 && condition <= 4) && !(type == 13 && (condition == 1 || condition == 2) && audio_) && !(type == 11 && (condition <= 6 || ((condition == 11 || condition == 12) && e.campaign_currencies))))
                     {
+                        report_error(make_error("Unsupported synchronous death event=" + std::to_string(f.index) + " type=" + std::to_string(type) + " condition=" + std::to_string(condition)));
                         supported_ = false;
                         frames_.clear();
                         return std::nullopt;
@@ -222,7 +224,12 @@ public:
                     if (f.routine == Routine::generic && active(e, f.index) && original_death_state_handler_supported(type, condition))
                     {
                         auto handled = original_death_state_handler(e, f.index);
-                        if (!handled) { supported_ = false; frames_.clear(); return std::nullopt; }
+                        if (!handled)
+                        {
+                            supported_ = false;
+                            frames_.clear();
+                            return std::nullopt;
+                        }
                         eligible = handled.value();
                     }
                     if (f.routine == Routine::generic && type == 9 && condition <= 4)
@@ -241,7 +248,7 @@ public:
                         }
                         eligible = played.value();
                     }
-                    if (f.routine == Routine::generic && active(e, f.index) && e.type(f.index) == 11)
+                    if (f.routine == Routine::generic && active(e, f.index) && e.type(f.index) == 11 && condition != 7)
                     {
                         if (auto predicate = original_role_predicate(e, f.index))
                         {
@@ -325,7 +332,7 @@ public:
     };
     struct Continuation
     {
-        bool supported{ };
+        bool supported{};
         std::vector<size_t> dialogue;
     };
     static Continuation continuation(const OriginalEvents& events, unsigned role, Stack::AudioHandler audio = {}, Stack::PresentationHandler presentation = {})
@@ -333,7 +340,7 @@ public:
         auto death = inspect(events, role);
         if (death.settled())
         {
-            return { true, { } };
+            return { true, {} };
         }
         // 41FF30按实际旗标进入41B9A3；拒绝由Stack在可达事件处执行，不能扫描无关未激活事件提前拒绝。
         auto staged = events;
@@ -345,7 +352,7 @@ public:
                 for (size_t line = 0; line < staged.line_count(*i); ++line)
                 {
                     auto text = staged.try_line(*i, line);
-                    if (!text) { return { }; }
+                    if (!text) { return {}; }
                 }
             }
             else if (auto choice = stack.choice_pending())
@@ -375,7 +382,7 @@ public:
                 break;
             }
         }
-        if (!stack.supported()) { return { }; }
+        if (!stack.supported()) { return {}; }
         // Only the entry is retained for API compatibility, never the scan order.
         return { true, { death.event } };
     }

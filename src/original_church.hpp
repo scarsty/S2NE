@@ -92,8 +92,12 @@ private:
     }
 
 public:
-    explicit OriginalChurch(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one) : root_(root), font_(root), background_(root, disc, 15), graphics_(root, disc) { }
+    explicit OriginalChurch(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one) : root_(root), font_(root), background_(root, disc, 15), graphics_(root, disc) {}
     Page page() const { return page_; }
+    unsigned selected() const { return selected_; }
+    const auto& revival_recipients() const { return recipients_; }
+    size_t revival_selected() const { return recipients_.at(first_ + row_); }
+    unsigned revival_price(const OriginalSave::State& state) const { return revival_cost(state); }
     const std::string& blocker() const { return blocker_; }
     static unsigned fee(const OriginalSave::State& state)
     {
@@ -178,7 +182,10 @@ public:
     static s2ne::Result<OriginalSave::State> try_promote(const std::filesystem::path& root, const OriginalSave::State& before,
         size_t index, const OriginalPromotion::Request& request, OriginalRandom& random, uint32_t seconds)
     {
-        auto fail = [] { return s2ne::Result<OriginalSave::State>::failure(make_error("Original church promotion transaction rejected")); };
+        auto fail = []
+        {
+            return s2ne::Result<OriginalSave::State>::failure(make_error("Original church promotion transaction rejected"));
+        };
         if (request.battlefield || index >= before.groups[0].units.size()) { return fail(); }
         auto restored = OriginalSaveBridge::try_restore(root, before);
         if (!restored) { return s2ne::Result<OriginalSave::State>::failure(restored.error()); }
@@ -186,28 +193,39 @@ public:
         auto& unit = staged.events.units.at(index);
         if ((unit.status_flags & 0x70) || OriginalSaveBridge::get(before.groups[0].units[index], 8) == 1) { return fail(); }
         OriginalPromotionTransaction transaction(root);
-        OriginalPromotionTransaction::State candidate{unit, before.groups[0].inventory, random};
+        OriginalPromotionTransaction::State candidate{ unit, before.groups[0].inventory, random };
         OriginalPromotionTransaction::Context context;
         context.game_mode = int(before.globals_4f7cd0[0]);
         uint8_t metadata = before.groups[0].metadata[4];
         context.rebuild = [&](auto& next)
+        {
+            auto ready = staged.events.try_restore_unit_resources(next.unit);
+            if (!ready)
             {
-                auto ready = staged.events.try_restore_unit_resources(next.unit);
-                if (!ready) { report_error(ready.error()); return false; }
-                return true;
-            };
+                report_error(ready.error());
+                return false;
+            }
+            return true;
+        };
         context.recalculate_army = [&](auto& next)
+        {
+            staged.events.units[index] = next.unit;
+            std::vector<int> roles;
+            for (const auto& record : before.groups[0].units) { roles.push_back(int(int16_t(OriginalSaveBridge::get(record, 8)))); }
+            auto result = transaction.try_aggregate_army_metadata(metadata,
+                std::span<const OriginalEvents::Unit>(staged.events.units).first(roles.size()), roles, 2);
+            if (!result)
             {
-                staged.events.units[index] = next.unit;
-                std::vector<int> roles;
-                for (const auto& record : before.groups[0].units) { roles.push_back(int(int16_t(OriginalSaveBridge::get(record, 8)))); }
-                auto result = transaction.try_aggregate_army_metadata(metadata,
-                    std::span<const OriginalEvents::Unit>(staged.events.units).first(roles.size()), roles, 2);
-                if (!result) { report_error(result.error()); return false; }
-                metadata = result.value();
-                return true;
-            };
-        auto next = transaction.prepare(candidate, request, context, [seconds] { return seconds; });
+                report_error(result.error());
+                return false;
+            }
+            metadata = result.value();
+            return true;
+        };
+        auto next = transaction.prepare(candidate, request, context, [seconds]
+            {
+                return seconds;
+            });
         if (!next) { return fail(); }
         auto captured = OriginalSaveBridge::try_capture_promotion(staged.events, staged.turn, staged.camera,
             before, index, request.source_kind, next->inventory, metadata);
@@ -331,14 +349,26 @@ public:
         }
         if (page_ == Page::promotion_recipients)
         {
-            if (code == 1) { page_ = Page::menu; return false; }
+            if (code == 1)
+            {
+                page_ = Page::menu;
+                return false;
+            }
             if (code == 0x48 && first_ + row_)
             {
-                if (row_) { --row_; } else { --first_; }
+                if (row_) { --row_; }
+                else
+                {
+                    --first_;
+                }
             }
             if (code == 0x50 && first_ + row_ + 1 < recipients_.size())
             {
-                if (row_ < 9) { ++row_; } else { ++first_; }
+                if (row_ < 9) { ++row_; }
+                else
+                {
+                    ++first_;
+                }
             }
             if (code == 0x1C || code == 0x39)
             {
@@ -346,10 +376,11 @@ public:
                 auto unit = roles_->units.at(index);
                 promotion_.emplace(root_);
                 if (!promotion_->open(unit, unit.experience_threshold, [&, index](const auto& request)
-                    {
-                        if (!promotion_commit_ || !promotion_commit_(state, index, request)) { return false; }
-                        return true;
-                    }, false, int(state.globals_4f7cd0[0])))
+                        {
+                            if (!promotion_commit_ || !promotion_commit_(state, index, request)) { return false; }
+                            return true;
+                        },
+                        false, int(state.globals_4f7cd0[0])))
                 {
                     promotion_.reset();
                     blocker_ = "Original church promotion has no available branch";
@@ -532,7 +563,10 @@ public:
                 message_ = 210;
                 page_ = Page::message;
             }
-            else { page_ = Page::promotion_recipients; }
+            else
+            {
+                page_ = Page::promotion_recipients;
+            }
             return true;
         }
         if (state.globals_4f7cd0.at(27) == 1)

@@ -6,9 +6,9 @@ namespace s2ne
 class OriginalSkill94Visual
 {
     std::vector<OriginalSkill32Visual::Frame> frames_;
-    size_t frame_{ };
-    uint64_t elapsed_{ };
-    bool presented_{ };
+    size_t frame_{};
+    uint64_t elapsed_{};
+    bool presented_{};
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
 
@@ -95,17 +95,25 @@ public:
     size_t frame() const { return frame_; }
     bool done() const { return frame_ == frames_.size(); }
     void presented() { presented_ = true; }
-    void tick(unsigned ms)
+    void tick(unsigned ms, bool accelerated = false)
     {
         if (done())
         {
             return;
         }
         elapsed_ += ms;
-        if (presented_ && elapsed_ >= 50)
+        if (presented_ && elapsed_ >= (accelerated ? 12u : 50u))
         {
-            ++frame_;
-            elapsed_ = 0;
+            if (accelerated)
+            {
+                ++frame_;
+                elapsed_ = 0;
+            }
+            else
+            {
+                ++frame_;
+                elapsed_ = 0;
+            }
             presented_ = false;
         }
     }

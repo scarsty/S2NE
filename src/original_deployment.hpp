@@ -292,10 +292,11 @@ public:
         for (size_t i = 0; i < raw_.groups[0].units.size(); ++i)
         {
             auto& u = events_.units.at(i);
-            if (!(u.status_flags & 0x70) && word(raw_.groups[0].units[i], 8) != 1)
+            // 4414FC(mode=1)：0x20、0x40、控制类型1和0x10均不列入出阵候选。
+            if (!(u.status_flags & 0x70) && u.behavior != 1 && word(raw_.groups[0].units[i], 8) != 1)
             {
                 roles_.push_back(i);
-                // 原4414FC(mode1)只枚举可部署角色，不能清除主军NPC守军的登场位。
+                // 原4414FC(mode=1)只重建可部署候选的登场状态。
                 u.status_flags &= ~0x80u;
             }
         }

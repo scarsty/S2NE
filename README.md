@@ -6,15 +6,13 @@
 
 ## 项目介绍
 
-S2NE 是面向 Windows x64 的 C++23／SDL3 原生重写工程，以原 Windows 程序 `WSUPERSP.EXE` 的反汇编和原游戏资源为依据，逐步恢复界面、操作、剧情与战斗逻辑，而非重新设计规则的同类游戏。
-
 项目仍在开发中，不代表原版全部功能已经实现。本页仅介绍游戏与项目；实现状态、未完成项与原函数／实现／测试／历史证据统一见 [PROGRESS](PROGRESS.md#current-status)；[分项验证导航](PROGRESS.md#validation)区分正常输入、受控专项与未验证边界。
 
 音频现状：已接原资源效果音、ANI声音cue、关卡及关间BGM与XMI合成；现代SoundFont不等同原声卡音色，真实扬声器听感未验。跨阶段未实现展示所需的音乐／音效入口仍是缺口，不宣称全音频完成。自然习得已验证原技能菜单施放、熟练度跨阈值、学习通知与隔离存读档；不代表双线正常通关。详细证据与边界见[进度报告](PROGRESS.md)。
 
 ### 还原原则
 
-- **全项目以逆向重现为原则**：所有系统的行为、数据含义、绘制与透明规则、执行顺序、状态机及代码共享／独立边界，均以原反汇编和原资源证据为依据；不仅适用于技能，也适用于已完成和后续实现。
+- **全项目以汇编重现为原则**：所有系统的行为、数据含义、绘制与透明规则、执行顺序、状态机及代码共享／独立边界，均以原反汇编和原资源证据为依据；不仅适用于技能，也适用于已完成和后续实现。
 - 工作批次、功能相似性或现代架构偏好不能替代原程序的契约。原本共用的机制按证据复用，原本不同的语义保持区别；不要求机械照抄机器指令，但不得改变原有行为。未查明的功能明确列为缺口，不自行设计替代。
 - 以兼容原格式存档为目标。
 - 原资源放在工程上一级游戏目录，不复制进源码目录；资源读取不改写原档案。
@@ -67,6 +65,8 @@ CMake 兼容构建也默认不向资源根目录发布；仅显式配置 `-DS2NE
 
 ### JSONL实操接口
 
+`modal=spirit_sight`是原灵视技能面板的确认边界。`{"cmd":"spirit_sight_confirm"}`复用原关闭面板事务，清除展示后提交暂存的技能支付、行动及随机流；没有面板时明确拒绝，不模拟键鼠。
+
 经验辅助测试仅限`--stdio --headless-speed`：`{"cmd":"assist_experience","index":0,"amount":999}`对空闲战场中的存活我方角色增加经验（单次1..999，总经验按原上限999），进入原成长展示，以`growth_confirm`逐次确认；正常游戏奖励不变，不直接修改等级或能力。须使用存档副本并保留请求记录，结果标为经验辅助，不计自然练度通关。严格无键鼠实测入口为`tools\check-semantic-campaign.ps1 -Save <源档> -VerifyExperienceAssistance`，未整关覆盖时明确以退出码2报告blocked，不报成功。
 
 `state.interaction.mode`区分`input`（可交给AI选择原键鼠操作）、`advancing`（原动画／电脑行动继续tick）、`blocked`（已有明确blocker）；`context`给出当前modal。不以`input_locked`单独判断是否应等待：成长确认、关间对话等可能锁战场输入但仍需要菜单响应。新增明确模态包括战报、道具使用／确认、覆盖存档确认和退出确认；AI应结合截图及状态契约处理，协议不替AI擅自选择剧情或交易。
@@ -102,6 +102,8 @@ python .\tools\play-stdio.py .\out\manual-session .\out\growth-check\legal\eligi
 `mouse`坐标为640×480逻辑帧，button为left/right/move；`key`使用SDL键名。`wait`允许0–10000毫秒并持续正常tick/present。截图为隔离目录frame.bmp。observe含场景／模态／输入锁、人物HP/AP/XP/级别、原菜单可用掩码及技能资源拒绝原因；selected_skill_failure另按生产合作伙伴／召唤条件探测。`screen_x/y`为绘制中心，`input_x/y`及input_hittable为原地表pick判定的可点击位置；occupant与status_flags可区分HP尚有数值但原状态已死亡／不占地的角色。自动检查`tools\check-stdio.py`显式使用dummy，**不证明用户看见窗口或硬件音频**。控制器持有子进程直至quit/EOF/Ctrl+C；不留无人控制后台自动战斗。
 
 `key.modifiers`为可选数组，支持SDL名称Left/Right Shift、Ctrl、Alt、GUI，只作用于当前按键事件，不留下全局按住状态。此前单独发送修饰键不能为后续按键提供`event.key.mod`，因此技能页Shift导航、设置页左右Ctrl分支及Alt+C无法完整表达；现可发送组合键。普通点击、右键取消、鼠标移动及原菜单键盘路径已有入口；本次输入分派检查不等于全游戏每个菜单均已实测，尚未实现的游戏功能不会因协议支持键鼠而自动补齐。
+
+剧情选择页观察包含`dialogue`原提示与`choices`全部原选项（Big5字节、零基`index`）；`{"cmd":"story_choose","index":1}`通过原选择／确认入口提交第二项，非法下标拒绝。任意剧情对白、选择及经验／习得／升级响应页均可提前打断`await_state`，返回实际部分状态和未满足的原后置条件；控制器须优先处理该响应页，不重放上一动作或继续盲等战斗反馈。`experience`模态包含`experience_award`，使用`growth_confirm`确认后进入原习得／升级／事务续接。流程脚本会在终端输出对白、选项与经验奖励；这些提示不是强制跳过动画或自动改变游戏剧情。
 
 运行 `powershell -NoProfile -ExecutionPolicy Bypass -File S2NE\tools\package-game.ps1` 可在资源根目录生成 `S2NE-game-win64.zip`。解压后使用 `run-game.cmd` 启动；需要 Windows x64 及 Microsoft Visual C++ x64 运行库。包中仅保留运行依赖与当前使用资源，不含个人存档、源码或验证产物。
 
