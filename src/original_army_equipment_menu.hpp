@@ -122,7 +122,11 @@ public:
         fixed_role_ = role;
         use_adapter_ = std::move(adapter);
         auto found = std::find(roles_.begin(), roles_.end(), role);
-        if (found == roles_.end()) { closed_ = true; return; }
+        if (found == roles_.end())
+        {
+            closed_ = true;
+            return;
+        }
         size_t row = size_t(found - roles_.begin());
         first_role_ = row > 9 ? row - 9 : 0;
         role_row_ = row - first_role_;
@@ -141,6 +145,31 @@ public:
     size_t recipient_count() const { return roles_.size(); }
     const auto& choices() const { return choices_; }
     unsigned selected_item() const { return choices_.empty() ? 0 : choices_[first_ + row_]; }
+    bool select_item(unsigned id)
+    {
+        if (closed_ || transitioning() || confirmation_) { return false; }
+        auto found = std::find(choices_.begin(), choices_.end(), id);
+        if (found == choices_.end()) { return false; }
+        first_ = 0;
+        row_ = size_t(found - choices_.begin());
+        while (row_ >= 5)
+        {
+            ++first_;
+            --row_;
+        }
+        return true;
+    }
+    bool confirm_use(OriginalSave::State& state)
+    {
+        if (closed_ || transitioning() || !item_mode_ || !selected_item()) { return false; }
+        if (!confirmation_) { confirmation_.emplace(root_, font_, 80, 200, 400, true); }
+        else
+        {
+            confirmation_->confirm();
+            finish_confirmation(state);
+        }
+        return true;
+    }
     Result<bool> equip_selected(OriginalSave::State& state)
     {
         if (closed_ || !selected_item()) { return Result<bool>::success(false); }

@@ -56,7 +56,7 @@ public:
 private:
     std::filesystem::path root_;
     OriginalMenu font_;
-    std::vector<uint8_t> pal_, cel_;
+    SharedBytes pal_, cel_;
     Context context_;
     OriginalSettings::State settings_state_;
     Page page_ = Page::root, confirmation_parent_ = Page::root, operation_parent_ = Page::root;
@@ -69,8 +69,8 @@ private:
     std::unique_ptr<OriginalSettings> settings_;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& p) { return read_resource(p); }
-    static std::vector<uint8_t> read(const std::filesystem::path& p) { return try_read(p).value(); }
+    static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& p) { return read_shared_resource(p); }
+    static SharedBytes read(const std::filesystem::path& p) { return try_read(p).value(); }
     size_t sprite_offset(unsigned id) const
     {
         size_t g = dword(pal_, 816) - 57;
@@ -186,7 +186,7 @@ private:
 public:
     OriginalBattleMenu(const std::filesystem::path& root, Context context, OriginalSettings::State state) : root_(root), font_(root), pal_(read(root / "SUPERSP.PAL")), cel_(read(root / "SUPERSP.CEL")), context_(context), settings_state_(state)
     {
-        pal_.at(0) = pal_.at(1) = pal_.at(2) = 0;
+        pal_.mutable_at(0) = pal_.mutable_at(1) = pal_.mutable_at(2) = 0;
         font_.small_font = state.small_font != 0;
         size_t p = sprite_offset(194);
         left_ = 320 - int(word(cel_, p) + 1) / 2;

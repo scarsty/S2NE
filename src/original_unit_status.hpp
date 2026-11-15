@@ -10,12 +10,12 @@ namespace s2ne
 // 4571EB draws over the caller's original panel background; panel_y is 0 or 363.
 class OriginalUnitStatus
 {
-    std::vector<uint8_t> cel_, pal_;
-    size_t heads_{ };
+    SharedBytes cel_, pal_;
+    size_t heads_{};
     static unsigned word(const std::vector<uint8_t>& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const std::vector<uint8_t>& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& p) { return read_resource(p); }
-    static std::vector<uint8_t> read(const std::filesystem::path& p) { return try_read(p).value(); }
+    static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& p) { return read_shared_resource(p); }
+    static SharedBytes read(const std::filesystem::path& p) { return try_read(p).value(); }
     void pixel(std::vector<uint8_t>& image, int x, int y, unsigned c) const
     {
         if (x < 0 || x >= 640 || y < 0 || y >= 480)
@@ -64,10 +64,10 @@ public:
     struct InitializationTag
     {
     };
-    OriginalUnitStatus(const std::filesystem::path& root, InitializationTag) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")) { }
+    OriginalUnitStatus(const std::filesystem::path& root, InitializationTag) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root)
     {
-        pal_.at(0) = pal_.at(1) = pal_.at(2) = 0;
+        pal_.mutable_at(0) = pal_.mutable_at(1) = pal_.mutable_at(2) = 0;
         heads_ = dword(pal_, 808 + 2 * 8) - 58;
         if (heads_ + 2 > cel_.size())
         {
@@ -86,7 +86,7 @@ public:
     }
     static s2ne::Result<std::unique_ptr<OriginalUnitStatus>> create(const std::filesystem::path& root)
     {
-        auto result = std::make_unique<OriginalUnitStatus>(root, InitializationTag{ });
+        auto result = std::make_unique<OriginalUnitStatus>(root, InitializationTag{});
         auto ready = result->initialize(root);
         if (!ready)
         {

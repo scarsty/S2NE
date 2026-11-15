@@ -44,7 +44,7 @@ public:
     {
         if (!mixer) { return Result<bool>::failure(make_error("Effects audio device unavailable")); }
         auto pal = read_resource(root / "SUPERSP.PAL");
-        auto bin = read_resource(root / "SUPERSP.BIN");
+        auto bin = read_shared_resource(root / "SUPERSP.BIN");
         if (!pal) { return Result<bool>::failure(pal.error()); }
         if (!bin) { return Result<bool>::failure(bin.error()); }
         const auto& p = pal.value();

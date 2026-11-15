@@ -16,6 +16,7 @@ inline Result<std::vector<uint8_t>> read_resource(const std::filesystem::path& p
     {
         resolved = resolved.parent_path().parent_path() / resolved.filename();
     }
+
     if (resolved.filename() == "SUPERSP.PRG")
     {
         return ResourceBundle(resolved.parent_path()).try_prg_image();
@@ -30,7 +31,7 @@ inline Result<std::vector<uint8_t>> read_resource(const std::filesystem::path& p
     {
         return Result<std::vector<uint8_t>>::failure(make_error("Invalid resource length: " + path.string()));
     }
-    std::vector<uint8_t> bytes(size_t(length), uint8_t{ });
+    std::vector<uint8_t> bytes(size_t(length), uint8_t{});
     file.seekg(0);
     if (!file.read(reinterpret_cast<char*>(bytes.data()), std::streamsize(bytes.size())))
     {
@@ -39,13 +40,25 @@ inline Result<std::vector<uint8_t>> read_resource(const std::filesystem::path& p
     trace.mark(resolved.filename().string() + " bytes=" + std::to_string(bytes.size()));
     return Result<std::vector<uint8_t>>::success(std::move(bytes));
 }
+inline Result<SharedBytes> read_shared_resource(const std::filesystem::path& path, ResourceDomain domain = ResourceDomain::primary)
+{
+    auto resolved = path;
+    if (!std::filesystem::exists(resolved) && std::filesystem::exists(resolved.parent_path().parent_path() / resolved.filename())) { resolved = resolved.parent_path().parent_path() / resolved.filename(); }
+    const bool prg = resolved.filename() == "SUPERSP.PRG";
+    const auto identity = prg ? "domain=" + std::to_string(unsigned(domain)) + ";palette=" + std::filesystem::weakly_canonical(resolved.parent_path() / "SUPERSP.PAL").string() : "";
+    return load_shared_resource(resolved, identity, [&]() -> Result<std::vector<uint8_t>>
+        {
+            if (prg) { return ResourceBundle(resolved.parent_path()).try_prg_image(domain); }
+            return read_resource(resolved);
+        });
+}
 class ResourceReader
 {
     std::span<const uint8_t> bytes_;
     std::optional<Error> error_;
 
 public:
-    explicit ResourceReader(std::span<const uint8_t> bytes) : bytes_(bytes) { }
+    explicit ResourceReader(std::span<const uint8_t> bytes) : bytes_(bytes) {}
     bool extent(size_t position, size_t count)
     {
         if (position > bytes_.size() || count > bytes_.size() - position)
@@ -80,12 +93,12 @@ public:
 };
 struct CombatResources
 {
-    std::vector<uint8_t> bin, pal;
-    size_t config{ };
+    SharedBytes bin, pal;
+    size_t config{};
 };
 inline Result<CombatResources> read_combat_resources(const std::filesystem::path& root)
 {
-    auto bin = read_resource(root / "SUPERSP.BIN"), pal = read_resource(root / "SUPERSP.PAL");
+    auto bin = read_shared_resource(root / "SUPERSP.BIN"), pal = read_shared_resource(root / "SUPERSP.PAL");
     if (!bin)
     {
         return Result<CombatResources>::failure(bin.error());

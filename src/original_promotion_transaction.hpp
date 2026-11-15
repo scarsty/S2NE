@@ -57,9 +57,9 @@ public:
 
 private:
     OriginalPromotion promotion_;
-    std::vector<uint8_t> kinds_, items_, bin_, pal_;
-    size_t records_{ }, actions_{ }, groups_{ };
-    unsigned item_count_{ }, group_count_{ };
+    SharedBytes kinds_, items_, bin_, pal_;
+    size_t records_{}, actions_{}, groups_{};
+    unsigned item_count_{}, group_count_{};
     static unsigned w(const std::vector<uint8_t>& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dw(const std::vector<uint8_t>& b, size_t p) { return w(b, p) | (w(b, p + 2) << 16); }
     static int sb(const std::vector<uint8_t>& b, size_t p) { return int(int8_t(b.at(p))); }
@@ -169,7 +169,7 @@ public:
         result.promotion_ = std::move(promotion).value();
         for (auto pair : { std::pair{ &result.kinds_, "KINDSP.BIN" }, std::pair{ &result.items_, "ITEMSP.BIN" }, std::pair{ &result.bin_, "SUPERSP.BIN" }, std::pair{ &result.pal_, "SUPERSP.PAL" } })
         {
-            auto bytes = read_resource(root / pair.second);
+            auto bytes = read_shared_resource(root / pair.second);
             if (!bytes)
             {
                 return Result<OriginalPromotionTransaction>::failure(bytes.error());
@@ -634,7 +634,7 @@ public:
         learn_relations(u);
     }
     std::optional<State> prepare(const State& before, const OriginalPromotion::Request& request, const Context& context,
-        const OriginalRandom::TimeSource& time = { }) const
+        const OriginalRandom::TimeSource& time = {}) const
     {
         if (!context.rebuild || !context.recalculate_army || before.inventory.size() != item_count_)
         {

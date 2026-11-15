@@ -258,7 +258,7 @@ public:
         }
         if (!target || (campaign.stage(target).mode != 1 && campaign.stage(target).mode != 3))
         {
-            return Result<OriginalEvents>::failure(make_error("Original intermediate campaign stage requires dedicated dispatcher"));
+            return Result<OriginalEvents>::failure(make_error("Original intermediate campaign stage requires dedicated dispatcher: source=" + std::to_string(previous.stage) + " target=" + std::to_string(target) + " mode=" + std::to_string(target ? campaign.stage(target).mode : 0)));
         }
         OriginalEvents next = previous;
         next.clear_stage_flags();

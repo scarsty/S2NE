@@ -11,8 +11,8 @@
 #include "original_events.hpp"
 #include "original_menu.hpp"
 #include "original_promotion_transaction.hpp"
-#include "original_sprite.hpp"
 #include "original_skill94_formula.hpp"
+#include "original_sprite.hpp"
 #include <functional>
 #include <optional>
 
@@ -99,7 +99,7 @@ public:
 
 private:
     OriginalMenu font_;
-    std::vector<uint8_t> bin_, pal_, cel_;
+    SharedBytes bin_, pal_, cel_;
     std::vector<Group> groups_;
     size_t header_{};
     int ap_base_{}, ap_repeat_{};
@@ -146,7 +146,7 @@ public:
         {
             return s2ne::Result<OriginalSkills>::failure(resources.error());
         }
-        auto cel = read_resource(root / "SUPERSP.CEL");
+        auto cel = read_shared_resource(root / "SUPERSP.CEL");
         if (!cel)
         {
             return s2ne::Result<OriginalSkills>::failure(cel.error());
@@ -299,13 +299,18 @@ public:
         {
             for (size_t s = 0; s < groups_[g].records.size(); ++s)
             {
-                if (groups_[g].records[s].id == id) { group_ = g; skill_ = s; return true; }
+                if (groups_[g].records[s].id == id)
+                {
+                    group_ = g;
+                    skill_ = s;
+                    return true;
+                }
             }
         }
         return false;
     }
     // 原401146先自身，再逐圈上下交替、左右交替；空格也必须参与面积中心评分。
-    template<class Valid>
+    template <class Valid>
     std::vector<std::pair<int, int>> ai_centers(const OriginalEvents::Unit& actor, Valid valid) const
     {
         std::vector<std::pair<int, int>> cells{ { actor.x, actor.y } };
@@ -335,7 +340,10 @@ public:
         if (!context.army_da_nonzero && (context.second ? context.suppress_second : context.suppress_first)) { return false; }
         unsigned begin = context.second ? bin_.at(header_ + 2) : 0;
         unsigned end = context.second ? begin + bin_.at(header_ + 3) : bin_.at(header_ + 2);
-        for (unsigned g = begin; g < end; ++g) { if (unit.learned.at(g)) { return true; } }
+        for (unsigned g = begin; g < end; ++g)
+        {
+            if (unit.learned.at(g)) { return true; }
+        }
         return false;
     }
     s2ne::Result<int> ai_healing_value(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& target,
@@ -355,7 +363,13 @@ public:
         case 4: offset = 0x19; break;
         case 6: offset = 0x1F; break;
         case 41: offset = 0x8F; break;
-        case 0: if (selected().effect() == 90) { offset = 0; break; } [[fallthrough]];
+        case 0:
+            if (selected().effect() == 90)
+            {
+                offset = 0;
+                break;
+            }
+            [[fallthrough]];
         default: return s2ne::Result<int>::failure(make_error("46E858 healing formula unavailable"));
         }
         if (offset && !config_[offset]) { return s2ne::Result<int>::failure(make_error("46E858 healing preview divisor")); }
@@ -386,14 +400,29 @@ public:
     {
         if (!summon_supported() || !events.army_status) { return false; }
         const auto& slots = (*events.army_status)[actor.hostile() ? 1 : 0];
-        for (unsigned i = 0; i < 11; ++i) { if (slots[i * 3] == 1) { return false; } }
+        for (unsigned i = 0; i < 11; ++i)
+        {
+            if (slots[i * 3] == 1) { return false; }
+        }
         return true;
     }
     bool ai_status_supported() const
     {
         switch (selected().effect())
         {
-        case 5: case 8: case 13: case 15: case 16: case 17: case 43: case 46: case 55: case 56: case 61: case 67: case 69:
+        case 5:
+        case 8:
+        case 13:
+        case 15:
+        case 16:
+        case 17:
+        case 43:
+        case 46:
+        case 55:
+        case 56:
+        case 61:
+        case 67:
+        case 69:
             return true;
         default: return false;
         }
@@ -408,10 +437,34 @@ public:
         if (selected().raw[31] != 2) { return true; }
         switch (effect)
         {
-            case 11: case 32: case 34: case 35: case 38: case 39: case 50: case 51: case 52: case 53: case 54:
-            case 58: case 59: case 66: case 68: case 71: case 72: case 73: case 74: case 75: case 77: case 78:
-            case 79: case 80: case 81: case 82: case 83: return true;
-            default: return false;
+        case 11:
+        case 32:
+        case 34:
+        case 35:
+        case 38:
+        case 39:
+        case 50:
+        case 51:
+        case 52:
+        case 53:
+        case 54:
+        case 58:
+        case 59:
+        case 66:
+        case 68:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83: return true;
+        default: return false;
         }
     }
     // 原471585免疫／已有状态门控，4714E4使用WORD35而不是效果威力。
@@ -445,7 +498,9 @@ public:
                 || events.combat_value(target, 0, 1) < events.combat_value(target, 0, 3)
                 || events.combat_value(target, 0, 1) < events.combat_value(target, 0, 4);
             break;
-        case 43: case 61: case 67: blocked = (byte(0x39) & 2) || (status & 0x1AB000) || (target.abilities & 0x4000); break;
+        case 43:
+        case 61:
+        case 67: blocked = (byte(0x39) & 2) || (status & 0x1AB000) || (target.abilities & 0x4000); break;
         case 46: blocked = (word38 & 0x280) || (status & 0x12B000) || (target.abilities & 0x4000); break;
         case 55: blocked = (byte(0x39) & 2) || (status & 0x13B000) || (target.abilities & 0x4000); break;
         case 56: blocked = (byte(0x39) & 6) || (status & 0x13F000) || (target.abilities & 0x4000); break;
@@ -577,7 +632,7 @@ public:
             for (unsigned bit = 0; bit < length; ++bit)
             {
                 if (!(after.learned[group] & ~before.learned[group] & (1u << bit))) { continue; }
-                Record record{first + bit + 1, group, bit, {}};
+                Record record{ first + bit + 1, group, bit, {} };
                 std::copy_n(bin_.begin() + records + (record.id - 1) * 37, 37, record.raw.begin());
                 out.push_back(record);
             }
@@ -605,7 +660,7 @@ public:
             Record record{ id, g, id - first - 1, {} };
             std::copy_n(bin_.begin() + records + (id - 1) * 37, 37, record.raw.begin());
             if (record.raw[32] & 7) { return false; }
-            groups_.push_back({g, {}, {record}});
+            groups_.push_back({ g, {}, { record } });
             group_ = skill_ = 0;
             context_.second = g >= bin_.at(header_ + 2);
             // +576=1与+38不是同一字段；它跳熟练结算，不赋予学习位。
@@ -898,7 +953,10 @@ public:
         int x = center.x, y = center.y;
         for (int n = 0; n < selected().raw[17]; ++n)
         {
-            if (direction == 0 || direction == 3) { if (!(y & 1)) { --x; } }
+            if (direction == 0 || direction == 3)
+            {
+                if (!(y & 1)) { --x; }
+            }
             else if (y & 1) { ++x; }
             y += direction < 2 ? 1 : -1;
             bool axialValid = !area_valid_ || area_valid_(x, y);
@@ -906,7 +964,10 @@ public:
             {
                 const int delta = area_elevation_(center.x, center.y) - area_elevation_(x, y);
                 if (selected().raw[18] == 5) { axialValid &= delta >= -2 && delta <= 3; }
-                else { axialValid &= std::abs(delta) <= 10; }
+                else
+                {
+                    axialValid &= std::abs(delta) <= 10;
+                }
             }
             if (axialValid) { cells.emplace_back(x, y); }
             if (selected().raw[18] == 5)
@@ -917,10 +978,16 @@ public:
             int rightX = x, rightY = y, leftX = x, leftY = y;
             for (int k = 0; k < n; ++k)
             {
-                if (direction < 2) { if (rightY & 1) { ++rightX; } }
+                if (direction < 2)
+                {
+                    if (rightY & 1) { ++rightX; }
+                }
                 else if (!(rightY & 1)) { --rightX; }
                 rightY += (direction == 0 || direction == 3) ? 1 : -1;
-                if (direction < 2) { if (!(leftY & 1)) { --leftX; } }
+                if (direction < 2)
+                {
+                    if (!(leftY & 1)) { --leftX; }
+                }
                 else if (leftY & 1) { ++leftX; }
                 leftY += (direction == 0 || direction == 3) ? -1 : 1;
                 if ((!area_valid_ || area_valid_(rightX, rightY)) && (!area_elevation_ || std::abs(area_elevation_(center.x, center.y) - area_elevation_(rightX, rightY)) <= 10)) { cells.emplace_back(rightX, rightY); }
@@ -1277,10 +1344,6 @@ public:
                 continue;
             }
             auto& t = staged[i];
-            for (size_t n = 0; n < i; ++n)
-            {
-                if (staged[n].id == t.id && staged[n].appearance == t.appearance && staged[n].x == t.x && staged[n].y == t.y) { return fail(); }
-            }
             if (t.hp <= 0 || !(t.status_flags & 0x80) || (t.status_flags & 0x20)) { return fail(); }
             if (status_area_supported())
             {

@@ -10,9 +10,9 @@ namespace s2ne
 {
 class OriginalMenu
 {
-    std::vector<uint8_t> bin, pal;
-    size_t strings{ }, index{ }, glyphs{ };
-    unsigned count{ };
+    SharedBytes bin, pal;
+    size_t strings{}, index{}, glyphs{};
+    unsigned count{};
     unsigned word(size_t p) const { return bin.at(p) | (unsigned(bin.at(p + 1)) << 8); }
     unsigned dword(size_t p) const { return word(p) | (word(p + 2) << 16); }
     size_t entry(unsigned id) const
@@ -32,12 +32,12 @@ public:
     static Result<OriginalMenu> create(const std::filesystem::path& root)
     {
         OriginalMenu result;
-        auto bin = read_resource(root / "SUPERSP.BIN");
+        auto bin = read_shared_resource(root / "SUPERSP.BIN");
         if (!bin)
         {
             return Result<OriginalMenu>::failure(bin.error());
         }
-        auto pal = read_resource(root / "SUPERSP.PAL");
+        auto pal = read_shared_resource(root / "SUPERSP.PAL");
         if (!pal)
         {
             return Result<OriginalMenu>::failure(pal.error());

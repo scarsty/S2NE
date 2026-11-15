@@ -37,7 +37,8 @@ public:
 private:
     OriginalMenu font_;
     OriginalUnitStatus status_;
-    std::vector<uint8_t> cel_, pal_, background_, mini_;
+    SharedBytes cel_, pal_;
+    std::vector<uint8_t> background_, mini_;
     std::vector<Entry> entries_;
     std::vector<uint8_t> stage_name_, victory_, defeat_;
     unsigned stage_ = 0;
@@ -49,8 +50,8 @@ private:
     int friendly_count_ = 0, npc_count_ = 0, enemy_count_ = 0;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& p) { return read_resource(p); }
-    static std::vector<uint8_t> read(const std::filesystem::path& p) { return try_read(p).value(); }
+    static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& p) { return read_shared_resource(p); }
+    static SharedBytes read(const std::filesystem::path& p) { return try_read(p).value(); }
     static std::vector<uint8_t> bytes(const std::string& s) { return { s.begin(), s.end() }; }
     void pixel(std::vector<uint8_t>& image, int x, int y, unsigned c) const
     {
@@ -218,7 +219,7 @@ public:
                                                                                                                                                             victory_(events.victory_objective),
                                                                                                                                                             defeat_(events.defeat_objective),
                                                                                                                                                             stage_(events.stage),
-                                                                                                                                                            page_(page) { }
+                                                                                                                                                            page_(page) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, Page page, const OriginalEvents& events,
         std::vector<Entry> entries, const std::vector<uint8_t>& background, const OriginalMap* map, bool small_font, int dword_4f7cd0)
     {
@@ -226,7 +227,7 @@ public:
         {
             return s2ne::Result<bool>::failure(make_error("Battle report requires640x480 RGBA"));
         }
-        pal_[0] = pal_[1] = pal_[2] = 0;
+        pal_.mutable_at(0) = pal_.mutable_at(1) = pal_.mutable_at(2) = 0;
         font_.small_font = small_font;
         for (auto& entry : entries)
         {
@@ -293,7 +294,7 @@ public:
     static s2ne::Result<std::unique_ptr<OriginalBattleReports>> create(const std::filesystem::path& root, Page page, const OriginalEvents& events,
         std::vector<Entry> entries, const std::vector<uint8_t>& background, const OriginalMap* map = nullptr, bool small_font = false, int dword_4f7cd0 = 0)
     {
-        auto result = std::make_unique<OriginalBattleReports>(root, page, events, entries, background, map, small_font, dword_4f7cd0, InitializationTag{ });
+        auto result = std::make_unique<OriginalBattleReports>(root, page, events, entries, background, map, small_font, dword_4f7cd0, InitializationTag{});
         auto ready = result->initialize(root, page, events, std::move(entries), background, map, small_font, dword_4f7cd0);
         if (!ready)
         {
@@ -434,7 +435,7 @@ public:
     {
         if (page_ == Page::closed)
         {
-            return { };
+            return {};
         }
         bool key = e.type == 1 || e.type == 2, mouse = e.type == 8 || e.type == 0x20;
         if (page_ == Page::conditions || page_ == Page::map)
@@ -444,7 +445,7 @@ public:
                 page_ = Page::closed;
                 return { true, 0x1F };
             }
-            return { };
+            return {};
         }
         if (page_ == Page::proficiencies)
         {
@@ -453,7 +454,7 @@ public:
                 close_detail();
                 return { true, 0x1F };
             }
-            return { };
+            return {};
         }
         if (page_ == Page::detail)
         {
@@ -462,7 +463,7 @@ public:
                 close_detail();
                 return { true, 0x1F };
             }
-            return { };
+            return {};
         }
         if (key)
         {
@@ -530,7 +531,7 @@ public:
             }
             return { row >= 0, 0 };
         }
-        return { };
+        return {};
     }
     s2ne::Result<std::vector<uint8_t>> try_draw() const
     {

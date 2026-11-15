@@ -5,21 +5,21 @@ namespace s2ne
 // Sword94 arithmetic resolution only. Does not authorize targeting or mutate units.
 class OriginalSkill94Resolution
 {
-    std::array<int, 256> config_{ };
+    std::array<int, 256> config_{};
 
 public:
     struct DamageContext
     {
         unsigned difficulty{ 3 };
-        bool friendly_army{ true }, conditions_mode{ };
-        unsigned target_status3c{ }, target_status3d{ }, target_status39{ }, target_status3f{ };
-        bool target_special13{ };
-        unsigned profession_resistance{ }, profession_weakness{ };
+        bool friendly_army{ true }, conditions_mode{};
+        unsigned target_status3c{}, target_status3d{}, target_status39{}, target_status3f{};
+        bool target_special13{};
+        unsigned profession_resistance{}, profession_weakness{};
         unsigned damage_mask{ 64 }, original_group{ 10 }, formula_flags{ 194 };
-        bool bypass_modifiers{ }, target_magic_guard{ }, target_spell_armor{ }, actor_spell_boost{ }, target_equipment11{ };
-        unsigned terrain_flags{ }, target_movement_class{ }, target_immunity2f{ };
+        bool bypass_modifiers{}, target_magic_guard{}, target_spell_armor{}, actor_spell_boost{}, target_equipment11{};
+        unsigned terrain_flags{}, target_movement_class{}, target_immunity2f{};
         unsigned attack_mode{ 1 };
-        bool target_direction_guard{ };
+        bool target_direction_guard{};
         unsigned effect{ 1 };
     };
     OriginalSkill94Resolution() = default;
@@ -142,10 +142,10 @@ public:
     }
     struct HitInput
     {
-        unsigned actor_proficiency{ }, target_proficiency{ };
-        int actor_fencing{ }, target_fencing{ }, target_tactics{ };
-        int actor_terrain_hit{ }, target_terrain_defense{ };
-        int actor_st{ }, target_st{ };
+        unsigned actor_proficiency{}, target_proficiency{};
+        int actor_fencing{}, target_fencing{}, target_tactics{};
+        int actor_terrain_hit{}, target_terrain_defense{};
+        int actor_st{}, target_st{};
     };
     // 42C88F ->42C8D1 returns byte[3]: cost, hit%, defense%, not facing.
     static Result<int> try_dd11(const HitInput& in, int power = 50)
@@ -174,8 +174,8 @@ public:
     }
     struct Resolution
     {
-        int chance{ }, damage{ }, roll{ };
-        bool hit{ };
+        int chance{}, damage{}, roll{};
+        bool hit{};
     };
     // 018/040: 466544 ->467625 uses the generic ST branch46DBA9,
     // not effect1's proficiency-weighted46D999 or471F51 zero promotion.
@@ -227,7 +227,22 @@ public:
         if (immune) { hit = Result<int>::success(0); }
         else if (!guaranteed_hit)
         {
-            if (hit_flags == 2) { hit = try_final_hit_from_dd11(base.value(), elevation_enabled ? elevation : 0, ctx.difficulty, ctx.friendly_army, ctx.conditions_mode, staged, seconds, randomized); }
+            if (hit_flags == 0)
+            {
+                // 46D431 writes the fixed-hit result before invoking 46E058 damage.
+                hit = Result<int>::success(99);
+            }
+            else if (hit_flags == 2) { hit = try_final_hit_from_dd11(base.value(), elevation_enabled ? elevation : 0, ctx.difficulty, ctx.friendly_army, ctx.conditions_mode, staged, seconds, randomized); }
+            else if (hit_flags == 6)
+            {
+                const int factor = config_[6] + (randomized ? staged.bounded(config_[7] + 3, seconds) : (config_[7] + 3) / 2);
+                int accumulator = hit_power * factor / 10;
+                if (ctx.friendly_army && !ctx.conditions_mode) { accumulator = accumulator * (100 + config_[0xF3 + ctx.difficulty]) / 100; }
+                accumulator = std::clamp(accumulator, 1, 99);
+                int chance = (accumulator + base.value()) / 2;
+                if (elevation_enabled && ctx.difficulty != 1) { chance += chance * 20 * std::clamp(elevation, -5, 5) / 100; }
+                hit = Result<int>::success(std::clamp(chance, 1, 99));
+            }
             else if (hit_flags == 1 || hit_flags == 3 || hit_flags == 5)
             {
                 const int proficiency = std::max(10u, in.actor_proficiency / 10);
@@ -265,7 +280,7 @@ public:
             }
             else
             {
-                return Result<Resolution>::failure(make_error("Unsupported original damage hit source"));
+                return Result<Resolution>::failure(make_error("Unsupported original damage hit source=" + std::to_string(hit_flags)));
             }
         }
         if (!hit)

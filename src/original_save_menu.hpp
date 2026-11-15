@@ -14,7 +14,7 @@ class OriginalSaveMenu
 public:
     struct Slot
     {
-        std::array<uint8_t, 50> description{ };
+        std::array<uint8_t, 50> description{};
         bool occupied() const { return description[0] != 0; }
     };
     using Slots = std::array<Slot, 53>;
@@ -43,7 +43,7 @@ public:
     static constexpr std::array<unsigned, 4> title_ids{ 128, 129, 271, 272 };
 
 private:
-    std::vector<uint8_t> cel_, pal_;
+    SharedBytes cel_, pal_;
     Slots slots_;
     int mode_, page_, row_ = 0, left_ = 0, top_ = 0, width_ = 0, height_ = 0;
     bool closed_ = false;
@@ -51,8 +51,8 @@ private:
     int return_code_ = 0;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& path) { return read_resource(path); }
-    static std::vector<uint8_t> read(const std::filesystem::path& path) { return try_read(path).value(); }
+    static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& path) { return read_shared_resource(path); }
+    static SharedBytes read(const std::filesystem::path& path) { return try_read(path).value(); }
     size_t sprite_position() const
     {
         size_t group = dword(pal_, 816) - 57;
@@ -114,7 +114,7 @@ private:
         }
         if (!occupied(row_))
         {
-            return { };
+            return {};
         }
         if (mode_ == 0)
         {
@@ -130,11 +130,11 @@ private:
 public:
     static Slots scan(const std::filesystem::path& root)
     {
-        Slots slots{ };
+        Slots slots{};
         for (unsigned i = 1; i <= 53; ++i)
         {
             std::ifstream f(OriginalSave::slot_path(root, i), std::ios::binary);
-            std::array<uint8_t, 9> magic{ };
+            std::array<uint8_t, 9> magic{};
             if (!f.read(reinterpret_cast<char*>(magic.data()), magic.size()) || magic != OriginalSave::signature)
             {
                 continue;
@@ -150,14 +150,14 @@ public:
     struct InitializationTag
     {
     };
-    OriginalSaveMenu(const std::filesystem::path& root, int mode, Slots slots, int page, bool original_mode_one, InitializationTag) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")), slots_(std::move(slots)), mode_(mode), page_(page) { }
+    OriginalSaveMenu(const std::filesystem::path& root, int mode, Slots slots, int page, bool original_mode_one, InitializationTag) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")), slots_(std::move(slots)), mode_(mode), page_(page) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, int mode, Slots slots, int page, bool original_mode_one)
     {
         if (mode < 0 || mode > 3 || page < 0 || page > 4)
         {
             return s2ne::Result<bool>::failure(make_error("Invalid original save-menu mode/page"));
         }
-        pal_.at(0) = pal_.at(1) = pal_.at(2) = 0;
+        pal_.mutable_at(0) = pal_.mutable_at(1) = pal_.mutable_at(2) = 0;
         size_t p = sprite_position();
         width_ = int(word(cel_, p)) + 1;
         height_ = int(word(cel_, p + 2)) + 1;
@@ -175,7 +175,7 @@ public:
     }
     OriginalSaveMenu(const std::filesystem::path& root, int mode, Slots slots, int page = 0, bool original_mode_one = false) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")), slots_(std::move(slots)), mode_(mode), page_(page)
     {
-        auto result = initialize(root, mode, { }, page, original_mode_one);
+        auto result = initialize(root, mode, {}, page, original_mode_one);
         if (!result)
         {
             fatal(result.error());
@@ -183,8 +183,8 @@ public:
     }
     static s2ne::Result<std::unique_ptr<OriginalSaveMenu>> create(const std::filesystem::path& root, int mode, Slots slots, int page = 0, bool original_mode_one = false)
     {
-        auto result = std::make_unique<OriginalSaveMenu>(root, mode, std::move(slots), page, original_mode_one, InitializationTag{ });
-        auto ready = result->initialize(root, mode, { }, page, original_mode_one);
+        auto result = std::make_unique<OriginalSaveMenu>(root, mode, std::move(slots), page, original_mode_one, InitializationTag{});
+        auto ready = result->initialize(root, mode, {}, page, original_mode_one);
         if (!ready)
         {
             return s2ne::Result<std::unique_ptr<OriginalSaveMenu>>::failure(ready.error());
@@ -224,7 +224,7 @@ public:
     {
         if (closed_ || pending_)
         {
-            return { };
+            return {};
         }
         if (scan == 1)
         {
@@ -270,7 +270,7 @@ public:
     {
         if (closed_ || pending_)
         {
-            return { };
+            return {};
         }
         if (e.type == 1 || e.type == 2 || e.type == 0x2E)
         {
@@ -286,11 +286,11 @@ public:
             {
                 return command(e.scan);
             }
-            return { };
+            return {};
         }
         if (e.type != 8 && e.type != 0x20)
         {
-            return { };
+            return {};
         }
         Result r;
         int x = e.x - left_, y = e.y - top_;
@@ -337,7 +337,7 @@ public:
     {
         if (!pending_ || pending_->action != Action::confirm_overwrite)
         {
-            return { };
+            return {};
         }
         auto r = *pending_;
         pending_.reset();

@@ -8,7 +8,7 @@ class OriginalGrowthPanel
 public:
     static Result<std::vector<uint8_t>> draw(const std::filesystem::path& root, std::vector<uint8_t> image, const OriginalProgression::GrowthStep& step)
     {
-        auto cel = read_resource(root / "SUPERSP.CEL");
+        auto cel = read_shared_resource(root / "SUPERSP.CEL");
         auto pal = read_resource(root / "SUPERSP.PAL");
         if (!cel) { return Result<std::vector<uint8_t>>::failure(cel.error()); }
         if (!pal) { return Result<std::vector<uint8_t>>::failure(pal.error()); }

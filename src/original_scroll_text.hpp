@@ -20,7 +20,7 @@ public:
     OriginalScrollText(const std::filesystem::path& root, unsigned background, unsigned text, OriginalDisc disc) : font_(root)
     {
         auto pal = read_resource(root / "SUPERSP.PAL").value();
-        auto bin = read_resource(root / "SUPERSP.BIN").value();
+        auto bin = read_shared_resource(root / "SUPERSP.BIN").value();
         size_t base = dword(pal, 864) - 13, size = dword(pal, 868) - 13;
         if (base > bin.size() || size > bin.size() - base) { fatal("Invalid scroll BIN3 extent"); }
         std::vector<uint8_t> strings(bin.begin() + base, bin.begin() + base + size);

@@ -19,13 +19,13 @@ public:
                               confirmation_address = 0x459FCF, commit_address = 0x45B5C4;
     struct Candidate
     {
-        unsigned kind{ };
+        unsigned kind{};
         std::vector<uint8_t> name;
-        unsigned required_item{ }, ability_mask{ }, training_mask{ }, tier{ };
+        unsigned required_item{}, ability_mask{}, training_mask{}, tier{};
     };
     struct Request
     {
-        unsigned unit_id{ }, source_kind{ }, target_kind{ };
+        unsigned unit_id{}, source_kind{}, target_kind{};
         int training_group = -1;
         bool battlefield = true;
     };
@@ -46,15 +46,15 @@ public:
     };
 
 private:
-    std::vector<uint8_t> kinds_, bin_, pal_, cel_;
+    SharedBytes kinds_, bin_, pal_, cel_;
     OriginalMenu font_;
-    size_t branches_{ }, records_{ }, growth_{ };
-    unsigned count_{ };
+    size_t branches_{}, records_{}, growth_{};
+    unsigned count_{};
     OriginalEvents::Unit unit_;
     std::vector<Candidate> choices_;
     Commit commit_;
     Page page_ = Page::closed;
-    size_t selected_{ };
+    size_t selected_{};
     int training_ = -1, return_code_ = 0;
     bool battlefield_ = true;
     unsigned word(size_t p) const { return kinds_.at(p) | (unsigned(kinds_.at(p + 1)) << 8); }
@@ -86,7 +86,7 @@ public:
         result.font_ = std::move(font).value();
         for (auto pair : { std::pair{ &result.kinds_, "KINDSP.BIN" }, std::pair{ &result.bin_, "SUPERSP.BIN" }, std::pair{ &result.pal_, "SUPERSP.PAL" }, std::pair{ &result.cel_, "SUPERSP.CEL" } })
         {
-            auto bytes = read_resource(root / pair.second);
+            auto bytes = read_shared_resource(root / pair.second);
             if (!bytes)
             {
                 return s2ne::Result<OriginalPromotion>::failure(bytes.error());
@@ -115,7 +115,7 @@ public:
         {
             return s2ne::Result<OriginalPromotion>::failure(bin.error());
         }
-        result.pal_[0] = result.pal_[1] = result.pal_[2] = 0;
+        result.pal_.mutable_at(0) = result.pal_.mutable_at(1) = result.pal_.mutable_at(2) = 0;
         return s2ne::Result<OriginalPromotion>::success(std::move(result));
     }
     explicit OriginalPromotion(const std::filesystem::path& root)
@@ -174,10 +174,10 @@ public:
         {
             return s2ne::Result<std::array<int, 9>>::failure(make_error("Truncated original growth table"));
         }
-        std::array<int, 9> values{ };
+        std::array<int, 9> values{};
         for (unsigned index : { 0u, 1u, 2u, 0u, 3u, 4u, 5u, 6u, 7u, 8u })
         {
-            std::array<int, 6> words{ };
+            std::array<int, 6> words{};
             size_t p = base + index * 12;
             for (unsigned i = 0; i < 6; ++i)
             {
@@ -192,7 +192,7 @@ public:
         }
         return s2ne::Result<std::array<int, 9>>::success(values);
     }
-    s2ne::Result<std::array<int, 9>> try_growth(unsigned kind, int level, OriginalRandom& random, const OriginalRandom::TimeSource& time = { }) const
+    s2ne::Result<std::array<int, 9>> try_growth(unsigned kind, int level, OriginalRandom& random, const OriginalRandom::TimeSource& time = {}) const
     {
         auto next = random;
         std::optional<Error> error;
@@ -229,7 +229,7 @@ public:
         }
         return result.value();
     }
-    std::array<int, 9> growth(unsigned kind, int level, OriginalRandom& random, const OriginalRandom::TimeSource& time = { }) const
+    std::array<int, 9> growth(unsigned kind, int level, OriginalRandom& random, const OriginalRandom::TimeSource& time = {}) const
     {
         auto result = try_growth(kind, level, random, time);
         if (!result)
@@ -241,7 +241,7 @@ public:
     std::array<int, 9> baseline(unsigned kind) const
     {
         record(kind);
-        std::array<int, 9> result{ };
+        std::array<int, 9> result{};
         size_t p = growth_ + 2 + size_t(count_) * 108 + size_t(kind - 1) * 50;
         for (size_t i = 0; i < 9; ++i)
         {
@@ -318,7 +318,7 @@ public:
         }
         return result;
     }
-    bool open(OriginalEvents::Unit unit, unsigned runtime_threshold, Commit commit = { }, bool battlefield = true, int game_mode = 0)
+    bool open(OriginalEvents::Unit unit, unsigned runtime_threshold, Commit commit = {}, bool battlefield = true, int game_mode = 0)
     {
         page_ = Page::closed;
         choices_.clear();
@@ -522,7 +522,7 @@ public:
     {
         if (page_ == Page::closed)
         {
-            return { };
+            return {};
         }
         bool key = e.type == 1 || e.type == 2, mouse = e.type == 8 || e.type == 0x20;
         if ((key && e.scan == 1) || (mouse && (e.buttons & 2)))
@@ -546,7 +546,7 @@ public:
                 }
             }
             // 459FCF keyboard activation/navigation handlers are no-ops.
-            return { };
+            return {};
         }
         if (key)
         {
@@ -564,7 +564,7 @@ public:
                     selected_ = std::min(selected_ < 4 ? selected_ + 4 : selected_ - 4, choices_.size() - 1);
                 }
                 break;
-            default: return { };
+            default: return {};
             }
             return { true, 0 };
         }
@@ -590,7 +590,7 @@ public:
                 break;
             }
         }
-        return { };
+        return {};
     }
 };
 }    //namespace s2ne

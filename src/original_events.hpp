@@ -14,10 +14,11 @@ namespace s2ne
 {
 class OriginalEvents
 {
-    std::vector<uint8_t> bin_, pal_, kinds_, items_;
-    size_t events_{ };
-    int proficiency_difficulty_scale_{ };
-    size_t combat_config_{ };
+    SharedBytes bin_, pal_, kinds_, items_;
+    std::vector<std::optional<uint8_t>> event_types_;
+    size_t events_{};
+    int proficiency_difficulty_scale_{};
+    size_t combat_config_{};
     unsigned word(size_t p) const { return bin_.at(p) | (unsigned(bin_.at(p + 1)) << 8); }
     unsigned dword(size_t p) const { return word(p) | (word(p + 2) << 16); }
     size_t entry(unsigned id) const
@@ -47,7 +48,7 @@ public:
         std::vector<uint8_t> name, text;
         int music_before{}, music_after{};
     };
-    unsigned stage{ }, first_stage{ }, alternate_stage{ };
+    unsigned stage{}, first_stage{}, alternate_stage{};
     unsigned stage_music{};
     std::optional<int32_t> script_route;
     std::optional<int32_t> camera_step_delay;
@@ -58,45 +59,45 @@ public:
         unsigned id, appearance;
         int x, y;
         std::vector<uint8_t> name;
-        int first_turn{ }, last_turn{ };
-        int hp{ }, max_hp{ }, mp{ }, st{ }, sp{ }, strikeback{ }, attack{ }, defense{ }, fencing{ }, tactics{ }, behavior{ };
-        int retreat_role14{ };
-        int action_points{ }, base_action_points{ }, carry_points{ }, movement_type{ };
-        int base_tactics{ };                 // Signed runtime +C9h; tactics is the distinct current +138h.
-        unsigned experience_threshold{ };    // WORD runtime +111h, KINDSP record +0Eh.
-        uint32_t runtime_flags30{ };         // DWORD +30h; high byte overlaps status_flags (+33h).
-        unsigned direction{ }, animation_action{ };
-        uint8_t action_state{ };    // Original runtime +2Dh: 0 idle, 1 selected, 2 finished, 3 moving, 4 moved.
-        bool movement_pose{ };
-        unsigned movement_visual_class{ };
-        bool movement_camera_pose{ };
-        unsigned movement_frame{ };
-        int level{ 1 }, max_mp{ }, max_st{ }, max_sp{ }, max_action_points{ }, attack_limit{ }, defense_limit{ };    // max_action_points is runtime +12Ch, not current +12Eh.
-        unsigned portrait{ }, status_flags{ 0x80 }, experience{ };
+        int first_turn{}, last_turn{};
+        int hp{}, max_hp{}, mp{}, st{}, sp{}, strikeback{}, attack{}, defense{}, fencing{}, tactics{}, behavior{};
+        int retreat_role14{};
+        int action_points{}, base_action_points{}, carry_points{}, movement_type{};
+        int base_tactics{};                 // Signed runtime +C9h; tactics is the distinct current +138h.
+        unsigned experience_threshold{};    // WORD runtime +111h, KINDSP record +0Eh.
+        uint32_t runtime_flags30{};         // DWORD +30h; high byte overlaps status_flags (+33h).
+        unsigned direction{}, animation_action{};
+        uint8_t action_state{};    // Original runtime +2Dh: 0 idle, 1 selected, 2 finished, 3 moving, 4 moved.
+        bool movement_pose{};
+        unsigned movement_visual_class{};
+        bool movement_camera_pose{};
+        unsigned movement_frame{};
+        int level{ 1 }, max_mp{}, max_st{}, max_sp{}, max_action_points{}, attack_limit{}, defense_limit{};    // max_action_points is runtime +12Ch, not current +12Eh.
+        unsigned portrait{}, status_flags{ 0x80 }, experience{};
         std::vector<uint8_t> profession;
-        std::array<unsigned, 6> equipment{ };
-        std::array<int, 4> equipment_stat_deltas{ };    // runtime +13Ah/+13Ch/+13Eh/+140h
-        std::array<unsigned, 4> initial_status{ };
-        std::array<unsigned, 11> learned{ };
-        std::array<unsigned, 11> learned_proficiency{ };    // runtime +E3h; learned bits remain at +FBh
-        std::array<unsigned, 6> weapon_proficiency{ };      // runtime +D7h..+E1h
-        unsigned special_proficiency{ };                    // runtime +F9h
-        uint32_t abilities{ };                              // runtime +115h; +116h = bits 8..15, +118h = bits 24..31
-        uint8_t status3d{ }, status3e{ }, status3f{ };
+        std::array<unsigned, 6> equipment{};
+        std::array<int, 4> equipment_stat_deltas{};    // runtime +13Ah/+13Ch/+13Eh/+140h
+        std::array<unsigned, 4> initial_status{};
+        std::array<unsigned, 11> learned{};
+        std::array<unsigned, 11> learned_proficiency{};    // runtime +E3h; learned bits remain at +FBh
+        std::array<unsigned, 6> weapon_proficiency{};      // runtime +D7h..+E1h
+        unsigned special_proficiency{};                    // runtime +F9h
+        uint32_t abilities{};                              // runtime +115h; +116h = bits 8..15, +118h = bits 24..31
+        uint8_t status3d{}, status3e{}, status3f{};
         std::optional<uint8_t> status39;
-        uint8_t status34{ }, status3c{ };    // runtime state, not fields in the 101-byte stage record
+        uint8_t status34{}, status3c{};    // runtime state, not fields in the 101-byte stage record
         std::optional<std::array<uint8_t, 0x13A>> action_status_runtime;
         // 468BAC writes the transient effect state at runtime +5F8, outside the packed +13A unit block.
         // It is intentionally not serialized as unit data; save round-trips preserve only durable fields.
         std::optional<int32_t> effect_state_5f8;
-        unsigned kind_attribute{ }, allegiance_tag{ };
-        unsigned runtime_role_selector{ };
-        int persistent_role6{ };
+        unsigned kind_attribute{}, allegiance_tag{};
+        unsigned runtime_role_selector{};
+        int persistent_role6{};
         int ai_role10{ -1 };    // WORD +0Ah: [runtime+8] sar16, distinct from control WORD +8.
-        unsigned ending_kills{ }, ending_losses{ };
-        unsigned physical_kill_xp{ };    // WORD runtime +119h, original stage record +53.
+        unsigned ending_kills{}, ending_losses{};
+        unsigned physical_kill_xp{};    // WORD runtime +119h, original stage record +53.
         std::optional<int> ending_combat_value;
-        std::array<int, 40> relationships{ };
+        std::array<int, 40> relationships{};
         // sub_4274B5 partitions stage units at the first behavior 2/3/8; behavior 1 is allied AI.
         uint32_t flags30() const { return (runtime_flags30 & 0x00FFFFFFu) | ((status_flags & 255u) << 24); }
         void set_flags30(uint32_t value)
@@ -109,7 +110,7 @@ public:
         bool npc_class() const { return behavior != 0 && behavior != 5 && behavior != 6 && behavior != 7; }
         bool present(unsigned turn = 1) const { return hp > 0 && first_turn <= int(turn) && (last_turn == 0 || last_turn >= int(turn)); }
     };
-    unsigned map_id{ };
+    unsigned map_id{};
     std::vector<std::array<unsigned, 4>> dynamic_object_chains;
     std::vector<Unit> units;
     std::optional<std::array<std::array<uint8_t, 33>, 2>> army_status;
@@ -128,13 +129,13 @@ public:
     }
     std::optional<std::array<uint32_t, 2>> army_modes;    // Army runtime +DE, independent of summoned slots at +286.
     std::vector<uint8_t> briefing, stage_name, victory_objective, defeat_objective;
-    std::array<int, 12> battle_config{ };
-    unsigned learned_ability_count{ }, first_ability_count{ }, second_ability_count{ };
+    std::array<int, 12> battle_config{};
+    unsigned learned_ability_count{}, first_ability_count{}, second_ability_count{};
     int victory_relationship_increment() const { return int(int8_t(bin_.at(combat_config_ + 0xFB))); }
     struct DeploymentSlot
     {
-        int x{ }, y{ };
-        unsigned direction{ };
+        int x{}, y{};
+        unsigned direction{};
         int role{};
         bool fixed{};
     };
@@ -275,7 +276,7 @@ public:
         std::vector<ActionRecord> result;
         for (int i = 0; i < length; ++i)
         {
-            ActionRecord action{ unsigned(first + i), { } };
+            ActionRecord action{ unsigned(first + i), {} };
             for (size_t n = 0; n < action.fields.size(); ++n)
             {
                 action.fields[n] = int(int8_t(kinds_.at(records + size_t(first + i) * 23 + n)));
@@ -318,7 +319,7 @@ public:
     }
     void rebuild_army_modes(unsigned mode = 1)
     {
-        if (!army_modes) { army_modes = std::array<uint32_t, 2>{ }; }
+        if (!army_modes) { army_modes = std::array<uint32_t, 2>{}; }
         for (auto& value : *army_modes) { value &= ~uint32_t(0x7E); }
         for (const auto& unit : units)
         {
@@ -344,7 +345,7 @@ public:
             }
         }
     }
-    int stage_adjustment{ };
+    int stage_adjustment{};
     Result<bool> try_adjust_battle_entry_stats()
     {
         size_t header = entry(1) + 2 + (stage - 1) * 30;
@@ -391,7 +392,7 @@ public:
             {
                 continue;
             }
-            std::array<uint8_t, 0x13A> runtime{ };
+            std::array<uint8_t, 0x13A> runtime{};
             auto put = [&](size_t p, int value)
             {
                 runtime[p] = uint8_t(value);
@@ -459,7 +460,7 @@ public:
         {
             return Result<int>::failure(make_error("Invalid combat resource extent"));
         }
-        original_combat::CombatValueInput in{ };
+        original_combat::CombatValueInput in{};
         if (mode == 1 && !unit.ending_combat_value)
         {
             return Result<int>::failure(make_error("Original runtime132 settlement snapshot unavailable"));
@@ -533,7 +534,7 @@ public:
     }
     struct ActionRange
     {
-        int minimum{ }, maximum{ }, shape{ };
+        int minimum{}, maximum{}, shape{};
     };
     ActionRange action_range(const Unit& unit, const ActionRecord& action) const
     {
@@ -612,15 +613,15 @@ public:
     }
     struct ActionEffect
     {
-        unsigned resource{ }, mode{ };
-        int sound{ };
+        unsigned resource{}, mode{};
+        int sound{};
     };
     static ActionEffect action_effect(const ActionRecord& action, int code)
     {
         constexpr std::array<unsigned, 9> resources{ 43, 59, 75, 91, 107, 123, 124, 125, 126 };
         if (code < 1 || code > 9)
         {
-            return { };
+            return {};
         }
         int sound = code == 5 ? 127 : int(int16_t(uint16_t(uint8_t(action.fields[15])) | (uint16_t(uint8_t(action.fields[16])) << 8)));
         return { resources[size_t(code - 1)], code >= 6 && code <= 8 ? 2u : 1u, sound };
@@ -666,8 +667,8 @@ public:
     }
     struct EffectFlight
     {
-        int source_x{ }, source_y{ }, target_x{ }, target_y{ }, x{ }, y{ }, slope{ };
-        unsigned axis{ }, direction{ };
+        int source_x{}, source_y{}, target_x{}, target_y{}, x{}, y{}, slope{};
+        unsigned axis{}, direction{};
     };
     static EffectFlight effect_flight(int source_x, int source_y, int target_x, int target_y, unsigned mode)
     {
@@ -895,8 +896,8 @@ public:
         if (unit.status_flags & 4) { return 5; }
         return 0;
     }
-    unsigned difficulty{ };
-    std::array<uint8_t, 80> flags{ };
+    unsigned difficulty{};
+    std::array<uint8_t, 80> flags{};
     OriginalEvents() = default;
     static Result<OriginalEvents> create(const std::filesystem::path& root, unsigned level)
     {
@@ -908,7 +909,7 @@ public:
         result.difficulty = level;
         for (auto pair : { std::pair{ &result.bin_, "SUPERSP.BIN" }, std::pair{ &result.pal_, "SUPERSP.PAL" }, std::pair{ &result.kinds_, "KINDSP.BIN" }, std::pair{ &result.items_, "ITEMSP.BIN" } })
         {
-            auto bytes = read_resource(root / pair.second);
+            auto bytes = read_shared_resource(root / pair.second);
             if (!bytes)
             {
                 return Result<OriginalEvents>::failure(bytes.error());
@@ -1136,6 +1137,7 @@ public:
     }
     void load_stage_validated(unsigned id)
     {
+        event_types_.clear();
         stage_adjustment = 0;
         size_t table = entry(1);
         if (!id || id > word(table))
@@ -1190,7 +1192,7 @@ public:
         for (unsigned i = 0; i < bin_.at(header + 8); ++i)
         {
             size_t p = characters + i * 101;
-            Unit unit{ word(p), word(p + 16), int(int16_t(word(p + 23))), int(int16_t(word(p + 25))), { } };
+            Unit unit{ word(p), word(p + 16), int(int16_t(word(p + 23))), int(int16_t(word(p + 25))), {} };
             // sub_4443B3 expands these signed words into runtime +124h..+136h.
             auto stat = [&](size_t offset)
             {
@@ -1472,7 +1474,7 @@ public:
         std::vector<uint16_t> result;
         for (size_t i = 0; i < event_count(); ++i)
         {
-            result.push_back(uint16_t(int16_t(int8_t(bin_.at(record(i))))));
+            result.push_back(uint16_t(int16_t(int8_t(type(i)))));
         }
         return result;
     }
@@ -1491,7 +1493,8 @@ public:
         }
         for (size_t i = 0; i < states.size(); ++i)
         {
-            bin_.at(record(i)) = uint8_t(states[i]);
+            if (event_types_.size() < event_count()) { event_types_.resize(event_count()); }
+            event_types_[i] = uint8_t(states[i]);
         }
         return Result<bool>::success(true);
     }
@@ -1519,7 +1522,11 @@ public:
     int event_word(size_t event, unsigned offset) const { return try_event_word(event, offset).value(); }
     void clear_stage_flags() { std::fill_n(flags.begin(), 40, uint8_t(0)); }
     unsigned completion_flag(size_t event) const { return bin_.at(record(event) + 11); }
-    unsigned type(size_t event) const { return bin_.at(record(event)); }
+    unsigned type(size_t event) const
+    {
+        if (event < event_types_.size() && event_types_[event]) { return *event_types_[event]; }
+        return bin_.at(record(event));
+    }
     unsigned turn(size_t event) const { return word(record(event) + 3); }
     unsigned flag(size_t event) const { return word(record(event) + 3); }
     unsigned condition(size_t event) const { return word(record(event) + 1); }
@@ -1591,7 +1598,7 @@ public:
             return Result<Line>::failure(reader.error());
         }
         size_t p = start + index * 23;
-        Line result{ int(int16_t(reader.number(p))), { }, { } };
+        Line result{ int(int16_t(reader.number(p))), {}, {} };
         result.music_before = int(int16_t(reader.number(p + 2)));
         result.music_after = int(int16_t(reader.number(p + 4)));
         for (size_t i = p + 6; i < p + 19 && bin_[i]; ++i)
@@ -1623,7 +1630,8 @@ public:
     void complete(size_t event)
     {
         size_t p = record(event);
-        bin_.at(p) = 0;
+        if (event_types_.size() < event_count()) { event_types_.resize(event_count()); }
+        event_types_[event] = 0;
         unsigned flag = bin_.at(p + 11);
         if (flag >= 1 && flag <= 80)
         {

@@ -9,7 +9,8 @@ namespace s2ne
 class OriginalInitialization
 {
     std::filesystem::path root_;
-    std::vector<uint8_t> bin_, pal_, items_, prg_;
+    SharedBytes bin_, pal_, prg_;
+    std::vector<uint8_t> items_;
     static unsigned get(const std::vector<uint8_t>& b, size_t p, unsigned n = 2)
     {
         unsigned v = 0;
@@ -113,8 +114,8 @@ class OriginalInitialization
 public:
     struct Source
     {
-        std::array<uint8_t, 101> bytes{ };
-        unsigned group{ };
+        std::array<uint8_t, 101> bytes{};
+        unsigned group{};
         unsigned id() const { return bytes[0] | (unsigned(bytes[1]) << 8); }
         int behavior() const { return int(int8_t(bytes[49])); }
         int first_turn() const { return int(int8_t(bytes[51])); }
@@ -143,7 +144,7 @@ public:
     };
     struct PlacementMap
     {
-        unsigned width{ }, height{ };
+        unsigned width{}, height{};
         std::vector<uint8_t> elevations;
         std::vector<std::pair<int, int>> sealed;
         bool accepts(int x, int y) const
@@ -158,7 +159,7 @@ public:
     };
     Result<PlacementMap> try_placement_map(const std::filesystem::path& root, unsigned map) const
     {
-        auto loaded = read_resource(root / "SUPERSP.PRG");
+        auto loaded = read_shared_resource(root / "SUPERSP.PRG");
         if (!loaded)
         {
             return Result<PlacementMap>::failure(loaded.error());
@@ -303,15 +304,18 @@ public:
         }
         OriginalInitialization result;
         result.root_ = root;
-        for (auto pair : { std::pair{ &result.bin_, "SUPERSP.BIN" }, std::pair{ &result.pal_, "SUPERSP.PAL" }, std::pair{ &result.items_, "ITEMSP.BIN" }, std::pair{ &result.prg_, "SUPERSP.PRG" } })
+        for (auto pair : { std::pair{ &result.bin_, "SUPERSP.BIN" }, std::pair{ &result.pal_, "SUPERSP.PAL" }, std::pair{ &result.prg_, "SUPERSP.PRG" } })
         {
-            auto bytes = read_resource(root / pair.second);
+            auto bytes = read_shared_resource(root / pair.second);
             if (!bytes)
             {
                 return Result<OriginalInitialization>::failure(bytes.error());
             }
             *pair.first = std::move(bytes).value();
         }
+        auto items = read_resource(root / "ITEMSP.BIN");
+        if (!items) { return Result<OriginalInitialization>::failure(items.error()); }
+        result.items_ = std::move(items).value();
         return Result<OriginalInitialization>::success(std::move(result));
     }
     explicit OriginalInitialization(const std::filesystem::path& root)
@@ -343,7 +347,7 @@ public:
         return g;
     }
     Result<Source> try_summon_source(unsigned army, unsigned appearance, int level, int x, int y,
-        OriginalRandom& random, const OriginalPromotion& promotion, const OriginalRandom::TimeSource& time = { }) const
+        OriginalRandom& random, const OriginalPromotion& promotion, const OriginalRandom::TimeSource& time = {}) const
     {
         const auto kinds = read_resource(root_ / "KINDSP.BIN");
         if (!kinds) { return Result<Source>::failure(kinds.error()); }
@@ -500,7 +504,7 @@ public:
     }
     Result<OriginalSave::State> try_summon_role(const OriginalSave::State& before, const OriginalEvents& events,
         unsigned army, unsigned slot, int level, int x, int y, unsigned control, OriginalRandom& random,
-        const OriginalPromotion& promotion, const OriginalRandom::TimeSource& time = { }) const
+        const OriginalPromotion& promotion, const OriginalRandom::TimeSource& time = {}) const
     {
         if (army > 1 || slot >= 11 || control > 1 || level < 1 || level > 10 || events.stage != OriginalSaveBridge::get(before.globals_4f7cd0, 8, 4))
         {
@@ -619,7 +623,7 @@ public:
         {
             return Result<OriginalSave::UnitRecord>::failure(make_error("Original source/runtime role mismatch"));
         }
-        OriginalSave::UnitRecord raw{ };    // 443C3E memset362, before4443B3's assignments.
+        OriginalSave::UnitRecord raw{};    // 443C3E memset362, before4443B3's assignments.
         auto put = [&](size_t p, unsigned v, unsigned n = 2)
         {
             OriginalSaveBridge::put(raw, p, v, n);
@@ -877,7 +881,7 @@ public:
                         return Result<OriginalSave::State>::failure(created.error());
                     }
                     auto rules = std::move(created).value();
-                    OriginalEvents::Unit student{ };
+                    OriginalEvents::Unit student{};
                     for (unsigned g = 0; g < 11; ++g)
                     {
                         student.learned[g] = OriginalSaveBridge::get(role, 0xFB + 2 * g);
@@ -976,7 +980,7 @@ public:
     {
         // Original4FB488 is DISC.ID selection (0 disc1/1 disc2), NOT renderer backend.
         uint32_t display_backend;
-        uint32_t screen_delay{ }, speed{ 10 }, music{ 100 }, effects{ 100 }, speech{ 100 };
+        uint32_t screen_delay{}, speed{ 10 }, music{ 100 }, effects{ 100 }, speech{ 100 };
         std::array<uint8_t, 11> switches{ 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0 };
     };
     template <class Settings>
@@ -1105,7 +1109,7 @@ public:
                 return Result<OriginalSave::State>::failure(restored.error());
             }
             auto completed = std::move(restored).value().events;
-            unsigned selected = OriginalCampaign::completed_story_route(original, completed);
+            unsigned selected = OriginalCampaign(root).selected_route(completed);
             if (selected)
             {
                 authorized = selected == deployed.stage;

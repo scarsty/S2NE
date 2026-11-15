@@ -17,7 +17,8 @@ namespace s2ne
 {
 class OriginalMap
 {
-    std::vector<uint8_t> prg_, pal_, pixels_, terrain_names_;
+    SharedBytes prg_, pal_;
+    std::vector<uint8_t> pixels_, terrain_names_;
     unsigned terrain_ground_names_{}, terrain_object_names_{};
     struct Image
     {
@@ -754,7 +755,8 @@ public:
         OriginalMap result;
         result.root_ = root;
         result.disc_ = disc;
-        auto prg = read_resource(root / "SUPERSP.PRG"), pal = read_resource(root / "SUPERSP.PAL");
+        auto prg = read_shared_resource(root / "SUPERSP.PRG");
+        auto pal = read_shared_resource(root / "SUPERSP.PAL");
         if (!prg)
         {
             return Result<OriginalMap>::failure(prg.error());
@@ -769,7 +771,7 @@ public:
         {
             return Result<OriginalMap>::failure(make_error("Truncated map palette"));
         }
-        result.pal_[0] = result.pal_[1] = result.pal_[2] = 0;
+        result.pal_.mutable_at(0) = result.pal_.mutable_at(1) = result.pal_.mutable_at(2) = 0;
         ResourceReader p(result.pal_), r(result.prg_);
         for (unsigned group = 1; group <= 8; ++group)
         {
@@ -1450,6 +1452,7 @@ public:
         const auto& b = unit_bitmaps_.at(id);
         return { b.left, b.top, int(b.w), int(b.h) };
     }
+    bool unit_bitmap_available(unsigned id) const { return unit_bitmaps_.contains(id); }
     bool begin_teleport_arrival(const std::vector<OriginalEvents::Unit>& roster, unsigned target, unsigned turn = 1, bool departure = false, uint64_t elapsed = 0, unsigned color = 0)
     {
         if (arrival_target_ || target >= roster.size())
@@ -1526,21 +1529,46 @@ public:
         }
     }
     void cancel_teleport_arrival() { arrival_target_.reset(); }
-    bool begin_disappearance(const std::vector<OriginalEvents::Unit>& roster, unsigned target, unsigned turn = 1, uint64_t elapsed = 0, bool death = false)
+    bool begin_disappearance(const std::vector<OriginalEvents::Unit>& roster, unsigned target, unsigned turn = 1, uint64_t elapsed = 0, bool death = false, std::string* call_error = nullptr)
     {
+        if (call_error) { call_error->clear(); }
         if (disappearance_.active())
         {
+            if (call_error) { *call_error = "Disappearance already active target=" + std::to_string(disappearance_.target); }
             return false;
         }
         auto role = target < roster.size() ? roster.begin() + target : roster.end();
-        if (role == roster.end() || !role->present(turn) || !(role->status_flags & 0x80) || (role->status_flags & 0x20) || !role->appearance || role->appearance > word(prg_, group(1)))
+        if (role == roster.end() || !role->present(turn) || !(role->status_flags & 0x80) || (role->status_flags & 0x20)
+            || (role->appearance && role->appearance > word(prg_, group(1)))
+            || (!role->appearance && !unit_bitmaps_.contains(target)))
         {
+            if (call_error)
+            {
+                *call_error = "Disappearance target not drawable at turn=" + std::to_string(turn);
+                if (role != roster.end())
+                {
+                    *call_error += " hp=" + std::to_string(role->hp) + " flags=" + std::to_string(role->status_flags)
+                        + " first=" + std::to_string(role->first_turn) + " last=" + std::to_string(role->last_turn)
+                        + " appearance=" + std::to_string(role->appearance) + " limit=" + std::to_string(word(prg_, group(1)));
+                }
+            }
             return false;
         }
         // Initialize full indexed AD/B1; do not capture an RGBA framebuffer.
         auto scratch = draw();
-        draw_units(scratch, roster, turn, elapsed);
-        auto& bitmap = unit_bitmaps_.at(target);
+        auto prepared = try_draw_units(scratch, roster, turn, elapsed);
+        if (!prepared)
+        {
+            if (call_error) { *call_error = prepared.error().message; }
+            return false;
+        }
+        auto found_target = unit_bitmaps_.find(target);
+        if (found_target == unit_bitmaps_.end())
+        {
+            if (call_error) { *call_error = "Disappearance target bitmap not prepared"; }
+            return false;
+        }
+        auto& bitmap = found_target->second;
         auto background = bitmap.b1;
         for (const auto& other : roster)
         {
@@ -2365,7 +2393,7 @@ public:
         }
         return image;
     }
-    std::vector<uint8_t> skill32_background(const std::vector<OriginalEvents::Unit>& units, unsigned turn, unsigned caster, unsigned target, unsigned tint_source = 140, unsigned tint_amount = 45) const
+    Result<std::vector<uint8_t>> skill32_background(const std::vector<OriginalEvents::Unit>& units, unsigned turn, unsigned caster, unsigned target, unsigned tint_source = 140, unsigned tint_amount = 45) const
     {
         auto image = draw();
         std::vector<uint8_t> indexed(640 * 480);
@@ -2376,7 +2404,8 @@ public:
                 indexed[size_t(y) * 640 + x] = pixels_.at(size_t(camera_y + y) * width * 64 + camera_x + x);
             }
         }
-        draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, std::nullopt, &indexed);
+        auto drawn = try_draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, std::nullopt, &indexed);
+        if (!drawn) { return Result<std::vector<uint8_t>>::failure(drawn.error()); }
         OriginalPalette palette(pal_);
         for (auto& color : indexed)
         {
@@ -2394,9 +2423,11 @@ public:
         }
         if (tint_amount == 0) { skill88_indexed_ = indexed; }
         // 46B5DE restores the caster and the selected enemy after the indexed tint.
-        draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, caster);
-        draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, target);
-        return image;
+        auto restored = try_draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, caster);
+        if (!restored) { return Result<std::vector<uint8_t>>::failure(restored.error()); }
+        restored = try_draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, target);
+        if (!restored) { return Result<std::vector<uint8_t>>::failure(restored.error()); }
+        return Result<std::vector<uint8_t>>::success(std::move(image));
     }
     std::vector<uint8_t> skill32_frame(const std::vector<uint8_t>& background, const OriginalSkill32Visual::Frame& frame, const std::vector<OriginalEvents::Unit>& units, unsigned turn, unsigned target, const OriginalSkill32Visual* visual = nullptr) const
     {
@@ -2471,7 +2502,7 @@ public:
         }
         return image;
     }
-    std::vector<uint8_t> skill88_background(const std::vector<OriginalEvents::Unit>& units, unsigned turn, unsigned caster, unsigned tint_amount = 50, unsigned tint_source = 233, std::optional<unsigned> partner = std::nullopt) const
+    Result<std::vector<uint8_t>> skill88_background(const std::vector<OriginalEvents::Unit>& units, unsigned turn, unsigned caster, unsigned tint_amount = 50, unsigned tint_source = 233, std::optional<unsigned> partner = std::nullopt) const
     {
         auto image = draw();
         std::vector<uint8_t> indexed(640 * 480);
@@ -2482,7 +2513,8 @@ public:
                 indexed[size_t(y) * 640 + x] = pixels_.at(size_t(camera_y + y) * width * 64 + camera_x + x);
             }
         }
-        draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, std::nullopt, &indexed);
+        auto drawn = try_draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, std::nullopt, &indexed);
+        if (!drawn) { return Result<std::vector<uint8_t>>::failure(drawn.error()); }
         OriginalPalette palette(pal_);
         std::array<uint8_t, 256> tint{};
         for (unsigned c = 0; c < tint.size(); ++c) { tint[c] = c ? palette.blend_index(c, tint_source, tint_amount) : 0; }
@@ -2495,10 +2527,15 @@ public:
                 image[p * 4 + k] = uint8_t(unsigned(pal_.at(c * 3 + k)) * 255 / 63);
             }
         }
-        draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, caster, &indexed);
-        if (partner) { draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, *partner, &indexed); }
+        auto restored = try_draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, caster, &indexed);
+        if (!restored) { return Result<std::vector<uint8_t>>::failure(restored.error()); }
+        if (partner)
+        {
+            restored = try_draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, *partner, &indexed);
+            if (!restored) { return Result<std::vector<uint8_t>>::failure(restored.error()); }
+        }
         skill88_indexed_ = std::move(indexed);
-        return image;
+        return Result<std::vector<uint8_t>>::success(std::move(image));
     }
     std::vector<uint8_t> skill88_frame(const std::vector<uint8_t>& background, const OriginalSkill88Visual& visual, const OriginalEvents::Unit& actor, std::optional<size_t> frame_index = std::nullopt, const std::vector<OriginalEvents::Unit>* occluders = nullptr, unsigned turn = 1) const
     {

@@ -101,7 +101,7 @@ public:
         }
         static bool presentation_supported(unsigned type, unsigned condition)
         {
-            return (type == 12 && (condition == 1 || condition == 10 || condition == 16 || condition == 22 || condition == 27 || condition == 28)) || (type == 7 && condition == 0) || (type == 6 && condition <= 1) || (type == 8 && condition == 2) || (type == 11 && condition == 7);
+            return (type == 12 && (condition <= 1 || condition == 10 || condition == 16 || condition == 22 || condition == 27 || condition == 28)) || (type == 7 && condition == 0) || (type == 6 && condition <= 1) || (type == 8 && (condition == 0 || condition == 2 || condition == 4)) || (type == 11 && condition == 7);
         }
         bool presentation_pending() const { return presentation_pending_; }
         bool finish_presentation()

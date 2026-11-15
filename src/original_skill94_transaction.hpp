@@ -11,18 +11,18 @@ class OriginalSkill94Transaction
     OriginalSkill94Formula formula_;
     OriginalSkill94Resolution resolution_;
     NativeDamageFormula damage_formula_;
-    std::array<int, 256> config_{ };
+    std::array<int, 256> config_{};
 
 public:
     struct Context
     {
         OriginalSkill94Resolution::HitInput hit;
         OriginalSkill94Resolution::DamageContext damage;
-        int elevation{ };
-        uint32_t seconds{ };
-        unsigned payment_state{ };
-        bool original_second_partition{ }, target_runtime_known{ }, synchronous_death_ready{ }, computer{};
-        const OriginalEvents::Unit* partner{ };
+        int elevation{};
+        uint32_t seconds{};
+        unsigned payment_state{};
+        bool original_second_partition{}, target_runtime_known{}, synchronous_death_ready{}, computer{};
+        const OriginalEvents::Unit* partner{};
     };
     enum class Failure
     {
@@ -35,18 +35,19 @@ public:
     };
     struct Result
     {
-        bool applied{ }, hit{ }, revived{ }, reverse_heal{ };
+        bool applied{}, hit{}, revived{}, reverse_heal{};
         Failure failure{ Failure::gate };
-        int chance{ }, roll{ }, damage{ }, healed{ }, raw_xp{ }, proficiency{ }, hp_snapshot{ };
-        bool killed{ };
-        unsigned consumed_item{ };
+        int chance{}, roll{}, damage{}, healed{}, raw_xp{}, proficiency{}, hp_snapshot{};
+        bool killed{};
+        unsigned consumed_item{};
     };
     static bool target_supported(const OriginalEvents& events, const OriginalEvents::Unit& target)
     {
         (void)events;
         // 46618D needs target runtime for hit/status resolution. 41C02A is
         // only relevant after damage actually reduces the target to zero.
-        return !(target.status_flags & 0x50) && (target.action_status_runtime.has_value() || target.status39.has_value());
+        // 446E53仅按80h/20h查找目标，10h/40h不是46618D的拒绝条件。
+        return target.action_status_runtime.has_value() || target.status39.has_value();
     }
     using Award = OriginalSkills::AwardAdapter;
     OriginalSkill94Transaction() = default;
@@ -96,7 +97,7 @@ public:
     struct AreaResult
     {
         std::vector<Result> targets;
-        int raw_xp{ }, proficiency{ };
+        int raw_xp{}, proficiency{};
     };
     // 原46D431预估模式不抽签、不执行死亡／支付；复用实击公式与修正器。
     s2ne::Result<OriginalSkill94Resolution::Resolution> preview(const OriginalSkills::Record& record,
@@ -119,13 +120,25 @@ public:
         {
             attack += actor.st + (resources.equipment_special(actor, 18) ? actor.st / 5 : 0);
             defense += target.st + (resources.equipment_special(target, 18) ? target.st / 5 : 0);
-            ++count; ++actorCount;
-            if (ctx.partner) { attack += ctx.partner->st + (resources.equipment_special(*ctx.partner, 18) ? ctx.partner->st / 5 : 0); ++actorCount; }
+            ++count;
+            ++actorCount;
+            if (ctx.partner)
+            {
+                attack += ctx.partner->st + (resources.equipment_special(*ctx.partner, 18) ? ctx.partner->st / 5 : 0);
+                ++actorCount;
+            }
         }
         if (record.raw[33] & 2)
         {
-            attack += actor.fencing; defense += target.fencing; ++count; ++actorCount;
-            if (ctx.partner) { attack += ctx.partner->fencing; ++actorCount; }
+            attack += actor.fencing;
+            defense += target.fencing;
+            ++count;
+            ++actorCount;
+            if (ctx.partner)
+            {
+                attack += ctx.partner->fencing;
+                ++actorCount;
+            }
         }
         if (!count || !actorCount) { return s2ne::Result<OriginalSkill94Resolution::Resolution>::failure(make_error("46E858 AI damage source unavailable")); }
         input.actor_value = std::max(1, attack / actorCount);
@@ -134,7 +147,8 @@ public:
         if (ctx.partner) { input.proficiency = ((input.proficiency / 10 + ctx.partner->learned_proficiency[record.group] / 10) / 2) * 10; }
         input.target_defense = target.defense;
         input.target_attribute = target.kind_attribute + (resources.equipment_special(target, 64) ? 10 : 0);
-        input.actor_hp = actor.hp; input.target_hp = target.hp;
+        input.actor_hp = actor.hp;
+        input.target_hp = target.hp;
         input.actor_combat_value = actor.ending_combat_value.value_or(resources.combat_value(actor));
         auto raw = damage_formula_.raw(record.id, input);
         if (record.effect() == 41 || record.effect() == 42)
@@ -166,9 +180,10 @@ public:
             modifiers.formula_flags = 1;
             return resolution_.try_resolve_drain(actor.st, target.st, raw.value(), target.hp, modifiers, unused, 0, record.word(23), false);
         }
+        const unsigned hit_source = record.raw[33] & 7u;
         return resolution_.try_resolve(ctx.hit, raw.value(), target.hp, ctx.elevation, modifiers, unused, 0,
-            record.word(23), (modifiers.target_status39 & 2) || (modifiers.target_status3d & 0x20) || (status3e & 2),
-            record.raw[33] & 128, record.raw[33] & 7, false);
+            record.word(21), (modifiers.target_status39 & 2) || (modifiers.target_status3d & 0x20) || (status3e & 2),
+            record.raw[33] & 128, hit_source, false);
     }
     s2ne::Result<AreaResult> execute_area(OriginalSkills& menu, OriginalEvents::Unit& actor,
         std::vector<OriginalEvents::Unit>& targets, const OriginalEvents::Unit& center, const OriginalEvents& resources,
@@ -193,10 +208,6 @@ public:
         {
             auto& target = staged[i];
             if (!menu.sleep2_area(center, target) || !menu.status_area_target(actor, target)) { return fail(); }
-            for (size_t n = 0; n < i; ++n)
-            {
-                if (staged[n].id == target.id && staged[n].appearance == target.appearance && staged[n].x == target.x && staged[n].y == target.y) { return fail(); }
-            }
             auto single = menu;
             auto unit = a;
             auto context = contexts[i];
@@ -207,7 +218,7 @@ public:
                     return true;
                 },
                 &inventory, &equipment, true);
-            if (!packet.applied) { return s2ne::Result<AreaResult>::failure(make_error("Original46618D target failure " + std::to_string(int(packet.failure)))); }
+            if (!packet.applied) { return s2ne::Result<AreaResult>::failure(make_error("Original46618D target failure " + std::to_string(int(packet.failure)) + " target=" + std::to_string(target.id) + " flags=" + std::to_string(target.status_flags))); }
             a.ending_kills = unit.ending_kills;
             out.raw_xp += packet.raw_xp;
             successes += packet.damage != 0;
@@ -286,7 +297,7 @@ public:
         }
         auto a = actor, t = target;
         auto rng = random;
-        auto inventory = army_inventory ? *army_inventory : std::vector<uint8_t>{ };
+        auto inventory = army_inventory ? *army_inventory : std::vector<uint8_t>{};
         if (army_inventory && (!equipment || inventory.size() != equipment->item_count()))
         {
             return out;
@@ -361,7 +372,8 @@ public:
             modifiers.target_spell_armor = t.abilities & 0x2000000;
             modifiers.target_equipment11 = resources.equipment_special(t, 11);
         }
-        auto resolved = resolution_.try_resolve(ctx.hit, raw.value(), t.hp, ctx.elevation, modifiers, rng, ctx.seconds, family ? record.word(23) : 50, (status39 & 2) || (target3d & 0x20) || (status3e & 2), (record.raw[33] & 128) != 0, record.raw[33] & 7);
+        const unsigned hit_source = record.raw[33] & 7u;
+        auto resolved = resolution_.try_resolve(ctx.hit, raw.value(), t.hp, ctx.elevation, modifiers, rng, ctx.seconds, family ? record.word(21) : 50, (status39 & 2) || (target3d & 0x20) || (status3e & 2), (record.raw[33] & 128) != 0, hit_source);
         if (!resolved)
         {
             report_error(resolved.error());

@@ -28,7 +28,7 @@ private:
     OriginalShop shop_;
     OriginalMenu font_;
     OriginalInterbattle background_;
-    std::vector<uint8_t> cel_, pal_;
+    SharedBytes cel_, pal_;
     std::vector<unsigned> items_;
     std::vector<std::vector<uint8_t>> help_;
     Page page_ = Page::shop;
@@ -138,8 +138,8 @@ private:
         return std::move(result).value();
     }
     unsigned unit_price(const OriginalSave::State& state, unsigned id) const { return buying_ ? shop_.buy_price(state, id) : shop_.sale_price(state, id); }
-    static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& path) { return read_resource(path); }
-    static std::vector<uint8_t> read(const std::filesystem::path& path) { return try_read(path).value(); }
+    static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& path) { return read_shared_resource(path); }
+    static SharedBytes read(const std::filesystem::path& path) { return try_read(path).value(); }
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, OriginalZeroRun zero) const
@@ -222,7 +222,7 @@ public:
     struct InitializationTag
     {
     };
-    OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc, InitializationTag) : root_(root), shop_(root), font_(root), background_(root, disc, 14), cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")) {}
+    OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc, InitializationTag) : root_(root), shop_(root), font_(root), background_(root, disc, 14), cel_(read_shared_resource(root / "SUPERSP.CEL").value()), pal_(read_shared_resource(root / "SUPERSP.PAL").value()) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, OriginalDisc disc)
     {
         auto bin = read(root / "SUPERSP.BIN");
@@ -248,7 +248,7 @@ public:
 
         return s2ne::Result<bool>::success(true);
     }
-    explicit OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one) : root_(root), shop_(root), font_(root), background_(root, disc, 14), cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL"))
+    explicit OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one) : root_(root), shop_(root), font_(root), background_(root, disc, 14), cel_(read_shared_resource(root / "SUPERSP.CEL").value()), pal_(read_shared_resource(root / "SUPERSP.PAL").value())
     {
         auto result = initialize(root, disc);
         if (!result)

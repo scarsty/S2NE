@@ -7,7 +7,7 @@ namespace s2ne
 inline Result<std::vector<uint8_t>> original_skill_sounds(const std::filesystem::path& root, unsigned cursor = 0)
 {
     auto pal = read_resource(root / "SUPERSP.PAL");
-    auto bin = read_resource(root / "SUPERSP.BIN");
+    auto bin = read_shared_resource(root / "SUPERSP.BIN");
     if (!pal) { return Result<std::vector<uint8_t>>::failure(pal.error()); }
     if (!bin) { return Result<std::vector<uint8_t>>::failure(bin.error()); }
     ResourceReader p(pal.value()), b(bin.value());

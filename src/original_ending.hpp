@@ -13,7 +13,8 @@ namespace s2ne
 class OriginalEnding
 {
     OriginalMenu font_;
-    std::vector<uint8_t> text_, pal_, cel_, prg_, background_, intro_;
+    SharedBytes pal_, cel_, prg_;
+    std::vector<uint8_t> text_, background_, intro_;
     s2ne::Result<bool> try_class_image_validated(std::vector<uint8_t>& image, unsigned appearance) const
     {
         auto group = [&](unsigned id)
@@ -176,6 +177,7 @@ class OriginalEnding
         }
         return result;
     }
+
 public:
     static s2ne::Result<std::vector<uint8_t>> try_pcx(const std::filesystem::path& root, unsigned id, OriginalDisc disc)
     {
@@ -226,6 +228,7 @@ public:
         }
         return s2ne::Result<std::vector<uint8_t>>::success(out);
     }
+
 private:
     std::vector<uint8_t> pcx(const std::filesystem::path& root, unsigned id, OriginalDisc disc)
     {
@@ -293,25 +296,25 @@ public:
         {
             return s2ne::Result<bool>::failure(make_error("Native terminal outcome not authorized"));
         }
-        auto pal_read_result = read_resource(root / "SUPERSP.PAL");
+        auto pal_read_result = read_shared_resource(root / "SUPERSP.PAL");
         if (!pal_read_result)
         {
             return s2ne::Result<bool>::failure(pal_read_result.error());
         }
         pal_ = std::move(pal_read_result).value();
-        auto cel_read_result = read_resource(root / "SUPERSP.CEL");
+        auto cel_read_result = read_shared_resource(root / "SUPERSP.CEL");
         if (!cel_read_result)
         {
             return s2ne::Result<bool>::failure(cel_read_result.error());
         }
         cel_ = std::move(cel_read_result).value();
-        auto prg_read_result = read_resource(root / "SUPERSP.PRG");
+        auto prg_read_result = read_shared_resource(root / "SUPERSP.PRG");
         if (!prg_read_result)
         {
             return s2ne::Result<bool>::failure(prg_read_result.error());
         }
         prg_ = std::move(prg_read_result).value();
-        auto bin_result = read_resource(root / "SUPERSP.BIN");
+        auto bin_result = read_shared_resource(root / "SUPERSP.BIN");
         if (!bin_result)
         {
             return s2ne::Result<bool>::failure(bin_result.error());

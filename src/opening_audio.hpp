@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "original_effect_audio.hpp"
 #include "original_music.hpp"
 #include "original_xmi.hpp"
@@ -7,6 +7,7 @@
 #include <atomic>
 #include <cmath>
 #include <filesystem>
+#include <fluidsynth.h>
 #include <iostream>
 #include <memory>
 
@@ -27,6 +28,11 @@ class OpeningAudio
     int midi_volume_{ 100 }, cd_volume_{ 100 };
     std::unique_ptr<OriginalEffectAudio> effects_;
     std::atomic<unsigned long long> signal_samples{ 0 };
+    static void fluid_log(int, const char* message, void*)
+    {
+        // FluidSynth默认INFO输出到stdout，会污染JSONL协议；保留诊断但固定送stderr。
+        std::fprintf(stderr, "fluidsynth: %s\n", message ? message : "");
+    }
     static void SDLCALL monitor(void* userdata, MIX_Mixer*, const SDL_AudioSpec*, float* pcm, int samples)
     {
         auto* self = static_cast<OpeningAudio*>(userdata);
@@ -153,7 +159,10 @@ public:
         return started;
     }
     OriginalEffectAudio* effects() const { return effects_.get(); }
-    OpeningAudio() = default;
+    OpeningAudio()
+    {
+        for (int level = FLUID_PANIC; level <= FLUID_DBG; ++level) { fluid_set_log_function(level, fluid_log, nullptr); }
+    }
     OpeningAudio(const OpeningAudio&) = delete;
     OpeningAudio& operator=(const OpeningAudio&) = delete;
     ~OpeningAudio() { stop(); }

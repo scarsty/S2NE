@@ -6,11 +6,83 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iterator>
+#include <memory>
+#include <mutex>
 #include <span>
+#include <unordered_map>
 #include <vector>
 namespace s2ne
 {
+class SharedBytes
+{
+    std::shared_ptr<std::vector<uint8_t>> bytes_;
+    const std::vector<uint8_t>& view() const
+    {
+        static const std::vector<uint8_t> empty;
+        return bytes_ ? *bytes_ : empty;
+    }
+
+public:
+    SharedBytes() = default;
+    explicit SharedBytes(std::vector<uint8_t> bytes) : bytes_(std::make_shared<std::vector<uint8_t>>(std::move(bytes))) {}
+    explicit SharedBytes(std::shared_ptr<std::vector<uint8_t>> bytes) : bytes_(std::move(bytes)) {}
+    size_t size() const { return bytes_ ? bytes_->size() : 0; }
+    bool empty() const { return size() == 0; }
+    const uint8_t* data() const { return bytes_ ? bytes_->data() : nullptr; }
+    uint8_t* mutable_data()
+    {
+        detach();
+        return bytes_->data();
+    }
+    const uint8_t& at(size_t index) const { return bytes_->at(index); }
+    uint8_t& mutable_at(size_t index)
+    {
+        detach();
+        return bytes_->at(index);
+    }
+    const uint8_t& operator[](size_t index) const { return bytes_->at(index); }
+    auto begin() const { return view().cbegin(); }
+    auto end() const { return view().cend(); }
+    void assign(std::vector<uint8_t>::const_iterator first, std::vector<uint8_t>::const_iterator last)
+    {
+        detach();
+        bytes_->assign(first, last);
+    }
+    operator std::span<const uint8_t>() const { return std::span<const uint8_t>(data(), size()); }
+    operator const std::vector<uint8_t>&() const { return view(); }
+    void detach()
+    {
+        if (!bytes_) { bytes_ = std::make_shared<std::vector<uint8_t>>(); }
+        else if (bytes_.use_count() != 1) { bytes_ = std::make_shared<std::vector<uint8_t>>(*bytes_); }
+    }
+};
+
+inline Result<SharedBytes> load_shared_resource(const std::filesystem::path& path, const std::string& discriminator, const std::function<Result<std::vector<uint8_t>>()>& loader)
+{
+    static std::mutex mutex;
+    static std::unordered_map<std::string, SharedBytes> cache;
+    const auto key = std::filesystem::weakly_canonical(path).string() + "#" + discriminator;
+    std::lock_guard lock(mutex);
+    if (auto found = cache.find(key); found != cache.end())
+    {
+        return Result<SharedBytes>::success(found->second);
+    }
+    auto loaded = loader();
+    if (!loaded) { return Result<SharedBytes>::failure(loaded.error()); }
+    SharedBytes stored(std::move(loaded).value());
+    cache[key] = stored;
+    return Result<SharedBytes>::success(std::move(stored));
+}
+inline SharedBytes share_resource(const std::filesystem::path& path, std::vector<uint8_t> bytes, std::string discriminator = {})
+{
+    return load_shared_resource(path, discriminator, [&]
+        {
+            return Result<std::vector<uint8_t>>::success(std::move(bytes));
+        })
+        .value();
+}
 enum class ResourceDomain : unsigned
 {
     primary = 0,
@@ -45,7 +117,7 @@ inline Result<std::vector<uint8_t>> read_bundle(const std::filesystem::path& roo
     {
         return fail("Missing merged resource bundle/index");
     }
-    std::array<uint8_t, 40> header{ };
+    std::array<uint8_t, 40> header{};
     if (!stream.read(reinterpret_cast<char*>(header.data()), header.size()))
     {
         return fail("Truncated resource bundle header");
@@ -63,7 +135,7 @@ inline Result<std::vector<uint8_t>> read_bundle(const std::filesystem::path& roo
     {
         return fail("Invalid merged resource magic/version/type");
     }
-    std::vector<uint8_t> pal{ std::istreambuf_iterator<char>(index), { } };
+    std::vector<uint8_t> pal{ std::istreambuf_iterator<char>(index), {} };
     if (pal.size() < 1392 || number(header, 16) != pal.size())
     {
         return fail("Merged resource PAL size mismatch");
@@ -142,10 +214,10 @@ inline Result<std::vector<uint8_t>> read_bundle(const std::filesystem::path& roo
         return fail("Merged resource payload length mismatch");
     }
     stream.seekg(40 + pal.size());
-    std::array<uint64_t, 2> starts{ }, sizes{ }, hashes{ }, counts{ };
+    std::array<uint64_t, 2> starts{}, sizes{}, hashes{}, counts{};
     for (unsigned d = 0; d < 2; ++d)
     {
-        std::array<uint8_t, 32> descriptor{ };
+        std::array<uint8_t, 32> descriptor{};
         if (!stream.read(reinterpret_cast<char*>(descriptor.data()), 32))
         {
             return fail("Truncated source descriptor");
@@ -174,11 +246,11 @@ inline Result<std::vector<uint8_t>> read_bundle(const std::filesystem::path& roo
     }
     uint64_t selectedOffset = 0, selectedSize = 0, selectedHash = 0;
     bool found = id == 0;
-    std::array<uint64_t, 2> ends{ };
+    std::array<uint64_t, 2> ends{};
     std::vector<uint64_t> entryHashes;
     for (const auto& mapping : expected)
     {
-        std::array<uint8_t, 32> record{ };
+        std::array<uint8_t, 32> record{};
         if (!stream.read(reinterpret_cast<char*>(record.data()), 32))
         {
             return fail("Truncated merged resource index");
@@ -213,7 +285,7 @@ inline Result<std::vector<uint8_t>> read_bundle(const std::filesystem::path& roo
         uint64_t logicalEnd = 0;
         for (uint64_t i = 0; i < counts[group]; ++i)
         {
-            std::array<uint8_t, 32> record{ };
+            std::array<uint8_t, 32> record{};
             if (!stream.read(reinterpret_cast<char*>(record.data()), record.size()))
             {
                 return fail("Truncated shared resource extent");
@@ -249,7 +321,7 @@ inline Result<std::vector<uint8_t>> read_bundle(const std::filesystem::path& roo
     unsigned d = unsigned(domain);
     if (id != 0)
     {
-        std::vector<uint8_t> bytes(size_t(selectedSize), uint8_t{ });
+        std::vector<uint8_t> bytes(size_t(selectedSize), uint8_t{});
         for (uint64_t i = starts[d]; i < starts[d] + counts[d]; ++i)
         {
             const auto& extent = extents[size_t(i)];
@@ -272,7 +344,7 @@ inline Result<std::vector<uint8_t>> read_bundle(const std::filesystem::path& roo
         trace.mark("bundle kind=" + std::to_string(kind) + " domain=" + std::to_string(d) + " id=" + std::to_string(id) + " bytes=" + std::to_string(bytes.size()));
         return Result<std::vector<uint8_t>>::success(std::move(bytes));
     }
-    std::vector<uint8_t> source(size_t(sizes[d]), uint8_t{ });
+    std::vector<uint8_t> source(size_t(sizes[d]), uint8_t{});
     for (uint64_t i = starts[d]; i < starts[d] + counts[d]; ++i)
     {
         const auto& extent = extents[size_t(i)];
@@ -308,7 +380,7 @@ class ResourceBundle
     std::filesystem::path root_;
 
 public:
-    explicit ResourceBundle(const std::filesystem::path& root) : root_(root) { }
+    explicit ResourceBundle(const std::filesystem::path& root) : root_(root) {}
     Result<std::vector<uint8_t>> try_dat_entry(ResourceDomain domain, unsigned id) const
     {
         if (!id)

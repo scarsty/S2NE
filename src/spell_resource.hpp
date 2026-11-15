@@ -10,12 +10,12 @@ inline Result<std::vector<uint8_t>> read_spell_entry(const std::filesystem::path
     {
         return Result<std::vector<uint8_t>>::failure(pal.error());
     }
-    auto bin = read_resource(root / "SUPERSP.BIN");
+    auto bin = read_shared_resource(root / "SUPERSP.BIN");
     if (!bin)
     {
         return Result<std::vector<uint8_t>>::failure(bin.error());
     }
-    auto cel = read_resource(root / "SUPERSP.CEL");
+    auto cel = read_shared_resource(root / "SUPERSP.CEL");
     if (!cel)
     {
         return Result<std::vector<uint8_t>>::failure(cel.error());

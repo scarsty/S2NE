@@ -34,7 +34,7 @@ public:
     static Result<OriginalAniAudio> create(const std::filesystem::path& root)
     {
         auto pal = read_resource(root / "SUPERSP.PAL");
-        auto bin = read_resource(root / "SUPERSP.BIN");
+        auto bin = read_shared_resource(root / "SUPERSP.BIN");
         if (!pal) { return Result<OriginalAniAudio>::failure(pal.error()); }
         if (!bin) { return Result<OriginalAniAudio>::failure(bin.error()); }
         ResourceReader p(pal.value());

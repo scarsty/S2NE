@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "battle.hpp"
 #include "original_battle_captions.hpp"
 #include "original_campaign.hpp"
@@ -30,11 +30,13 @@ namespace s2ne
 {
 class Prologue
 {
-    std::vector<uint8_t> cel_, pal_, caption_items_;
+    SharedBytes cel_;
+    std::vector<uint8_t> pal_, caption_items_;
     mutable std::optional<OriginalPalette> palette_effects_;
     OriginalUnitStatus unit_status_;
     OriginalMap map_;
     std::optional<OriginalSkill32Visual> skill32_visual_;
+    std::string skill32_visual_error_;
     std::optional<OriginalSkill88Visual> skill88_visual_;
     std::vector<unsigned> skill78_targets_;
     size_t skill78_frame_count_{};
@@ -259,7 +261,8 @@ class Prologue
                 {
                     auto pose = events.units;
                     pose[target].hp = 1;
-                    pose[target].status_flags &= ~0x20u;
+                    // 死亡对白可先清除在场位；消失动画仍须使用可绘制的临时姿态。
+                    pose[target].status_flags = (pose[target].status_flags | 0x80u) & ~0x20u;
                     if (events.units[target].status_flags & 0x40)
                     {
                         if (!map_.begin_teleport_arrival(pose, unsigned(target), battle_->turn(), true))
@@ -275,10 +278,17 @@ class Prologue
                         return;
                     }
                     auto candidate = map_;
-                    if (!candidate.begin_disappearance(pose, unsigned(target), battle_->turn(), animation_elapsed_, true))
+                    std::string disappearanceError;
+                    if (!candidate.begin_disappearance(pose, unsigned(target), battle_->turn(), animation_elapsed_, true, &disappearanceError))
                     {
                         battle_->rollback_physical_exchange(events.units);
-                        report_error(make_error("Original physical death bitmap rejected"));
+                        std::string reason = "Original physical death bitmap rejected target=" + std::to_string(target)
+                            + " id=" + std::to_string(events.units[target].id)
+                            + " appearance=" + std::to_string(events.units[target].appearance)
+                            + " hp=" + std::to_string(events.units[target].hp)
+                            + " flags=" + std::to_string(events.units[target].status_flags)
+                            + " bitmap=" + (candidate.unit_bitmap_available(unsigned(target)) ? "present" : "missing") + " reason=" + disappearanceError;
+                        report_error(make_error(std::move(reason)));
                         return;
                     }
                     auto sounded = play_death_effect();
@@ -500,6 +510,7 @@ private:
     std::optional<Battle> death_battle_baseline_;
     std::optional<OriginalMap> death_map_baseline_;
     bool death_presentation_presented_{};
+    unsigned death_camera_wait_ms_{};
     void next_story_disappearance()
     {
         while (story_disappearance_slot_ < 3)
@@ -524,12 +535,21 @@ private:
             {
                 continue;
             }
-            if (!map_.begin_disappearance(events.units, unsigned(role - events.units.begin()), 1, animation_elapsed_))
+            std::string disappearanceError;
+            auto pose = events.units;
+            auto& visualRole = pose.at(size_t(role - events.units.begin()));
+            // 455048脚本显式指定已死亡角色仍使用原位图，不能把展示预备态发布回军表。
+            if (synchronous_death_active() && visualRole.hp <= 0)
+            {
+                visualRole.hp = 1;
+                visualRole.status_flags = (visualRole.status_flags | 0x80u) & ~0x20u;
+            }
+            if (!map_.begin_disappearance(pose, unsigned(role - events.units.begin()), battle_ ? battle_->turn() : 1, animation_elapsed_, synchronous_death_active(), &disappearanceError))
             {
                 if (synchronous_death_active())
                 {
                     rollback_synchronous_death();
-                    report_error(make_error("Original455048 synchronous disappearance unavailable"));
+                    report_error(make_error("Original455048 synchronous disappearance unavailable: " + disappearanceError));
                     return;
                 }
                 campaign_blocker_ = "Original455048 disappearance unavailable for role " + std::to_string(id);
@@ -1332,6 +1352,7 @@ private:
         story_poses_.clear();
         story_animation_event_.reset();
         death_presentation_event_.reset();
+        death_camera_wait_ms_ = 0;
         if (death_map_baseline_)
         {
             map_ = std::move(*death_map_baseline_);
@@ -1950,8 +1971,8 @@ private:
         if (decision.outcome == OriginalCampaign::Outcome::defeat)
         {
             auto pal = read_resource(root_ / "SUPERSP.PAL");
-            auto bin = read_resource(root_ / "SUPERSP.BIN");
-            auto cel = read_resource(root_ / "SUPERSP.CEL");
+            auto bin = read_shared_resource(root_ / "SUPERSP.BIN");
+            auto cel = read_shared_resource(root_ / "SUPERSP.CEL");
             if (!pal || !bin || !cel)
             {
                 report_error(make_error("Original defeat resources unavailable"));
@@ -2237,6 +2258,11 @@ public:
         if (battle_ && battle_->ai_skill_failed()) { return aiFailure; }
         return campaign_blocker_;
     }
+    void set_campaign_blocker(std::string message)
+    {
+        campaign_blocker_ = std::move(message);
+        phase_ = Phase::campaign_blocked;
+    }
     const auto& autosave_requests() const { return autosave_requests_; }
     void clear_autosave_requests() { autosave_requests_.clear(); }
     void set_campaign_reward_adapter(std::function<bool(OriginalEvents&, const OriginalCampaign::Settlement&)> callback) { campaign_reward_adapter_ = std::move(callback); }
@@ -2474,7 +2500,7 @@ public:
     Prologue(const std::filesystem::path& root, unsigned difficulty, InitializationTag) : unit_status_(root), map_(root), root_(root), events(root, difficulty) {}
     Result<bool> initialize(const std::filesystem::path& root)
     {
-        auto cel = read_resource(root / "SUPERSP.CEL"), pal = read_resource(root / "SUPERSP.PAL"), items = read_resource(root / "ITEMSP.BIN");
+        auto cel = read_shared_resource(root / "SUPERSP.CEL"), pal = read_shared_resource(root / "SUPERSP.PAL"), items = read_shared_resource(root / "ITEMSP.BIN");
         if (!cel)
         {
             return Result<bool>::failure(cel.error());
@@ -2665,7 +2691,7 @@ public:
         {
             return Result<bool>::failure(make_error("Unsupported synchronous presentation"));
         }
-        if (type == 12 && (condition == 1 || condition == 22 || condition == 27 || condition == 28))
+        if (type == 12 && (condition <= 1 || condition == 22 || condition == 27 || condition == 28))
         {
             if (!campaign_scripted_roles_adapter_) { return Result<bool>::failure(make_error("Original461110 synchronous control adapter unavailable")); }
             if (dryRun) { return Result<bool>::success(true); }
@@ -2728,6 +2754,29 @@ public:
                     }))
             {
                 return Result<bool>::failure(make_error("Original462D2E growth already pending"));
+            }
+            return Result<bool>::success(true);
+        }
+        if (type == 8 && (condition == 0 || condition == 4))
+        {
+            // 42064A/4207A0：定位并展示；4另保存画面并等待46C34D(100)。
+            int x = source.event_word(event, 5), y = source.event_word(event, 7);
+            if (condition == 4 && x && !y)
+            {
+                auto* role = original_script_role(source, x);
+                if (!role) { return Result<bool>::success(false); }
+                x = role->x;
+                y = role->y;
+            }
+            if (!dryRun)
+            {
+                map_.center(x, y);
+                phase_ = Phase::battle;
+                if (condition == 4)
+                {
+                    death_camera_wait_ms_ = 1000;
+                    death_presentation_presented_ = false;
+                }
             }
             return Result<bool>::success(true);
         }
@@ -3149,7 +3198,7 @@ public:
     void frame_presented()
     {
         if (item_presentation_) { item_presentation_->presented = true; }
-        if (synchronous_death_active() && synchronous_death_stack_->presentation_pending()) { death_presentation_presented_ = true; }
+        if (synchronous_death_active() && synchronous_death_stack_->presentation_pending() && !death_camera_wait_ms_) { death_presentation_presented_ = true; }
         if (growth_active()) { growth_presented_ = true; }
         if (summon_map_) { summon_map_->summon_growth_presented(); }
         map_.invisibility_presented();
@@ -3287,8 +3336,15 @@ public:
         if (!refreshed) { return Result<OriginalMap>::failure(refreshed.error()); }
         return Result<OriginalMap>::success(std::move(prepared));
     }
-    bool begin_skill88_visual(unsigned caster, bool healing1 = false, bool sleep2 = false, std::optional<Battle::Point> center = std::nullopt, bool blessing3 = false, unsigned statusSkill = 0, std::optional<unsigned> performer = std::nullopt, std::optional<unsigned> partner = std::nullopt, std::vector<unsigned> targets = {})
+    bool begin_skill88_visual(unsigned caster, bool healing1 = false, bool sleep2 = false, std::optional<Battle::Point> center = std::nullopt, bool blessing3 = false, unsigned statusSkill = 0, std::optional<unsigned> performer = std::nullopt, std::optional<unsigned> partner = std::nullopt, std::vector<unsigned> targets = {}, std::string* call_error = nullptr)
     {
+        if (call_error) { call_error->clear(); }
+        auto reject = [&](const std::string& message)
+        {
+            if (call_error) { *call_error = message; }
+            report_error(make_error(message));
+            return false;
+        };
         if (statusSkill != 51) { spell_transfer_visual_source_.reset(); }
         auto prepared = Result<OriginalSkill88Visual>::success(OriginalSkill88Visual{});
         if (statusSkill) { prepared = OriginalSkill88Visual::create_strengthening_status(root_, statusSkill); }
@@ -3300,8 +3356,7 @@ public:
 
         if (!prepared)
         {
-            report_error(prepared.error());
-            return false;
+            return reject(prepared.error().message);
         }
         {
             auto visual = std::move(prepared).value();
@@ -3318,8 +3373,7 @@ public:
                 auto followup = OriginalSkill88Visual::create_strengthening_status(root_, statusSkill, 1);
                 if (!followup)
                 {
-                    report_error(followup.error());
-                    return false;
+                    return reject(followup.error().message);
                 }
                 spell_followup_ = std::move(followup).value();
                 visual.extend_timeline(unsigned(spell_followup_->frames().size()));
@@ -3345,8 +3399,7 @@ public:
                 if (battle_->ai_skill_request()) { menu.set_ai_direction(battle_->ai_skill_request()->direction); }
                 if (!menu.select_record(statusSkill))
                 {
-                    report_error(make_error("AI damage visual learned record unavailable"));
-                    return false;
+                    return reject("AI damage visual learned record unavailable");
                 }
                 menu.set_area_elevation([&](int x, int y)
                     {
@@ -3363,15 +3416,17 @@ public:
                     auto followup = OriginalSkill88Visual::create_strengthening_status(root_, statusSkill, 1);
                     if (!followup)
                     {
-                        report_error(followup.error());
-                        return false;
+                        return reject(followup.error().message);
                     }
                     spell_followup_ = std::move(followup).value();
                     visual.extend_timeline(unsigned(spell_followup_->frames().size()));
                 }
                 else
                 {
-                    auto cells = menu.radial_cells(origin, true);
+                    const bool directional = menu.ai_direction_ && (damage->raw[18] == 5 || damage->raw[18] == 8);
+                    // 原403339定向射线从施法者出发，且列表不含中心格。
+                    const auto& visualOrigin = directional ? actor : origin;
+                    auto cells = menu.radial_cells(visualOrigin, true);
                     if (damage->dispatch == 10 && damage->raw[18] != 5)
                     {
                         cells.clear();
@@ -3390,21 +3445,21 @@ public:
                             ++startY;
                         }
                     }
-                    if (cells.empty()) { return false; }
+                    if (cells.empty()) { return reject("Damage visual radial cells empty: skill=" + std::to_string(statusSkill)); }
                     // 46CE36 skips the center only for area5; 46C860 always skips it.
                     size_t first = 0;
-                    if (damage->dispatch == 6 || damage->raw[18] == 5) { first = 1; }
+                    if (!directional && (damage->dispatch == 6 || damage->raw[18] == 5)) { first = 1; }
                     for (size_t i = first; i < cells.size(); ++i)
                     {
                         if (cells[i].first == -1 && cells[i].second == -1) { continue; }
-                        auto anchor = origin;
+                        auto anchor = visualOrigin;
                         anchor.x = cells[i].first;
                         anchor.y = cells[i].second;
                         size_t start = (i - first) * 2;
                         if (damage->dispatch == 6) { start = ((i - first) / 4) * spell_primary_frames_; }
                         spell_cells_.push_back({ anchor, start });
                     }
-                    if (spell_cells_.empty()) { return false; }
+                    if (spell_cells_.empty()) { return reject("Damage visual anchors empty: skill=" + std::to_string(statusSkill)); }
                     if (damage->dispatch == 10)
                     {
                         for (size_t i = 0; i < spell_cells_.size(); ++i)
@@ -3423,7 +3478,7 @@ public:
             if (damage && damage->dispatch == 8) { visual.extend_timeline(14); }
             if (statusSkill == 78 || (NativeDamageRecords::find(statusSkill) && NativeDamageRecords::find(statusSkill)->dispatch == 9))
             {
-                if (targets.empty()) { return false; }
+                if (targets.empty()) { return reject("Damage visual targets empty: skill=" + std::to_string(statusSkill)); }
                 for (size_t i = 0; i < targets.size(); ++i)
                 {
                     for (size_t j = i + 1; j < targets.size(); ++j)
@@ -3442,7 +3497,11 @@ public:
                 map_.draw_units(spell_shake_source_, events.units, battle_->turn());
             }
             auto background = map_.skill88_background(events.units, battle_->turn(), performer.value_or(caster), visual.tint_amount(), visual.tint_source(), partner);
-            skill32_background_ = std::move(background);
+            if (!background)
+            {
+                return reject(background.error().message);
+            }
+            skill32_background_ = std::move(background).value();
             spell_shake_frame_ = spell_shake_source_;
             spell_shake_cursor_ = -1;
             skill32_target_ = caster;
@@ -3534,7 +3593,12 @@ public:
         {
             auto visual = std::move(prepared).value();
             auto background = map_.skill32_background(events.units, battle_->turn(), caster, target, 233, 35);
-            skill32_background_ = std::move(background);
+            if (!background)
+            {
+                report_error(background.error());
+                return false;
+            }
+            skill32_background_ = std::move(background).value();
             skill32_target_ = target;
             skill94_visual_ = std::move(visual);
             play_skill_effect(94);
@@ -3542,24 +3606,42 @@ public:
         }
     }
     bool skill32_visual_active() const { return skill32_visual_.has_value(); }
+    const std::string& skill32_visual_error() const { return skill32_visual_error_; }
     int skill32_visual_frame() const { return skill32_visual_ ? int(skill32_visual_->frame()) : -1; }
     int skill88_visual_frame() const { return skill88_visual_ ? int(skill88_visual_->frame()) : -1; }
-    bool begin_skill32_visual(unsigned caster, unsigned target, bool curse33 = false)
+    bool begin_skill32_visual(unsigned caster, unsigned target, bool curse33 = false, std::string* call_error = nullptr)
     {
+        std::string error;
         if (skill32_visual_ || caster >= events.units.size() || target >= events.units.size())
         {
+            error = skill32_visual_ ? "visual already active" : "caster or target index out of range";
+            skill32_visual_error_ = error;
+            if (call_error) { *call_error = error; }
             return false;
         }
+        const std::string context = "visual_family=32 caster_index=" + std::to_string(caster) + " caster_id=" + std::to_string(events.units.at(caster).id)
+            + " target_index=" + std::to_string(target) + " target_id=" + std::to_string(events.units.at(target).id);
         auto prepared = curse33 ? OriginalSkill32Visual::create_curse33(root_) : OriginalSkill32Visual::create(root_);
         if (!prepared)
         {
+            error = context + " stage=resource " + prepared.error().message;
+            skill32_visual_error_ = error;
+            if (call_error) { *call_error = error; }
             report_error(prepared.error());
             return false;
         }
         {
             auto visual = std::move(prepared).value();
             auto background = curse33 ? map_.skill32_background(events.units, battle_->turn(), caster, target, 0, 0) : map_.skill32_background(events.units, battle_->turn(), caster, target);
-            skill32_background_ = std::move(background);
+            if (!background)
+            {
+                error = context + " stage=background " + background.error().message;
+                skill32_visual_error_ = error;
+                if (call_error) { *call_error = error; }
+                report_error(background.error());
+                return false;
+            }
+            skill32_background_ = std::move(background).value();
             skill32_target_ = target;
             skill32_visual_ = std::move(visual);
             play_skill_effect(curse33 ? 33u : 32u);
@@ -3627,6 +3709,7 @@ public:
     }
     Result<bool> try_tick(unsigned milliseconds)
     {
+        death_camera_wait_ms_ -= std::min(death_camera_wait_ms_, milliseconds);
         if (campaign_defeated() && !defeat_finished())
         {
             defeat_clock_ += milliseconds;

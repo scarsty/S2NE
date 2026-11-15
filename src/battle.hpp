@@ -41,6 +41,7 @@ private:
     std::shared_ptr<OriginalSkill94Transaction> ai_damage_;
     std::pair<int, int> ai_skill_camera_{};
     std::optional<AiSkill> ai_skill_;
+    std::optional<size_t> ai_skill_actor_;
     bool ai_skill_waiting_ = false, ai_skill_failed_ = false, ai_skill_replan_ = false;
 
 public:
@@ -60,6 +61,7 @@ public:
     void set_ai_skill_camera(std::pair<int, int> camera) { ai_skill_camera_ = camera; }
     bool ai_skill_pending() const { return ai_skill_.has_value() || ai_skill_waiting_ || ai_skill_failed_; }
     const std::optional<AiSkill>& ai_skill_request() const { return ai_skill_; }
+    std::optional<size_t> ai_skill_actor() const { return ai_skill_actor_; }
     bool ai_skill_ready() const { return !ai_skill_failed_ && ai_skill_ && !animating_movement() && hostile_path_cursor_ >= hostile_path_.size(); }
     void begin_ai_skill() { ai_skill_waiting_ = true; }
     void fail_ai_skill()
@@ -67,6 +69,7 @@ public:
         ai_skill_failed_ = false;
         ai_skill_waiting_ = false;
         ai_skill_.reset();
+        ai_skill_actor_.reset();
         hostile_path_.clear();
         hostile_path_cursor_ = 0;
         hostile_target_ = -1;
@@ -77,6 +80,7 @@ public:
     void finish_ai_skill()
     {
         ai_skill_.reset();
+        ai_skill_actor_.reset();
         ai_skill_waiting_ = false;
         hostile_path_.clear();
         hostile_path_cursor_ = 0;
@@ -362,7 +366,7 @@ public:
     }
     static Result<Battle> try_load(const std::filesystem::path& root, unsigned map, OriginalDisc disc = OriginalDisc::one)
     {
-        auto prgResult = read_resource(root / "SUPERSP.PRG"), palResult = read_resource(root / "SUPERSP.PAL");
+        auto prgResult = read_shared_resource(root / "SUPERSP.PRG"), palResult = read_shared_resource(root / "SUPERSP.PAL");
         if (!prgResult)
         {
             return Result<Battle>::failure(prgResult.error());
@@ -599,7 +603,7 @@ public:
         auto equipment = OriginalPromotionTransaction::create(root);
         if (!equipment) { return Result<Battle>::failure(equipment.error()); }
         result.physical_equipment_ = std::make_shared<OriginalPromotionTransaction>(std::move(equipment).value());
-        auto binResult = read_resource(root / "SUPERSP.BIN"), kindsResult = read_resource(root / "KINDSP.BIN");
+        auto binResult = read_shared_resource(root / "SUPERSP.BIN"), kindsResult = read_shared_resource(root / "KINDSP.BIN");
         if (!binResult)
         {
             return Result<Battle>::failure(binResult.error());
@@ -4409,6 +4413,7 @@ private:
         if (skillSelection)
         {
             ai_skill_ = skillSelection;
+            ai_skill_actor_ = index;
             for (int node = skillSelection->destination_record - 1; node > 0; node = routes.records.at(node).parent)
             {
                 auto position = routes.records.at(node).route.position;

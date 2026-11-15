@@ -958,7 +958,7 @@ int s2ne::run_application(int argc, char** argv)
                 text.push_back(' ');
                 text.insert(text.end(), learnedName->begin(), learnedName->end());
                 // 原458E61以CEL208显示姓名／原学习标签／技能名，等待473420(250)。
-                auto cel = s2ne::read_resource(root / "SUPERSP.CEL");
+                auto cel = s2ne::read_shared_resource(root / "SUPERSP.CEL");
                 auto pal = s2ne::read_resource(root / "SUPERSP.PAL");
                 if (!cel || !pal)
                 {
@@ -1174,6 +1174,14 @@ int s2ne::run_application(int argc, char** argv)
                 state["turn"] = prologue->battle_turn();
                 state["exit_cells"] = nlohmann::json::array();
                 for (const auto& [x, y] : prologue->visible_exit_cells()) { state["exit_cells"].push_back({ { "x", x }, { "y", y } }); }
+                state["capture_cells"] = nlohmann::json::array();
+                if (prologue->has_battle())
+                {
+                    for (const auto& cell : prologue->battle().object_cells(4))
+                    {
+                        state["capture_cells"].push_back({ { "x", cell.x }, { "y", cell.y }, { "object_category", 4 } });
+                    }
+                }
                 state["selected"] = prologue->battle_selected();
                 state["camera_x"] = prologue->camera().first;
                 state["camera_y"] = prologue->camera().second;
@@ -1597,8 +1605,99 @@ int s2ne::run_application(int argc, char** argv)
         unsigned musicRestoreGeneration = 0;
         unsigned musicScene = 0;
         bool musicCd = settingsState.cdda != 0;
+        std::optional<size_t> semanticItemTarget;
+        auto useOriginalItemTarget = [&](size_t actor, unsigned id, size_t target)
+        {
+            auto snapshot = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+            if (!snapshot)
+            {
+                s2ne::report_error(snapshot.error());
+                return;
+            }
+            if (!itemUse.target_allowed(snapshot.value(), actor, target, id))
+            {
+                itemNoticeMilliseconds = 1;
+                return;
+            }
+            prologue->battle().mutate_combat_random([&](auto& random, uint32_t seconds)
+                {
+                    const auto beforeRandom = random;
+                    auto next = itemUse.try_prepare(snapshot.value(), actor, id, random, seconds, target);
+                    if (!next)
+                    {
+                        s2ne::report_error(next.error());
+                        return false;
+                    }
+                    auto restored = s2ne::OriginalSaveBridge::try_restore(root, next.value());
+                    if (!restored)
+                    {
+                        s2ne::report_error(restored.error());
+                        return false;
+                    }
+                    const auto seed = random.seed_state(), calls = random.draw_count();
+                    const int amount = itemUse.feedback_amount(snapshot.value(), next.value(), target, id, beforeRandom, seconds);
+                    const int hp = prologue->events.units[target].hp;
+                    std::vector<std::vector<uint8_t>> learningNotices;
+                    for (const auto& record : skillRules.newly_learned_records(prologue->events.units[target], restored.value().events.units[target]))
+                    {
+                        auto text = prologue->events.units[target].name;
+                        text.push_back(' ');
+                        const auto learned = itemNoticeFont.text_bytes(3);
+                        text.insert(text.end(), learned.begin(), learned.end());
+                        text.push_back(' ');
+                        const auto name = record.name();
+                        text.insert(text.end(), name.begin(), name.end());
+                        learningNotices.push_back(std::move(text));
+                    }
+                    auto publish = [&, saved = std::move(next).value(), events = std::move(restored.value().events), seed, calls, id, target]() mutable
+                    {
+                        using std::swap;
+                        swap(*rawSave, saved);
+                        swap(prologue->events, events);
+                        prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
+                            {
+                                live.restore_stream(seed, calls);
+                                return true;
+                            });
+                        prologue->battle().commit_external_action();
+                        std::cout << "Original45024C item=" << id << " target=" << target << " effect/inventory/RNG published once\n";
+                    };
+                    auto afterPose = [&, actor, target, hp, amount, learningNotices = std::move(learningNotices), publish = std::move(publish)]() mutable
+                    {
+                        if (!learningNotices.empty())
+                        {
+                            itemLearningNotices = std::move(learningNotices);
+                            itemLearningSince = 0;
+                            itemLearningPublish = std::move(publish);
+                            return;
+                        }
+                        if (!amount)
+                        {
+                            publish();
+                            return;
+                        }
+                        if (!prologue->battle().begin_healing_feedback(actor, target, hp, amount, std::move(publish), false)) { s2ne::report_error(s2ne::make_error("451201 item number presentation failed; transaction unpublished")); }
+                    };
+                    auto presentation = prologue->begin_item_presentation(actor, target, itemUse.targeted(id), std::move(afterPose));
+                    if (!presentation)
+                    {
+                        s2ne::report_error(presentation.error());
+                        return false;
+                    }
+                    itemTargetRequest.reset();
+                    battleItems.reset();
+                    return false;
+                });
+        };
         while (running)
         {
+            if (semanticItemTarget && itemTargetRequest)
+            {
+                const auto target = *semanticItemTarget;
+                semanticItemTarget.reset();
+                const auto [actor, id] = *itemTargetRequest;
+                useOriginalItemTarget(actor, id, target);
+            }
             if (prologue && prologue->defeat_finished())
             {
                 prologue.reset();
@@ -1919,6 +2018,39 @@ int s2ne::run_application(int argc, char** argv)
                                 {
                                     return s2ne::OriginalInterbattle::Result::unsupported;
                                 });
+                            showPrologue();
+                            stdioPending = response;
+                            stdioReadyAt = nowUi;
+                        }
+                        else if (command == "item_target_select")
+                        {
+                            if (!prologue || !rawSave || !itemTargetRequest || semanticItemTarget || prologue->item_presentation_) { throw std::runtime_error("original item target unavailable"); }
+                            const auto [actor, id] = *itemTargetRequest;
+                            const int target = request->value("index", -1);
+                            if (target < 0 || size_t(target) >= prologue->events.units.size()) { throw std::runtime_error("invalid original item target index"); }
+                            auto snapshot = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                            if (!snapshot || !itemUse.target_allowed(snapshot.value(), actor, size_t(target), id)) { throw std::runtime_error("original item target rejected"); }
+                            semanticItemTarget = size_t(target);
+                            stdioPending = response;
+                            stdioReadyAt = nowUi;
+                        }
+                        else if (command == "item_select" || command == "item_confirm" || command == "item_cancel")
+                        {
+                            if (!battleItems || itemTargetRequest || itemSpellSource || !rawSave) { throw std::runtime_error("original item menu unavailable"); }
+                            if (command == "item_select")
+                            {
+                                if (!battleItems->select_item(request->value("item_id", 0u))) { throw std::runtime_error("item unavailable in original choices"); }
+                            }
+                            else if (command == "item_confirm")
+                            {
+                                if (!battleItems->confirm_use(*rawSave)) { throw std::runtime_error("original item confirmation unavailable"); }
+                                if (itemTargetRequest && !itemUse.targeted(itemTargetRequest->second)) { semanticItemTarget = itemTargetRequest->first; }
+                            }
+                            else
+                            {
+                                battleItems->scan(1, *rawSave);
+                            }
+                            if (battleItems && battleItems->closed() && !itemTargetRequest && !itemSpellSource) { battleItems.reset(); }
                             showPrologue();
                             stdioPending = response;
                             stdioReadyAt = nowUi;
@@ -2660,15 +2792,15 @@ int s2ne::run_application(int argc, char** argv)
                         running = false;
                     }
                 }
-                if (prologue->has_battle() && aiSkillActive && !skillMenu && !prologue->growth_active() && !prologue->skill_visual_active() && !prologue->battle().combat_feedback_active() && !prologue->synchronous_death_active())
+                if (prologue->has_battle() && prologue->campaign_blocker().empty() && aiSkillActive && !skillMenu && !prologue->growth_active() && !prologue->skill_visual_active() && !prologue->battle().combat_feedback_active() && !prologue->synchronous_death_active())
                 {
                     prologue->battle().finish_ai_skill();
                     aiSkillActive = false;
                 }
-                if (prologue->has_battle() && !skillMenu && prologue->battle().ai_skill_ready() && !aiSkillActive)
+                if (prologue->has_battle() && prologue->campaign_blocker().empty() && !skillMenu && prologue->battle().ai_skill_ready() && !aiSkillActive)
                 {
                     const auto proposal = *prologue->battle().ai_skill_request();
-                    const auto actorIndex = size_t(prologue->battle_selected());
+                    const auto actorIndex = prologue->battle().ai_skill_actor().value_or(size_t(prologue->battle_selected()));
                     const auto& actor = prologue->events.units.at(actorIndex);
                     s2ne::OriginalSkills::Context context{};
                     context.second = proposal.second;
@@ -2713,7 +2845,7 @@ int s2ne::run_application(int argc, char** argv)
                         pendingSkillVisualStarted = false;
                     }
                 }
-                if (skillMenu && pendingSkillTarget && !prologue->battle().animating_movement() && !pendingSkillVisualStarted)
+                if (prologue->campaign_blocker().empty() && skillMenu && pendingSkillTarget && !prologue->battle().animating_movement() && !pendingSkillVisualStarted)
                 {
                     const auto& target = prologue->events.units.at(*pendingSkillTarget);
                     if (!prologue->prepare_skill_camera(target.x, target.y))
@@ -2722,10 +2854,19 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     else
                     {
+                        const auto visualActorIndex = prologue->battle().ai_skill_actor().value_or(size_t(prologue->battle_selected()));
+                        const auto& visualActor = prologue->events.units.at(visualActorIndex);
+                        std::cout << "Original AI visual context actor_index=" << visualActorIndex
+                                  << " actor_id=" << visualActor.id << " target_index=" << *pendingSkillTarget
+                                  << " target_id=" << target.id
+                                  << " selected_skill=" << skillMenu->selected().id << "\n";
                         bool visualStarted;
-                        if (skillMenu->selected().id == 94) { visualStarted = prologue->begin_skill94_visual(unsigned(prologue->battle_selected()), unsigned(*pendingSkillTarget)); }
+                        std::string visualError;
+                        const char* visualDispatch = "skill32";
+                        if (skillMenu->selected().id == 94) { visualStarted = prologue->begin_skill94_visual(unsigned(visualActorIndex), unsigned(*pendingSkillTarget)); }
                         else if (skillMenu->summon_supported() || skillMenu->transfer51_supported() || skillMenu->selected().id == 88 || skillMenu->selected().id == 1 || skillMenu->status_area_supported())
                         {
+                            visualDispatch = "skill88";
                             unsigned visual_target = unsigned(prologue->battle_selected());
                             if (skillMenu->selected().id != 88) { visual_target = unsigned(*pendingSkillTarget); }
                             unsigned status_skill = 0;
@@ -2741,7 +2882,7 @@ int s2ne::run_application(int argc, char** argv)
                                 status_skill = skillMenu->selected().id;
                                 visual_target = unsigned(prologue->battle_selected());
                             }
-                            const unsigned performer = unsigned(prologue->battle_selected());
+                            const unsigned performer = unsigned(visualActorIndex);
                             auto partner = skillMenu->cooperative_partner(prologue->events.units.at(performer), prologue->events.units, prologue->battle_turn(), [&](int x, int y)
                                 {
                                     return prologue->battle().cell({ x, y }).elevation;
@@ -2761,11 +2902,11 @@ int s2ne::run_application(int argc, char** argv)
                                     targets.push_back(unsigned(i));
                                 }
                             }
-                            visualStarted = prologue->begin_skill88_visual(visual_target, skillMenu->selected().id == 1, skillMenu->selected().id == 2, sleepCenter, skillMenu->selected().id == 3, status_skill, (partner || skillMenu->fissure29_supported() || skillMenu->drain_supported() || NativeDamageRecords::find(status_skill)) ? performer : visual_target, partnerVisual, std::move(targets));
+                            visualStarted = prologue->begin_skill88_visual(visual_target, skillMenu->selected().id == 1, skillMenu->selected().id == 2, sleepCenter, skillMenu->selected().id == 3, status_skill, (partner || skillMenu->fissure29_supported() || skillMenu->drain_supported() || NativeDamageRecords::find(status_skill)) ? performer : visual_target, partnerVisual, std::move(targets), &visualError);
                         }
                         else
                         {
-                            visualStarted = prologue->begin_skill32_visual(unsigned(prologue->battle_selected()), unsigned(*pendingSkillTarget), skillMenu->selected().id == 33);
+                            visualStarted = prologue->begin_skill32_visual(unsigned(visualActorIndex), unsigned(*pendingSkillTarget), skillMenu->selected().id == 33, &visualError);
                         }
 
                         pendingSkillVisualStarted = visualStarted;
@@ -2775,6 +2916,12 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (!pendingSkillVisualStarted)
                         {
+                            const auto failedActorIndex = prologue->battle_selected();
+                            const auto failedActor = prologue->events.units.at(size_t(failedActorIndex));
+                            const auto failedTarget = prologue->events.units.at(*pendingSkillTarget);
+                            const auto failureContext = " actor_index=" + std::to_string(failedActorIndex) + " actor_id=" + std::to_string(failedActor.id)
+                                + " target_index=" + std::to_string(*pendingSkillTarget) + " target_id=" + std::to_string(failedTarget.id)
+                                + " selected_skill=" + std::to_string(skillMenu->selected().id);
                             if (aiSkillActive)
                             {
                                 prologue->battle().fail_ai_skill();
@@ -2790,7 +2937,18 @@ int s2ne::run_application(int argc, char** argv)
                                 itemSpellSource.reset();
                                 battleItems->return_from_target(*rawSave);
                             }
-                            std::cout << "Original spell32 visual rejected; no effect/payment committed\n";
+                            if (visualError.empty()) { visualError = "visual dispatch returned false without an error"; }
+                            std::cout << "Original " << visualDispatch << " visual rejected; no effect/payment committed reason=" << visualError << failureContext << "\n";
+                            if (aiSkillActive && visualDispatch != std::string("skill32"))
+                            {
+                                prologue->set_campaign_blocker("Original " + std::string(visualDispatch) + " visual transaction rejected; reload required: " + visualError);
+                                aiSkillActive = false;
+                            }
+                            if (!visualError.empty() && prologue->campaign_blocker().empty())
+                            {
+                                prologue->set_campaign_blocker("Original " + std::string(visualDispatch) + " visual transaction rejected; reload required: " + visualError);
+                                aiSkillActive = false;
+                            }
                         }
                     }
                 }
@@ -3074,15 +3232,19 @@ int s2ne::run_application(int argc, char** argv)
                                         [&, selected, a = std::move(a), victims = std::move(victims), inventory = std::move(inventory), indices, seed, calls, partnerIndex, partner = std::move(partner)]() mutable
                                         {
                                             a.animation_action = 0;
-                                            prologue->events.units.at(size_t(selected)) = std::move(a);
+                                            auto& liveActor = prologue->events.units.at(size_t(selected));
+                                            if (liveActor.id == a.id && liveActor.appearance == a.appearance) { liveActor = std::move(a); }
                                             if (partnerIndex && partner)
                                             {
                                                 partner->animation_action = 0;
-                                                prologue->events.units.at(*partnerIndex) = std::move(*partner);
+                                                auto& livePartner = prologue->events.units.at(*partnerIndex);
+                                                if (livePartner.id == partner->id && livePartner.appearance == partner->appearance) { livePartner = std::move(*partner); }
                                             }
                                             for (size_t n = 0; n < indices.size(); ++n)
                                             {
-                                                prologue->events.units[indices[n]] = std::move(victims[n]);
+                                                auto& liveVictim = prologue->events.units[indices[n]];
+                                                // 同步死亡脚本461215已重置的槽位不能被施法前快照复活。
+                                                if (liveVictim.id == victims[n].id && liveVictim.appearance == victims[n].appearance) { liveVictim = std::move(victims[n]); }
                                                 const auto& unit = prologue->events.units[indices[n]];
                                                 if (unit.status_flags & 0x20) { prologue->events.release_summon_slot(unit); }
                                             }
@@ -3487,6 +3649,7 @@ int s2ne::run_application(int argc, char** argv)
                     if (aiSkillActive && !applied && !swordFeedbackPending)
                     {
                         s2ne::report_error(s2ne::make_error("AI cast transaction rejected; controller remains locked"));
+                        prologue->set_campaign_blocker("AI cast transaction rejected; no effect/payment committed; reload required");
                         prologue->battle().fail_ai_skill();
                     }
                     if (itemSpellSource && !applied && !swordFeedbackPending && !prologue->skill_visual_active())
@@ -3816,78 +3979,7 @@ int s2ne::run_application(int argc, char** argv)
                                         itemNoticeMilliseconds = 1;
                                         break;
                                     }
-                                    prologue->battle().mutate_combat_random([&](auto& random, uint32_t seconds)
-                                        {
-                                            const auto beforeRandom = random;
-                                            auto next = itemUse.try_prepare(snapshot.value(), actor, id, random, seconds, target);
-                                            if (!next)
-                                            {
-                                                s2ne::report_error(next.error());
-                                                return false;
-                                            }
-                                            auto restored = s2ne::OriginalSaveBridge::try_restore(root, next.value());
-                                            if (!restored)
-                                            {
-                                                s2ne::report_error(restored.error());
-                                                return false;
-                                            }
-                                            const auto seed = random.seed_state(), calls = random.draw_count();
-                                            const int amount = itemUse.feedback_amount(snapshot.value(), next.value(), target, id, beforeRandom, seconds);
-                                            const int hp = prologue->events.units[target].hp;
-                                            std::vector<std::vector<uint8_t>> learningNotices;
-                                            for (const auto& record : skillRules.newly_learned_records(prologue->events.units[target], restored.value().events.units[target]))
-                                            {
-                                                auto text = prologue->events.units[target].name;
-                                                text.push_back(' ');
-                                                const auto learned = itemNoticeFont.text_bytes(3);
-                                                text.insert(text.end(), learned.begin(), learned.end());
-                                                text.push_back(' ');
-                                                const auto name = record.name();
-                                                text.insert(text.end(), name.begin(), name.end());
-                                                learningNotices.push_back(std::move(text));
-                                            }
-                                            auto publish = [&, saved = std::move(next).value(), events = std::move(restored.value().events), seed, calls, id, target]() mutable
-                                            {
-                                                using std::swap;
-                                                swap(*rawSave, saved);
-                                                swap(prologue->events, events);
-                                                prologue->battle().mutate_combat_random([&](auto& live, uint32_t)
-                                                    {
-                                                        live.restore_stream(seed, calls);
-                                                        return true;
-                                                    });
-                                                prologue->battle().commit_external_action();
-                                                std::cout << "Original45024C item=" << id << " target=" << target << " effect/inventory/RNG published once\n";
-                                            };
-                                            auto afterPose = [&, actor, target, hp, amount, learningNotices = std::move(learningNotices), publish = std::move(publish)]() mutable
-                                            {
-                                                if (!learningNotices.empty())
-                                                {
-                                                    itemLearningNotices = std::move(learningNotices);
-                                                    itemLearningSince = 0;
-                                                    itemLearningPublish = std::move(publish);
-                                                    return;
-                                                }
-                                                if (!amount)
-                                                {
-                                                    publish();
-                                                    return;
-                                                }
-                                                if (!prologue->battle().begin_healing_feedback(actor, target, hp, amount, std::move(publish), false))
-                                                {
-                                                    s2ne::report_error(s2ne::make_error("451201 item number presentation failed; transaction unpublished"));
-                                                }
-                                            };
-                                            auto presentation = prologue->begin_item_presentation(actor, target, itemUse.targeted(id), std::move(afterPose));
-                                            if (!presentation)
-                                            {
-                                                s2ne::report_error(presentation.error());
-                                                return false;
-                                            }
-                                            itemTargetRequest.reset();
-                                            battleItems.reset();
-                                            return false;
-                                        });
+                                    useOriginalItemTarget(actor, id, target);
                                     break;
                                 }
                             }

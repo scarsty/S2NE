@@ -7,7 +7,8 @@ namespace s2ne
 {
 class OriginalConfirmation
 {
-    std::vector<uint8_t> cel_, pal_, text_;
+    SharedBytes cel_, pal_;
+    std::vector<uint8_t> text_;
     int x_, y_, selection_;
     std::optional<bool> result_;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
@@ -40,11 +41,11 @@ public:
     {
         auto read = [](const auto& path)
         {
-            return read_resource(path).value();
+            return read_shared_resource(path).value();
         };
         cel_ = read(root / "SUPERSP.CEL");
         pal_ = read(root / "SUPERSP.PAL");
-        pal_.at(0) = pal_.at(1) = pal_.at(2) = 0;
+        pal_.mutable_at(0) = pal_.mutable_at(1) = pal_.mutable_at(2) = 0;
     }
     void toggle() { selection_ ^= 1; }
     void confirm() { result_ = selection_ == 0; }

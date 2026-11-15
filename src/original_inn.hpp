@@ -59,7 +59,7 @@ public:
     }
     static Result<std::vector<uint8_t>> try_load_towns(const std::filesystem::path& root)
     {
-        auto pal = read_resource(root / "SUPERSP.PAL"), bin = read_resource(root / "SUPERSP.BIN");
+        auto pal = read_shared_resource(root / "SUPERSP.PAL"), bin = read_shared_resource(root / "SUPERSP.BIN");
         if (!pal)
         {
             return Result<std::vector<uint8_t>>::failure(pal.error());

@@ -13,7 +13,8 @@ namespace s2ne
 class OriginalCampaign
 {
     std::filesystem::path root_;
-    std::vector<uint8_t> bin_, pal_, cel_, items_, prg_;
+    SharedBytes bin_, pal_, cel_, prg_;
+    std::vector<uint8_t> items_;
     OriginalMenu font_;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
@@ -76,12 +77,12 @@ public:
     };
     struct Reward
     {
-        unsigned type{ };
+        unsigned type{};
         std::vector<int> values;
     };
     struct Stage
     {
-        unsigned id{ }, next{ }, mode{ };
+        unsigned id{}, next{}, mode{};
         std::array<std::vector<int>, 2> victory;
         std::vector<int> defeat;
         std::vector<Reward> rewards;
@@ -89,19 +90,19 @@ public:
     };
     struct Runtime
     {
-        unsigned turn{ 1 }, mode{ };
-        bool idle{ true }, forced_victory{ }, forced_defeat{ };
+        unsigned turn{ 1 }, mode{};
+        bool idle{ true }, forced_victory{}, forced_defeat{};
         // Original predicates 1..20 and 31/32 need map-object/withdrawal state.
         std::function<bool(int)> special_condition;
     };
     struct Decision
     {
         Outcome outcome{ Outcome::pending };
-        unsigned group{ };
+        unsigned group{};
     };
     struct Settlement
     {
-        unsigned stage{ }, next{ }, group{ };
+        unsigned stage{}, next{}, group{};
         std::vector<Reward> rewards;
         std::vector<size_t> survivor_indices;
     };
@@ -116,15 +117,18 @@ public:
             return Result<OriginalCampaign>::failure(font.error());
         }
         result.font_ = std::move(font).value();
-        for (auto pair : { std::pair{ &result.bin_, "SUPERSP.BIN" }, std::pair{ &result.pal_, "SUPERSP.PAL" }, std::pair{ &result.cel_, "SUPERSP.CEL" }, std::pair{ &result.items_, "ITEMSP.BIN" }, std::pair{ &result.prg_, "SUPERSP.PRG" } })
+        for (auto pair : { std::pair{ &result.bin_, "SUPERSP.BIN" }, std::pair{ &result.pal_, "SUPERSP.PAL" }, std::pair{ &result.cel_, "SUPERSP.CEL" }, std::pair{ &result.prg_, "SUPERSP.PRG" } })
         {
-            auto bytes = read_resource(root / pair.second);
+            auto bytes = read_shared_resource(root / pair.second);
             if (!bytes)
             {
                 return Result<OriginalCampaign>::failure(bytes.error());
             }
             *pair.first = std::move(bytes).value();
         }
+        auto items = read_resource(root / "ITEMSP.BIN");
+        if (!items) { return Result<OriginalCampaign>::failure(items.error()); }
+        result.items_ = std::move(items).value();
         ResourceReader pal(result.pal_), bin(result.bin_);
         unsigned raw = pal.number(848, 4);
         if (!pal)
@@ -276,14 +280,14 @@ public:
     }
     struct StoryAnimationRole
     {
-        unsigned id{ };
-        int direction{ }, action{ };
-        size_t event{ };
+        unsigned id{};
+        int direction{}, action{};
+        size_t event{};
     };
     struct StoryAnimationGroup
     {
-        bool hostile{ };
-        size_t begin{ }, end{ };
+        bool hostile{};
+        size_t begin{}, end{};
         std::vector<StoryAnimationRole> roles;
     };
     static s2ne::Result<StoryAnimationGroup> try_story_animation_group(const OriginalEvents& events, size_t begin)
@@ -344,15 +348,15 @@ public:
     }
     struct StoryMovementRole
     {
-        unsigned id{ };
-        int x{ }, y{ };
-        size_t event{ };
+        unsigned id{};
+        int x{}, y{};
+        size_t event{};
     };
     struct StoryMovementGroup
     {
-        size_t begin{ }, end{ };
-        bool hostile{ };
-        unsigned camera{ };
+        size_t begin{}, end{};
+        bool hostile{};
+        unsigned camera{};
         std::vector<StoryMovementRole> roles;
     };
     static s2ne::Result<StoryMovementGroup> try_story_movement_group(const OriginalEvents& events, size_t event)
@@ -366,7 +370,7 @@ public:
         {
             return s2ne::Result<StoryMovementGroup>::failure(make_error("Invalid original grouped movement header"));
         }
-        StoryMovementGroup group{ event, events.event_count(), condition == 4, unsigned(events.event_word(event, 7)), { } };
+        StoryMovementGroup group{ event, events.event_count(), condition == 4, unsigned(events.event_word(event, 7)), {} };
         for (size_t i = event + 1; i < events.event_count(); ++i)
         {
             if (events.type(i) != 16 || events.event_word(i, 3) != flag)
@@ -461,6 +465,8 @@ public:
     }
     unsigned selected_route(const OriginalEvents& completed) const
     {
+        // 420DC3写入4F7CE0后，后续旗标可能已被消耗；优先使用事务保存的路由。
+        if (completed.script_route && *completed.script_route > 0) { return unsigned(*completed.script_route); }
         OriginalEvents source(root_, completed.difficulty);
         source.load_stage(completed.stage);
         unsigned route = completed_story_route(source, completed);
@@ -584,7 +590,7 @@ public:
     {
         if (!rt.idle)
         {
-            return { };
+            return {};
         }
         // Demo mode uses a different roster-only rule (4383E0/4384FE).
         if (rt.mode == 1)
@@ -597,7 +603,7 @@ public:
             {
                 return { Outcome::victory, 0 };
             }
-            return { };
+            return {};
         }
         if (rt.turn > 99 || rt.forced_defeat)
         {
@@ -643,7 +649,7 @@ public:
                 return { Outcome::victory, k + 1 };
             }
         }
-        return { };
+        return {};
     }
     static std::vector<size_t> victory_events(const OriginalEvents& events, unsigned group)
     {

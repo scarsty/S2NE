@@ -196,7 +196,7 @@ public:
     struct InitializationTag
     {
     };
-    OriginalSettings(const std::filesystem::path& root, int mode, State state, InitializationTag) : font_(root), state_(state), mode_(mode), old_mask_(state.status_window) { }
+    OriginalSettings(const std::filesystem::path& root, int mode, State state, InitializationTag) : font_(root), state_(state), mode_(mode), old_mask_(state.status_window) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, int mode, State state)
     {
         if (mode < 0 || mode > 2)
@@ -210,7 +210,7 @@ public:
         }
         pal_ = std::move(pal_read_result).value();
         pal_.at(0) = pal_.at(1) = pal_.at(2) = 0;
-        auto cel_read_result = read_resource(root / "SUPERSP.CEL");
+        auto cel_read_result = read_shared_resource(root / "SUPERSP.CEL");
         if (!cel_read_result)
         {
             return s2ne::Result<bool>::failure(cel_read_result.error());
@@ -274,7 +274,7 @@ public:
     }
     static s2ne::Result<std::unique_ptr<OriginalSettings>> create(const std::filesystem::path& root, int mode, State state)
     {
-        auto result = std::make_unique<OriginalSettings>(root, mode, state, InitializationTag{ });
+        auto result = std::make_unique<OriginalSettings>(root, mode, state, InitializationTag{});
         auto ready = result->initialize(root, mode, state);
         if (!ready)
         {
@@ -292,7 +292,7 @@ public:
         {
             int a, b, c, d, e, g, h, i;
             char drive;
-            char value[16]{ };
+            char value[16]{};
             if (std::sscanf(line.c_str(), "DEVICE=%d,%d,%c", &a, &b, &drive) == 3)
             {
                 state.device = a;
@@ -324,7 +324,7 @@ public:
         }
         return state;
     }
-    explicit OriginalSettings(const std::filesystem::path& root, int mode = 0) : OriginalSettings(root, mode, load_state(root)) { }
+    explicit OriginalSettings(const std::filesystem::path& root, int mode = 0) : OriginalSettings(root, mode, load_state(root)) {}
     const State& state() const { return state_; }
     bool closed() const { return closed_; }
     int left() const { return left_; }

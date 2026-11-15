@@ -121,7 +121,7 @@ inline Result<std::vector<uint8_t>> original_xmi_midi(std::span<const uint8_t> x
 inline Result<std::vector<std::vector<uint8_t>>> original_xmi_resources(const std::filesystem::path& root)
 {
     using Resources = std::vector<std::vector<uint8_t>>;
-    auto pal = read_resource(root / "SUPERSP.PAL"), bin = read_resource(root / "SUPERSP.BIN");
+    auto pal = read_shared_resource(root / "SUPERSP.PAL"), bin = read_shared_resource(root / "SUPERSP.BIN");
     if (!pal) { return Result<Resources>::failure(pal.error()); }
     if (!bin) { return Result<Resources>::failure(bin.error()); }
     ResourceReader p(pal.value());
