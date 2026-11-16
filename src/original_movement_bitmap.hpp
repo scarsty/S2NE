@@ -7,7 +7,7 @@ namespace s2ne::original_movement
 {
 class SharedEffectClock
 {
-    unsigned phase_{ };
+    unsigned phase_{};
 
 public:
     unsigned phase() const { return phase_; }

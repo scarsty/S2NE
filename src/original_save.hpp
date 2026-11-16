@@ -25,20 +25,20 @@ public:
     {
         std::vector<UnitRecord> units;
         // Runtime +CC (4), +DE (4), +D6 (4), +D4 (2), +E2 (4), in that order.
-        std::array<uint8_t, 18> metadata{ };
-        std::vector<uint8_t> inventory;       // ITEMSP.BIN's signed 16-bit entry count, not its file size.
-        std::array<uint8_t, 33> status{ };    // runtime +286
+        std::array<uint8_t, 18> metadata{};
+        std::vector<uint8_t> inventory;      // ITEMSP.BIN's signed 16-bit entry count, not its file size.
+        std::array<uint8_t, 33> status{};    // runtime +286
     };
     struct State
     {
-        std::array<uint8_t, 50> description{ };
-        std::array<uint8_t, 255> attribution{ };    // Preserve original stack-buffer padding verbatim.
-        std::array<uint8_t, 80> flags_4f7d10{ };
-        std::array<uint8_t, 31> settings_4f7cf0{ };
-        std::array<uint8_t, 29> globals_4f7cd0{ };
-        std::array<uint8_t, 4> value_4f705c{ };
-        std::array<uint8_t, 160> words_4f6fbc{ };
-        std::array<uint8_t, 28> stage_4fb478{ };
+        std::array<uint8_t, 50> description{};
+        std::array<uint8_t, 255> attribution{};    // Preserve original stack-buffer padding verbatim.
+        std::array<uint8_t, 80> flags_4f7d10{};
+        std::array<uint8_t, 31> settings_4f7cf0{};
+        std::array<uint8_t, 29> globals_4f7cd0{};
+        std::array<uint8_t, 4> value_4f705c{};
+        std::array<uint8_t, 160> words_4f6fbc{};
+        std::array<uint8_t, 28> stage_4fb478{};
         std::array<Group, 2> groups;
         std::vector<uint16_t> event_states;
         bool battle_context() const { return u32(globals_4f7cd0, 4) == 0; }
@@ -63,7 +63,7 @@ private:
         size_t position_ = 0;
 
     public:
-        explicit Reader(std::span<const uint8_t> bytes) : bytes_(bytes) { }
+        explicit Reader(std::span<const uint8_t> bytes) : bytes_(bytes) {}
         void take(std::span<uint8_t> dest)
         {
             if (dest.size() > bytes_.size() - position_)
@@ -75,13 +75,13 @@ private:
         }
         uint32_t dword()
         {
-            std::array<uint8_t, 4> b{ };
+            std::array<uint8_t, 4> b{};
             take(b);
             return u32(b, 0);
         }
         uint16_t word()
         {
-            std::array<uint8_t, 2> b{ };
+            std::array<uint8_t, 2> b{};
             take(b);
             return uint16_t(b[0] | (unsigned(b[1]) << 8));
         }
@@ -191,7 +191,7 @@ public:
         check_items(items);
         Reader r(bytes);
         State s;
-        std::array<uint8_t, 9> magic{ };
+        std::array<uint8_t, 9> magic{};
         r.take(magic);
         if (magic != signature)
         {
@@ -311,7 +311,7 @@ public:
         {
             return Result<State>::failure(make_error("Cannot open original save"));
         }
-        std::vector<uint8_t> bytes{ std::istreambuf_iterator<char>(file), { } };
+        std::vector<uint8_t> bytes{ std::istreambuf_iterator<char>(file), {} };
         if (file.bad())
         {
             return Result<State>::failure(make_error("Cannot read original save"));

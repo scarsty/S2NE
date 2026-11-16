@@ -4619,7 +4619,11 @@ private:
         }
         auto behavior = dispatch_40D171(mode, int16_t(actor.hp), int16_t(actor.max_hp), [&](int m)
             {
-                return urgent_40CDA1(m, kind, actor.hp, actor.max_hp, actor.mp, actor.max_mp) ? 1 : 0;
+                const unsigned armyFlags = hostile_resources_->army_modes ? (*hostile_resources_->army_modes)[controller_hostile_ ? 1 : 0] : 0;
+                return urgent_40CDA1(m, kind, actor.hp, actor.max_hp, actor.mp, actor.max_mp,
+                           (actor.abilities & 0x80) || (actor.status3c & 0x10), hostile_resources_->difficulty, controller_hostile_ ? 1 : 0, armyFlags) ?
+                    1 :
+                    0;
             },
             [&](int m)
             {
@@ -5819,13 +5823,13 @@ public:
                 if (!skill_area_cell({ x, y }) || !includes({ x, y })) { continue; }
                 auto pixels = tile;
                 if (mask) { mask(pixels, { x, y }); }
-                auto point = center({ x, y });
+                auto point = screen_center({ x, y }, cx, cy);
                 for (int row = 0; row < 32; ++row)
                 {
                     for (int col = 0; col < 64; ++col)
                     {
                         unsigned color = pixels[size_t(row) * 64 + col];
-                        int px = point.x - cx - 32 + col, py = point.y - cy - 16 + row;
+                        int px = point.x - 32 + col, py = point.y - 16 + row;
                         if (!color || px < 0 || px >= 640 || py < 120 || py >= 480) { continue; }
                         auto dst = (size_t(py) * 640 + px) * 4;
                         for (unsigned k = 0; k < 3; ++k) { image[dst + k] = uint8_t(unsigned(effect_palette_[color * 3 + k]) * 255 / 63); }

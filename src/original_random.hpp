@@ -23,7 +23,7 @@ private:
     State state_;
 
 public:
-    explicit OriginalRandom(State state) : state_(state) { }
+    explicit OriginalRandom(State state) : state_(state) {}
     State state() const { return state_; }
     void restore(State state) { state_ = state; }
     void srand(uint32_t seed) { state_.seed = seed; }
@@ -33,7 +33,7 @@ public:
         return (state_.seed >> 16) & 0x7FFF;
     }
     // 4732ED: signed IDIV bound, zero returns without counter/seed/time changes.
-    Result<unsigned> try_bounded(int32_t bound, const TimeSource& time = { })
+    Result<unsigned> try_bounded(int32_t bound, const TimeSource& time = {})
     {
         if (!bound)
         {
@@ -55,7 +55,7 @@ public:
         state_ = next;
         return Result<unsigned>::success(value);
     }
-    unsigned bounded(int32_t bound, const TimeSource& time = { })
+    unsigned bounded(int32_t bound, const TimeSource& time = {})
     {
         auto result = try_bounded(bound, time);
         if (!result)

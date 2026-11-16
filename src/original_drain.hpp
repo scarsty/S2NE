@@ -9,14 +9,14 @@ namespace s2ne
 class OriginalDrain
 {
     OriginalSkill94Resolution resolution_;
-    std::array<int, 256> config_{ };
+    std::array<int, 256> config_{};
 
 public:
     struct Packet
     {
-        int chance{ }, roll{ }, damage{ }, healing{ }, snapshot{ }, caster_before{ }, caster_after_damage{ };
-        bool hit{ }, killed{ }, revived{ }, reverse{ }, reversed_damage{ };
-        unsigned consumed_item{ };
+        int chance{}, roll{}, damage{}, healing{}, snapshot{}, caster_before{}, caster_after_damage{};
+        bool hit{}, killed{}, revived{}, reverse{}, reversed_damage{};
+        unsigned consumed_item{};
     };
     static Result<OriginalDrain> create(const std::filesystem::path& root)
     {

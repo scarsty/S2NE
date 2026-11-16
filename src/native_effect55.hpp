@@ -8,8 +8,8 @@ struct NativeEffect55
 {
     struct Packet
     {
-        int chance{ }, roll{ }, duration{ };
-        bool hit{ }, changed{ }, immune{ };
+        int chance{}, roll{}, duration{};
+        bool hit{}, changed{}, immune{};
     };
     static Result<Packet> resolve(OriginalEvents::Unit& target, const OriginalEvents::Unit& actor,
         original_combat::Random& random, std::span<const int, 256> config, unsigned difficulty,

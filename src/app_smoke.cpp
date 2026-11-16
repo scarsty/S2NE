@@ -1338,7 +1338,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
         auto snapshot = [&](const char* name)
         {
             auto events = prologue->events;
-            if (((inputSkill >= 64 && inputSkill <= 74) || inputSkill == 51 || inputSkill == 29 || inputSkill == 18 || inputSkill == 40 || skill94Input || NativeDamageRecords::ordinary_sword(inputSkill)) && skillInputPhase == 9 && !skillCastVerified && skillInputBefore)
+            if (((inputSkill >= 64 && inputSkill <= 74) || inputSkill == 45 || inputSkill == 51 || inputSkill == 29 || inputSkill == 18 || inputSkill == 40 || skill94Input || NativeDamageRecords::ordinary_sword(inputSkill)) && skillInputPhase == 9 && !skillCastVerified && skillInputBefore)
             {
                 events.units[skillInputCaster].action_state = skillInputBefore->action_state;
                 events.units[skillInputCaster].direction = skillInputBefore->direction;
@@ -2269,7 +2269,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         }
                     }
                 }
-                if ((NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || skill94Input || inputSkill == 32 || inputSkill == 33 || inputSkill == 1 || ((inputSkill >= 2 && inputSkill <= 10) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96)) && skillInputPhase == 0 && (point.x < 32 || point.x > 608 || point.y < 32 || point.y > 370))
+                if ((NativeAbilityBuffs::find(inputSkill) || NativeTimedBuffs::find(inputSkill) || skill94Input || inputSkill == 32 || inputSkill == 33 || inputSkill == 45 || inputSkill == 1 || ((inputSkill >= 2 && inputSkill <= 10) || inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96)) && skillInputPhase == 0 && (point.x < 32 || point.x > 608 || point.y < 32 || point.y > 370))
                 {
                     if (prologue->battle_state() != s2ne::Battle::State::idle)
                     {
@@ -2498,6 +2498,10 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
         }
         else if (skillInputPhase == 1 || skillInputPhase == 6)
         {
+            if (prologue->battle_selected() != int(skillInputCaster))
+            {
+                fatal("Skill SDL selected wrong caster: expected=" + std::to_string(skillInputCaster) + " actual=" + std::to_string(prologue->battle_selected()));
+            }
             if (prologue->battle_state() == s2ne::Battle::State::command)
             {
                 if (prologue->battle_command_index() != 0)
@@ -2528,6 +2532,10 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
         }
         else if (skillInputPhase == 2 || skillInputPhase == 7)
         {
+            if (++state.skillSelectorAttempts > 150)
+            {
+                fatal("Skill SDL selector budget exhausted: wanted=" + std::to_string(inputSkill) + " selected=" + std::to_string(skillMenu ? skillMenu->selected().id : 0) + " page=" + std::to_string(skillMenu ? int(skillMenu->page()) : -1) + " target=" + std::to_string(skillTarget.value_or(size_t(-1))) + " wanted_target=" + std::to_string(skillInputTarget));
+            }
             if (!skillMenu)
             {
                 const auto& actor = prologue->events.units.at(size_t(prologue->battle_selected()));
@@ -2546,14 +2554,26 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         {
                             has |= r.id == inputSkill;
                         }
-                        key(has ? SDLK_DOWN : SDLK_RIGHT);
+                        if (has) { key(SDLK_DOWN); }
+                        else
+                        {
+                            SDL_Event group{};
+                            group.type = SDL_EVENT_KEY_DOWN;
+                            group.key.key = SDLK_RIGHT;
+                            group.key.mod = SDL_KMOD_SHIFT;
+                            SDL_PushEvent(&group);
+                        }
                     }
                     else
                     {
                         key(SDLK_RETURN);
                     }
                 }
-                else if (skillTarget && *skillTarget == skillInputTarget) { ++skillInputPhase; }
+                else if (skillTarget && *skillTarget == skillInputTarget)
+                {
+                    state.skillSelectorAttempts = 0;
+                    ++skillInputPhase;
+                }
                 else
                 {
                     key(SDLK_TAB);
@@ -2566,8 +2586,14 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             key(SDLK_ESCAPE);
             ++skillInputPhase;
         }
-        else if (skillInputPhase == 4 && !skillMenu)
+        else if (skillInputPhase == 4)
         {
+            if (skillMenu)
+            {
+                if (skillMenu->page() == s2ne::OriginalSkills::Page::requested) { fatal("Target cancel did not return to original skill list"); }
+                key(SDLK_ESCAPE);
+                return true;
+            }
             if (snapshot("cancel-after.sav") != skillCancelBaseline)
             {
                 s2ne::fatal("Target cancel mutated original save");
@@ -2926,7 +2952,8 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 int cost = 15;
                 if (inputSkill == 50) { cost = 25; }
                 const int proficiency = (cost + 6 - int(prologue->events.difficulty)) * 5 / 2 + 10;
-                if (live.action_points != skillInputBefore->action_points - 45 || live.learned_proficiency[4] != skillInputBefore->learned_proficiency[4] + proficiency || live.experience != skillInputBefore->experience + 6) { fatal("Dedicated sight common settlement duplicated or wrong group"); }
+                const int experience = OriginalProgression::apply_difficulty_reward(6, prologue->events.difficulty);
+                if (live.action_points != skillInputBefore->action_points - 45 || live.learned_proficiency[4] != skillInputBefore->learned_proficiency[4] + proficiency || live.experience != skillInputBefore->experience + experience) { fatal("Dedicated sight common settlement mismatch: AP=" + std::to_string(skillInputBefore->action_points) + "->" + std::to_string(live.action_points) + " proficiency=" + std::to_string(skillInputBefore->learned_proficiency[4]) + "->" + std::to_string(live.learned_proficiency[4]) + " expected_delta=" + std::to_string(proficiency) + " XP=" + std::to_string(skillInputBefore->experience) + "->" + std::to_string(live.experience)); }
             }
             if ((inputSkill == 29 || inputSkill == 18 || inputSkill == 40 || NativeDamageRecords::ordinary_sword(inputSkill)) && options.skillControl == "script82")
             {
@@ -3715,7 +3742,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
         }
         if (SDL_GetTicks() - started > 30000)
         {
-            s2ne::fatal("Earned promotion SDL flow timed out: phase=" + std::to_string(promotionSmokePhase) + " selected=" + std::to_string(prologue->battle_selected()) + " state=" + std::to_string(int(prologue->battle_state())) + " blocker=" + prologue->campaign_blocker() + " dialogue=" + std::to_string(prologue->campaign_dialogue()) + " modal=" + std::to_string(prologue->campaign_modal()) + " defeat=" + std::to_string(prologue->campaign_defeated()) + " reward=" + std::to_string(prologue->campaign_reward_report()));
+            s2ne::fatal("Earned promotion SDL flow timed out: phase=" + std::to_string(promotionSmokePhase) + " prologue_phase=" + std::to_string(prologue->diagnostic_phase()) + " deployment=" + std::to_string(prologue->deployment_requested()) + " selected=" + std::to_string(prologue->battle_selected()) + " state=" + std::to_string(int(prologue->battle_state())) + " blocker=" + prologue->campaign_blocker() + " dialogue=" + std::to_string(prologue->campaign_dialogue()) + " modal=" + std::to_string(prologue->campaign_modal()) + " defeat=" + std::to_string(prologue->campaign_defeated()) + " reward=" + std::to_string(prologue->campaign_reward_report()));
         }
         auto pushPromotionClick = [&](float x, float y)
         {

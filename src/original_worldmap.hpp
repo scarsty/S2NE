@@ -9,20 +9,20 @@ class OriginalWorldmap
 {
     struct Icon
     {
-        unsigned width{ }, height{ };
+        unsigned width{}, height{};
         std::vector<uint8_t> pixels;
     };
     std::vector<uint8_t> pixels_, palette_, towns_;
     std::array<Icon, 2> icons_;
-    unsigned width_{ }, height_{ }, current_{ }, destination_{ }, hovered_{ };
-    int x_{ }, y_{ };
-    bool closed_{ };
+    unsigned width_{}, height_{}, current_{}, destination_{}, hovered_{};
+    int x_{}, y_{};
+    bool closed_{};
     int pointer_x_{ 320 }, pointer_y_{ 240 };
     std::optional<std::pair<int, int>> pending_scroll_;
-    unsigned last_scroll_{ }, delay_{ };
-    bool waiting_{ };
-    bool presented_{ };
-    bool presentation_{ }, entering_{ }, leaving_{ };
+    unsigned last_scroll_{}, delay_{};
+    bool waiting_{};
+    bool presented_{};
+    bool presentation_{}, entering_{}, leaving_{};
     unsigned fade_{ 63 };
     bool transition() const { return presentation_ && (leaving_ || entering_); }
     uint8_t channel(unsigned ink, unsigned component) const

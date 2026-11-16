@@ -15,25 +15,25 @@ namespace s2ne::original_ai
 // Values are outputs of the original preview object, not rolled strike damage.
 struct MeleePreview
 {
-    int attack_value{ };                 // sub_4086DF (includes sub_40883D bonus)
-    int attack_chance{ };                // sub_408742
-    int attack_damage{ };                // sub_408768
-    int counter_value{ };                // sub_40878E (includes sub_40883D bonus)
-    int counter_chance{ };               // sub_4087F1
-    int counter_damage{ };               // sub_408817
-    int target_hp{ }, attacker_hp{ };    // signed runtime words +124h
-    int target_kind{ };                  // signed runtime word +2
-    unsigned target_flags2f{ };
-    bool attacker_status38_02{ };
+    int attack_value{};                // sub_4086DF (includes sub_40883D bonus)
+    int attack_chance{};               // sub_408742
+    int attack_damage{};               // sub_408768
+    int counter_value{};               // sub_40878E (includes sub_40883D bonus)
+    int counter_chance{};              // sub_4087F1
+    int counter_damage{};              // sub_408817
+    int target_hp{}, attacker_hp{};    // signed runtime words +124h
+    int target_kind{};                 // signed runtime word +2
+    unsigned target_flags2f{};
+    bool attacker_status38_02{};
 };
 struct Weights
 {
-    uint8_t priority{ };    // config[100h + signed difficulty]
-    uint8_t kill{ };        // config[105h + signed difficulty]
+    uint8_t priority{};    // config[100h + signed difficulty]
+    uint8_t kill{};        // config[105h + signed difficulty]
 };
 struct Score
 {
-    int rank{ }, value{ }, kills{ };
+    int rank{}, value{}, kills{};
 };
 inline int multiply(int a, int b) { return std::bit_cast<int32_t>(uint32_t(a) * uint32_t(b)); }
 inline int subtract(int a, int b) { return std::bit_cast<int32_t>(uint32_t(a) - uint32_t(b)); }
@@ -121,14 +121,14 @@ inline bool improves_skill(Score candidate, Score current, int threshold)
 }
 struct Candidate
 {
-    std::size_t target{ };        // opaque caller token; no assumption about unit ID/index
-    int destination_record{ };    // zero=current position, otherwise original record index+1
-    MeleePreview preview{ };
+    std::size_t target{};        // opaque caller token; no assumption about unit ID/index
+    int destination_record{};    // zero=current position, otherwise original record index+1
+    MeleePreview preview{};
     int action_index{ -1 };    // Original action-definition token retained by executable controller.
 };
 struct Selection
 {
-    Score score{ };
+    Score score{};
     std::optional<Candidate> candidate;
 };
 // Call in original action-definition order, current position then ordered routes.
@@ -170,7 +170,7 @@ inline int movement_mode(bool helper40CAFE, bool helper40C956)
 
 struct Position
 {
-    int x{ }, y{ };
+    int x{}, y{};
     bool operator==(const Position&) const = default;
 };
 // Literal bounded ring walk of sub_478AF3, including same-cell result 80.
@@ -193,16 +193,16 @@ inline int original_distance(Position from, Position to)
 }
 struct RouteRecord
 {
-    int index{ };    // actual zero-based record index, NOT ordered-table position
-    Position position{ };
-    int remaining{ };        // signed word +4
-    int marker{ };           // signed byte +7, only zero is rejected
-    unsigned category{ };    // byte +12h; not filtered by fallback selectors
+    int index{};    // actual zero-based record index, NOT ordered-table position
+    Position position{};
+    int remaining{};        // signed word +4
+    int marker{};           // signed byte +7, only zero is rejected
+    unsigned category{};    // byte +12h; not filtered by fallback selectors
 };
 struct RouteNode
 {
-    RouteRecord route{ };
-    int parent{ };
+    RouteRecord route{};
+    int parent{};
     std::array<int, 4> children{ -1, -1, -1, -1 };    // record +Ah/+Ch/+Eh/+10h
     bool live = true;
 };
@@ -340,7 +340,7 @@ OrderedRoutes build_ordered_routes(Position origin, Step step, Marker marker, Bu
             {
                 return -1;
             }
-            result.records.push_back({ });
+            result.records.push_back({});
         }
         else
         {
@@ -377,13 +377,13 @@ OrderedRoutes build_ordered_routes(Position origin, Step step, Marker marker, Bu
 }
 struct MovementTarget
 {
-    std::size_t token{ };
-    Position position{ };
-    bool runtime_ad_nonzero{ };
-    unsigned status33{ };
-    int kind_class{ };      // signed kind-table byte +11h
-    int combat_value{ };    // sub_45CFBB with both selector arguments zero
-    bool same_side{ };      // Legacy field name: sub_441020 == 1 means HIDDEN, not same allegiance.
+    std::size_t token{};
+    Position position{};
+    bool runtime_ad_nonzero{};
+    unsigned status33{};
+    int kind_class{};      // signed kind-table byte +11h
+    int combat_value{};    // sub_45CFBB with both selector arguments zero
+    bool same_side{};      // Legacy field name: sub_441020 == 1 means HIDDEN, not same allegiance.
 };
 // sub_4394ED / 43948D. Caller passes list order, not sorted targets.
 inline const MovementTarget* original_target(std::span<const MovementTarget> units, Position origin, int mode, int minimum_value = 0)
@@ -490,12 +490,16 @@ inline bool target_threat(int distance, int target12c, int target130, int config
     int steps = std::max(0, (budget - (special ? config_ef : config_ee)) / config_e9) + (special ? 5 : range);
     return distance - steps - reach - 2 <= 0;
 }
-// 40CDA1 ordinary non-hidden branch. +122 SAR16 reads WORD +124.
-inline bool urgent_40CDA1(int mode, int kind, int hp, int maximum_hp, int mp, int maximum_mp)
+// 40CDA1 checks concealment before class thresholds; +122 SAR16 reads WORD +124.
+inline bool urgent_40CDA1(int mode, int kind, int hp, int maximum_hp, int mp, int maximum_mp, bool concealed = false, unsigned difficulty = 3, int side_da = 0, unsigned army_flags = 0)
 {
     if (maximum_hp <= 0)
     {
         return false;
+    }
+    if (hp * 100 / maximum_hp >= 40 && concealed)
+    {
+        if ((difficulty <= 2 && side_da == 1) || !(army_flags & 9)) { return true; }
     }
     int threshold;
     if (kind == 6 || kind == 7 || kind == 19 || kind == 20)
@@ -526,9 +530,9 @@ inline bool urgent_40CDA1(int mode, int kind, int hp, int maximum_hp, int mp, in
 }
 struct MoveSelection
 {
-    int destination_record{ };
-    Position destination{ };
-    int distance{ };
+    int destination_record{};
+    Position destination{};
+    int distance{};
 };
 inline int squared_distance(Position a, Position b)
 {

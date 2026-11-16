@@ -1312,6 +1312,19 @@ public:
         if (kind == Handler::drain467625 && (!drain || !events || !equipment || !army_inventory)) { return fail(); }
         if (kind == Handler::fissure467625 && (!events || !army_inventory || config_[11] + 3 <= 0)) { return fail(); }
         if (cooperative_supported() && (!partner || partner->id != request_->partner_id || partner->appearance != request_->partner_appearance || !cooperative_pair(actor, *partner) || resource_failure(*partner, selected()) != Failure::none)) { return fail(); }
+        const auto same_unit = [](const auto& a, const auto& b)
+        {
+            return a.id == b.id && a.appearance == b.appearance && a.x == b.x && a.y == b.y;
+        };
+        for (size_t i = 0; i < targets.size(); ++i)
+        {
+            for (size_t j = 0; j < i; ++j)
+            {
+                const auto& a = targets[i];
+                const auto& b = targets[j];
+                if (same_unit(a, b)) { return fail(); }
+            }
+        }
         const unsigned group = request_->group;
         auto a = actor;
         auto p = partner ? *partner : actor;
@@ -1712,8 +1725,8 @@ public:
                 out.target_hits.push_back(out.hit);
                 out.target_amounts.push_back(0);
             }
-            if (t.id == actor.id && t.appearance == actor.appearance) { a = t; }
-            if (partner && t.id == p.id && t.appearance == p.appearance) { p = t; }
+            if (same_unit(t, actor)) { a = t; }
+            if (partner && same_unit(t, *partner)) { p = t; }
         }
         if (kind == Handler::summon465E04)
         {
@@ -1742,8 +1755,8 @@ public:
         if (cooperative_supported()) { pay_staged(p, context, partner->abilities); }
         for (auto& t : staged)
         {
-            if (t.id == actor.id && t.appearance == actor.appearance) { t = a; }
-            if (partner && t.id == p.id && t.appearance == p.appearance) { t = p; }
+            if (same_unit(t, actor)) { t = a; }
+            if (partner && same_unit(t, *partner)) { t = p; }
         }
         if (cooperative_supported()) { *partner = std::move(p); }
         actor = std::move(a);

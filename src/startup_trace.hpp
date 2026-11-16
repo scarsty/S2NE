@@ -13,7 +13,7 @@ class StartupTrace
     std::string_view category_;
 
 public:
-    explicit StartupTrace(std::string_view category = "Startup") : category_(category) { }
+    explicit StartupTrace(std::string_view category = "Startup") : category_(category) {}
     void mark(std::string_view name)
     {
         if (!enabled_) { return; }

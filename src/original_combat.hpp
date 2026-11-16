@@ -17,7 +17,7 @@ namespace s2ne::original_combat
 class Random
 {
 public:
-    explicit Random(uint32_t seed) : state_(seed) { }
+    explicit Random(uint32_t seed) : state_(seed) {}
     void seed(uint32_t value) { state_ = value; }
     unsigned raw()
     {
@@ -89,20 +89,20 @@ private:
             draws_ = 0;
         }
     }
-    uint32_t state_{ };
-    unsigned draws_{ };
-    std::array<uint8_t, 100> table_{ };
+    uint32_t state_{};
+    unsigned draws_{};
+    std::array<uint8_t, 100> table_{};
 };
 
 // 45CFBB: value18/14/10/C are locals selected by input mode, not XP.
 // Runtime names identify the signed word at the exact record offset.
 struct CombatValueInput
 {
-    int value18{ }, value14{ }, value10{ }, valueC{ }, runtime134{ }, runtime136{ }, runtime138{ }, runtimeC1{ }, runtimeBF{ }, runtimeC7{ };
-    int learned_first{ }, learned_second{ }, kind_multiplier{ };
-    uint32_t abilities{ };
-    bool equipment_18{ };
-    int configD6{ }, configD7{ }, configD8{ }, configD9{ }, configDA{ }, configDB{ }, configDC{ }, configDF{ };
+    int value18{}, value14{}, value10{}, valueC{}, runtime134{}, runtime136{}, runtime138{}, runtimeC1{}, runtimeBF{}, runtimeC7{};
+    int learned_first{}, learned_second{}, kind_multiplier{};
+    uint32_t abilities{};
+    bool equipment_18{};
+    int configD6{}, configD7{}, configD8{}, configD9{}, configDA{}, configDB{}, configDC{}, configDF{};
 };
 inline Result<CombatValueInput> try_decode_combat_value(std::span<const uint8_t> unit, std::span<const uint8_t> config,
     std::span<const uint8_t> kind, unsigned first_group_end, int mode, bool equipment18)
@@ -115,7 +115,7 @@ inline Result<CombatValueInput> try_decode_combat_value(std::span<const uint8_t>
     {
         return int(int16_t(unsigned(unit[p]) | (unsigned(unit[p + 1]) << 8)));
     };
-    CombatValueInput in{ };
+    CombatValueInput in{};
     int valueOffset;
     if (mode == 2) { valueOffset = 0xB7; }
     else if (mode == 1) { valueOffset = 0x132; }
@@ -228,15 +228,15 @@ inline int combat_value(const CombatValueInput& in)
 
 struct ActionStatusInput
 {
-    int result{ }, effect{ }, duration{ }, chance{ }, roll{ }, target_kind{ }, target_kind17{ };
-    int target_runtimeB7{ }, target_runtime124{ }, target_runtime134{ };
-    bool target_status33_20{ }, target_status3e_10{ }, target_116_40{ }, target_116_10{ }, target_equipment14{ };
+    int result{}, effect{}, duration{}, chance{}, roll{}, target_kind{}, target_kind17{};
+    int target_runtimeB7{}, target_runtime124{}, target_runtime134{};
+    bool target_status33_20{}, target_status3e_10{}, target_116_40{}, target_116_10{}, target_equipment14{};
 };
 struct ActionStatusResult
 {
-    unsigned function{ }, mask{ };
-    int amount{ }, duration{ }, result{ };
-    bool redraw{ };
+    unsigned function{}, mask{};
+    int amount{}, duration{}, result{};
+    bool redraw{};
 };
 // The action-table status tail of 43D93B; equipment/ability procs occur earlier.
 inline ActionStatusResult action_status(const ActionStatusInput& in)
@@ -830,8 +830,8 @@ inline int stage_stat_adjustment(int average_value, unsigned baseline, unsigned 
 
 struct ExperienceInput
 {
-    int source_value{ }, target_value{ }, result{ }, configE5{ }, configE1{ }, configE2{ };
-    bool target_status33_20{ }, target_alive{ };
+    int source_value{}, target_value{}, result{}, configE5{}, configE1{}, configE2{};
+    bool target_status33_20{}, target_alive{};
 };
 // 409454/40948C swap context +8/+C before entering 4094C4.
 inline Result<int> try_action_experience(const ExperienceInput& in)
@@ -863,16 +863,16 @@ inline int action_experience(const ExperienceInput& in)
 
 struct AttackInput
 {
-    int attacker_attack{ };     // runtime unit +134h
-    int defender_defense{ };    // runtime unit +136h
-    int divisor{ };             // sub_408CB7 damage divisor input
-    int minimum_roll{ };        // sub_408CB7 minimum-damage random result
+    int attacker_attack{};     // runtime unit +134h
+    int defender_defense{};    // runtime unit +136h
+    int divisor{};             // sub_408CB7 damage divisor input
+    int minimum_roll{};        // sub_408CB7 minimum-damage random result
 };
 
 struct DamageResult
 {
-    int damage{ };
-    int attack_minus_defense{ };
+    int damage{};
+    int attack_minus_defense{};
 };
 
 // 40A622+CD..+172 compresses damage after class/action modifiers; 408CB7
@@ -934,9 +934,9 @@ inline int ordinary_damage(int attacker_attack, int defender_defense,
 
 struct DamageModifierInput
 {
-    int damage{ }, class_matchup{ }, attack_mode_bonus{ }, action_coefficient{ }, combat_value{ };
-    uint8_t defender_116{ }, defender_3f{ }, defender_3c{ }, defender_39{ }, attacker_3e{ };
-    bool defender_equipment_13{ };
+    int damage{}, class_matchup{}, attack_mode_bonus{}, action_coefficient{}, combat_value{};
+    uint8_t defender_116{}, defender_3f{}, defender_3c{}, defender_39{}, attacker_3e{};
+    bool defender_equipment_13{};
 };
 // 40A622: callers must decode the class matrix and action record first.
 inline int modify_damage(const DamageModifierInput& in)
@@ -1039,10 +1039,10 @@ inline int damage_divisor(int percent_roll, int decimal_roll)
 }
 struct PhysicalDamageInput
 {
-    int attack{ }, defense{ }, height_difference{ }, attack_mode{ }, attacker_terrain_bonus{ }, defender_terrain_bonus{ }, context_bonus{ }, divisor{ };
-    int random_multiplier{ }, difficulty_bonus{ }, minimum_roll{ };
-    uint8_t attacker_3c{ }, attacker_118{ }, defender_kind{ };
-    bool multiplayer{ }, player_side{ };
+    int attack{}, defense{}, height_difference{}, attack_mode{}, attacker_terrain_bonus{}, defender_terrain_bonus{}, context_bonus{}, divisor{};
+    int random_multiplier{}, difficulty_bonus{}, minimum_roll{};
+    uint8_t attacker_3c{}, attacker_118{}, defender_kind{};
+    bool multiplayer{}, player_side{};
     DamageModifierInput modifiers;
 };
 inline Result<int> try_physical_damage(const PhysicalDamageInput& in)
@@ -1107,12 +1107,12 @@ inline int preview_multiplier(int base, int spread) { return base + (spread + 3)
 
 struct PhysicalPreviewInput
 {
-    int attack{ }, defense{ }, height_difference{ }, mode_bonus{ }, attacker_terrain_bonus{ }, defender_terrain_bonus{ }, context_bonus{ };
-    int multiplier{ }, difficulty_bonus{ };
-    bool multiplayer{ }, player_side{ }, immune{ }, counter{ };
-    bool counter_fixed_damage{ }, counter_equipment_30{ };
-    int counter_fixed_value{ };
-    uint8_t attacker_3c{ }, attacker_118{ }, defender_kind{ };
+    int attack{}, defense{}, height_difference{}, mode_bonus{}, attacker_terrain_bonus{}, defender_terrain_bonus{}, context_bonus{};
+    int multiplier{}, difficulty_bonus{};
+    bool multiplayer{}, player_side{}, immune{}, counter{};
+    bool counter_fixed_damage{}, counter_equipment_30{};
+    int counter_fixed_value{};
+    uint8_t attacker_3c{}, attacker_118{}, defender_kind{};
     DamageModifierInput modifiers;
 };
 // 409BBA uses a deterministic divisor and a separate reverse-action coefficient.
@@ -1185,9 +1185,9 @@ inline int adjusted_tactics(int value, int condition, int percent_roll)
 }
 struct HitModifierInput
 {
-    int chance{ }, action_type{ }, action_bonus{ }, weapon_accuracy{ 90 }, defender_equipment_penalty{ };
-    uint8_t defender_115{ }, defender_3c{ };
-    bool defender_equipment_16{ };
+    int chance{}, action_type{}, action_bonus{}, weapon_accuracy{ 90 }, defender_equipment_penalty{};
+    uint8_t defender_115{}, defender_3c{};
+    bool defender_equipment_16{};
 };
 inline int modify_hit_chance(const HitModifierInput& in)
 {
@@ -1207,10 +1207,10 @@ inline int modify_hit_chance(const HitModifierInput& in)
 struct CounterDamageInput
 {
     PhysicalDamageInput physical;
-    int reduction_roll{ }, fixed_value{ };
+    int reduction_roll{}, fixed_value{};
     int minimum_roll{ 99 };
-    bool fixed_damage{ }, equipment_30{ };
-    bool* minimum_required{ };
+    bool fixed_damage{}, equipment_30{};
+    bool* minimum_required{};
 };
 // 409060: the reverse attack has its own random reduction, before height/fixed damage.
 inline Result<int> try_counter_damage(const CounterDamageInput& in)
@@ -1281,13 +1281,13 @@ inline int counter_damage(const CounterDamageInput& in)
 
 struct HitChanceInput
 {
-    int attacker_tactics{ }, defender_evasion{ }, height_difference{ }, attack_mode{ }, context_bonus{ };
-    int attacker_condition{ }, condition_roll{ }, random_multiplier{ }, difficulty_bonus{ };
-    bool multiplayer{ }, player_side{ };
-    uint8_t defender_39{ }, defender_3d{ };
-    uint32_t defender_status3c_dword{ };
-    bool preview{ }, counter_preview{ }, counter_accuracy_penalty{ }, preview_immune{ }, counter{ };
-    int counter_reduction_roll{ };
+    int attacker_tactics{}, defender_evasion{}, height_difference{}, attack_mode{}, context_bonus{};
+    int attacker_condition{}, condition_roll{}, random_multiplier{}, difficulty_bonus{};
+    bool multiplayer{}, player_side{};
+    uint8_t defender_39{}, defender_3d{};
+    uint32_t defender_status3c_dword{};
+    bool preview{}, counter_preview{}, counter_accuracy_penalty{}, preview_immune{}, counter{};
+    int counter_reduction_roll{};
     HitModifierInput modifiers;
 };
 // 408CB7 -> 40A42D -> 40A4B3 -> 407B83 -> 4080E7, before the percent draw.
@@ -1356,11 +1356,11 @@ inline bool hit_succeeds(const HitChanceInput& in, int percent_roll)
 // 4097EB returns a percentage threshold, not a hit count or AP cost.
 struct ConsecutiveInput
 {
-    int attacker_tactics{ }, defender_evasion{ }, mode_adjustment{ };
-    int attacker_equipment_bonus{ }, defender_equipment_penalty{ };
-    uint8_t attacker_115{ }, defender_115{ }, defender_3c{ }, defender_3f{ };
-    bool has_attack_context{ true }, defender_equipment_13{ }, defender_equipment_16{ };
-    unsigned opposing_mode{ };
+    int attacker_tactics{}, defender_evasion{}, mode_adjustment{};
+    int attacker_equipment_bonus{}, defender_equipment_penalty{};
+    uint8_t attacker_115{}, defender_115{}, defender_3c{}, defender_3f{};
+    bool has_attack_context{ true }, defender_equipment_13{}, defender_equipment_16{};
+    unsigned opposing_mode{};
 };
 inline int consecutive_chance(const ConsecutiveInput& in)
 {
@@ -1408,8 +1408,8 @@ inline int terrain_height_difference(unsigned attacker_height, unsigned defender
 }
 struct RandomDraws
 {
-    int decimal_random_0_9{ };
-    int percent_random_0_99{ };
+    int decimal_random_0_9{};
+    int percent_random_0_99{};
 };
 inline bool percent_at_most(const RandomDraws& r, int threshold)
 {
@@ -1421,8 +1421,8 @@ inline bool percent_at_most(const RandomDraws& r, int threshold)
 // function deliberately refuses to infer a range from generic RPG rules.
 struct RangeInput
 {
-    int distance{ };
-    int range{ };
+    int distance{};
+    int range{};
 };
 inline bool within_decoded_range(const RangeInput& in)
 {

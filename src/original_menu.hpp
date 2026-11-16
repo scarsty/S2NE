@@ -1,5 +1,6 @@
 #pragma once
 #include "resource_result.hpp"
+#include "title_image.hpp"
 #include <algorithm>
 #include <array>
 #include <filesystem>
@@ -11,6 +12,7 @@ namespace s2ne
 class OriginalMenu
 {
     SharedBytes bin, pal;
+    std::array<uint8_t, 768> title_palette_{};
     size_t strings{}, index{}, glyphs{};
     unsigned count{};
     unsigned word(size_t p) const { return bin.at(p) | (unsigned(bin.at(p + 1)) << 8); }
@@ -44,6 +46,17 @@ public:
         }
         result.bin = std::move(bin).value();
         result.pal = std::move(pal).value();
+        auto title = OriginalDiscResources(root).try_dat_entry(OriginalDisc::one, 19);
+        if (!title) { return Result<OriginalMenu>::failure(title.error()); }
+        const auto& pcx = title.value();
+        if (pcx.size() < 769 || pcx[pcx.size() - 769] != 12)
+        {
+            return Result<OriginalMenu>::failure(make_error("Missing title PCX palette"));
+        }
+        for (size_t i = 0; i < result.title_palette_.size(); ++i)
+        {
+            result.title_palette_[i] = opening_palette_channel(uint8_t(pcx[pcx.size() - 768 + i] >> 2));
+        }
         ResourceReader p(result.pal), b(result.bin);
         auto entry = [&](unsigned id) -> size_t
         {
@@ -564,9 +577,17 @@ public:
     void draw(std::vector<uint8_t>& image) const
     {
         // 40DFD6/40E057: both normal and selected rows use style1, edge3.
+        std::vector<uint8_t> text(image.size()), indices(640 * 480);
         for (unsigned row = 0; row < 5; ++row)
         {
-            draw_original_large(image, text_bytes(ids[row]), 278, 286 + int(row) * 30, int(row) == selected ? 2 : 15, 3);
+            auto drawn = try_draw_original_large(text, text_bytes(ids[row]), 278, 286 + int(row) * 30, int(row) == selected ? 2 : 15, 3, &indices);
+            if (!drawn) { fatal(drawn.error()); }
+        }
+        for (size_t i = 0; i < indices.size(); ++i)
+        {
+            if (!text[i * 4 + 3]) { continue; }
+            for (size_t c = 0; c < 3; ++c) { image.at(i * 4 + c) = title_palette_[size_t(indices[i]) * 3 + c]; }
+            image.at(i * 4 + 3) = 255;
         }
     }
 };

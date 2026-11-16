@@ -10,7 +10,7 @@ namespace s2ne
 // This is an analysis interface, not a binary-compatible native signature.
 struct X86Context
 {
-    std::uint32_t eax{ }, ebx{ }, ecx{ }, edx{ }, esi{ }, edi{ }, ebp{ }, esp{ }, eflags{ };
+    std::uint32_t eax{}, ebx{}, ecx{}, edx{}, esi{}, edi{}, ebp{}, esp{}, eflags{};
 };
 [[noreturn]] inline void unimplemented_function(std::uint32_t address)
 {

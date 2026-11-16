@@ -7,7 +7,7 @@ namespace s2ne
 inline void original_teleport_smoke(const std::filesystem::path& root, SDL_Renderer* renderer, SDL_Texture* texture)
 {
     std::ifstream input(root / "ITEMSP.BIN", std::ios::binary);
-    std::vector<uint8_t> items(std::istreambuf_iterator<char>(input), { });
+    std::vector<uint8_t> items(std::istreambuf_iterator<char>(input), {});
     auto count = OriginalSave::item_count(items);
     std::optional<OriginalSave::State> raw;
     std::filesystem::path source;
@@ -81,7 +81,7 @@ inline void original_teleport_smoke(const std::filesystem::path& root, SDL_Rende
     bool seen = false;
     unsigned frames = 0;
     auto started = SDL_GetTicks();
-    SDL_Event end{ };
+    SDL_Event end{};
     end.type = SDL_EVENT_KEY_DOWN;
     end.key.key = SDLK_F10;
     SDL_PushEvent(&end);
@@ -130,7 +130,7 @@ inline void original_teleport_smoke(const std::filesystem::path& root, SDL_Rende
         {
             break;
         }
-        SDL_Event key{ };
+        SDL_Event key{};
         key.type = SDL_EVENT_KEY_DOWN;
         key.key.key = game.teleport_active() ? SDLK_ESCAPE : SDLK_RETURN;
         SDL_PushEvent(&key);

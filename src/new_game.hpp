@@ -7,7 +7,7 @@ namespace s2ne
 class NewGameSetup
 {
     std::vector<uint8_t> dat, pal, backdrop_;
-    size_t group{ };
+    size_t group{};
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
@@ -118,7 +118,7 @@ public:
         for (unsigned i = 0; i < 5; ++i)
         {
             bool selected = i == unsigned(difficulty);
-            font.draw_original_large(image, font.text_bytes(216 + i), 280, 267 + int(i) * 28, selected ? 60 : 52, selected ? std::optional<unsigned>(108) : std::nullopt);
+            font.draw_original_large(image, font.text_bytes(216 + i), 280, 267 + int(i) * 28, selected ? 108 : 52, selected ? std::optional<unsigned>(60) : std::nullopt);
         }
         // sub_40E53C, loc_40E691 / loc_40E796; original small-font footer.
         static constexpr std::array<const char*, 5> rate{ "5%", "25%", "50%", "80%", "100%" };

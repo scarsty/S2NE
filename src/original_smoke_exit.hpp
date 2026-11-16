@@ -25,7 +25,7 @@ inline void strengthen_mp(OriginalEvents::Unit& unit, bool enabled)
 }
 struct RevealInput
 {
-    unsigned actor{ };
+    unsigned actor{};
     std::pair<int, int> destination;
 };
 inline std::optional<RevealInput> campaign_pad_input(const Battle& battle, const OriginalEvents& events)

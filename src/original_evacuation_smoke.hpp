@@ -50,7 +50,7 @@ inline void original_evacuation_smoke(const std::filesystem::path& root, SDL_Ren
         {
             s2ne::fatal("Evacuation SDL timeout");
         }
-        SDL_Event injected{ };
+        SDL_Event injected{};
         injected.type = SDL_EVENT_KEY_DOWN;
         injected.key.key = game.evacuation_active() ? SDLK_ESCAPE : SDLK_RETURN;
         SDL_PushEvent(&injected);

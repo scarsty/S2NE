@@ -32,6 +32,11 @@ public:
     // The callback must revalidate the live unit and atomically apply the FULL
     // original transaction to live events AND the backing original save record.
     using Commit = std::function<bool(const Request&)>;
+    struct Preview
+    {
+        std::array<int, 10> current{}, promoted{}, reference{};
+    };
+    using PreviewSource = std::function<s2ne::Result<Preview>(unsigned)>;
     enum class Page
     {
         selection,
@@ -46,16 +51,20 @@ public:
     };
 
 private:
-    SharedBytes kinds_, bin_, pal_, cel_;
+    SharedBytes kinds_, bin_, pal_, cel_, prg_;
     OriginalMenu font_;
     size_t branches_{}, records_{}, growth_{};
     unsigned count_{};
     OriginalEvents::Unit unit_;
     std::vector<Candidate> choices_;
     Commit commit_;
+    PreviewSource preview_source_;
+    std::optional<Preview> preview_;
     Page page_ = Page::closed;
     size_t selected_{};
-    int training_ = -1, return_code_ = 0;
+    std::optional<uint64_t> animation_tick_;
+    unsigned animation_frame_{};
+    int training_ = -1, confirmation_hover_ = 11, return_code_ = 0;
     bool battlefield_ = true;
     unsigned word(size_t p) const { return kinds_.at(p) | (unsigned(kinds_.at(p + 1)) << 8); }
     unsigned dword(size_t p) const { return word(p) | (word(p + 2) << 16); }
@@ -72,6 +81,21 @@ private:
         auto result = try_record(kind);
         return std::move(result).value();
     }
+    s2ne::Result<std::pair<int, int>> confirmation_origin() const
+    {
+        ResourceReader palette(pal_), data(cel_);
+        const unsigned address = palette.number(816, 4);
+        if (!palette || address < 57) { return s2ne::Result<std::pair<int, int>>::failure(make_error("Invalid promotion CEL directory")); }
+        const size_t group = address - 57;
+        const unsigned count = data.number(group);
+        if (count <= 231 - 142) { return s2ne::Result<std::pair<int, int>>::failure(make_error("Missing promotion confirmation CEL")); }
+        const size_t entry = group + 2 + size_t(231 - 142) * 8;
+        const size_t offset = data.number(entry, 4), length = data.number(entry + 4, 4);
+        if (!data.extent(group + offset, length) || length < 4) { return s2ne::Result<std::pair<int, int>>::failure(make_error("Invalid promotion confirmation CEL extent")); }
+        const int width = int(data.number(group + offset)) + 1, height = int(data.number(group + offset + 2)) + 1;
+        if (!data || width > 640 || height > 480) { return s2ne::Result<std::pair<int, int>>::failure(make_error("Invalid promotion confirmation CEL dimensions")); }
+        return s2ne::Result<std::pair<int, int>>::success({ 320 - width / 2, 240 - height / 2 });
+    }
 
 public:
     OriginalPromotion() = default;
@@ -84,7 +108,7 @@ public:
             return s2ne::Result<OriginalPromotion>::failure(font.error());
         }
         result.font_ = std::move(font).value();
-        for (auto pair : { std::pair{ &result.kinds_, "KINDSP.BIN" }, std::pair{ &result.bin_, "SUPERSP.BIN" }, std::pair{ &result.pal_, "SUPERSP.PAL" }, std::pair{ &result.cel_, "SUPERSP.CEL" } })
+        for (auto pair : { std::pair{ &result.kinds_, "KINDSP.BIN" }, std::pair{ &result.bin_, "SUPERSP.BIN" }, std::pair{ &result.pal_, "SUPERSP.PAL" }, std::pair{ &result.cel_, "SUPERSP.CEL" }, std::pair{ &result.prg_, "SUPERSP.PRG" } })
         {
             auto bytes = read_shared_resource(root / pair.second);
             if (!bytes)
@@ -250,6 +274,43 @@ public:
         return result;
     }
     unsigned class_count() const { return count_; }
+    void set_preview_source(PreviewSource source) { preview_source_ = std::move(source); }
+    s2ne::Result<Preview> try_preview(unsigned target, OriginalRandom& random, const OriginalRandom::TimeSource& time) const
+    {
+        auto staged = random;
+        std::array<int, 9> reference{};
+        for (int level = 1; level <= 10; ++level)
+        {
+            auto result = try_growth(target, level, staged, time);
+            if (!result) { return s2ne::Result<Preview>::failure(result.error()); }
+            for (size_t i = 0; i < reference.size(); ++i) { reference[i] = int(int16_t(reference[i] + result.value()[i])); }
+        }
+        auto growth = try_growth(target, 1, staged, time);
+        if (!growth) { return s2ne::Result<Preview>::failure(growth.error()); }
+        const auto base = baseline(target);
+        const std::array<int, 9> values{ unit_.max_hp, unit_.max_mp, unit_.max_st, unit_.attack_limit, unit_.defense_limit, unit_.strikeback, unit_.base_tactics, unit_.max_sp, unit_.fencing };
+        for (size_t i = 0; i < values.size(); ++i)
+        {
+            if (values[i] < base[i]) { growth.value()[i] = int(int16_t(growth.value()[i] + (base[i] - values[i]) / 2)); }
+        }
+        Preview result;
+        result.current = { unit_.max_hp, unit_.max_mp, unit_.max_st, unit_.max_sp, unit_.strikeback, unit_.attack_limit, unit_.base_action_points, unit_.max_st, unit_.fencing, unit_.defense_limit };
+        constexpr std::array<int, 10> indices{ 0, 1, 2, -1, 3, 4, 5, 7, 6, 8 };
+        for (size_t row = 0; row < indices.size(); ++row)
+        {
+            const int index = indices[row];
+            if (index >= 0)
+            {
+                result.promoted[row] = result.current[row] + growth.value()[size_t(index)];
+                result.reference[row] = reference[size_t(index)];
+            }
+        }
+        int delta = std::max(int(int8_t(kinds_.at(record(target) + 21))) - (unit_.max_sp - unit_.equipment_stat_deltas[2]), 0);
+        if (int8_t(kinds_.at(record(target) + 17)) != 5 && int8_t(kinds_.at(record(unit_.appearance) + 17)) == 5) { delta = -4; }
+        result.promoted[3] = unit_.max_sp + delta;
+        random = staged;
+        return s2ne::Result<Preview>::success(result);
+    }
     Candidate candidate(unsigned kind) const
     {
         size_t p = record(kind);
@@ -323,7 +384,11 @@ public:
         page_ = Page::closed;
         choices_.clear();
         selected_ = 0;
+        animation_tick_.reset();
+        animation_frame_ = 0;
         training_ = -1;
+        preview_.reset();
+        preview_source_ = {};
         return_code_ = 0;
         commit_ = std::move(commit);
         battlefield_ = battlefield;
@@ -347,6 +412,19 @@ public:
     int return_code() const { return return_code_; }
     const OriginalEvents::Unit& unit() const { return unit_; }
     const Candidate& selected() const { return choices_.at(selected_); }
+    bool tick(uint64_t milliseconds)
+    {
+        if (page_ != Page::selection) { return false; }
+        if (!animation_tick_)
+        {
+            animation_tick_ = milliseconds;
+            return false;
+        }
+        if (milliseconds - *animation_tick_ < 190) { return false; }
+        animation_tick_ = milliseconds;
+        animation_frame_ ^= 1;
+        return true;
+    }
     std::optional<Request> request() const
     {
         if (page_ != Page::confirmation)
@@ -359,6 +437,11 @@ public:
     {
         if (page_ == Page::selection && index < choices_.size())
         {
+            if (index != selected_)
+            {
+                animation_tick_.reset();
+                animation_frame_ = 0;
+            }
             selected_ = index;
         }
     }
@@ -368,8 +451,20 @@ public:
         {
             return;
         }
+        preview_.reset();
+        if (preview_source_)
+        {
+            auto preview = preview_source_(selected().kind);
+            if (!preview)
+            {
+                report_error(preview.error());
+                return;
+            }
+            preview_ = preview.value();
+        }
         page_ = Page::confirmation;
         training_ = -1;
+        confirmation_hover_ = 11;
         for (int i = 0; i < 11; ++i)
         {
             if (selected().training_mask & (1u << i))
@@ -393,6 +488,8 @@ public:
         if (page_ == Page::confirmation)
         {
             page_ = Page::selection;
+            animation_tick_.reset();
+            animation_frame_ = 0;
             training_ = -1;
         }
         else if (page_ == Page::selection)
@@ -474,6 +571,25 @@ public:
         {
             int x = 101 + int(i % 4) * 145, y = i < 4 ? 64 : 270;
             text(choices_[i].name, x - int(choices_[i].name.size()) * 6, y, i == selected_ ? 40 : 51);
+            ResourceReader palette(pal_), data(prg_);
+            const unsigned index_address = palette.number(1320, 4), frame_address = palette.number(1328, 4);
+            if (!palette || index_address < 10 || frame_address < 11)
+            {
+                return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid promotion PRG directory"));
+            }
+            const size_t index = index_address - 10, frames = frame_address - 11;
+            const unsigned first = data.number(index + 2 + size_t(choices_[i].kind - 1) * 8 + 2);
+            const unsigned frame = first + (i == selected_ ? 4 + animation_frame_ : 0);
+            const size_t entry = frames + 2 + size_t(frame) * 7;
+            const size_t offset = data.number(entry, 4), length = data.number(entry + 4);
+            if (!data.extent(frames + offset, length) || length < 4)
+            {
+                return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid promotion class frame"));
+            }
+            const unsigned w = data.number(frames + offset) + 1, h = data.number(frames + offset + 2) + 1;
+            auto rendered = draw_original_sprite(image, std::span<const uint8_t>(prg_).subspan(frames + offset, length), pal_, 0, false,
+                x + (i == selected_ ? int(i % 4) : 0) - int(w / 2), y + 190 - int(h), OriginalZeroRun::transparent);
+            if (!rendered) { return s2ne::Result<std::vector<uint8_t>>::failure(rendered.error()); }
             if (i == selected_)
             {
                 for (int xx = x - 65; xx <= x + 65; ++xx)
@@ -490,19 +606,108 @@ public:
         }
         if (page_ == Page::confirmation)
         {
-            sprite(231, 11, 25);
-            text(substitute(font_.text_bytes(179), { unit_.name, candidate(unit_.appearance).name, selected().name }), 21, 39, 54);
-            text(font_.text_bytes(184), 35, 418, 40);
+            auto origin = confirmation_origin();
+            if (!origin) { return s2ne::Result<std::vector<uint8_t>>::failure(origin.error()); }
+            const auto [left, top] = origin.value();
+            sprite(231, left, top);
+            text(substitute(font_.text_bytes(179), { unit_.name, candidate(unit_.appearance).name, selected().name }), left + 10, top + 13, 116);
+            const auto confirm_label = font_.text_bytes(184);
+            text(confirm_label, left + 98 - int(confirm_label.size()) * 6, top + 393, 69);
+            constexpr std::array<int, 4> heading_centers{ 124, 301, 431, 555 };
+            for (size_t i = 0; i < heading_centers.size(); ++i)
+            {
+                const auto heading = font_.text_bytes(180 + unsigned(i));
+                font_.draw_small(image, heading, left + heading_centers[i] - int(heading.size()) * 4, top + 54, 132, true);
+            }
+            if (preview_)
+            {
+                constexpr std::array<unsigned, 7> labels{ 13, 7, 8, 10, 11, 9, 12 };
+                for (size_t row = 0; row < 10; ++row)
+                {
+                    std::vector<uint8_t> label;
+                    if (row < 3)
+                    {
+                        constexpr std::array<const char*, 3> names{ "HP", "MP", "ST" };
+                        const std::string name = names[row];
+                        label.assign(name.begin(), name.end());
+                    }
+                    else
+                    {
+                        label = font_.text_bytes(labels[row - 3]);
+                    }
+                    const unsigned ink = row % 2 == 0 ? 162 : 185;
+                    const int y = top + 92 + int(row) * 28;
+                    text(label, left + 10, y, ink);
+                    sprite(148, left + 136, y + 10);
+                    const std::array<int, 3> numbers{ preview_->current[row], preview_->promoted[row], preview_->reference[row] };
+                    constexpr std::array<int, 3> columns{ 74, 166, 270 };
+                    for (size_t column = 0; column < columns.size(); ++column)
+                    {
+                        auto number = std::to_string(numbers[column]);
+                        if (number.size() < 3) { number.insert(0, 3 - number.size(), ' '); }
+                        text(std::vector<uint8_t>(number.begin(), number.end()), left + columns[column], y, ink);
+                    }
+                }
+            }
             for (int i = 0; i < 11; ++i)
             {
-                auto label = font_.text_bytes(161 + i);
-                font_.draw_small(image, label, 423, 118 + i * 26, selected().training_mask & (1u << i) ? 54 : 245, true);
-                if (i == training_)
+                const bool allowed = (selected().training_mask & (1u << i)) != 0;
+                const bool trained = i == training_;
+                const int y = top + 93 + i * 26;
+                sprite((trained ? 241 : 242) + unsigned(i) * 2, left + 366, y);
+                const auto label = font_.text_bytes(161 + i);
+                unsigned label_ink = allowed ? 54 : 245;
+                unsigned number_ink = allowed ? 184 : 177;
+                if (trained)
                 {
-                    for (int x = 375; x <= 615; ++x)
+                    label_ink = 69;
+                    number_ink = 69;
+                }
+                text(label, left + 412, y, label_ink);
+                const auto proficiency = std::to_string(unit_.learned_proficiency[size_t(i)] / 10);
+                text(std::vector<uint8_t>(proficiency.begin(), proficiency.end()), left + 544, y, number_ink);
+                if (i == confirmation_hover_)
+                {
+                    for (int x = left + 364; x <= left + 604; ++x)
                     {
-                        pixel(x, 117 + i * 26, 40);
-                        pixel(x, 141 + i * 26, 40);
+                        pixel(x, top + 92 + i * 26, 40);
+                        pixel(x, top + 116 + i * 26, 40);
+                    }
+                    for (int y = top + 92 + i * 26; y <= top + 116 + i * 26; ++y)
+                    {
+                        pixel(left + 364, y, 40);
+                        pixel(left + 604, y, 40);
+                    }
+                }
+                const unsigned ability = kinds_.at(record(selected().kind) + 19);
+                if (ability)
+                {
+                    ResourceReader kinds(kinds_);
+                    size_t offset = kinds.number(6, 4);
+                    const unsigned count = kinds.number(10);
+                    if (!kinds || ability >= count) { return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid promotion innate ability string")); }
+                    for (unsigned index = 0; index < ability; ++index)
+                    {
+                        while (offset < kinds_.size() && kinds_[offset]) { ++offset; }
+                        ++offset;
+                    }
+                    auto label = font_.text_bytes(158);
+                    label.push_back(' ');
+                    while (offset < kinds_.size() && kinds_[offset]) { label.push_back(kinds_[offset++]); }
+                    if (offset >= kinds_.size()) { return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Truncated promotion innate ability string")); }
+                    text(label, left + 370, top + 394, 54);
+                }
+                if (confirmation_hover_ == 11)
+                {
+                    for (int x = left + 8; x <= left + 184; ++x)
+                    {
+                        pixel(x, top + 389, 40);
+                        pixel(x, top + 421, 40);
+                    }
+                    for (int y = top + 389; y <= top + 421; ++y)
+                    {
+                        pixel(left + 8, y, 40);
+                        pixel(left + 184, y, 40);
                     }
                 }
             }
@@ -532,17 +737,33 @@ public:
         }
         if (page_ == Page::confirmation)
         {
-            if (mouse && e.x >= 19 && e.x <= 197 && e.y >= 414 && e.y <= 448 && (e.buttons & 1))
+            auto origin = confirmation_origin();
+            if (!origin)
             {
-                bool accepted = confirm();
-                return { accepted, 16, !accepted };
+                report_error(origin.error());
+                return {};
             }
-            if (mouse && e.x >= 375 && e.x <= 615 && e.y >= 118 && e.y < 404)
+            const auto [left, top] = origin.value();
+            if (mouse && e.x >= left + 8 && e.x <= left + 186 && e.y >= top + 389 && e.y <= top + 423)
             {
-                int group = (e.y - 118) / 26;
-                if ((selected().training_mask & (1u << group)) && (e.buttons & 1))
+                const bool changed = confirmation_hover_ != 11;
+                confirmation_hover_ = 11;
+                if (e.buttons & 1)
                 {
-                    return { train(group), 16 };
+                    bool accepted = confirm();
+                    return { accepted, 16, !accepted };
+                }
+                return { changed, 0 };
+            }
+            if (mouse && e.x >= left + 366 && e.x <= left + 610 && e.y >= top + 93 && e.y < top + 379)
+            {
+                int group = (e.y - top - 93) / 26;
+                if (selected().training_mask & (1u << group))
+                {
+                    const bool changed = confirmation_hover_ != group;
+                    confirmation_hover_ = group;
+                    if (e.buttons & 1) { return { train(group), 16 }; }
+                    return { changed, 0 };
                 }
             }
             // 459FCF keyboard activation/navigation handlers are no-ops.
@@ -566,6 +787,8 @@ public:
                 break;
             default: return {};
             }
+            animation_tick_.reset();
+            animation_frame_ = 0;
             return { true, 0 };
         }
         if (mouse)
@@ -579,7 +802,7 @@ public:
                 }
                 if (i != selected_)
                 {
-                    selected_ = i;
+                    choose(i);
                     return { true, 0 };
                 }
                 if (e.buttons & 1)

@@ -56,12 +56,13 @@ struct AppSmokeState
     unsigned diagnosticTurn = 0, continuousDiagnosticTurn = 0;
     unsigned contactStep = 0;
     unsigned skillInputPhase = 0, skillInputCaster = 0, skillInputTarget = 0, skillInputFrames = 0;
+    unsigned skillSelectorAttempts = 0;
     uint64_t skillInputNext = 0, skillInputImageHash = 0;
     std::optional<s2ne::OriginalEvents::Unit> skillInputVictim;
     std::vector<uint8_t> skillInputCommitted;
     std::optional<s2ne::OriginalEvents::Unit> skillInputBefore;
     std::optional<s2ne::OriginalEvents::Unit> cooperativePartnerBefore;
-    size_t cooperativePartnerIndex{ };
+    size_t cooperativePartnerIndex{};
     bool skillInputVerified = false;
     bool spiritSightActive = false, spiritSightObserved = false, spiritSightModifierChecked = false, spiritSightModifierRetained = false, spiritSightAltChecked = false;
     unsigned revealExpiryTurn = 0;
@@ -79,7 +80,7 @@ struct AppSmokeState
     bool battleClickPending = false;
     unsigned battleSmokeStartTurn = 0;
     unsigned hostileBannerFrames = 0, playerBannerFrames = 0, battleSmokeRounds = 0;
-    s2ne::Battle::Point battleSmokeDestination{ };
+    s2ne::Battle::Point battleSmokeDestination{};
     size_t battleSmokeUnit = 0;
     std::vector<std::pair<int, int>> battleSmokeEnemyOrigins;
     unsigned hostileActionFrames = 0;
@@ -90,7 +91,7 @@ struct AppSmokeState
 class AppSmokeDriver
 {
 public:
-    explicit AppSmokeDriver(const AppOptions& options) : options(options) { }
+    explicit AppSmokeDriver(const AppOptions& options) : options(options) {}
     AppSmokeState state;
     // A true result preserves the original driver's continue of the outer app loop.
     bool before_events(AppSmokeContext context);

@@ -115,7 +115,7 @@ struct NativeHostileStatus
                 r[p] = uint8_t(v);
                 r[p + 1] = uint8_t(unsigned(v) >> 8);
             };
-            if (effect == 56 || effect == 47) { }
+            if (effect == 56 || effect == 47) {}
             else if (effect == 58)
             {
                 out.changed = !(r[0x38] & 8);

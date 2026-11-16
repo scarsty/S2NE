@@ -12,14 +12,14 @@ class OriginalPalette
 {
     struct Node
     {
-        std::array<int, 3> rgb{ };
+        std::array<int, 3> rgb{};
         int color = -1, left = 257, right = 257;
     };
-    std::array<Node, 258> nodes_{ };
-    std::array<std::array<uint8_t, 256>, 13> maps_{ };
+    std::array<Node, 258> nodes_{};
+    std::array<std::array<uint8_t, 256>, 13> maps_{};
     const std::vector<uint8_t>& palette_;
-    std::array<unsigned, 3> cycle_offsets_{ };
-    std::array<uint64_t, 3> cycle_times_{ };
+    std::array<unsigned, 3> cycle_offsets_{};
+    std::array<uint64_t, 3> cycle_times_{};
     int nearest(int red, int green, int blue) const
     {
         // sub_463165: cyclic G/R/B tree traversal, strict 32-unit bounds and distance < 11907.
@@ -190,7 +190,7 @@ public:
                 cycle_offsets_[i] = (cycle_offsets_[i] + 1) % counts[i];
             }
         }
-        std::array<uint32_t, 256> source{ };
+        std::array<uint32_t, 256> source{};
         for (unsigned c = 0; c < 256; ++c)
         {
             for (unsigned k = 0; k < 3; ++k)
@@ -233,7 +233,7 @@ public:
             return Result<bool>::failure(make_error("Invalid palette effect framebuffer or table"));
         }
         auto image = destination;
-        std::array<uint32_t, 256> rgba{ };
+        std::array<uint32_t, 256> rgba{};
         for (unsigned c = 0; c < 256; ++c)
         {
             for (unsigned k = 0; k < 3; ++k)

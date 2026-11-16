@@ -6,7 +6,7 @@ namespace s2ne
 // Verified arithmetic subchain only; intentionally has no state/payment API.
 class OriginalSkill94Formula
 {
-    int numerator_{ }, denominator_{ };
+    int numerator_{}, denominator_{};
 
 public:
     static int hit_curve(int difference)
@@ -68,7 +68,7 @@ public:
         {
             return Result<int>::failure(make_error("Unsupported sword94 formula input"));
         }
-        std::array<int, 256> config{ };
+        std::array<int, 256> config{};
         config[0x98] = numerator;
         config[0x99] = denominator;
         NativeDamageFormula::Input input;

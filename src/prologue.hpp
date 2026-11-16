@@ -5267,6 +5267,12 @@ public:
     void mask_ground_selection(std::vector<uint8_t>& pixels, Battle::Point cell) const { map_.mask_selection(pixels, cell.x, cell.y); }
     std::vector<uint8_t> draw(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay = {}) const
     {
+        auto image = draw_uncycled(font, groundOverlay);
+        if (palette_effects_ && phase_ != Phase::briefing && !interbattle_active() && !ending_active()) { palette_effects_->cycle(image, animation_elapsed_); }
+        return image;
+    }
+    std::vector<uint8_t> draw_uncycled(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay) const
+    {
         if (temporary_text_) { return temporary_text_->draw(); }
         map_.set_army_modes(events.army_modes);
         if (death_location_)
@@ -5494,7 +5500,6 @@ public:
                 count(npc, 320);
                 count(enemy, 494);
             }
-            palette_effects_->cycle(image, animation_elapsed_);
             return image;
         }
         if (summon_map_)
@@ -5713,7 +5718,6 @@ public:
             {
                 battle_->draw_movement_mouse(image);
             }
-            palette_effects_->cycle(image, animation_elapsed_);
             return image;
         }
         map_.draw_units(image, story_units, phase_ == Phase::campaign_dialogue ? battle_->turn() : 1, animation_elapsed_);
@@ -5745,7 +5749,6 @@ public:
         }
         if (dialogue_scrolling())
         {
-            palette_effects_->cycle(image, animation_elapsed_);
             return image;
         }
         auto line = events.line(event_, std::min(line_, size_t(events.line_count(event_) - 1)));
@@ -5798,7 +5801,6 @@ public:
                 sprite(image, sprite_offset(2, 236 - 142), false, 586, frame_y + 183);
             }
         }
-        palette_effects_->cycle(image, animation_elapsed_);
         return image;
     }
 };

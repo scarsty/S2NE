@@ -15,7 +15,7 @@ public:
     explicit OriginalRolePanel(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one) : font_(root), graphics_(root, disc), map_(root, disc)
     {
         std::ifstream f(root / "SUPERSP.BIN", std::ios::binary), pf(root / "SUPERSP.PAL", std::ios::binary);
-        std::vector<uint8_t> b{ std::istreambuf_iterator<char>(f), { } }, pal{ std::istreambuf_iterator<char>(pf), { } };
+        std::vector<uint8_t> b{ std::istreambuf_iterator<char>(f), {} }, pal{ std::istreambuf_iterator<char>(pf), {} };
         size_t base = 0;
         for (unsigned i = 0; i < 4; ++i)
         {

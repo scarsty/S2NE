@@ -1,5 +1,6 @@
 #pragma once
 #include "resource_result.hpp"
+#include "texture_resources.hpp"
 #include <algorithm>
 
 namespace s2ne
@@ -70,6 +71,18 @@ inline Result<bool> draw_original_sprite(std::vector<uint8_t>& image, std::span<
 inline Result<bool> draw_original_cel(std::vector<uint8_t>& image, std::span<const uint8_t> cel,
     std::span<const uint8_t> palette, unsigned id, int left, int top, OriginalZeroRun zero, std::vector<uint8_t>* indexed = nullptr)
 {
+    if (texture_resources.active())
+    {
+        if (image.size() != 640u * 480 * 4 || palette.size() < 768 || (indexed && indexed->size() != 640u * 480)) { return Result<bool>::failure(make_error("Invalid PNG UI framebuffer/palette")); }
+        auto output = image;
+        std::vector<uint8_t> indices;
+        if (indexed) { indices = *indexed; }
+        auto result = texture_resources.draw_ui(output, id, left, top, palette, indexed ? &indices : nullptr);
+        if (!result) { return result; }
+        image.swap(output);
+        if (indexed) { indexed->swap(indices); }
+        return result;
+    }
     ResourceReader pal(palette), data(cel);
     unsigned address = pal.number(816, 4);
     if (!pal || address < 57 || id < 142)

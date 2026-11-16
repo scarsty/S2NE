@@ -8,7 +8,7 @@ namespace s2ne
 inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer* renderer, SDL_Texture* texture)
 {
     std::ifstream f(root / "ITEMSP.BIN", std::ios::binary);
-    std::vector<uint8_t> bytes(std::istreambuf_iterator<char>(f), { });
+    std::vector<uint8_t> bytes(std::istreambuf_iterator<char>(f), {});
     auto count = OriginalSave::item_count(bytes);
     OriginalShop shop(root);
     OriginalSave::State state;
@@ -42,7 +42,7 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
         {
             s2ne::fatal("Normal SDL shop input timed out");
         }
-        SDL_Event injected{ };
+        SDL_Event injected{};
         injected.type = SDL_EVENT_KEY_DOWN;
         if (phase == 0 || phase == 2 || phase == 3 || phase == 4) { injected.key.key = SDLK_TAB; }
         else
@@ -149,7 +149,7 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
         auto baseline = OriginalSave::encode(raw, count);
         while (fade.transitioning())
         {
-            SDL_Event key{ };
+            SDL_Event key{};
             key.type = SDL_EVENT_KEY_DOWN;
             key.key.key = SDLK_ESCAPE;
             SDL_PushEvent(&key);
@@ -201,7 +201,7 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
         OriginalShopMenu live(root);
         for (auto key : { SDLK_TAB, SDLK_TAB, SDLK_RETURN, SDLK_RETURN, SDLK_ESCAPE, SDLK_RETURN, SDLK_RETURN, SDLK_ESCAPE, SDLK_ESCAPE })
         {
-            SDL_Event input{ };
+            SDL_Event input{};
             input.type = SDL_EVENT_KEY_DOWN;
             input.key.key = key;
             if (!SDL_PushEvent(&input))
@@ -258,7 +258,7 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
     }
     auto serviceInput = [&](auto& service, auto& save, SDL_Keycode key)
     {
-        SDL_Event input{ };
+        SDL_Event input{};
         input.type = SDL_EVENT_KEY_DOWN;
         input.key.key = key;
         if (!SDL_PushEvent(&input))
@@ -295,7 +295,7 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
             OriginalInn inn(root);
             inn.enable_presentation_timing();
             auto area = OriginalInn::rectangles[option - 1];
-            SDL_Event click{ };
+            SDL_Event click{};
             click.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
             click.button.button = SDL_BUTTON_LEFT;
             click.button.x = float((area.left + area.right) / 2);
@@ -457,7 +457,7 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
                         int top = 480 - cross.panel_height(218);
                         for (int y : { top + 190, top + 70, top + 76 })
                         {
-                            SDL_Event event{ };
+                            SDL_Event event{};
                             event.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
                             event.button.button = SDL_BUTTON_LEFT;
                             event.button.x = 248;
@@ -495,7 +495,7 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
                     serviceInput(live, save, SDLK_RETURN);
                     for (unsigned j = 0; j < i; ++j)
                     {
-                        SDL_Event e{ };
+                        SDL_Event e{};
                         e.type = SDL_EVENT_KEY_DOWN;
                         e.key.key = SDLK_RIGHT;
                         SDL_PushEvent(&e);

@@ -12,9 +12,9 @@ namespace s2ne
 class Flic
 {
     std::vector<uint8_t> data, pixels;
-    std::array<uint8_t, 768> palette{ };
-    size_t position = 128, first_position_ = 128, cursor{ }, limit{ };
-    unsigned frame{ }, chunk_type_{ };
+    std::array<uint8_t, 768> palette{};
+    size_t position = 128, first_position_ = 128, cursor{}, limit{};
+    unsigned frame{}, chunk_type_{};
     std::optional<Error> error_;
     void reject(std::string message)
     {
@@ -48,8 +48,8 @@ class Flic
     }
 
 public:
-    int width{ }, height{ };
-    unsigned frames{ }, delay{ };
+    int width{}, height{};
+    unsigned frames{}, delay{};
     Flic() = default;
     static Result<Flic> create(std::vector<uint8_t> bytes)
     {
@@ -140,7 +140,7 @@ public:
         }
         return std::move(result).value();
     }
-    explicit Flic(const std::filesystem::path& path) : Flic(read(path)) { }
+    explicit Flic(const std::filesystem::path& path) : Flic(read(path)) {}
     explicit Flic(std::vector<uint8_t> bytes)
     {
         auto result = create(std::move(bytes));

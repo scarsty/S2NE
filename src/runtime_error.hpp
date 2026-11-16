@@ -40,8 +40,8 @@ template <class T>
 class Result
 {
     std::variant<T, Error> state;
-    explicit Result(T value) : state(std::in_place_index<0>, std::move(value)) { }
-    explicit Result(Error error) : state(std::in_place_index<1>, std::move(error)) { }
+    explicit Result(T value) : state(std::in_place_index<0>, std::move(value)) {}
+    explicit Result(Error error) : state(std::in_place_index<1>, std::move(error)) {}
 
 public:
     static Result success(T value) { return Result(std::move(value)); }

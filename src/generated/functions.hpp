@@ -1,6 +1,7 @@
 #pragma once
 #include "../stub_runtime.hpp"
-namespace s2ne::original {
+namespace s2ne::original
+{
 void fn_00401010(X86Context& context);
 void fn_0040103E(X86Context& context);
 void fn_004010D7(X86Context& context);
@@ -3728,4 +3729,4 @@ void fn_004E0D6C(X86Context& context);
 void fn_004E0D72(X86Context& context);
 void fn_004E0D78(X86Context& context);
 void fn_004E0D7E(X86Context& context);
-}
+}    //namespace s2ne::original

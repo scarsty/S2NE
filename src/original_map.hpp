@@ -1855,8 +1855,7 @@ public:
                 h = std::min(h, summon_rows_);
                 decoded.resize(size_t(w) * h);
             }
-            if (!silhouette && (unit.status_flags & 0x10)
-                && (!summon_target_ || instance != *summon_target_ || summon_rows_ == summon_full_rows_))
+            if (!silhouette && (!summon_target_ || instance != *summon_target_ || summon_rows_ == summon_full_rows_))
             {
                 if (unit.action_state == 2)
                 {

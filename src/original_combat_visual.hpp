@@ -72,7 +72,7 @@ inline std::vector<uint8_t> reaction_bitmap(unsigned width, unsigned height, std
     if (!result)
     {
         report_error(result.error());
-        return { };
+        return {};
     }
     return std::move(result).value();
 }
@@ -81,9 +81,9 @@ inline std::vector<uint8_t> reaction_bitmap(unsigned width, unsigned height, std
 // Gameplay presence is deliberately caller-owned until finished().
 struct Disappearance
 {
-    unsigned target{ };
-    unsigned frame{ }, elapsed{ }, frame_count{ 5 }, frame_interval{ 20 }, first_weight{ 40 };
-    bool running{ }, done{ };
+    unsigned target{};
+    unsigned frame{}, elapsed{}, frame_count{ 5 }, frame_interval{ 20 }, first_weight{ 40 };
+    bool running{}, done{};
     std::vector<uint8_t> source, background;
     Result<bool> try_begin(unsigned id, std::span<const uint8_t> a, std::span<const uint8_t> b)
     {
@@ -108,7 +108,7 @@ struct Disappearance
             report_error(result.error());
         }
     }
-    bool presentation_driven{ }, presented_frame{ };
+    bool presentation_driven{}, presented_frame{};
     void enable_presentation_timing()
     {
         presentation_driven = true;
@@ -170,10 +170,10 @@ struct Feedback
         numbers
     };
     Phase phase = Phase::idle;
-    size_t attacker{ }, target{ };
-    int damage{ }, remaining{ }, hp_before{ }, hp_after{ }, step{ };
-    unsigned elapsed{ };
-    bool miss{ };
+    size_t attacker{}, target{};
+    int damage{}, remaining{}, hp_before{}, hp_after{}, step{};
+    unsigned elapsed{};
+    bool miss{};
     bool active() const { return phase != Phase::idle; }
     bool silhouette() const { return phase == Phase::flash; }
     unsigned silhouette_palette() const { return 0x3c; }
@@ -196,7 +196,7 @@ struct Feedback
     }
     void begin(size_t a, size_t b, int hp, int amount, bool missed, bool windup, int max_hp = 0)
     {
-        *this = { };
+        *this = {};
         attacker = a;
         target = b;
         damage = amount < 0 ? -std::min(std::max(0, max_hp - hp), -amount) : std::min(hp, amount);

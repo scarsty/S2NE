@@ -20,6 +20,7 @@ class OpeningAudio
     MIX_Track* track{};
     bool initialized{};
     bool muted{};
+    bool diagnostics_ = true;
     int music_volume_{ 100 };
     std::filesystem::path music_path_;
     unsigned music_id_{};
@@ -146,7 +147,7 @@ public:
         if (result)
         {
             music_id_ = id;
-            std::cerr << "Original music id=" << id << " file=" << music_path_.filename().string() << '\n';
+            if (diagnostics_) { std::cerr << "Original music id=" << id << " file=" << music_path_.filename().string() << '\n'; }
         }
         return result;
     }
@@ -164,6 +165,7 @@ public:
         for (int level = FLUID_PANIC; level <= FLUID_DBG; ++level) { fluid_set_log_function(level, fluid_log, nullptr); }
     }
     OpeningAudio(const OpeningAudio&) = delete;
+    void set_diagnostics(bool enabled) { diagnostics_ = enabled; }
     OpeningAudio& operator=(const OpeningAudio&) = delete;
     ~OpeningAudio() { stop(); }
     void stop()

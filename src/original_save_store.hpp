@@ -114,7 +114,7 @@ public:
             if (previous.value().description.front() != 0)
             {
                 std::ifstream input(path, std::ios::binary);
-                std::vector<uint8_t> previous_bytes{ std::istreambuf_iterator<char>(input), { } };
+                std::vector<uint8_t> previous_bytes{ std::istreambuf_iterator<char>(input), {} };
                 if (!input || input.bad())
                 {
                     return Result<bool>::failure(make_error("Cannot read save backup source"));

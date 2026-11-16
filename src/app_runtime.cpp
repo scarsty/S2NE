@@ -66,8 +66,18 @@ int s2ne::run_application(int argc, char** argv)
     auto& window = sdl.window;
     auto& renderer = sdl.renderer;
     auto& texture = sdl.texture;
+    struct TextureCleanup
+    {
+        ~TextureCleanup() { s2ne::texture_resources.clear(); }
+    } textureCleanup;
     {
         const s2ne::AppOptions options(argc, argv);
+        s2ne::texture_resources.configure(std::filesystem::current_path());
+        const bool diagnostics = options.stdio || options.option;
+        class QuietOutput : public std::streambuf
+        {
+            int_type overflow(int_type value) override { return traits_type::not_eof(value); }
+        } quietOutput;
         uint64_t headlessTicks = 1;
         auto gameTicks = [&]() -> uint64_t
         {
@@ -88,6 +98,7 @@ int s2ne::run_application(int argc, char** argv)
             stdio.emplace();
             outputRestore.previous = std::cout.rdbuf(std::cerr.rdbuf());
         }
+        else if (!diagnostics) { outputRestore.previous = std::cout.rdbuf(&quietOutput); }
         s2ne::AppSmokeDriver smokeDriver(options);
         if (options.strengthenedFlow)
         {
@@ -197,6 +208,7 @@ int s2ne::run_application(int argc, char** argv)
             s2ne::fatal("--headless-speed requires SDL dummy video");
         }
         s2ne::OpeningAudio audio;
+        audio.set_diagnostics(diagnostics);
         startup.mark("sdl-init");
         bool audioAvailable = false;
         if (!SDL_CreateWindowAndRenderer("Northern Envoy - original intro and menu", 960, 720,
@@ -283,7 +295,7 @@ int s2ne::run_application(int argc, char** argv)
         {
             if (!audio.effects()) { return s2ne::Result<unsigned>::failure(s2ne::make_error("ANI effects unavailable")); }
             auto result = audio.effects()->play(id, channel);
-            if (result && !channel) { std::cerr << "Original ANI effect id=" << id << " channel=" << result.value() << '\n'; }
+            if (diagnostics && result && !channel) { std::cerr << "Original ANI effect id=" << id << " channel=" << result.value() << '\n'; }
             return result;
         };
         auto showMenu = [&]
@@ -359,6 +371,7 @@ int s2ne::run_application(int argc, char** argv)
             s2ne::OriginalRandom::State random;
         };
         std::vector<SkillGrowthAward> skillGrowthAwards;
+        std::vector<SkillGrowthPause> skillGrowthNotices;
         std::optional<uint32_t> skillGrowthSeconds;
         std::optional<s2ne::OriginalSpellSummonCandidate> skillGrowthSummon;
         std::optional<size_t> pendingSkillTarget;
@@ -635,7 +648,7 @@ int s2ne::run_application(int argc, char** argv)
             if (!played) { s2ne::report_error(played.error()); }
             else
             {
-                std::cerr << "Original effect id=" << id << " channel=" << played.value() << '\n';
+                if (diagnostics) { std::cerr << "Original effect id=" << id << " channel=" << played.value() << '\n'; }
             }
         };
         menu.small_font = settingsState.small_font != 0;
@@ -1053,6 +1066,28 @@ int s2ne::run_application(int argc, char** argv)
             }
             else
             {
+                promotionMenu->set_preview_source([&](unsigned target) -> s2ne::Result<s2ne::OriginalPromotion::Preview>
+                    {
+                        std::optional<s2ne::OriginalPromotion::Preview> preview;
+                        std::optional<s2ne::Error> error;
+                        const bool applied = prologue->interbattle_random([&](s2ne::OriginalRandom& random, uint32_t seconds)
+                            {
+                                auto result = promotionMenu->try_preview(target, random, [seconds]
+                                    {
+                                        return seconds;
+                                    });
+                                if (!result)
+                                {
+                                    error = result.error();
+                                    return false;
+                                }
+                                preview = result.value();
+                                return true;
+                            });
+                        if (error) { return s2ne::Result<s2ne::OriginalPromotion::Preview>::failure(*error); }
+                        if (!applied || !preview) { return s2ne::Result<s2ne::OriginalPromotion::Preview>::failure(s2ne::make_error("Promotion preview random stream unavailable")); }
+                        return s2ne::Result<s2ne::OriginalPromotion::Preview>::success(*preview);
+                    });
                 playEffect(123);
                 showPrologue();
             }
@@ -1079,7 +1114,7 @@ int s2ne::run_application(int argc, char** argv)
             std::cout << "Original prologue stage=" << prologue->events.stage << ", difficulty=" << setup.confirmed << '\n';
         };
         uint64_t next = gameTicks() + s2ne::original_ani_frame_ms(0xAF12, clips.front().delay);
-        const uint64_t started = next;
+        const uint64_t started = gameTicks();
         unsigned presented = 0;
         uint64_t lastUiTick = gameTicks();
         s2ne::OriginalEdgeScrollTiming edgeScrollTiming;
@@ -1851,6 +1886,7 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (options.headlessSpeed) { headlessTicks += 16; }
             uint64_t nowUi = gameTicks();
+            if (promotionMenu && promotionMenu->tick(nowUi)) { showPrologue(); }
             auto musicSettings = settingsState;
             if (settings) { musicSettings = settings->state(); }
             if (battleMenu) { musicSettings = battleMenu->settings_state(); }
@@ -1959,7 +1995,7 @@ int s2ne::run_application(int argc, char** argv)
                                 s2ne::report_error(result.error());
                                 return 0u;
                             }
-                            std::cerr << "Original action effect id=" << id << " channel=" << result.value() << '\n';
+                            if (diagnostics) { std::cerr << "Original action effect id=" << id << " channel=" << result.value() << '\n'; }
                             return result.value();
                         });
                 }
@@ -2938,6 +2974,19 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     showPrologue();
                 }
+                if (skillCastVerified && !skillGrowthNotices.empty() && !prologue->growth_active() && !prologue->battle().combat_feedback_active() && !prologue->synchronous_death_active())
+                {
+                    auto notice = std::move(skillGrowthNotices.front());
+                    skillGrowthNotices.erase(skillGrowthNotices.begin());
+                    std::cout << "Original skill reward presentation after effect feedback/death settlement\n";
+                    if (!prologue->begin_reward_growth(std::move(notice.pending), notice.seconds, [](bool committed)
+                            {
+                                if (!committed) { s2ne::report_error(s2ne::make_error("Skill reward presentation failed after settlement")); }
+                            }))
+                    {
+                        s2ne::fatal("Skill reward presentation already active");
+                    }
+                }
                 if (!deployment && !itemLearningPublish && (!battleItems || itemSpellSource) && !spiritSightImage && !battleMenu && !battleReports && !promotionMenu && !itemMenu && (!skillMenu || pendingSkillTarget || prologue->growth_active()))
                 {
                     unsigned int tickMilliseconds;
@@ -2999,7 +3048,7 @@ int s2ne::run_application(int argc, char** argv)
                         running = false;
                     }
                 }
-                if (prologue->has_battle() && prologue->campaign_blocker().empty() && aiSkillActive && !skillMenu && !prologue->growth_active() && !prologue->skill_visual_active() && !prologue->battle().combat_feedback_active() && !prologue->synchronous_death_active())
+                if (prologue->has_battle() && prologue->campaign_blocker().empty() && aiSkillActive && !skillMenu && skillGrowthNotices.empty() && !prologue->growth_active() && !prologue->skill_visual_active() && !prologue->battle().combat_feedback_active() && !prologue->synchronous_death_active())
                 {
                     prologue->battle().finish_ai_skill();
                     aiSkillActive = false;
@@ -3061,6 +3110,8 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     else
                     {
+                        skillCastVerified = false;
+                        skillGrowthNotices.clear();
                         const auto visualActorIndex = prologue->battle().ai_skill_actor().value_or(size_t(prologue->battle_selected()));
                         const auto& visualActor = prologue->events.units.at(visualActorIndex);
                         std::cout << "Original AI visual context actor_index=" << visualActorIndex
@@ -3145,7 +3196,7 @@ int s2ne::run_application(int argc, char** argv)
                                 battleItems->return_from_target(*rawSave);
                             }
                             if (visualError.empty()) { visualError = "visual dispatch returned false without an error"; }
-                            std::cout << "Original " << visualDispatch << " visual rejected; no effect/payment committed reason=" << visualError << failureContext << "\n";
+                            std::cerr << "Original " << visualDispatch << " visual rejected; no effect/payment committed reason=" << visualError << failureContext << "\n";
                             if (aiSkillActive && visualDispatch != std::string("skill32"))
                             {
                                 prologue->set_campaign_blocker("Original " + std::string(visualDispatch) + " visual transaction rejected; reload required: " + visualError);
@@ -3188,6 +3239,7 @@ int s2ne::run_application(int argc, char** argv)
                                     if (growthAwardCursor < skillGrowthAwards.size())
                                     {
                                         const auto& saved = skillGrowthAwards[growthAwardCursor++];
+                                        if (options.skillInputSmoke) { pendingMpGrowth += saved.unit.mp - unit.mp; }
                                         unit = saved.unit;
                                         stream.restore_stream(saved.random.seed, saved.random.calls);
                                         return true;
@@ -3211,12 +3263,10 @@ int s2ne::run_application(int argc, char** argv)
                                     if (!learnedName.empty() && unit.controllable() && !(unit.status_flags & 0x20) && (unit.status_flags & 0x80))
                                     {
                                         pending.set_learning_name(std::move(learnedName));
-                                        throw SkillGrowthPause{ std::move(pending), seconds };
                                     }
-                                    if (pending.experience_notice() > 0) { throw SkillGrowthPause{ std::move(pending), seconds }; }
-                                    if (pending.unit().experience >= pending.unit().experience_threshold && pending.unit().level < 99)
+                                    if (pending.experience_notice() > 0 || !pending.learning_name().empty() || (pending.unit().experience >= pending.unit().experience_threshold && pending.unit().level < 99))
                                     {
-                                        throw SkillGrowthPause{ std::move(pending), seconds };
+                                        skillGrowthNotices.push_back({ std::move(pending), seconds });
                                     }
                                     if (!progression.award_native(unit, native, xp, promotionRules, [seconds]
                                                         {
@@ -3808,6 +3858,7 @@ int s2ne::run_application(int argc, char** argv)
                                         skillGrowthAwards.clear();
                                         skillGrowthSeconds.reset();
                                         skillGrowthSummon.reset();
+                                        if (!applied && !swordFeedbackPending) { skillGrowthNotices.clear(); }
                                         pendingSkillTarget.reset();
                                         if (aiSkillActive) { prologue->battle().fail_ai_skill(); }
                                         skillMenu.reset();
@@ -3872,7 +3923,7 @@ int s2ne::run_application(int argc, char** argv)
                     transferSource.reset();
                     transferDestination.reset();
                     // 原技能反馈完成后同一帧即可回到自动战斗；仅在所有展示/成长/反馈事务均已结束时清理请求。
-                    if (aiSkillActive && !prologue->growth_active() && !prologue->skill_visual_active()
+                    if (aiSkillActive && skillGrowthNotices.empty() && !prologue->growth_active() && !prologue->skill_visual_active()
                         && !prologue->battle().combat_feedback_active() && !prologue->synchronous_death_active())
                     {
                         prologue->battle().finish_ai_skill();
@@ -4102,7 +4153,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     if (!innMenu->blocker().empty())
                     {
-                        std::cout << "Original inn unavailable: " << innMenu->blocker() << '\n';
+                        std::cerr << "Original inn unavailable: " << innMenu->blocker() << '\n';
                     }
                     if (innMenu->title_requested())
                     {
@@ -4240,7 +4291,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     if (!churchMenu->blocker().empty())
                     {
-                        std::cout << "Original church unavailable: " << churchMenu->blocker() << '\n';
+                        std::cerr << "Original church unavailable: " << churchMenu->blocker() << '\n';
                     }
                     if (churchMenu->page() == s2ne::OriginalChurch::Page::closed)
                     {
@@ -4547,7 +4598,7 @@ int s2ne::run_application(int argc, char** argv)
                             auto failure = skillMenu->select(actor, partnerUnit, summonReady);
                             if (failure != s2ne::OriginalSkills::Failure::none)
                             {
-                                std::cout << "Original spell selection rejected reason=" << int(failure) << '\n';
+                                std::cerr << "Original spell selection rejected reason=" << int(failure) << '\n';
                                 if (options.campaignContinue && options.strengthenedFlow)
                                 {
                                     auto snapshot = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
@@ -4562,7 +4613,7 @@ int s2ne::run_application(int argc, char** argv)
                             }
                             else if (!skillMenu->summon_supported() && !skillMenu->transfer51_supported() && !skillMenu->hostile_supported() && !skillMenu->sword94_supported() && !skillMenu->curse33_supported() && !skillMenu->status_area_supported() && !skillMenu->effect_supported(skillMenu->selected()))
                             {
-                                std::cout << "Original selected spell executor unavailable id=" << skillMenu->selected().id << '\n';
+                                std::cerr << "Original selected spell executor unavailable id=" << skillMenu->selected().id << '\n';
                                 skillMenu->resume();
                             }
                             else if (skillMenu->summon_supported() || skillMenu->selected().id == 88)

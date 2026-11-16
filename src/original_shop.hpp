@@ -8,7 +8,7 @@ namespace s2ne
 class OriginalShop
 {
     std::vector<uint8_t> items_;
-    unsigned count_{ };
+    unsigned count_{};
     s2ne::Result<unsigned> try_price(unsigned id) const
     {
         if (!id || id > count_)
@@ -32,7 +32,7 @@ public:
     struct InitializationTag
     {
     };
-    OriginalShop(const std::filesystem::path& root, InitializationTag) { }
+    OriginalShop(const std::filesystem::path& root, InitializationTag) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root)
     {
         std::ifstream f(root / "ITEMSP.BIN", std::ios::binary);
@@ -40,7 +40,7 @@ public:
         {
             return s2ne::Result<bool>::failure(make_error("Missing original shop items"));
         }
-        items_ = { std::istreambuf_iterator<char>(f), { } };
+        items_ = { std::istreambuf_iterator<char>(f), {} };
         if (items_.size() < 2)
         {
             return s2ne::Result<bool>::failure(make_error("Truncated shop item header"));
@@ -63,7 +63,7 @@ public:
     }
     static s2ne::Result<std::unique_ptr<OriginalShop>> create(const std::filesystem::path& root)
     {
-        auto result = std::make_unique<OriginalShop>(root, InitializationTag{ });
+        auto result = std::make_unique<OriginalShop>(root, InitializationTag{});
         auto ready = result->initialize(root);
         if (!ready)
         {

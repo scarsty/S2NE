@@ -12,3 +12,6 @@
 *.til
 tests
 tools/__pycache__
+tools
+*.sf2
+analysis

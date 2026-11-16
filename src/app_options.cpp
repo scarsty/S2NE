@@ -25,7 +25,10 @@ AppOptions::AppOptions(int argc, char** argv)
             {
                 stdioInitialSave = std::filesystem::absolute(argv[++i]);
             }
-            else { throw std::runtime_error("Unexpected or repeated --stdio argument"); }
+            else
+            {
+                throw std::runtime_error("Unexpected or repeated --stdio argument");
+            }
         }
     }
     verify = argc > 1 && std::string(argv[1]) == "--verify";

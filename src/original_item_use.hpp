@@ -64,12 +64,19 @@ public:
         const auto& b = *target_record(after, target);
         switch (effect(id))
         {
-        case 4: case 9: case 20: case 53: case 43:
+        case 4:
+        case 9:
+        case 20:
+        case 53:
+        case 43:
             return random.bounded(6 - int(before.globals_4f7cd0.at(28)), seconds) + 1;
-        case 5: case 33: return std::max(0, sw(b, 0x124) - sw(a, 0x124));
-        case 6: case 10: case 34: return std::max(0, sw(b, 0x126) - sw(a, 0x126));
+        case 5:
+        case 33: return std::max(0, sw(b, 0x124) - sw(a, 0x124));
+        case 6:
+        case 10:
+        case 34: return std::max(0, sw(b, 0x126) - sw(a, 0x126));
         case 60: return std::max(0, sw(b, 0x128) - sw(a, 0x128));
-        case 35: return std::max({0, sw(b, 0x124) - sw(a, 0x124), sw(b, 0x126) - sw(a, 0x126), sw(b, 0x128) - sw(a, 0x128)});
+        case 35: return std::max({ 0, sw(b, 0x124) - sw(a, 0x124), sw(b, 0x126) - sw(a, 0x126), sw(b, 0x128) - sw(a, 0x128) });
         default: return 0;
         }
     }
