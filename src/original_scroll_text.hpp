@@ -61,8 +61,14 @@ public:
         {
             background_ = OriginalEnding::try_pcx(root, background, disc).value();
             background_.resize(640 * 480 * 4);
-            auto pcx = OriginalDiscResources(root).dat_entry(disc, background);
-            for (unsigned c = 0; c < 3; ++c) { ink_[c] = pcx.at(pcx.size() - 768 + 255 * 3 + c); }
+            if (!texture_resources.active())
+            {
+                if (!texture_resources.active())
+                {
+                    auto pcx = OriginalDiscResources(root).dat_entry(disc, background);
+                    for (unsigned c = 0; c < 3; ++c) { ink_[c] = pcx.at(pcx.size() - 768 + 255 * 3 + c); }
+                }
+            }
         }
     }
     bool done() const { return done_; }

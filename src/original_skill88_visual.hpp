@@ -16,6 +16,8 @@ class OriginalSkill88Visual
     bool presented_{};
     unsigned frame_delay_{ 50 };
     unsigned prefix_frames_{};
+    unsigned texture_visual_{};
+    size_t texture_frames_{};
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
 
@@ -56,6 +58,7 @@ public:
         const auto& entry = loaded.value();
         OriginalSkill88Visual result;
         result.amounts_.fill(-1);
+        result.texture_visual_ = visual + 1;
         if (entry.size() < 28)
         {
             return Result<OriginalSkill88Visual>::failure(make_error("Truncated88 header"));
@@ -118,6 +121,7 @@ public:
         {
             return Result<OriginalSkill88Visual>::failure(make_error("Unexpected88 trailing bytes"));
         }
+        result.texture_frames_ = result.frames_.size();
         return Result<OriginalSkill88Visual>::success(std::move(result));
     }
     static Result<OriginalSkill88Visual> create_sleep2(const std::filesystem::path& root)
@@ -134,6 +138,7 @@ public:
         if (!reader.extent(16, 48 + 16 * 8)) { return Result<OriginalSkill88Visual>::failure(reader.error()); }
         OriginalSkill88Visual result;
         result.anchor_x_ = 84;
+        result.texture_visual_ = 3;
         result.anchor_y_ = 100;
         result.tint_source_ = 59;
         result.tint_amount_ = 25;
@@ -158,6 +163,7 @@ public:
             if (!index || index > frames.size()) { return Result<OriginalSkill88Visual>::failure(make_error("Sleep2 frame order")); }
             result.frames_.push_back(frames[index - 1]);
         }
+        result.texture_frames_ = result.frames_.size();
         return Result<OriginalSkill88Visual>::success(std::move(result));
     }
     static Result<OriginalSkill88Visual> create_strengthening_status(const std::filesystem::path& root, unsigned skill, unsigned cursor = 0)
@@ -306,6 +312,7 @@ public:
         }
         OriginalSkill88Visual result;
         result.anchor_x_ = int(header[3] / 2);
+        result.texture_visual_ = visual + cursor + 1;
         if (header[1] == 65535) { result.anchor_x_ = -1; }
         else if (header[1]) { result.anchor_x_ = int(header[1]); }
         result.anchor_y_ = int(header[4]);
@@ -358,9 +365,16 @@ public:
                 result.frames_.push_back(frames[index - 1]);
             }
         }
+        result.texture_frames_ = result.frames_.size();
         return Result<OriginalSkill88Visual>::success(std::move(result));
     }
     unsigned tint_source() const { return tint_source_; }
+    unsigned texture_visual() const { return texture_visual_; }
+    size_t texture_frame(size_t timeline) const
+    {
+        if (timeline < prefix_frames_) { return 0; }
+        return std::min(timeline - prefix_frames_, texture_frames_ - 1);
+    }
     explicit OriginalSkill88Visual(const std::filesystem::path& root)
     {
         auto result = create(root);

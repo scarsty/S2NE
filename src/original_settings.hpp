@@ -24,6 +24,7 @@ public:
         int device = 0, small_font = 0;
         char drive = '@';
         bool memory_check = false, debug_enabled = false, debug_secondary = false;
+        uint8_t simplified_chinese = 0;
     };
     struct Event
     {
@@ -321,6 +322,7 @@ public:
             {
                 state.memory_check = true;
             }
+            else if (line == "SIMPLIFIED_CHINESE=1" || line == "SIMPLIFIED_CHINESE=ON") { state.simplified_chinese = 1; }
         }
         return state;
     }
@@ -337,7 +339,7 @@ public:
           << state_.midi_volume << ',' << state_.cdda_volume << ',' << state_.effect_volume
           << "\nCDDA=" << (state_.flag_4f7d05 ? "ON" : "OFF") << "\nSET=" << state_.screen_delay << ',' << state_.message_delay
           << ',' << unsigned(state_.confirm) << ',' << unsigned(state_.status_window) << ',' << unsigned(state_.quick_switch)
-          << ',' << unsigned(state_.auto_switch) << ',' << unsigned(state_.animation) << ',' << unsigned(state_.masking) << "\nVersion=1.3d\n";
+          << ',' << unsigned(state_.auto_switch) << ',' << unsigned(state_.animation) << ',' << unsigned(state_.masking) << "\nSIMPLIFIED_CHINESE=" << unsigned(state_.simplified_chinese) << "\nVersion=1.3d\n";
         if (state_.memory_check)
         {
             o << "MemoryCheck=ON\n";

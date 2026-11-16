@@ -15,6 +15,7 @@ public:
     {
         unsigned width{}, height{};
         std::vector<uint8_t> pixels;
+        unsigned texture_visual{}, texture_frame{};
     };
 
 private:
@@ -113,6 +114,8 @@ public:
             {
                 return Result<std::vector<Frame>>::failure(decoded.error());
             }
+            decoded.value().texture_visual = 33;
+            decoded.value().texture_frame = i;
             frames.push_back(std::move(decoded).value());
             previous = offset + length;
         }
@@ -185,6 +188,8 @@ public:
             }
             auto frame = try_decode({ entry.begin() + data + offset, entry.begin() + data + offset + length }, 71, 344);
             if (!frame) { return Result<OriginalSkill32Visual>::failure(frame.error()); }
+            frame.value().texture_visual = 34;
+            frame.value().texture_frame = i;
             out.frames_.push_back(std::move(frame).value());
             previous = offset + length;
         }

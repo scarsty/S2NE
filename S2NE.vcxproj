@@ -50,7 +50,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>SDL3.lib;SDL3_mixer.lib;libfluidsynth-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL3.lib;SDL3_ttf.lib;SDL3_mixer.lib;libfluidsynth-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -74,5 +74,8 @@
   </ImportGroup>
   <Target Name="PublishGameRuntime" AfterTargets="Build" Condition="'$(PublishGameRuntime)' == 'true' and Exists('$(TargetPath)')">
     <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(ProjectDir)tools\publish-runtime.ps1&quot; -BinaryDirectory &quot;$(TargetDir).&quot; -ResourceDirectory &quot;$(ProjectDir)..&quot;" />
+  </Target>
+  <Target Name="SyncReleaseExecutable" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' and Exists('$(TargetPath)')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ProjectDir).." SkipUnchangedFiles="true" />
   </Target>
 </Project>

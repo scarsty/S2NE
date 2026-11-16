@@ -1,9 +1,12 @@
 #pragma once
 #include "original_disc.hpp"
 #include "resource_result.hpp"
+#include <SDL3/SDL.h>
 #include <cstdint>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <memory>
 #include <vector>
 namespace s2ne
 {
@@ -15,6 +18,21 @@ inline constexpr uint8_t opening_palette_channel(uint8_t dac, unsigned fade = 60
 }
 inline Result<std::vector<uint8_t>> try_load_title(const std::filesystem::path& root, unsigned resource = 19, bool display_palette = true)
 {
+    const auto external = root / "texture" / "opening" / (std::to_string(resource) + ".png");
+    if (std::filesystem::exists(root / "texture") && !std::filesystem::exists(external))
+    {
+        return Result<std::vector<uint8_t>>::failure(make_error("Missing external opening texture: " + external.string()));
+    }
+    if (std::filesystem::exists(external))
+    {
+        std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> surface(SDL_LoadPNG(external.string().c_str()), SDL_DestroySurface);
+        if (!surface) { return Result<std::vector<uint8_t>>::failure(make_error(external.string() + ": " + SDL_GetError())); }
+        std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> rgba(SDL_ConvertSurface(surface.get(), SDL_PIXELFORMAT_RGBA32), SDL_DestroySurface);
+        if (!rgba || rgba->w != 640 || rgba->h != 480) { return Result<std::vector<uint8_t>>::failure(make_error("Invalid external opening texture: " + external.string())); }
+        std::vector<uint8_t> image(640 * 480 * 4);
+        for (int y = 0; y < 480; ++y) { std::memcpy(image.data() + size_t(y) * 640 * 4, static_cast<uint8_t*>(rgba->pixels) + y * rgba->pitch, 640 * 4); }
+        return Result<std::vector<uint8_t>>::success(std::move(image));
+    }
     auto paletteResult = read_resource(root / "SUPERSP.PAL");
     if (!paletteResult)
     {

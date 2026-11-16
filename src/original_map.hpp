@@ -25,7 +25,16 @@ class OriginalMap
         unsigned w, h;
         std::vector<uint8_t> pixels;
         std::vector<uint8_t> literal;
+        unsigned texture_group{}, texture_id{};
     };
+    struct TexturePlacement
+    {
+        Image image;
+        int x{}, y{};
+        bool transparent{};
+    };
+    std::vector<TexturePlacement> texture_placements_;
+    mutable std::map<size_t, std::pair<unsigned, unsigned>> texture_items_;
     mutable std::map<size_t, Image> cache_;
     struct UnitBitmap
     {
@@ -131,7 +140,12 @@ class OriginalMap
         }
         return Result<size_t>::success(g + dword(prg_, g + 2 + index * 8));
     }
-    size_t item(unsigned archive, unsigned index) const { return try_item(archive, index).value(); }
+    size_t item(unsigned archive, unsigned index) const
+    {
+        const auto offset = try_item(archive, index).value();
+        if (archive >= 3 && archive <= 5) { texture_items_[offset] = { archive, index + 1 }; }
+        return offset;
+    }
     Result<Image> try_raw(size_t offset) const
     {
         if (cache_.contains(offset))
@@ -152,6 +166,11 @@ class OriginalMap
             return Result<Image>::failure(make_error("Truncated original map sprite"));
         }
         image.pixels.assign(prg_.begin() + offset + 4, prg_.begin() + offset + 4 + size_t(image.w) * image.h);
+        if (auto found = texture_items_.find(offset); found != texture_items_.end())
+        {
+            image.texture_group = found->second.first;
+            image.texture_id = found->second.second;
+        }
         cache_.emplace(offset, image);
         return Result<Image>::success(std::move(image));
     }
@@ -319,6 +338,8 @@ class OriginalMap
         size_t p = g + offset, end = p + length;
         unsigned encoding = prg_.at(p++);
         Image image{ word(prg_, p) + 1, word(prg_, p + 2) + 1, {} };
+        image.texture_group = 8;
+        image.texture_id = id;
         p += 4;
         if (image.w > 8192 || image.h > 8192 || end > prg_.size())
         {
@@ -394,6 +415,7 @@ class OriginalMap
     }
     void blit(const Image& image, int x, int y, bool transparent, bool object = false)
     {
+        if (texture_resources.active()) { texture_placements_.push_back({ image, x, y, transparent }); }
         for (unsigned row = 0; row < image.h; ++row)
         {
             for (unsigned col = 0; col < image.w; ++col)
@@ -438,6 +460,14 @@ public:
         if (found == dynamic_objects_.end())
         {
             return false;
+        }
+        if (texture_resources.active())
+        {
+            const int left = found->left, top = found->top;
+            std::erase_if(texture_placements_, [&](const auto& placement)
+                {
+                    return placement.image.texture_group == 4 && placement.x == left && placement.y == top;
+                });
         }
         blit(found->background, found->left, found->top, false);
         cleared_object_cells_.push_back(item(6, map_id - 1) + 28 + (size_t(y) * width + unsigned(x)) * 5);
@@ -1024,6 +1054,7 @@ public:
         last_reaction_.clear();
         reaction_draws_ = 0;
         map_id = id;
+        texture_placements_.clear();
         composing_static_ = true;
         cleared_object_cells_.clear();
         dynamic_objects_.clear();
@@ -2145,6 +2176,16 @@ public:
             {
                 unit_bitmaps_.at(pose.instance).alternate = true;
             }
+            const bool external_pose = texture_resources.active() && !silhouette && !reaction && !disappearance_.active()
+                && !arrival_target_ && !summon_target_ && !hidden && !(pose.unit.status_flags & 0x10)
+                && pose.unit.action_state != 2 && !write_invisibility_world_;
+            if (external_pose)
+            {
+                const uint64_t pose_time = pose.unit.movement_pose ? uint64_t(pose.unit.movement_frame) * 190 : idle_pose_time_.value_or(elapsed_ms);
+                auto drawn = texture_resources.draw_unit(image, pose.unit.appearance, pose.unit.animation_action, pose.unit.direction & 3, pose_time,
+                    pose.left, pose.top, pose.w, pose.h, pose.pixels);
+                if (!drawn) { return drawn; }
+            }
             for (unsigned y = 0; y < pose.h; ++y)
             {
                 for (unsigned x = 0; x < pose.w; ++x)
@@ -2173,6 +2214,7 @@ public:
                     {
                         indexed->at(dst / 4) = uint8_t(c);
                     }
+                    if (external_pose) { continue; }
                     for (unsigned k = 0; k < 3; ++k)
                     {
                         image.at(dst + k) = uint8_t(unsigned(pal_.at(c * 3 + k)) * 255 / 63);
@@ -2339,6 +2381,7 @@ public:
         }
         invisibility_world_ = std::move(prepared.invisibility_world_);
         unit_bitmaps_ = std::move(prepared.unit_bitmaps_);
+        if (texture_resources.active()) { output = draw(); }
         image.swap(output);
         return Result<bool>::success(true);
     }
@@ -2473,6 +2516,12 @@ public:
         OriginalPalette palette(pal_);
         top -= camera_y + std::max(0, elevation - 1) * 16;
         left -= camera_x;
+        if (texture_resources.active())
+        {
+            auto drawn = texture_resources.draw_masked(image, "spells/" + std::to_string(frame.texture_visual), frame.texture_frame, left, top, frame.width, frame.height, pixels);
+            if (!drawn) { fatal(drawn.error()); }
+            return image;
+        }
         std::vector<int16_t> blended;
         if (visual) { blended.assign(256 * 256, -1); }
         for (unsigned yy = 0; yy < frame.height; ++yy)
@@ -2570,6 +2619,12 @@ public:
         if (visual.anchor_y() == -1) { top = 0; }
         int elevation = prg_.at(item(6, map_id - 1) + 28 + (size_t(actor.y) * width + actor.x) * 5);
         if (visual.anchor_y() != -1) { top -= std::max(0, elevation - 1) * 16; }
+        if (texture_resources.active())
+        {
+            auto drawn = texture_resources.draw_masked(image, "spells/" + std::to_string(visual.texture_visual()), unsigned(visual.texture_frame(frame_index.value_or(visual.frame()))), left, top, frame.width, frame.height, pixels);
+            if (!drawn) { fatal(drawn.error()); }
+            return image;
+        }
         std::vector<int16_t> blended(256 * 256, -1);
         for (unsigned y = 0; y < frame.height; ++y)
         {
@@ -2665,6 +2720,38 @@ public:
     std::vector<uint8_t> draw() const
     {
         std::vector<uint8_t> image(640 * 480 * 4);
+        if (texture_resources.active())
+        {
+            for (size_t p = 0; p < image.size(); p += 4)
+            {
+                for (unsigned k = 0; k < 3; ++k) { image[p + k] = uint8_t(unsigned(pal_.at(k)) * 255 / 63); }
+                image[p + 3] = 255;
+            }
+            auto started = texture_resources.begin_canvas(image);
+            if (!started) { fatal(started.error()); }
+            for (const auto& placement : texture_placements_)
+            {
+                const auto& sprite = placement.image;
+                if (placement.x + int(sprite.w) <= camera_x || placement.y + int(sprite.h) <= camera_y || placement.x >= camera_x + 640 || placement.y >= camera_y + 480) { continue; }
+                if (!sprite.texture_group) { continue; }
+                std::string group_name;
+                switch (sprite.texture_group)
+                {
+                case 3: group_name = "ground"; break;
+                case 4: group_name = "objects"; break;
+                case 5: group_name = "scenery"; break;
+                case 8: group_name = "battle-backdrops"; break;
+                default: fatal("Invalid external map texture group");
+                }
+                auto mask = sprite.pixels;
+                if (!placement.transparent) { std::fill(mask.begin(), mask.end(), uint8_t(1)); }
+                auto drawn = texture_resources.draw_masked(image, group_name, sprite.texture_id, placement.x - camera_x, placement.y - camera_y, sprite.w, sprite.h, mask);
+                if (!drawn) { fatal(drawn.error()); }
+            }
+            auto completed = texture_resources.end_canvas(image);
+            if (!completed) { fatal(completed.error()); }
+            return image;
+        }
         for (int y = 0; y < 480; ++y)
         {
             for (int x = 0; x < 640; ++x)

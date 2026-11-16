@@ -5267,8 +5267,9 @@ public:
     void mask_ground_selection(std::vector<uint8_t>& pixels, Battle::Point cell) const { map_.mask_selection(pixels, cell.x, cell.y); }
     std::vector<uint8_t> draw(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay = {}) const
     {
+        if (texture_resources.active()) { texture_resources.set_elapsed(animation_elapsed_); }
         auto image = draw_uncycled(font, groundOverlay);
-        if (palette_effects_ && phase_ != Phase::briefing && !interbattle_active() && !ending_active()) { palette_effects_->cycle(image, animation_elapsed_); }
+        if (!texture_resources.active() && palette_effects_ && phase_ != Phase::briefing && !interbattle_active() && !ending_active()) { palette_effects_->cycle(image, animation_elapsed_); }
         return image;
     }
     std::vector<uint8_t> draw_uncycled(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay) const

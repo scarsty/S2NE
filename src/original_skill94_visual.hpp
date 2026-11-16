@@ -46,6 +46,8 @@ public:
             {
                 return Result<std::vector<OriginalSkill32Visual::Frame>>::failure(frame.error());
             }
+            frame.value().texture_visual = 85;
+            frame.value().texture_frame = i;
             result.push_back(std::move(frame).value());
             previous = off + length;
         }

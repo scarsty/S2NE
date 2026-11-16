@@ -1,5 +1,6 @@
 #pragma once
 #include "runtime_error.hpp"
+#include "texture_resources.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -231,6 +232,14 @@ public:
         if (destination.size() != 640 * 480 * 4 || table >= maps_.size())
         {
             return Result<bool>::failure(make_error("Invalid palette effect framebuffer or table"));
+        }
+        if (texture_resources.active())
+        {
+            constexpr std::array<unsigned, 13> colors{ 33, 33, 33, 33, 33, 32, 32, 234, 32, 189, 36, 60, 68 };
+            constexpr std::array<unsigned, 13> amounts{ 0, 10, 20, 30, 40, 60, 50, 65, 25, 60, 15, 15, 80 };
+            const auto color = colors[table];
+            return texture_resources.tint(destination, left, top, width, height,
+                uint8_t(unsigned(palette_[color * 3]) * 255 / 63), uint8_t(unsigned(palette_[color * 3 + 1]) * 255 / 63), uint8_t(unsigned(palette_[color * 3 + 2]) * 255 / 63), amounts[table]);
         }
         auto image = destination;
         std::array<uint32_t, 256> rgba{};

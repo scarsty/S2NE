@@ -18,6 +18,25 @@ inline Result<bool> draw_original_sprite(std::vector<uint8_t>& image, std::span<
     {
         return Result<bool>::failure(make_error("Invalid original sprite framebuffer/palette"));
     }
+    if (texture_resources.active() && typed && palette.size() >= 828 && bytes.size() > 17 && bytes[16] == 'C' && std::equal(bytes.begin() + 8, bytes.begin() + 16, "SuperSp_"))
+    {
+        ResourceReader pal(palette), archive(bytes);
+        const size_t address = pal.number(824, 4);
+        if (address >= 58)
+        {
+            const size_t group = address - 58;
+            const unsigned count = archive.number(group);
+            for (unsigned id = 0; id < count; ++id)
+            {
+                if (group + archive.number(group + 2 + size_t(id) * 8, 4) != position) { continue; }
+                auto output = image;
+                auto result = texture_resources.draw_group(output, "portraits", id, left, top, palette, nullptr);
+                if (!result) { return result; }
+                image.swap(output);
+                return result;
+            }
+        }
+    }
     ResourceReader reader(bytes);
     unsigned type = typed ? reader.number(position++, 1) : 0;
     unsigned width = reader.number(position) + 1, height = reader.number(position + 2) + 1;
@@ -68,21 +87,9 @@ inline Result<bool> draw_original_sprite(std::vector<uint8_t>& image, std::span<
     if (indexed) { indexed->swap(indices); }
     return Result<bool>::success(true);
 }
-inline Result<bool> draw_original_cel(std::vector<uint8_t>& image, std::span<const uint8_t> cel,
+inline Result<bool> draw_original_cel_legacy(std::vector<uint8_t>& image, std::span<const uint8_t> cel,
     std::span<const uint8_t> palette, unsigned id, int left, int top, OriginalZeroRun zero, std::vector<uint8_t>* indexed = nullptr)
 {
-    if (texture_resources.active())
-    {
-        if (image.size() != 640u * 480 * 4 || palette.size() < 768 || (indexed && indexed->size() != 640u * 480)) { return Result<bool>::failure(make_error("Invalid PNG UI framebuffer/palette")); }
-        auto output = image;
-        std::vector<uint8_t> indices;
-        if (indexed) { indices = *indexed; }
-        auto result = texture_resources.draw_ui(output, id, left, top, palette, indexed ? &indices : nullptr);
-        if (!result) { return result; }
-        image.swap(output);
-        if (indexed) { indexed->swap(indices); }
-        return result;
-    }
     ResourceReader pal(palette), data(cel);
     unsigned address = pal.number(816, 4);
     if (!pal || address < 57 || id < 142)
@@ -102,5 +109,25 @@ inline Result<bool> draw_original_cel(std::vector<uint8_t>& image, std::span<con
         return Result<bool>::failure(make_error("Invalid original CEL extent"));
     }
     return draw_original_sprite(image, cel.subspan(group + offset, length), palette, 0, false, left, top, zero, indexed);
+}
+inline Result<bool> draw_original_cel(std::vector<uint8_t>& image, std::span<const uint8_t> cel,
+    std::span<const uint8_t> palette, unsigned id, int left, int top, OriginalZeroRun zero, std::vector<uint8_t>* indexed = nullptr)
+{
+    if (!texture_resources.active()) { return draw_original_cel_legacy(image, cel, palette, id, left, top, zero, indexed); }
+    if (image.size() != 640u * 480 * 4 || palette.size() < 768 || (indexed && indexed->size() != 640u * 480)) { return Result<bool>::failure(make_error("Invalid PNG UI framebuffer/palette")); }
+    auto output = image;
+    std::vector<uint8_t> indices;
+    if (indexed)
+    {
+        indices = *indexed;
+        auto decoded = draw_original_cel_legacy(output, cel, palette, id, left, top, OriginalZeroRun::transparent, &indices);
+        if (!decoded) { return decoded; }
+        output = image;
+    }
+    auto result = texture_resources.draw_ui(output, id, left, top, palette, nullptr);
+    if (!result) { return result; }
+    image.swap(output);
+    if (indexed) { indexed->swap(indices); }
+    return result;
 }
 }    //namespace s2ne

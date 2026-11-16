@@ -40,6 +40,7 @@
 #include "original_teleport_smoke.hpp"
 #include "prologue.hpp"
 #include "runtime_diagnostics.hpp"
+#include "simple_cc.hpp"
 #include "startup_trace.hpp"
 #include "stdio_events.hpp"
 #include "stdio_protocol.hpp"
@@ -66,6 +67,13 @@ int s2ne::run_application(int argc, char** argv)
     auto& window = sdl.window;
     auto& renderer = sdl.renderer;
     auto& texture = sdl.texture;
+    SDL_Texture* ownedPresentationTexture{};
+    struct PresentationTextureRestore
+    {
+        SDL_Texture*& current;
+        SDL_Texture*& owned;
+        ~PresentationTextureRestore() { current = owned; }
+    } presentationTextureRestore{ texture, ownedPresentationTexture };
     struct TextureCleanup
     {
         ~TextureCleanup() { s2ne::texture_resources.clear(); }
@@ -176,10 +184,6 @@ int s2ne::run_application(int argc, char** argv)
         }
         auto setup = std::move(setupResult).value();
         startup.mark("setup");
-        auto setupCheck = setup.draw(title, menu);
-        auto menuCheck = title;
-        menu.draw(menuCheck);
-        startup.mark("trial-draw");
         if (options.verify)
         {
             std::cout << "Decoded original title PCX: 640x480\n";
@@ -217,6 +221,12 @@ int s2ne::run_application(int argc, char** argv)
             s2ne::fatal(SDL_GetError());
         }
         texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, 640, 480);
+        ownedPresentationTexture = texture;
+        s2ne::texture_resources.bind(renderer);
+        auto setupCheck = setup.draw(title, menu);
+        auto menuCheck = title;
+        menu.draw(menuCheck);
+        startup.mark("trial-draw");
         startup.mark("window-renderer");
         if (!texture)
         {
@@ -311,20 +321,26 @@ int s2ne::run_application(int argc, char** argv)
             auto image = title;
             menu.draw(image);
             if (stdio) { stdioLogicalFrame = image; }
-            if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4))
+            if (s2ne::texture_resources.active())
             {
-                s2ne::fatal(SDL_GetError());
+                auto uploaded = s2ne::texture_resources.upload_frame(image);
+                if (!uploaded) { s2ne::fatal(uploaded.error()); }
+                texture = uploaded.value();
             }
+            else if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
         };
         auto showSetup = [&]
         {
             inSetup = true;
             auto image = setup.draw(title, menu);
             if (stdio) { stdioLogicalFrame = image; }
-            if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4))
+            if (s2ne::texture_resources.active())
             {
-                s2ne::fatal(SDL_GetError());
+                auto uploaded = s2ne::texture_resources.upload_frame(image);
+                if (!uploaded) { s2ne::fatal(uploaded.error()); }
+                texture = uploaded.value();
             }
+            else if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
         };
         std::unique_ptr<s2ne::Prologue> prologue;
         std::optional<s2ne::OriginalSettings> settings;
@@ -592,6 +608,15 @@ int s2ne::run_application(int argc, char** argv)
             paused = true;
         }
         auto settingsState = s2ne::OriginalSettings::load_state(root);
+        const bool simplifiedChinese = settingsState.simplified_chinese != 0;
+        if (s2ne::texture_resources.active())
+        {
+            auto font = s2ne::texture_resources.initialize_font(root / "chinese.ttf");
+            if (!font) { s2ne::fatal(font.error()); }
+            auto smallFont = s2ne::texture_resources.initialize_small_font(root / "wenquanyi-16px.ttf");
+            if (!smallFont) { s2ne::fatal(smallFont.error()); }
+        }
+        menu.set_simplified_chinese(simplifiedChinese, root / "cc");
         auto playMusic = [&](unsigned id) -> s2ne::Result<bool>
         {
             auto domain = s2ne::ResourceDomain::primary;
@@ -663,10 +688,13 @@ int s2ne::run_application(int argc, char** argv)
             }
             auto image = std::move(rendered).value();
             if (stdio) { stdioLogicalFrame = image; }
-            if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4))
+            if (s2ne::texture_resources.active())
             {
-                s2ne::fatal(SDL_GetError());
+                auto uploaded = s2ne::texture_resources.upload_frame(image);
+                if (!uploaded) { s2ne::fatal(uploaded.error()); }
+                texture = uploaded.value();
             }
+            else if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
         };
         auto beginSettings = [&]
         {
@@ -685,10 +713,13 @@ int s2ne::run_application(int argc, char** argv)
             auto image = s2ne::load_title(root, 20, false);
             exitConfirmation->draw(image, menu);
             if (stdio) { stdioLogicalFrame = image; }
-            if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4))
+            if (s2ne::texture_resources.active())
             {
-                s2ne::fatal(SDL_GetError());
+                auto uploaded = s2ne::texture_resources.upload_frame(image);
+                if (!uploaded) { s2ne::fatal(uploaded.error()); }
+                texture = uploaded.value();
             }
+            else if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
         };
         auto beginExitConfirmation = [&]
         {
@@ -1006,10 +1037,13 @@ int s2ne::run_application(int argc, char** argv)
                 image = std::move(panel).value();
             }
             if (stdio) { stdioLogicalFrame = image; }
-            if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4))
+            if (s2ne::texture_resources.active())
             {
-                s2ne::fatal(SDL_GetError());
+                auto uploaded = s2ne::texture_resources.upload_frame(image);
+                if (!uploaded) { s2ne::fatal(uploaded.error()); }
+                texture = uploaded.value();
             }
+            else if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
         };
         auto openSelectedDetail = [&]
         {
@@ -5630,10 +5664,13 @@ int s2ne::run_application(int argc, char** argv)
                         if (!advanced) { s2ne::report_error(advanced.error()); }
                     }
                     if (stdio) { stdioLogicalFrame = rgba; }
-                    if (!SDL_UpdateTexture(texture, nullptr, rgba.data(), 640 * 4))
+                    if (s2ne::texture_resources.active())
                     {
-                        s2ne::fatal(SDL_GetError());
+                        auto uploaded = s2ne::texture_resources.upload_frame(rgba);
+                        if (!uploaded) { s2ne::fatal(uploaded.error()); }
+                        texture = uploaded.value();
                     }
+                    else if (!SDL_UpdateTexture(texture, nullptr, rgba.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
                     next = frameStarted + s2ne::original_ani_frame_ms(0xAF12, a.delay);
                 }
             }
@@ -6057,14 +6094,22 @@ int s2ne::run_application(int argc, char** argv)
                     saveMenu.reset();
                 }
                 if (stdio) { stdioLogicalFrame = image; }
-                if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4))
+                if (s2ne::texture_resources.active())
                 {
-                    s2ne::fatal(SDL_GetError());
+                    auto uploaded = s2ne::texture_resources.upload_frame(image);
+                    if (!uploaded) { s2ne::fatal(uploaded.error()); }
+                    texture = uploaded.value();
                 }
+                else if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
             }
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
             SDL_RenderTexture(renderer, texture, nullptr, nullptr);
+            if (s2ne::texture_resources.active())
+            {
+                auto text = s2ne::texture_resources.flush_text();
+                if (!text) { s2ne::fatal(text.error()); }
+            }
             if (!SDL_RenderPresent(renderer))
             {
                 s2ne::fatal(SDL_GetError());

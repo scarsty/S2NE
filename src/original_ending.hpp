@@ -181,6 +181,12 @@ class OriginalEnding
 public:
     static s2ne::Result<std::vector<uint8_t>> try_pcx(const std::filesystem::path& root, unsigned id, OriginalDisc disc)
     {
+        if (texture_resources.active())
+        {
+            auto image = texture_resources.load_image("ending", id);
+            if (!image) { return s2ne::Result<std::vector<uint8_t>>::failure(image.error()); }
+            return s2ne::Result<std::vector<uint8_t>>::success(std::move(image).value().pixels);
+        }
         auto b = OriginalDiscResources(root).dat_entry(disc, id);
         if (b.size() < 897 || b[0] != 10 || b[2] != 1 || b[3] != 8 || b[65] != 1 || word(b, 8) != 639 || word(b, 10) < 479)
         {

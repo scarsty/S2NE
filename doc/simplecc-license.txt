@@ -1,0 +1,7 @@
+SimpleCC integration
+
+The conversion trie is adapted from C:\project\mlcc\SimpleCC.h and
+C:\project\mlcc\SimpleCC.cpp.
+
+Copyright (c) 2024, SunTY
+BSD 3-Clause License. See C:\project\mlcc\LICENSE for the complete text.

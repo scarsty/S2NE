@@ -70,6 +70,15 @@ public:
         {
             return s2ne::Result<bool>::failure(make_error("Unsupported original interbattle background"));
         }
+        if (texture_resources.active())
+        {
+            auto external = texture_resources.load_image("interbattle", resource);
+            if (!external) { return s2ne::Result<bool>::failure(external.error()); }
+            background_ = std::move(external).value().pixels;
+            palette_.assign(768, 0);
+            indices_.assign(640u * 480, 0);
+            return s2ne::Result<bool>::success(true);
+        }
         auto dat_result = OriginalDiscResources(root).try_dat_entry(disc, resource);
         if (!dat_result)
         {

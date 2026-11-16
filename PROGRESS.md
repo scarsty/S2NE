@@ -5,7 +5,7 @@
 <a id="current-status"></a>
 ## 当前状态
 
-自动texture接入进行中（2026-11-16）：紧凑目录已移到游戏工作目录texture。启动检测目录并输出stderr路径，缺目录保持旧读取；共用CEL UI已接按编号缓存的PNG／SDL纹理，以SDL软件renderer过渡合成，组首次加载输出日志。尚非全盘纹理：地图、人物、法术、文字及其它直接sprite路径仍旧实现，不能关闭迁移待办。Release及clang-format通过，有／无目录verify、新游戏smoke通过；detail smoke进入战场超时，未认证完整菜单路径。当前仅部分完成用户全纹理请求。
+自动texture接入进行中（2026-11-16）：紧凑目录已移到游戏工作目录texture。启动检测目录并输出stderr路径，缺目录保持旧读取；UI、头像、地图地面／物件／场景／战场背景、普通人物动作、代表法术及原字形已接入PNG／SDL纹理缓存，原索引数据仍用于遮挡、规则和状态计算，组首次加载输出日志。当前仍是CPU framebuffer与SDL render-target之间的过渡桥，不是最终无读回的全盘GPU架构；特殊人物状态、部分内部演出及其它直接sprite路径仍旧实现，不能关闭迁移待办。SDL_ttf大字缓存仅在texture模式启用，默认配置`SIMPLIFIED_CHINESE=0`，开启后按资源根`cc\TSCharacters.txt`和`cc\TSPhrases.txt`进行繁转简；其余两个词典为简转繁，当前不加载。Release构建仅同步一份EXE到资源根，Debug不触发同步；Release、clang-format、纹理专项测试及有texture新游戏smoke通过；战斗入口专项仍有既有超时，未据此改变战斗规则。
 
 关联验证补充：缺texture的旧路径同样在detail smoke战场进入超时，不能将该失败直接归因于PNG；当前不修改剧情规则迎合此旧脚本。新增texture_resources_test直接执行197/204/235三张实际UI，PNG经SDL纹理融合后的裁剪RGBA与透明CEL逐像素一致，也确认纹理模式忽略旧opaque要求。该专项通过，不扩大为全战场纹理迁移。纹理／renderer／Surface按依赖顺序释放，应用退出先清理缓存再销毁SDL会话。
 
@@ -180,6 +180,15 @@ SDL资源实验（2026-11-16）：已按用户授权生成`out/textures-sdl`简�
 - 通关困难允许仅增加我方经验，经原成长／习得及转职许可；标注经验辅助、使用副本、逐笔记录，不直接改等级／攻防／职业、不改RNG、不跳关／强制胜利、不伪造自然奖励。执行细则见[AI自动流程](AI_CAMPAIGN.md#2-转职与成长原则)。
 - 不实现双人对战，保留单人合作技能。
 - 允许现代音视频后端／编解码、Windows x64／SDL3、原资源去重免换盘；不替换内容、删事件或丢失原字节。
+- 允许 SDL3_ttf、外部 `texture` PNG/TXT、资源根 `chinese.ttf` 字体纹理缓存、`cc` 词典可选繁转简，以及把这些现代资源随完整发布包分发；这些只改变显示后端、字体载入和发布介质，不改变原剧情、菜单、事件、战斗规则、调色板语义或输入时序。纹理迁移未完成部分仍是缺口，不因本许可视为已完成。
 - 原640×480按比例铺满、必要黑边、最终LINEAR柔化，不改PAL／透明／遮挡，不冒称Super2xSaI等价。
 - 原41CA6E→426CEC→474E3E对话箭头选择已确认朝向错误：上框237向下、下框238向上，其它定位和层序保留。
 - 其它明显原版错误须逐项给证据、原因与影响，不授权任意改平衡。音频暂缓非永久省略。
+
+## Texture backend checkpoint (2025-02-14)
+- External texture mode now binds the production SDL renderer and caches PNGs as renderer-owned textures; the former software-renderer CPU bridge was removed.
+- UI draw regression passes with SDL dummy video; Release x64 build passes. Legacy mode remains selected when 	exture is absent.
+- Portrait routing is wired for the SuperSp_ CEL archive path, but full production migration of map/unit/spell/font call sites remains outstanding and is not claimed complete.
+
+- External mode now routes menu/settings/confirmation/growth/ANI/prologue frame uploads through the texture resource manager; legacy mode remains unchanged. Release x64 and clang-format checks pass.
+- A direct map-sprite replacement was rejected and removed because converting edited PNG output back into the indexed world buffer would corrupt original occlusion/shadow semantics. Map/unit/spell direct draw commands remain the next migration boundary.

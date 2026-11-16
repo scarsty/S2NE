@@ -1,5 +1,7 @@
 #pragma once
 #include "resource_result.hpp"
+#include "simple_cc.hpp"
+#include "texture_resources.hpp"
 #include "title_image.hpp"
 #include <algorithm>
 #include <array>
@@ -15,6 +17,7 @@ class OriginalMenu
     std::array<uint8_t, 768> title_palette_{};
     size_t strings{}, index{}, glyphs{};
     unsigned count{};
+    SimpleCC simple_cc_;
     unsigned word(size_t p) const { return bin.at(p) | (unsigned(bin.at(p + 1)) << 8); }
     unsigned dword(size_t p) const { return word(p) | (word(p + 2) << 16); }
     size_t entry(unsigned id) const
@@ -26,6 +29,7 @@ class OriginalMenu
 
 public:
     bool small_font = false;
+    bool simplified_chinese = false;
     int selected = 0;
     int activated = -1;
     static constexpr std::array<unsigned, 5> ids{ 212, 213, 214, 123, 131 };
@@ -170,12 +174,30 @@ public:
     {
         draw_big5(image, text_bytes(id), x, y, color);
     }
+    void set_simplified_chinese(bool enabled, const std::filesystem::path& dictionary_directory)
+    {
+        simplified_chinese = enabled;
+        if (enabled)
+        {
+            simple_cc_.init({ (dictionary_directory / "TSCharacters.txt").string(), (dictionary_directory / "TSPhrases.txt").string() });
+        }
+    }
     // sub_422402: BIN 12 contains 16x16 Big5 glyphs; BIN 15 contains 8x15 ASCII.
     s2ne::Result<bool> try_draw_small_validated(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, bool original_padding = false, std::vector<uint8_t>* indexed = nullptr) const
     {
         if (image.size() != 640u * 480 * 4 || color > 255 || (indexed && indexed->size() != 640u * 480))
         {
             return s2ne::Result<bool>::failure(make_error("Invalid text framebuffer or palette color"));
+        }
+        if (texture_resources.active() && texture_resources.small_font_ready() && !indexed)
+        {
+            const auto utf8 = SimpleCC::big5_to_utf8(text);
+            if (!utf8.empty())
+            {
+                const auto translated = simplified_chinese ? simple_cc_.convert(utf8) : utf8;
+                const SDL_Color foreground{ uint8_t(std::min(255u, unsigned(pal.at(color * 3)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 1)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 2)) * 255 / 63)), 255 };
+                return texture_resources.draw_small_text(image, translated, x + (original_padding ? 1 : 0), y + (original_padding ? 1 : 0), foreground);
+            }
         }
         for (size_t p = 0; p < text.size();)
         {
@@ -239,6 +261,14 @@ public:
                 bits = entry(12) + (glyph - 1) * 32;
                 width = height = 16;
             }
+            if (texture_resources.active())
+            {
+                const auto glyph = std::span<const uint8_t>(bin).subspan(bits, size_t(width / 8) * height);
+                auto drawn = texture_resources.draw_glyph(image, glyph, width, height, x + (original_padding ? 1 : 0), y + (original_padding && height == 15 ? 1 : 0), pal, color, indexed);
+                if (!drawn) { return drawn; }
+                x += int(width);
+                continue;
+            }
             for (unsigned gy = 0; gy < height; ++gy)
             {
                 for (unsigned gx = 0; gx < width; ++gx)
@@ -294,12 +324,29 @@ public:
         {
             return s2ne::Result<bool>::failure(make_error("Invalid text framebuffer or palette color"));
         }
+        if (texture_resources.active() && texture_resources.font_ready() && !indexed)
+        {
+            const auto utf8 = SimpleCC::big5_to_utf8(text);
+            if (!utf8.empty())
+            {
+                const auto translated = simplified_chinese ? simple_cc_.convert(utf8) : utf8;
+                const SDL_Color foreground{ uint8_t(std::min(255u, unsigned(pal.at(color * 3)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 1)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 2)) * 255 / 63)), 255 };
+                return texture_resources.draw_large_text(image, translated, x, y, foreground);
+            }
+        }
         for (size_t p = 0; p < text.size();)
         {
             unsigned lead = text.at(p++), code = 0;
             if (lead <= 0x80)
             {
                 size_t bits = entry(16) + std::max(30u, lead) * 48;
+                if (texture_resources.active())
+                {
+                    auto drawn = texture_resources.draw_glyph(image, std::span<const uint8_t>(bin).subspan(bits, 48), 16, 24, x, y, pal, color, indexed);
+                    if (!drawn) { return drawn; }
+                    x += 16;
+                    continue;
+                }
                 for (int gy = 0; gy < 24; ++gy)
                 {
                     for (int gx = 0; gx < 16; ++gx)
@@ -372,6 +419,13 @@ public:
                 return s2ne::Result<bool>::failure(make_error("Missing original dialogue glyph"));
             }
             size_t bits = glyphs + (glyph - 1) * 72;
+            if (texture_resources.active())
+            {
+                auto drawn = texture_resources.draw_glyph(image, std::span<const uint8_t>(bin).subspan(bits, 72), 24, 24, x, y, pal, color, indexed);
+                if (!drawn) { return drawn; }
+                x += 24;
+                continue;
+            }
             for (int gy = 0; gy < 24; ++gy)
             {
                 for (int gx = 0; gx < 24; ++gx)
@@ -426,6 +480,22 @@ public:
         if (image.size() != 640u * 480 * 4 || color > 255 || (indexed && indexed->size() != 640u * 480))
         {
             return s2ne::Result<bool>::failure(make_error("Invalid text framebuffer or palette color"));
+        }
+        if (texture_resources.active() && texture_resources.font_ready() && !indexed)
+        {
+            const auto utf8 = SimpleCC::big5_to_utf8(text);
+            if (!utf8.empty())
+            {
+                const auto translated = simplified_chinese ? simple_cc_.convert(utf8) : utf8;
+                const SDL_Color foreground{ uint8_t(std::min(255u, unsigned(pal.at(color * 3)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 1)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 2)) * 255 / 63)), 255 };
+                if (shadow)
+                {
+                    const SDL_Color shadow_color{ uint8_t(std::min(255u, unsigned(pal.at(*shadow * 3)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(*shadow * 3 + 1)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(*shadow * 3 + 2)) * 255 / 63)), 255 };
+                    auto rendered_shadow = texture_resources.draw_large_text(image, translated, x + 1, y + 1, shadow_color);
+                    if (!rendered_shadow) { return rendered_shadow; }
+                }
+                return texture_resources.draw_large_text(image, translated, x, y, foreground);
+            }
         }
         auto output = image;
         std::vector<uint8_t> indices;
@@ -504,6 +574,38 @@ public:
     }
     void draw_original_wrapped(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, unsigned rows, unsigned columns, int row_height, std::optional<unsigned> shadow = std::nullopt) const
     {
+        if (texture_resources.active() && texture_resources.font_ready())
+        {
+            size_t p = 0;
+            for (unsigned row = 0; row < rows; ++row)
+            {
+                std::vector<uint8_t> line;
+                unsigned units = 0;
+                while (p < text.size() && text[p] && text[p] != '\n' && units < columns * 2)
+                {
+                    const auto lead = text[p++];
+                    if (lead == '*') { break; }
+                    line.push_back(lead);
+                    if (lead > 128)
+                    {
+                        if (p >= text.size()) { break; }
+                        line.push_back(text[p++]);
+                        units += 2;
+                    }
+                    else
+                    {
+                        ++units;
+                    }
+                }
+                if (!line.empty())
+                {
+                    auto drawn = try_draw_original_large(image, line, x, y + int(row) * row_height, color, shadow);
+                    if (!drawn) { report_error(drawn.error()); }
+                }
+                while (p < text.size() && (text[p] == '\n' || text[p] == '*')) { ++p; }
+            }
+            return;
+        }
         // 423AC5 uses 28-pixel cells, compensating eight pixels after each ASCII.
         size_t p = 0;
         for (unsigned row = 0; row < rows; ++row)
@@ -577,6 +679,18 @@ public:
     void draw(std::vector<uint8_t>& image) const
     {
         // 40DFD6/40E057: both normal and selected rows use style1, edge3.
+        if (texture_resources.active() && texture_resources.font_ready())
+        {
+            for (unsigned row = 0; row < 5; ++row)
+            {
+                const auto text = SimpleCC::big5_to_utf8(text_bytes(ids[row]));
+                const unsigned palette_index = row == static_cast<unsigned>(selected) ? 2 : 15;
+                const SDL_Color color{ title_palette_[palette_index * 3], title_palette_[palette_index * 3 + 1], title_palette_[palette_index * 3 + 2], 255 };
+                auto drawn = texture_resources.draw_large_text(image, simplified_chinese ? simple_cc_.convert(text) : text, 278, 286 + int(row) * 30, color);
+                if (!drawn) { fatal(drawn.error()); }
+            }
+            return;
+        }
         std::vector<uint8_t> text(image.size()), indices(640 * 480);
         for (unsigned row = 0; row < 5; ++row)
         {
