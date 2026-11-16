@@ -290,6 +290,8 @@ public:
             bool removed = get(raw.groups[0].units[i], 8) == 1 && ((u.status_flags & 0x20) || !(u.status_flags & 0x40));
             // 44A4A9会保留离队成员的持久化记录，但0x20/0x40成员不进入下一关的初始部署槽。
             bool deployable = !removed && OriginalCampaign::living(u) && !(u.status_flags & 0x70);
+            // 剧情关后的下一场战斗可能没有部署槽；原程序仍保留持久队伍的登场位。
+            const bool implicit_deployment = slots.empty() && deployable;
             u.status_flags &= 0x73;
             u.status34 = 0;
             u.status3c = 0;
@@ -303,14 +305,17 @@ public:
             u.attack = u.attack_limit;
             u.defense = u.defense_limit;
             u.tactics = u.base_tactics;
-            if (deployable && slot < slots.size())
+            if (deployable && (implicit_deployment || slot < slots.size()))
             {
                 u.status_flags |= 0x80;
-                const auto& p = slots[slot++];
-                u.x = p.x;
-                u.y = p.y;
-                u.direction = p.direction & 3;
-                u.animation_action = p.direction >> 2;
+                if (!implicit_deployment)
+                {
+                    const auto& p = slots[slot++];
+                    u.x = p.x;
+                    u.y = p.y;
+                    u.direction = p.direction & 3;
+                    u.animation_action = p.direction >> 2;
+                }
                 u.first_turn = 1;
                 u.last_turn = 0;
                 u.action_state = 0;

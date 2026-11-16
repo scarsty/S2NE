@@ -452,25 +452,25 @@ public:
         --state.inventory[id - 1];
         u.equipment[slot] = id;
         int d = sw(items_, p + 17);
-        if (u.attack + d > 999)
+        if (u.attack_limit + d > 999)
         {
-            d = 999 - u.attack;
+            d = 999 - u.attack_limit;
         }
         u.attack = word(u.attack + d);
         u.attack_limit = word(u.attack_limit + d);
         u.equipment_stat_deltas[0] = word(u.equipment_stat_deltas[0] + d);
         d = sb(items_, p + 21);
-        if (u.defense + d > 999)
+        if (u.defense_limit + d > 999)
         {
-            d = 999 - u.defense;
+            d = 999 - u.defense_limit;
         }
         u.defense = word(u.defense + d);
         u.defense_limit = word(u.defense_limit + d);
         u.equipment_stat_deltas[1] = word(u.equipment_stat_deltas[1] + d);
         d = sb(items_, p + 22);
-        if (u.sp + d > 999)
+        if (u.max_sp + d > 999)
         {
-            d = 999 - u.sp;
+            d = 999 - u.max_sp;
         }
         u.sp = word(u.sp + d);
         u.max_sp = word(u.max_sp + d);

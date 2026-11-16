@@ -1548,7 +1548,8 @@ public:
             return;
         }
         auto& unit = units.at(selected_);
-        if (original_rules_ && unit.action_points >= config_[8])
+        const bool can_pay_rest = original_rules_ && unit.action_points >= config_[8];
+        if (can_pay_rest)
         {
             unit.action_points = int(int16_t(unit.action_points - config_[8]));
             unit.carry_points = std::min(unit.carry_points, unit.action_points);
@@ -1705,8 +1706,10 @@ public:
             mask |= command_masks[0];
         }
         const auto context = size_t(selected_) < movement_contexts_.size() ? movement_contexts_[selected_] : MovementContext{};
-        bool move_budget = !original_rules_ || u.max_action_points >= config_[0] + config_[context.movement_class ? 1 : 4];
-        if (!moved_ && !(u.status34 & 1) && move_budget)
+        const int minimum_move_ap = config_[0] + config_[context.movement_class ? 1 : 4];
+        const bool has_move_ap = !original_rules_ || u.action_points >= minimum_move_ap;
+        const bool already_moved = moved_ || (u.status34 & 1) != 0;
+        if (!already_moved && has_move_ap)
         {
             if (original_rules_)
             {
@@ -1797,11 +1800,13 @@ public:
     // sub_477BEB compares signed remaining AP, not path length or terrain.
     static uint8_t movement_category(int remaining, unsigned flags, int ability_threshold, int attack_threshold)
     {
-        if ((flags & 2) && remaining >= ability_threshold)
+        const bool allows_ability = (flags & 2) != 0;
+        const bool allows_attack = (flags & 1) != 0;
+        if (allows_ability && remaining >= ability_threshold)
         {
             return 2;
         }
-        if ((flags & 1) && remaining >= attack_threshold)
+        if (allows_attack && remaining >= attack_threshold)
         {
             return 1;
         }
@@ -2737,8 +2742,11 @@ public:
     }
     int attack_cost(const OriginalEvents::Unit& unit) const
     {
-        int cost = config_[6] - ((unit.abilities & 0x20000000u) ? 4 : 0);
-        if ((unit.status34 & 2) && !(unit.abilities & 0x8000))
+        const bool reduced_attack_cost = (unit.abilities & 0x20000000u) != 0;
+        const bool already_attacked = (unit.status34 & 2) != 0;
+        const bool waives_repeat_cost = (unit.abilities & 0x8000) != 0;
+        int cost = config_[6] - (reduced_attack_cost ? 4 : 0);
+        if (already_attacked && !waives_repeat_cost)
         {
             cost += config_[11];
         }
@@ -3145,6 +3153,30 @@ public:
         }
         return -1;
     }
+    std::vector<std::array<int, 5>> observed_movement_edges(const std::vector<OriginalEvents::Unit>& units, size_t actor, bool occupied) const
+    {
+        std::vector<std::array<int, 5>> edges;
+        if (actor >= units.size()) { return edges; }
+        const auto& unit = units[actor];
+        for (unsigned y = 0; y < height_; ++y)
+        {
+            for (unsigned x = 0; x < width_; ++x)
+            {
+                Point from{ int(x), int(y) };
+                for (int dy : { -1, 1 })
+                {
+                    for (int dx : { 0, (y & 1) ? 1 : -1 })
+                    {
+                        Point to{ int(x) + dx, int(y) + dy };
+                        int cost = step_cost(unit, from, to);
+                        if (cost < 0 || (occupied && !player_route_passable(units, unit, to))) { continue; }
+                        edges.push_back({ from.x, from.y, to.x, to.y, cost });
+                    }
+                }
+            }
+        }
+        return edges;
+    }
     int step_cost(const OriginalEvents::Unit& u, Point from, Point to) const
     {
         if (!valid(to) || !adjacent(from, to))
@@ -3166,13 +3198,17 @@ public:
         }
         int climb = b.elevation - a.elevation;
         const unsigned movementClass = hostile_resources_ ? hostile_resources_->movement_class(u) : 0;
-        if (movementClass == 1 || movementClass == 2)
+        if (original_rules_ && hostile_resources_)
         {
             if (std::abs(climb) > 10 || to.y - b.elevation < 0) { return -1; }
+            const bool ignores_slope = (physical_status(u, 0x117) & 1) || (physical_status(u, 0x3D) & 4);
+            if (!ignores_slope && movementClass == 0 && (climb > 3 || climb < -4)) { return -1; }
             auto effect = terrain_effect(*hostile_resources_, u, to);
             if (!effect.result) { return -1; }
-            if ((physical_status(u, 0x117) & 1) || (physical_status(u, 0x3D) & 4)) { climb = 0; }
-            return ai_config_[0xE9] + ai_config_[0xEA] * std::max(0, climb);
+            const int uphill = ignores_slope || movementClass == 5 ? 0 : std::max(0, climb);
+            if (movementClass != 0) { return ai_config_[0xE9] + ai_config_[0xEA] * uphill; }
+            // 原477F1F在地表/物件BYTE相加后才符号扩展，不分别拒绝两个分量。
+            return int(int8_t(effect.bytes[0])) + ai_config_[0xEB] * uphill;
         }
         if (climb > 3 || climb < -4 || to.y - b.elevation < 0 || b.ground <= 0)
         {
@@ -3867,7 +3903,7 @@ private:
     {
         auto& actor = units[index];
         int cost = step_cost(actor, { actor.x, actor.y }, to);
-        if (cost < 0 || occupant(units, to) >= 0 || (original_rules_ && cost > actor.action_points - config_[0]))
+        if (cost < 0 || !player_route_passable(units, actor, to) || (original_rules_ && cost > actor.action_points - config_[0]))
         {
             return false;
         }
@@ -3929,7 +3965,7 @@ private:
         auto routes = build_ordered_routes(origin, [&](Position from, Position to) -> std::optional<int>
             {
                 int cost = step_cost(actor, { from.x, from.y }, { to.x, to.y });
-                if (cost < 0 || occupied_unit(to))
+                if (cost < 0 || !player_route_passable(units, actor, { to.x, to.y }))
                 {
                     return std::nullopt;
                 }

@@ -215,7 +215,11 @@ public:
         }
         *this = std::move(result).value();
     }
-    int action_cost(const OriginalEvents::Unit& unit) const { return ap_base_ + ((unit.status34 & 12) ? ap_repeat_ : 0); }
+    int action_cost(const OriginalEvents::Unit& unit) const
+    {
+        const bool already_used_skill = (unit.status34 & 12) != 0;
+        return ap_base_ + (already_used_skill ? ap_repeat_ : 0);
+    }
     bool entry_available(const OriginalEvents::Unit& unit, Context context) const
     {
         unsigned begin = context.second ? bin_.at(header_ + 2) : 0, end = context.second ? begin + bin_.at(header_ + 3) : bin_.at(header_ + 2);

@@ -21,7 +21,7 @@ public:
         int elevation{};
         uint32_t seconds{};
         unsigned payment_state{};
-        bool original_second_partition{}, target_runtime_known{}, synchronous_death_ready{}, computer{};
+        bool original_second_partition{}, target_runtime_known{}, synchronous_death_ready{}, computer{}, player_controlled{};
         const OriginalEvents::Unit* partner{};
     };
     enum class Failure
@@ -271,7 +271,8 @@ public:
         const auto request = *menu.request();
         const auto record = menu.selected();
         const bool family = area_target && menu.damage_supported();
-        if ((!family && !menu.sword94_supported()) || ((record.raw[32] & 7) && !ctx.partner) || request.unit_id != actor.id || request.appearance != actor.appearance || request.group != record.group || request.bit != record.bit || request.second != ctx.original_second_partition || !award || !menu.source_authorized(actor, record.group, record.bit) || (!actor.controllable() && !ctx.computer) || !(actor.status_flags & 0x80) || (actor.status_flags & 0x20) || actor.hp <= 0 || target.hp <= 0 || (record.raw[31] == 2 && actor.hostile() == target.hostile()) || (actor.id == target.id && actor.appearance == target.appearance) || !(target.status_flags & 0x80) || (target.status_flags & 0x20) || ctx.damage.difficulty < 1 || ctx.damage.difficulty > 5 || (!ctx.damage.friendly_army && !ctx.computer) || ctx.damage.conditions_mode || menu.resource_failure(actor, record) != OriginalSkills::Failure::none)
+        const bool led_ally = ctx.player_controlled && actor.behavior == 1 && !actor.hostile();
+        if ((!family && !menu.sword94_supported()) || ((record.raw[32] & 7) && !ctx.partner) || request.unit_id != actor.id || request.appearance != actor.appearance || request.group != record.group || request.bit != record.bit || request.second != ctx.original_second_partition || !award || !menu.source_authorized(actor, record.group, record.bit) || (!actor.controllable() && !ctx.computer && !led_ally) || !(actor.status_flags & 0x80) || (actor.status_flags & 0x20) || actor.hp <= 0 || target.hp <= 0 || (record.raw[31] == 2 && actor.hostile() == target.hostile()) || (actor.id == target.id && actor.appearance == target.appearance) || !(target.status_flags & 0x80) || (target.status_flags & 0x20) || ctx.damage.difficulty < 1 || ctx.damage.difficulty > 5 || (!ctx.damage.friendly_army && !ctx.computer) || ctx.damage.conditions_mode || menu.resource_failure(actor, record) != OriginalSkills::Failure::none)
         {
             return out;
         }

@@ -390,6 +390,12 @@ public:
     }
     bool commit_quantity(OriginalSave::State& state)
     {
+        if (page_ == Page::equipment && !transitioning() && item() && !equip_selected_)
+        {
+            scan(0x1C, state);
+            if (page_ != Page::equipment_confirm) { return false; }
+            return scan(0x1C, state);
+        }
         if (page_ != Page::quantity || !item()) { return false; }
         if (!(buying_ ? shop_.buy(state, item(), quantity_) : shop_.sell(state, item(), quantity_))) { return false; }
         items_ = buying_ ? offers(state) : shop_.sale_items(state);

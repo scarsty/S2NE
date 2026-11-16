@@ -21,6 +21,57 @@ class StdioProtocol
 
 public:
     using Json = nlohmann::json;
+    static std::string original_text(const Json& bytes)
+    {
+        if (!bytes.is_array()) { return {}; }
+        std::string input;
+        for (const auto& byte : bytes)
+        {
+            if (!byte.is_number_integer() || byte.get<int>() < 0 || byte.get<int>() > 255) { return {}; }
+            input += char(byte.get<unsigned>());
+        }
+        if (input.empty()) { return {}; }
+        const int count = MultiByteToWideChar(950, MB_ERR_INVALID_CHARS, input.data(), int(input.size()), nullptr, 0);
+        if (!count) { return {}; }
+        std::wstring wide(size_t(count), L'\0');
+        MultiByteToWideChar(950, MB_ERR_INVALID_CHARS, input.data(), int(input.size()), wide.data(), count);
+        const int size = WideCharToMultiByte(CP_UTF8, 0, wide.data(), count, nullptr, 0, nullptr, nullptr);
+        std::string text(size_t(size), '\0');
+        WideCharToMultiByte(CP_UTF8, 0, wide.data(), count, text.data(), size, nullptr, nullptr);
+        return text;
+    }
+    static void describe(Json& value)
+    {
+        if (value.is_array())
+        {
+            for (auto& entry : value) { describe(entry); }
+            return;
+        }
+        if (!value.is_object()) { return; }
+        Json additions = Json::object();
+        for (auto& [key, entry] : value.items())
+        {
+            describe(entry);
+            if (!key.ends_with("_bytes")) { continue; }
+            const auto field = key.substr(0, key.size() - 6);
+            auto text = original_text(entry);
+            if (text.empty())
+            {
+                text = "unknown";
+                for (const char* id : { "id", "kind", "index" })
+                {
+                    if (value.contains(id))
+                    {
+                        text += ":" + value.at(id).dump();
+                        break;
+                    }
+                }
+            }
+            additions[field] = text;
+        }
+        value.update(additions);
+        if (value.contains("name_bytes")) { value["name_encoding"] = "UTF-8 (Big5/CP950 source)"; }
+    }
     static std::optional<std::string> mismatch(const Json& state, const Json& expected)
     {
         if (!expected.is_object()) { return "expected state must be an object"; }
@@ -70,7 +121,9 @@ public:
     bool eof() const { return eof_ && lines_.empty(); }
     void respond(const Json& response)
     {
-        const auto bytes = response.dump(-1, ' ', false, Json::error_handler_t::replace) + "\n";
+        auto described = response;
+        describe(described);
+        const auto bytes = described.dump(-1, ' ', false, Json::error_handler_t::replace) + "\n";
         DWORD written{};
         if (!WriteFile(output_, bytes.data(), DWORD(bytes.size()), &written, nullptr) || written != bytes.size()) { eof_ = true; }
     }

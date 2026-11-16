@@ -12,7 +12,7 @@ class OriginalInterbattle
     OriginalMenu font_;
     std::vector<uint8_t> background_, palette_, indices_;
     int selected_{ 1 }, pointer_x_{ 298 }, pointer_y_{ 253 };
-    bool pending_{}, closed_{};
+    bool pending_{}, closed_{}, services_allowed_{ true };
     static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& p) { return read_resource(p); }
     static std::vector<uint8_t> read(const std::filesystem::path& p) { return try_read(p).value(); }
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
@@ -159,6 +159,24 @@ public:
     }
 
     const std::vector<uint8_t>& background() const { return background_; }
+    static bool town_services_allowed(const std::filesystem::path& root, unsigned town)
+    {
+        auto pal = read_shared_resource(root / "SUPERSP.PAL").value();
+        auto bin = read_shared_resource(root / "SUPERSP.BIN").value();
+        size_t table = dword(pal, 872) - 14;
+        if (!town || town > word(bin, table)) { return false; }
+        return bin.at(table + 2 + (town - 1) * 14 + 10) == 1;
+    }
+    void configure_town(const std::filesystem::path& root, unsigned town)
+    {
+        services_allowed_ = town_services_allowed(root, town);
+        if (!services_allowed_)
+        {
+            selected_ = 4;
+            pending_ = true;
+        }
+    }
+    bool services_allowed() const { return services_allowed_; }
     s2ne::Result<std::vector<uint8_t>> try_indexed_background(const std::vector<uint8_t>& palette) const
     {
         if (palette.size() < 768)
@@ -197,7 +215,7 @@ public:
     }
     void mouse(int x, int y, bool left_click)
     {
-        if (closed_ || pending_)
+        if (closed_ || pending_ || !services_allowed_)
         {
             return;
         }
@@ -215,14 +233,14 @@ public:
     }
     bool select_option(unsigned index)
     {
-        if (closed_ || pending_ || index >= labels.size()) { return false; }
+        if (closed_ || pending_ || index >= labels.size() || (!services_allowed_ && index != 3)) { return false; }
         selected_ = int(index + 1);
         pending_ = true;
         return true;
     }
     void scan(unsigned code)
     {
-        if (closed_ || pending_)
+        if (closed_ || pending_ || !services_allowed_)
         {
             return;
         }

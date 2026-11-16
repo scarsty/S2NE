@@ -129,6 +129,21 @@ void AppCampaignAdapter::connect()
                 return std::nullopt;
             }
             auto captured = std::move(captureResult).value();
+            if (current.type(eventIndex) == 10 && current.condition(eventIndex) == 0)
+            {
+                OriginalSaveBridge::grant_scripted_item(captured, current.event_word(eventIndex, 5));
+                auto pending = std::make_shared<s2ne::OriginalSave::State>(std::move(captured));
+                return s2ne::Prologue::ArrivalTransaction{ current, [this, pending]() noexcept
+                    {
+                        using std::swap;
+                        swap(*rawSave, *pending);
+                    },
+                    [this, pending]() noexcept
+                    {
+                        using std::swap;
+                        swap(*rawSave, *pending);
+                    } };
+            }
             s2ne::OriginalEvents expanded(root, current.difficulty);
             expanded.load_stage(current.stage);
             auto mapResult = initialization.try_placement_map(root, expanded.map_id);
@@ -156,7 +171,8 @@ void AppCampaignAdapter::connect()
                 {
                     using std::swap;
                     swap(*rawSave, *pending);
-                }, [this, pending]() noexcept
+                },
+                [this, pending]() noexcept
                 {
                     using std::swap;
                     swap(*rawSave, *pending);
@@ -195,7 +211,8 @@ bool AppCampaignAdapter::commit_promotion(int selected, const OriginalPromotion:
         {
             return false;
         }
-        if (!rawSave || !prologue->in_battle() || prologue->battle_selected() != selected || prologue->battle_state() != s2ne::Battle::State::command || prologue->computer_actions() || prologue->battle().combat_feedback_active() || prologue->battle().animating_movement())
+        const bool hub = prologue->interbattle_active();
+        if (!rawSave || (!hub && (!prologue->in_battle() || prologue->battle_selected() != selected || prologue->battle_state() != s2ne::Battle::State::command)) || prologue->computer_actions() || prologue->battle().combat_feedback_active() || prologue->battle().animating_movement())
         {
             return false;
         }

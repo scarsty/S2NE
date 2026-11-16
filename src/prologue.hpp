@@ -536,6 +536,8 @@ private:
                 continue;
             }
             std::string disappearanceError;
+            // 后继旗标可重建地图；先同步再准备455048位图，避免下帧清空活动位图。
+            map_.set_event_flags(events.flags);
             auto pose = events.units;
             auto& visualRole = pose.at(size_t(role - events.units.begin()));
             // 455048脚本显式指定已死亡角色仍使用原位图，不能把展示预备态发布回军表。
@@ -577,6 +579,7 @@ private:
             return;
         }
         events.complete(event_);
+        if (battle_ && !story_stage()) { phase_ = Phase::battle; }
         dispatch_story();
     }
     bool begin_story_animation(size_t event)
@@ -971,6 +974,23 @@ private:
                 }
                 events.complete(i);
                 dispatch_story();
+                return;
+            }
+            if (events.type(i) == 8 && events.condition(i) == 4)
+            {
+                int x = events.event_word(i, 5), y = events.event_word(i, 7);
+                if (x && !y)
+                {
+                    auto* role = original_script_role(events, x);
+                    if (!role) { continue; }
+                    x = role->x;
+                    y = role->y;
+                }
+                // 4207A0定位后等待46C34D(100)，完成时才提交事件旗标。
+                map_.center(x, y);
+                story_wait_event_ = i;
+                story_wait_ms_ = 1000;
+                phase_ = Phase::story_wait;
                 return;
             }
             if (events.type(i) == 8 && events.condition(i) == 3)
@@ -1569,21 +1589,10 @@ private:
         for (size_t i = 0; i < events.event_count(); ++i)
         {
             unsigned type = events.type(i);
-            // 420A3B case1: trigger flag AND each valid operand flag. Completion
-            // is still 41C527's record+11 flag, not one of the operands.
-            if (type == 9 && events.condition(i) == 1)
+            // 原41B9A3按记录顺序执行；先提交无对白旗标链，再处理后面的选择。
+            if (auto predicate = original_flag_predicate(events, i))
             {
-                bool ready = true;
-                for (unsigned offset : { 3u, 5u, 7u, 9u })
-                {
-                    int flag = events.event_word(i, offset);
-                    if (flag >= 1 && flag <= 80 && !events.flags[size_t(flag - 1)])
-                    {
-                        ready = false;
-                    }
-                }
-                int trigger = events.event_word(i, 3);
-                if (trigger < 1 || trigger > 80 || !ready)
+                if (!*predicate)
                 {
                     continue;
                 }
@@ -1595,7 +1604,7 @@ private:
                 events.complete(i);
                 return dispatch_original_flag_operations();
             }
-            if (type != 6 && type != 7 && type != 8 && type != 11 && type != 12 && type != 14)
+            if (type != 6 && type != 7 && type != 8 && type != 10 && type != 11 && type != 12 && type != 14)
             {
                 continue;
             }
@@ -1605,6 +1614,15 @@ private:
                 continue;
             }
             int condition = events.event_word(i, 1), subject = events.event_word(i, 5);
+            if (type == 11 && condition == 8)
+            {
+                if (!begin_scripted_party_experience(i))
+                {
+                    campaign_blocker_ = "Original462CB7 scripted party growth rejected";
+                    phase_ = Phase::campaign_blocked;
+                }
+                return true;
+            }
             if (auto predicate = original_role_predicate(events, i))
             {
                 if (!*predicate)
@@ -1623,7 +1641,11 @@ private:
                 {
                     return int(u.id) == subject && OriginalCampaign::living(u);
                 });
-            if (type == 12 && (condition == 19 || condition == 20))
+            if (type == 10 && condition == 0)
+            {
+                if (!apply_scripted_control(i)) { return true; }
+            }
+            else if (type == 12 && (condition == 19 || condition == 20))
             {
                 scripted_battle_return_ = phase_;
                 begin_role_removal(i);
@@ -1768,6 +1790,47 @@ private:
         }
         return false;
     }
+    bool begin_scripted_party_experience(size_t event, size_t cursor = 0)
+    {
+        if (growth_active()) { return false; }
+        for (; cursor < events.units.size(); ++cursor)
+        {
+            const auto& unit = events.units[cursor];
+            // 原462CB7模式0：主军身份且80h置位；死亡者也先加WORD经验。
+            if (unit.hostile() || unit.persistent_role6 != 0 || !(unit.status_flags & 0x80)) { continue; }
+            auto candidate = unit;
+            candidate.experience = uint16_t(candidate.experience + events.event_word(event, 5));
+            std::optional<OriginalProgression::PendingGrowth> pending;
+            uint32_t seconds{};
+            battle_->mutate_random([&](OriginalRandom& random, uint32_t now)
+                {
+                    pending.emplace(candidate, random);
+                    seconds = now;
+                    return true;
+                });
+            return begin_reward_growth(std::move(*pending), seconds, [this, event, cursor](bool committed)
+                {
+                    if (!committed)
+                    {
+                        set_campaign_blocker("Original462CB7 scripted growth cancelled");
+                        return;
+                    }
+                    events.units[cursor] = reward_growth().unit();
+                    battle_->mutate_random([&](OriginalRandom& random, uint32_t)
+                        {
+                            random.restore(reward_growth().random().state());
+                            return true;
+                        });
+                    if (!begin_scripted_party_experience(event, cursor + 1))
+                    {
+                        set_campaign_blocker("Original462CB7 scripted growth continuation rejected");
+                    }
+                });
+        }
+        events.complete(event);
+        dispatch_campaign();
+        return true;
+    }
     bool dispatch_campaign()
     {
         if (!battle_ || battle_->animating_movement() || battle_->combat_feedback_active())
@@ -1807,6 +1870,8 @@ private:
         {
             return start_campaign_script();
         }
+        battle_->settle_object_flags(events);
+        if (dispatch_original_flag_operations()) { return true; }
         for (size_t i = 0; i < events.event_count(); ++i)
         {
             if (events.flag_trigger(i) && events.condition(i) == 0)
@@ -1851,7 +1916,7 @@ private:
                 continue;
             }
             if (dispatch_sound_event(i)) { return true; }
-            bool visible_script = (events.type(i) == 12 && (events.condition(i) == 10 || events.condition(i) == 16 || events.condition(i) == 1)) || (events.type(i) == 8 && events.condition(i) == 7);
+            bool visible_script = (events.type(i) == 12 && (events.condition(i) == 10 || events.condition(i) == 16 || events.condition(i) == 1)) || (events.type(i) == 8 && (events.condition(i) == 0 || events.condition(i) == 4 || events.condition(i) == 7)) || (events.type(i) == 6 && events.condition(i) == 1);
             if (!visible_script)
             {
                 continue;
@@ -1908,6 +1973,8 @@ private:
             }
             if (!events.line_count(i))
             {
+                // 420DC3 的无对白路由也必须先写入 4F7CE0，再消耗事件。
+                if (condition == 6) { events.script_route = events.event_word(i, 5); }
                 events.complete(i);
                 return dispatch_campaign();
             }
@@ -2252,6 +2319,7 @@ public:
     const std::vector<uint8_t>& last_reaction_bitmap() const { return map_.last_reaction_bitmap(); }
     std::vector<uint8_t> expected_reaction_bitmap(unsigned id, bool left) const { return map_.expected_reaction_bitmap(id, left); }
     bool interbattle_active() const { return phase_ == Phase::interbattle; }
+    bool interbattle_services_allowed() const { return interbattle_active() && interbattle_ && interbattle_->services_allowed(); }
     const std::string& campaign_blocker() const
     {
         static const std::string aiFailure = "470EF6 AI skill transaction failed; state retained, reload required";
@@ -4167,6 +4235,7 @@ public:
                 return Result<bool>::success(true);
             }
             events.complete(story_wait_event_);
+            if (scripted_battle_return_) { phase_ = *scripted_battle_return_; }
             dispatch_story();
             return Result<bool>::success(true);
         }
@@ -4338,7 +4407,8 @@ public:
             }
             if (battle_->state() == Battle::State::idle && std::none_of(events.units.begin(), events.units.end(), [&](const auto& unit)
                     {
-                        return unit.controllable() && unit.present(battle_->turn()) && !(unit.status_flags & 0x20) && (unit.status_flags & 0x80) && unit.action_state == 0;
+                        // 2D状态1仍是未结束行动；重载丢失菜单选择不能替它提交结束。
+                        return unit.controllable() && unit.present(battle_->turn()) && !(unit.status_flags & 0x20) && (unit.status_flags & 0x80) && (unit.action_state == 0 || unit.action_state == 1);
                     }))
             {
                 end_battle_turn();
@@ -4742,6 +4812,7 @@ public:
         {
             if (!campaign_) { campaign_.emplace(root_); }
             interbattle_.emplace(root_, disc_);
+            interbattle_->configure_town(root_, events.stage);
             campaign_settled_ = true;
             restored_story_pending_ = false;
             phase_ = Phase::interbattle;
@@ -4793,6 +4864,7 @@ public:
             battle_->clear_requested_command();
         }
     }
+    unsigned item_marker(int x, int y) const { return map_.dynamic_marker(x, y); }
     unsigned pickup_at_unit(size_t index, std::vector<uint8_t>& inventory, uint8_t army_metadata = 0)
     {
         if (!battle_ || index >= events.units.size() || inventory.size() != 302)
@@ -4908,6 +4980,7 @@ public:
             if (!terminal && !next_story)
             {
                 staged_hub.emplace(root_, disc_);
+                staged_hub->configure_town(root_, events.stage);
             }
             if (!campaign_reward_adapter_ || !campaign_reward_adapter_(staged, settlement))
             {
@@ -5314,7 +5387,7 @@ public:
         }
         if (phase_ == Phase::story_animation || phase_ == Phase::story_movement || phase_ == Phase::story_disappearance || phase_ == Phase::story_wait)
         {
-            map_.draw_units(image, story_units, 1, animation_elapsed_);
+            map_.draw_units(image, story_units, battle_ && !story_stage() ? battle_->turn() : 1, animation_elapsed_);
             return image;
         }
         if (phase_ == Phase::campaign_defeat || phase_ == Phase::campaign_blocked || phase_ == Phase::story_ready)

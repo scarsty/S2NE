@@ -86,6 +86,20 @@ public:
         return Result<std::vector<uint8_t>>::success({ bin.value().begin() + p, bin.value().begin() + p + n - 14 });
     }
     bool closed() const { return closed_; }
+    bool select_auto_equipment()
+    {
+        if (closed_ || reading_ || roster_ || equipment_menu_ || world_ || settings_ || auto_confirm_ || title_confirm_ || saves_ || overwrite_) { return false; }
+        selected_ = 10;
+        auto_confirm_.emplace(root_, font_, 6, 200, 200, true);
+        return true;
+    }
+    bool confirm_auto_equipment(OriginalSave::State& state)
+    {
+        if (!auto_confirm_) { return false; }
+        auto_confirm_->confirm();
+        finish_auto(state);
+        return blocker_.empty();
+    }
     bool leave_root()
     {
         if (closed_ || reading_ || roster_ || equipment_menu_ || world_ || settings_ || auto_confirm_ || title_confirm_ || saves_ || overwrite_) { return false; }

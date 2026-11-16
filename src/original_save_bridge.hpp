@@ -305,6 +305,13 @@ class OriginalSaveBridge
     }
 
 public:
+    static void grant_scripted_item(OriginalSave::State& candidate, unsigned item)
+    {
+        auto& inventory = candidate.groups[0].inventory;
+        if (item == 0 || item > inventory.size()) { return; }
+        auto& count = inventory[item - 1];
+        if (count < 99) { ++count; }
+    }
     static void compact_interbattle_members(OriginalSave::State& state)
     {
         if (state.battle_context()) { return; }

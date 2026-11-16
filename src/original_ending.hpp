@@ -288,11 +288,12 @@ public:
     struct InitializationTag
     {
     };
-    OriginalEnding(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc, InitializationTag) : font_(root), events_(events), root_(root), disc_((events.stage == 61 || events.stage == 131) ? OriginalDisc::two : disc) {}
+    OriginalEnding(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc, InitializationTag) : font_(root), events_(events), root_(root), disc_((events.stage == 61 || events.stage == 130 || events.stage == 131) ? OriginalDisc::two : disc) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc)
     {
         disc = disc_;
-        if ((events.stage != 61 && events.stage != 131) || OriginalCampaign(root).selected_route(events) != 0 || !events.flags[12])
+        // 原40DDD5/40D6D6按后续关号为0进入41E9CF；结局入口不按关号或旗标白名单授权。
+        if (OriginalCampaign(root).selected_route(events) != 0)
         {
             return s2ne::Result<bool>::failure(make_error("Native terminal outcome not authorized"));
         }
@@ -397,7 +398,7 @@ public:
 
         return s2ne::Result<bool>::success(true);
     }
-    OriginalEnding(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc) : font_(root), events_(events), root_(root), disc_((events.stage == 61 || events.stage == 131) ? OriginalDisc::two : disc)
+    OriginalEnding(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc) : font_(root), events_(events), root_(root), disc_((events.stage == 61 || events.stage == 130 || events.stage == 131) ? OriginalDisc::two : disc)
     {
         auto result = initialize(root, events, disc);
         if (!result)
@@ -463,11 +464,11 @@ public:
         const auto& p = sequence_[page_];
         if (p.movie)
         {
-            return "movie" + std::to_string(p.movie) + " frames=" + std::to_string(movie_ ? movie_->frames : 0) + " delay=" + std::to_string(movie_ ? movie_->delay : 0);
+            return "movie" + std::to_string(p.movie) + " frame=" + std::to_string(movie_frames_) + " frames=" + std::to_string(movie_ ? movie_->frames : 0) + " delay=" + std::to_string(movie_ ? movie_->delay : 0);
         }
         if (p.illustration >= 0)
         {
-            return "41F011 scroll rows=" + std::to_string(illustrations_[p.illustration].size() / (640 * 4)) + " step=3/10ms";
+            return "41F011 scroll remaining=" + std::to_string(scroll_) + " rows=" + std::to_string(illustrations_[p.illustration].size() / (640 * 4)) + " step=3/10ms";
         }
         if (p.summary)
         {
