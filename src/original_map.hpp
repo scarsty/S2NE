@@ -615,32 +615,42 @@ public:
             image.at(p + 3) = 255;
         };
         const auto& ground_image = raw(item(3, ground - 1));
-        for (unsigned yy = 0; yy < ground_image.h; ++yy)
-        {
-            for (unsigned xx = 0; xx < ground_image.w; ++xx)
-            {
-                unsigned ink = ground_image.pixels.at(size_t(yy) * ground_image.w + xx);
-                if ((ground == 5 || ground == 6) && !ink) { continue; }
-                // 4753A4 is transparent; the panel's ground images use their original shape.
-                put(ink, 526 + int(xx), panel_y + 40 + int(yy));
-            }
-        }
         if (texture_resources.active())
         {
             auto ground_drawn = texture_resources.draw_map_sprite(image, "ground", ground_image.texture_id, 526, panel_y + 40);
             if (!ground_drawn) { report_error(ground_drawn.error()); }
+        }
+        else
+        {
+            for (unsigned yy = 0; yy < ground_image.h; ++yy)
+            {
+                for (unsigned xx = 0; xx < ground_image.w; ++xx)
+                {
+                    unsigned ink = ground_image.pixels.at(size_t(yy) * ground_image.w + xx);
+                    if ((ground == 5 || ground == 6) && !ink) { continue; }
+                    put(ink, 526 + int(xx), panel_y + 40 + int(yy));
+                }
+            }
         }
         unsigned category = object ? object_attributes_.at(object - 1) >> 8 : 0;
         bool visible_object = object && !(category == 5 && !event_flags_[1]) && !(category == 6 && !event_flags_[0]) && !(category == 11 && !event_flags_[3]);
         if (visible_object)
         {
             const auto& object_image = raw(item(4, object - 1));
-            // 42C16F copies only the bottom 64x32 of the original 64x96 object image.
-            for (unsigned yy = 0; yy < 32; ++yy)
+            if (texture_resources.active())
             {
-                for (unsigned xx = 0; xx < 64; ++xx)
+                auto object_drawn = texture_resources.draw_map_sprite(image, "objects", object_image.texture_id, 526, panel_y - 56);
+                if (!object_drawn) { report_error(object_drawn.error()); }
+            }
+            else
+            {
+                // 42C16F copies only the bottom 64x32 of the original 64x96 object image.
+                for (unsigned yy = 0; yy < 32; ++yy)
                 {
-                    put(object_image.pixels.at(4096 + yy * 64 + xx), 526 + int(xx), panel_y + 40 + int(yy));
+                    for (unsigned xx = 0; xx < 64; ++xx)
+                    {
+                        put(object_image.pixels.at(4096 + yy * 64 + xx), 526 + int(xx), panel_y + 40 + int(yy));
+                    }
                 }
             }
         }

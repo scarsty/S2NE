@@ -5690,10 +5690,6 @@ public:
             if (in_battle() && !battle_->animating_movement() && (battle_->state() == Battle::State::idle || battle_->state() == Battle::State::movement))
             {
                 int status_unit = battle_->hovered_unit(events.units);
-                if (status_unit < 0 && battle_->state() == Battle::State::movement)
-                {
-                    status_unit = battle_->selected();
-                }
                 if (status_unit >= 0)
                 {
                     const auto& unit = events.units.at(size_t(status_unit));
@@ -5707,6 +5703,38 @@ public:
                         status_panel_side_ = 1;
                     }
                     int panel_y = status_panel_side_ == 2 ? 363 : 0;
+                    sprite(image, sprite_offset(2, 143 - 142), false, 0, panel_y);
+                    unit_status_.draw(font, image, unit, panel_y, unit.hostile());
+                    draw_status_terrain(font, image, unit, panel_y);
+                }
+                else if (battle_->hovered_cell().x >= 0 && battle_->hovered_cell().y >= 0)
+                {
+                    const auto position = map_.screen_position(battle_->hovered_cell().x, battle_->hovered_cell().y);
+                    if (position.second < 184)
+                    {
+                        status_panel_side_ = 2;
+                    }
+                    else if (position.second > 272)
+                    {
+                        status_panel_side_ = 1;
+                    }
+                    const int panel_y = status_panel_side_ == 2 ? 363 : 0;
+                    sprite(image, sprite_offset(2, 143 - 142), false, 0, panel_y);
+                    map_.draw_terrain(font, image, battle_->hovered_cell().x, battle_->hovered_cell().y, panel_y);
+                }
+                else if (battle_->state() == Battle::State::movement && battle_->selected() >= 0)
+                {
+                    const auto& unit = events.units.at(size_t(battle_->selected()));
+                    const auto position = map_.screen_position(unit.x, unit.y);
+                    if (position.second < 184)
+                    {
+                        status_panel_side_ = 2;
+                    }
+                    else if (position.second > 272)
+                    {
+                        status_panel_side_ = 1;
+                    }
+                    const int panel_y = status_panel_side_ == 2 ? 363 : 0;
                     sprite(image, sprite_offset(2, 143 - 142), false, 0, panel_y);
                     unit_status_.draw(font, image, unit, panel_y, unit.hostile());
                     draw_status_terrain(font, image, unit, panel_y);

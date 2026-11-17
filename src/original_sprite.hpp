@@ -116,18 +116,11 @@ inline Result<bool> draw_original_cel(std::vector<uint8_t>& image, std::span<con
     if (!texture_resources.active()) { return draw_original_cel_legacy(image, cel, palette, id, left, top, zero, indexed); }
     if (image.size() != 640u * 480 * 4 || palette.size() < 768 || (indexed && indexed->size() != 640u * 480)) { return Result<bool>::failure(make_error("Invalid PNG UI framebuffer/palette")); }
     auto output = image;
-    std::vector<uint8_t> indices;
-    if (indexed)
-    {
-        indices = *indexed;
-        auto decoded = draw_original_cel_legacy(output, cel, palette, id, left, top, OriginalZeroRun::transparent, &indices);
-        if (!decoded) { return decoded; }
-        output = image;
-    }
-    auto result = texture_resources.draw_ui(output, id, left, top, palette, nullptr);
+    auto result = texture_resources.draw_ui(output, id, left, top, palette, indexed);
     if (!result) { return result; }
     image.swap(output);
-    if (indexed) { indexed->swap(indices); }
+    (void)cel;
+    (void)zero;
     return result;
 }
 }    //namespace s2ne

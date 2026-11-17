@@ -3365,6 +3365,7 @@ public:
         return unsigned(action_sequences_[unit.appearance - 1][4 + (facing & 3)].size());
     }
     int hovered_unit(const std::vector<OriginalEvents::Unit>& units) const { return valid(hovered_) ? occupant(units, hovered_) : -1; }
+    Point hovered_cell() const { return valid(hovered_cell_) ? hovered_cell_ : Point{ -1, -1 }; }
     static unsigned facing(Point from, Point to, unsigned current)
     {
         if (from.x == to.x && from.y == to.y)

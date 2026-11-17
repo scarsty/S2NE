@@ -187,21 +187,7 @@ private:
             size_t end = start;
             while (end < start + 12 && items_[end]) { ++end; }
             large(image, { items_.begin() + start, items_.begin() + end }, 0x120, 0xA6 + int(i) * 0x23, 0xE9);
-            std::vector<uint8_t> animated_palette(pal_.begin(), pal_.end());
-            constexpr std::array<unsigned, 3> starts{ 3, 11, 19 }, counts{ 8, 8, 13 }, periods{ 170, 100, 100 };
-            for (unsigned band = 0; band < starts.size(); ++band)
-            {
-                const unsigned shift = unsigned(texture_resources.elapsed() / periods[band] % counts[band]);
-                for (unsigned color = 0; color < counts[band]; ++color)
-                {
-                    const unsigned from = starts[band] + (color + counts[band] - shift) % counts[band];
-                    for (unsigned component = 0; component < 3; ++component)
-                    {
-                        animated_palette[(starts[band] + color) * 3 + component] = pal_[from * 3 + component];
-                    }
-                }
-            }
-            auto icon = draw_original_cel_legacy(image, cel_, animated_palette, id + 0x1EC, 0xFE, 0xA1 + int(i) * 0x23, OriginalZeroRun::transparent);
+            auto icon = draw_original_cel(image, cel_, pal_, id + 0x1EC, 0xFE, 0xA1 + int(i) * 0x23, OriginalZeroRun::transparent);
             if (!icon) { return icon; }
         }
         return skills_.try_draw_status_effects(image, unit);

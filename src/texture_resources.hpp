@@ -29,7 +29,7 @@ class TextureResources
     std::unordered_map<std::string, std::shared_ptr<SDL_Texture>> textures_;
     std::unordered_map<std::string, bool> logged_;
     std::unordered_map<unsigned, std::array<std::pair<unsigned, unsigned>, 30>> sequences_;
-    std::unordered_map<std::string, std::unordered_map<unsigned, unsigned>> cycles_;
+    std::unordered_map<std::string, std::unordered_map<unsigned, std::vector<unsigned>>> cycles_;
     struct TextCommand
     {
         std::string text;
@@ -124,37 +124,44 @@ private:
     {
         if (!renderer_) { return Result<SDL_Texture*>::failure(make_error("Texture renderer not bound")); }
         std::string filename = std::to_string(frame);
-        if (group == "ground" || group == "objects" || group == "scenery")
+        if (group == "ui" || group == "ground" || group == "objects" || group == "scenery")
         {
             if (!cycles_.contains(group))
             {
                 auto frame_data = read_resource(group + "/frames.txt");
                 if (!frame_data) { return Result<SDL_Texture*>::failure(frame_data.error()); }
                 std::istringstream input(std::string(frame_data.value().begin(), frame_data.value().end()));
-                std::unordered_map<unsigned, unsigned> cycles;
+                std::unordered_map<unsigned, std::vector<unsigned>> cycles;
                 std::string line;
                 while (std::getline(input, line))
                 {
                     std::istringstream row(line);
-                    unsigned id{}, delay{}, count{};
+                    unsigned id{}, delay{};
                     char colon{};
                     if (!(row >> id >> colon) || colon != ':') { return Result<SDL_Texture*>::failure(make_error("Invalid animation table " + group + "/frames.txt")); }
                     while (row >> delay)
                     {
-                        if (delay != 100) { return Result<SDL_Texture*>::failure(make_error("Invalid animation cadence " + group + "/frames.txt")); }
-                        ++count;
+                        cycles[id].push_back(delay);
                         row >> std::ws;
                         if (row.eof()) { break; }
                         char comma{};
                         if (!(row >> comma) || comma != ',') { return Result<SDL_Texture*>::failure(make_error("Invalid animation separator " + group + "/frames.txt")); }
                     }
-                    if (!count) { return Result<SDL_Texture*>::failure(make_error("Empty animation " + group + "/frames.txt")); }
-                    cycles[id] = count;
+                    if (cycles[id].empty()) { return Result<SDL_Texture*>::failure(make_error("Empty animation " + group + "/frames.txt")); }
                 }
                 if (input.bad()) { return Result<SDL_Texture*>::failure(make_error("Cannot finish reading " + group + "/frames.txt")); }
                 cycles_.emplace(group, std::move(cycles));
             }
-            if (auto cycle = cycles_.at(group).find(frame); cycle != cycles_.at(group).end()) { filename += "_" + std::to_string((elapsed_ / 100) % cycle->second); }
+            if (auto cycle = cycles_.at(group).find(frame); cycle != cycles_.at(group).end())
+            {
+                const auto& delays = cycle->second;
+                unsigned total = 0;
+                for (const auto delay : delays) { total += delay; }
+                unsigned position = total ? unsigned(elapsed_ % total) : 0;
+                unsigned selected = 0;
+                for (; selected + 1 < delays.size() && position >= delays[selected]; ++selected) { position -= delays[selected]; }
+                filename += "_" + std::to_string(selected);
+            }
         }
         const auto key = group + "/" + filename;
         if (auto found = textures_.find(key); found != textures_.end()) { return Result<SDL_Texture*>::success(found->second.get()); }
@@ -360,23 +367,9 @@ public:
         std::span<const uint8_t> palette, std::vector<uint8_t>* indexed)
     {
         if (!renderer_) { return Result<bool>::failure(make_error("Texture renderer not bound")); }
-        const auto key = group + "/" + std::to_string(id);
-        if (!textures_.contains(key))
-        {
-            auto loaded = load_png(group + "/" + std::to_string(id) + ".png");
-            if (!loaded) { return Result<bool>::failure(loaded.error()); }
-            std::shared_ptr<SDL_Surface> source(loaded.value(), SDL_DestroySurface);
-            auto* texture = SDL_CreateTextureFromSurface(renderer_, source.get());
-            if (!texture) { return Result<bool>::failure(make_error(SDL_GetError())); }
-            std::shared_ptr<SDL_Texture> owned(texture, SDL_DestroyTexture);
-            if (!SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND) || !SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST)) { return Result<bool>::failure(make_error(SDL_GetError())); }
-            textures_.emplace(key, std::move(owned));
-            if (!logged_.contains(group))
-            {
-                std::println(stderr, "Load texture group: {} (PNG, renderer-owned cache)", group);
-                logged_[group] = true;
-            }
-        }
+        auto loaded = load(group, id);
+        if (!loaded) { return Result<bool>::failure(loaded.error()); }
+        auto* texture = loaded.value();
         if (!target_)
         {
             target_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 640, 480));
@@ -394,9 +387,9 @@ public:
             }
         } restore{ renderer_, previous };
         float width{}, height{};
-        if (!SDL_GetTextureSize(textures_.at(key).get(), &width, &height)) { return Result<bool>::failure(make_error(SDL_GetError())); }
+        if (!SDL_GetTextureSize(texture, &width, &height)) { return Result<bool>::failure(make_error(SDL_GetError())); }
         SDL_FRect rectangle{ float(left), float(top), width, height };
-        if ((!batching_ && !SDL_UpdateTexture(background_.get(), nullptr, image.data(), 640 * 4)) || (!batching_ && !SDL_SetRenderTarget(renderer_, target_.get())) || (!batching_ && !SDL_RenderTexture(renderer_, background_.get(), nullptr, nullptr)) || !SDL_RenderTexture(renderer_, textures_.at(key).get(), nullptr, &rectangle)) { return Result<bool>::failure(make_error(SDL_GetError())); }
+        if ((!batching_ && !SDL_UpdateTexture(background_.get(), nullptr, image.data(), 640 * 4)) || (!batching_ && !SDL_SetRenderTarget(renderer_, target_.get())) || (!batching_ && !SDL_RenderTexture(renderer_, background_.get(), nullptr, nullptr)) || !SDL_RenderTexture(renderer_, texture, nullptr, &rectangle)) { return Result<bool>::failure(make_error(SDL_GetError())); }
         if (batching_) { return Result<bool>::success(true); }
         auto read = readback(image);
         if (!read) { return read; }
