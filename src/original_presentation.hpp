@@ -5,7 +5,7 @@
 namespace s2ne
 {
 // Filtering is applied only when presenting the unchanged 640x480 framebuffer.
-inline Result<bool> configure_original_presentation(SDL_Renderer* renderer, SDL_Texture* texture, SDL_ScaleMode scale_mode = SDL_SCALEMODE_NEAREST)
+inline Result<bool> configure_original_presentation(SDL_Renderer* renderer, SDL_Texture* texture, SDL_ScaleMode scale_mode = SDL_SCALEMODE_LINEAR)
 {
     if (!renderer || !texture)
     {

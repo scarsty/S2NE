@@ -607,10 +607,6 @@ public:
             font.draw_original_large(image, font.text_bytes(0), 543, panel_y + 50, 179);
             return;
         }
-        size_t lookups = m + 28 + size_t(width) * height * 10 + word(prg_, m + 12) * 10 + word(prg_, m + 14) * 6;
-        unsigned ground_used = word(prg_, lookups), ground_count = word(prg_, group(3));
-        size_t ground_lookup = lookups + 2;
-        size_t object_lookup = ground_lookup + ground_count * 2 + ground_used * 8 + 2;
         auto put = [&](unsigned ink, int dx, int dy)
         {
             if (!ink || dx < 0 || dx >= 640 || dy < 0 || dy >= 480) { return; }
@@ -618,11 +614,7 @@ public:
             for (unsigned c = 0; c < 3; ++c) { image.at(p + c) = uint8_t(unsigned(pal_.at(ink * 3 + c)) * 255 / 63); }
             image.at(p + 3) = 255;
         };
-        auto mapped_image = [&](unsigned layer, unsigned id, size_t lookup) -> const Image&
-        {
-            return raw(item(layer, word(prg_, lookup + (id - 1) * 2) - 1));
-        };
-        const auto& ground_image = mapped_image(3, ground, ground_lookup);
+        const auto& ground_image = raw(item(3, ground - 1));
         for (unsigned yy = 0; yy < ground_image.h; ++yy)
         {
             for (unsigned xx = 0; xx < ground_image.w; ++xx)
@@ -633,11 +625,16 @@ public:
                 put(ink, 526 + int(xx), panel_y + 40 + int(yy));
             }
         }
+        if (texture_resources.active())
+        {
+            auto ground_drawn = texture_resources.draw_map_sprite(image, "ground", ground_image.texture_id, 526, panel_y + 40);
+            if (!ground_drawn) { report_error(ground_drawn.error()); }
+        }
         unsigned category = object ? object_attributes_.at(object - 1) >> 8 : 0;
         bool visible_object = object && !(category == 5 && !event_flags_[1]) && !(category == 6 && !event_flags_[0]) && !(category == 11 && !event_flags_[3]);
         if (visible_object)
         {
-            const auto& object_image = mapped_image(4, object, object_lookup);
+            const auto& object_image = raw(item(4, object - 1));
             // 42C16F copies only the bottom 64x32 of the original 64x96 object image.
             for (unsigned yy = 0; yy < 32; ++yy)
             {
@@ -1462,6 +1459,69 @@ public:
         return Result<unsigned>::success(prg_.at(animation + size_t((elapsed_ms / 190) % length)));
     }
     unsigned idle_frame(unsigned appearance, uint64_t elapsed_ms = 0, unsigned direction = 0, unsigned action = 0) const { return try_idle_frame(appearance, elapsed_ms, direction, action).value(); }
+    Result<bool> try_draw_status_figure(std::vector<uint8_t>& image, const OriginalEvents::Unit& unit, int center, int bottom) const
+    {
+        SharedBytes source = prg_;
+        size_t frames = group(2);
+        unsigned selected = 0;
+        if (unit.status_flags & 0x10)
+        {
+            // 458621/44522E：召唤兵使用 CEL 第4/5组，+2Ch 是军团序列游标，不是朝向字节 +2Bh。
+            if (!unit.action_status_runtime) { return Result<bool>::failure(make_error("Special status figure requires runtime +2C pose cursor")); }
+            auto cel = read_shared_resource(root_ / "SUPERSP.CEL");
+            if (!cel) { return Result<bool>::failure(cel.error()); }
+            source = std::move(cel).value();
+            const unsigned raw_index = dword(pal_, 808 + 3 * 8), raw_frames = dword(pal_, 808 + 4 * 8);
+            if (raw_index < 59 || raw_frames < 60) { return Result<bool>::failure(make_error("Invalid original summon archive address")); }
+            const size_t index = raw_index - 59;
+            frames = raw_frames - 60;
+            ResourceReader summon(source);
+            const unsigned count = summon.number(index);
+            if (!summon) { return Result<bool>::failure(summon.error()); }
+            if (unit.appearance < 0x71 || unit.appearance - 0x71 >= count) { return Result<bool>::failure(make_error("Invalid original summon class")); }
+            const unsigned entry = unit.appearance - 0x71;
+            const unsigned first = summon.number(index + 2 + size_t(entry) * 8 + 2);
+            const unsigned cursor = unit.action_status_runtime->at(0x2C);
+            if (cursor >= 200) { return Result<bool>::failure(make_error("Invalid original summon pose cursor")); }
+            const unsigned pose = summon.number(index + 2 + size_t(count) * 8 + size_t(entry) * 200 + cursor, 1);
+            if (!summon) { return Result<bool>::failure(summon.error()); }
+            if (!pose) { return Result<bool>::failure(make_error("Empty original summon pose")); }
+            selected = first + pose - 1;
+        }
+        else
+        {
+            auto frame = try_idle_frame(unit.appearance, 0, 0, 0);
+            if (!frame) { return Result<bool>::failure(frame.error()); }
+            // 普通状态立绘保留 PRG 基帧，不跟随地图朝向或动作。
+            selected = word(prg_, group(1) + 2 + size_t(unit.appearance - 1) * 8 + 2);
+        }
+        ResourceReader reader(source);
+        const unsigned count = reader.number(frames);
+        if (!reader) { return Result<bool>::failure(reader.error()); }
+        if (selected >= count) { return Result<bool>::failure(make_error("Invalid original status figure frame")); }
+        const size_t table = frames + 2 + size_t(selected) * 7;
+        const size_t offset = frames + reader.number(table, 4);
+        const size_t length = reader.number(table + 4);
+        const unsigned width = reader.number(offset) + 1, height = reader.number(offset + 2) + 1;
+        if (!reader.extent(offset, length)) { return Result<bool>::failure(reader.error()); }
+        auto decoded = OriginalSkill32Visual::try_decode({ source.begin() + offset, source.begin() + offset + length }, width, height);
+        if (!decoded) { return Result<bool>::failure(decoded.error()); }
+        const int left = center - int(width / 2), top = bottom - int(height);
+        if (image.size() != 640u * 480 * 4) { return Result<bool>::failure(make_error("Invalid status figure framebuffer")); }
+        for (unsigned y = 0; y < height; ++y)
+        {
+            for (unsigned x = 0; x < width; ++x)
+            {
+                const unsigned color = decoded.value().pixels[size_t(y) * width + x];
+                const int dx = left + int(x), dy = top + int(y);
+                if (!color || dx < 0 || dx >= 640 || dy < 0 || dy >= 480) { continue; }
+                const size_t dest = (size_t(dy) * 640 + dx) * 4;
+                for (unsigned k = 0; k < 3; ++k) { image[dest + k] = uint8_t(unsigned(pal_[color * 3 + k]) * 255 / 63); }
+                image[dest + 3] = 255;
+            }
+        }
+        return Result<bool>::success(true);
+    }
     unsigned unit_height(unsigned appearance, unsigned direction = 0, unsigned action = 0) const
     {
         size_t index = group(1), frames = group(2);
@@ -2714,8 +2774,8 @@ public:
     }
     void center(int x, int y)
     {
-        camera_x = std::clamp(x * 64 + (y & 1) * 32 - 320, 0, int(width * 64) - 640);
-        camera_y = std::clamp(y * 16 - 240, 0, int(height * 32) - 480);
+        // 原42B37A以半列/行定位并保留左侧一半列，不能从像素零开始暴露菱形边缘。
+        movement_camera(x, y);
     }
     std::vector<uint8_t> draw() const
     {

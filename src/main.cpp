@@ -1,5 +1,6 @@
 #include "app_runtime.hpp"
 #include "runtime_diagnostics.hpp"
+#include "terminal_output.hpp"
 #include "texture_experiment.hpp"
 #include <SDL3/SDL_main.h>
 #include <exception>
@@ -15,7 +16,7 @@ int main(int argc, char** argv)
         return s2ne::run_application(argc, argv);
     } catch (const std::exception& error)
     {
-        std::fprintf(stderr, "S2NE: uncaught std::exception: %s\n", error.what());
+        std::print(stderr, "S2NE: uncaught std::exception: {}\n", error.what());
         return s2ne::report_unexpected_exception();
     } catch (...)
     {

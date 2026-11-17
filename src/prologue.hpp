@@ -4806,6 +4806,8 @@ public:
         dialogue_camera_target_.reset();
         phase_ = Phase::battle;
         first_banner_ = false;
+        battle_->set_auto_selection(true);
+        select_ordered_player(true);
         finished = true;
         restored_story_pending_ = resume_story && story_stage();
         if (interbattle)
@@ -5617,14 +5619,7 @@ public:
                 // sub_43AA52 uses CEL 143 (4F729C) at the opposite edge of the selected unit.
                 const auto& unit = events.units.at(size_t(battle_->selected()));
                 auto position = map_.screen_position(unit.x, unit.y);
-                if (position.second < 184 && status_panel_side_ == 1)
-                {
-                    status_panel_side_ = 2;
-                }
-                else if (position.second > 272 && status_panel_side_ == 2)
-                {
-                    status_panel_side_ = 1;
-                }
+                status_panel_side_ = position.second < 240 ? 2 : 1;
                 int panel_y = status_panel_side_ == 2 ? 363 : 0;
                 sprite(image, sprite_offset(2, 143 - 142), false, 0, panel_y);
                 unit_status_.draw(font, image, unit, panel_y);
@@ -5702,6 +5697,15 @@ public:
                 if (status_unit >= 0)
                 {
                     const auto& unit = events.units.at(size_t(status_unit));
+                    const auto position = map_.screen_position(unit.x, unit.y);
+                    if (position.second < 184)
+                    {
+                        status_panel_side_ = 2;
+                    }
+                    else if (position.second > 272)
+                    {
+                        status_panel_side_ = 1;
+                    }
                     int panel_y = status_panel_side_ == 2 ? 363 : 0;
                     sprite(image, sprite_offset(2, 143 - 142), false, 0, panel_y);
                     unit_status_.draw(font, image, unit, panel_y, unit.hostile());

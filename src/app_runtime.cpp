@@ -1,4 +1,4 @@
-﻿#ifndef NOMINMAX
+#ifndef NOMINMAX
 #define NOMINMAX
 #endif
 #ifndef WIN32_LEAN_AND_MEAN
@@ -46,6 +46,7 @@
 #include "stdio_protocol.hpp"
 #include "title_image.hpp"
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_messagebox.h>
 #include <algorithm>
 #include <cstdint>
 #include <filesystem>
@@ -82,10 +83,7 @@ int s2ne::run_application(int argc, char** argv)
         const s2ne::AppOptions options(argc, argv);
         s2ne::texture_resources.configure(std::filesystem::current_path());
         const bool diagnostics = options.stdio || options.option;
-        class QuietOutput : public std::streambuf
-        {
-            int_type overflow(int_type value) override { return traits_type::not_eof(value); }
-        } quietOutput;
+        s2ne::configure_terminal_output(diagnostics);
         uint64_t headlessTicks = 1;
         auto gameTicks = [&]() -> uint64_t
         {
@@ -93,28 +91,14 @@ int s2ne::run_application(int argc, char** argv)
             return SDL_GetTicks();
         };
         std::optional<s2ne::StdioProtocol> stdio;
-        struct OutputRestore
-        {
-            std::streambuf* previous{};
-            ~OutputRestore()
-            {
-                if (previous) { std::cout.rdbuf(previous); }
-            }
-        } outputRestore;
-        if (options.stdio)
-        {
-            stdio.emplace();
-            outputRestore.previous = std::cout.rdbuf(std::cerr.rdbuf());
-        }
-        else if (!diagnostics) { outputRestore.previous = std::cout.rdbuf(&quietOutput); }
+        if (options.stdio) { stdio.emplace(); }
         s2ne::AppSmokeDriver smokeDriver(options);
         if (options.strengthenedFlow)
         {
-            std::cout << "NON-ORIGINAL strengthened flow acceptance: allied HP/attack/defense boosted, MP capacity floored400 and currentMP replenished (NON-ORIGINAL); not balance or legitimate clear evidence\n";
+            std::print("NON-ORIGINAL strengthened flow acceptance: allied HP/attack/defense boosted, MP capacity floored400 and currentMP replenished (NON-ORIGINAL); not balance or legitimate clear evidence\n");
         }
         if (options.campaignContinue)
         {
-            std::cout.setf(std::ios::unitbuf);
         }
         std::optional<std::filesystem::path> isolatedSaveRoot;
         struct SaveTestCleanup
@@ -186,7 +170,7 @@ int s2ne::run_application(int argc, char** argv)
         startup.mark("setup");
         if (options.verify)
         {
-            std::cout << "Decoded original title PCX: 640x480\n";
+            std::print("Decoded original title PCX: 640x480\n");
             for (auto& clip : clips)
             {
                 std::vector<uint8_t> output;
@@ -199,7 +183,7 @@ int s2ne::run_application(int argc, char** argv)
                 {
                     s2ne::fatal("Incomplete intro decoding");
                 }
-                std::cout << "Decoded original intro: " << clip.width << 'x' << clip.height << ", " << frames << " frames, delay " << clip.delay << " ms\n";
+                std::print("Decoded original intro: {}x{}, {} frames, delay {} ms\n", clip.width, clip.height, frames, clip.delay);
             }
             return 0;
         }
@@ -268,7 +252,7 @@ int s2ne::run_application(int argc, char** argv)
         if (!audioStart)
         {
             s2ne::report_error(audioStart.error());
-            std::cerr << "Audio unavailable; continuing without sound\n";
+            std::print(stderr, "Audio unavailable; continuing without sound\n");
         }
         if (options.teleportSmoke)
         {
@@ -305,7 +289,7 @@ int s2ne::run_application(int argc, char** argv)
         {
             if (!audio.effects()) { return s2ne::Result<unsigned>::failure(s2ne::make_error("ANI effects unavailable")); }
             auto result = audio.effects()->play(id, channel);
-            if (diagnostics && result && !channel) { std::cerr << "Original ANI effect id=" << id << " channel=" << result.value() << '\n'; }
+            if (diagnostics && result && !channel) { std::print(stderr, "Original ANI effect id={} channel={}\n", id, result.value()); }
             return result;
         };
         auto showMenu = [&]
@@ -554,24 +538,23 @@ int s2ne::run_application(int argc, char** argv)
                     partner->action_points = partner->carry_points = 110;
                     partner->action_state = 0;
                     partner->status34 = 0;
-                    std::cout << "CONTROLLED cooperative explicit adjacent partner=" << partner->id << " learned/coordinates/MP/AP injected; NOT natural\n";
+                    std::print("CONTROLLED cooperative explicit adjacent partner={} learned/coordinates/MP/AP injected; NOT natural\n", partner->id);
                 }
-                std::cout << "CONTROLLED hostile status explicit learned bit injection on actor1; NOT natural learning; source SAVE read-only\n";
+                std::print("CONTROLLED hostile status explicit learned bit injection on actor1; NOT natural learning; source SAVE read-only\n");
             }
             prologue->restore_battle(std::move(restored.events), restored.turn, !controlledHostileStatus);
-            if (controlledHostileStatus) { std::cout << "CONTROLLED hostile status battle-only restore: story-stage continuation suppressed; NOT natural campaign entry\n"; }
+            if (controlledHostileStatus) { std::print("CONTROLLED hostile status battle-only restore: story-stage continuation suppressed; NOT natural campaign entry\n"); }
             rawSave = std::move(restored.raw);
             paused = true;
             std::filesystem::create_directories(root / "S2NE" / "out" / options.inputFolder);
             smokeDriver.state.skillSequence.open(root / "S2NE" / "out" / options.inputFolder / "sequence.csv");
             smokeDriver.state.skillSequence << "present,ticks,phase,preparation,spell_frame,hash\n";
-            std::cout.setf(std::ios::unitbuf);
             for (unsigned i = 0; i < prologue->events.units.size(); ++i)
             {
                 const auto& u = prologue->events.units[i];
                 if (u.controllable() && (u.learned[2] & 0x800))
                 {
-                    std::cout << "Learned candidate index=" << i << " id=" << u.id << " xy=" << u.x << "," << u.y << " MP=" << u.mp << " AP=" << u.action_points << " HP=" << u.hp << " action=" << unsigned(u.action_state) << "\n";
+                    std::print("Learned candidate index={} id={} xy={},{} MP={} AP={} HP={} action={}\n", i, u.id, u.x, u.y, u.mp, u.action_points, u.hp, unsigned(u.action_state));
                 }
             }
         }
@@ -613,7 +596,7 @@ int s2ne::run_application(int argc, char** argv)
         {
             auto font = s2ne::texture_resources.initialize_font(root / "chinese.ttf");
             if (!font) { s2ne::fatal(font.error()); }
-            auto smallFont = s2ne::texture_resources.initialize_small_font(root / "wenquanyi-16px.ttf");
+            auto smallFont = s2ne::texture_resources.initialize_small_font(root / "chinese.ttf");
             if (!smallFont) { s2ne::fatal(smallFont.error()); }
         }
         menu.set_simplified_chinese(simplifiedChinese, root / "cc");
@@ -673,7 +656,7 @@ int s2ne::run_application(int argc, char** argv)
             if (!played) { s2ne::report_error(played.error()); }
             else
             {
-                if (diagnostics) { std::cerr << "Original effect id=" << id << " channel=" << played.value() << '\n'; }
+                if (diagnostics) { std::print(stderr, "Original effect id={} channel={}\n", id, played.value()); }
             }
         };
         menu.small_font = settingsState.small_font != 0;
@@ -707,26 +690,36 @@ int s2ne::run_application(int argc, char** argv)
             settings.emplace(std::move(*created.value()));
             showSettings();
         };
-        std::optional<s2ne::OriginalConfirmation> exitConfirmation;
-        auto showExitConfirmation = [&]
+        auto confirmExit = [&]()
         {
-            auto image = s2ne::load_title(root, 20, false);
-            exitConfirmation->draw(image, menu);
-            if (stdio) { stdioLogicalFrame = image; }
-            if (s2ne::texture_resources.active())
+            const SDL_MessageBoxButtonData buttons[] = {
+                { SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0, "OK" },
+                { SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 1, "Cancel" }
+            };
+            const SDL_MessageBoxData data = {
+                SDL_MESSAGEBOX_INFORMATION | SDL_MESSAGEBOX_BUTTONS_LEFT_TO_RIGHT,
+                window,
+                "S2NE",
+                "Exit the game?",
+                2,
+                buttons,
+                nullptr
+            };
+            int button = 0;
+            if (!SDL_ShowMessageBox(&data, &button))
             {
-                auto uploaded = s2ne::texture_resources.upload_frame(image);
-                if (!uploaded) { s2ne::fatal(uploaded.error()); }
-                texture = uploaded.value();
+                s2ne::report_error(s2ne::make_error(SDL_GetError()));
+                return false;
             }
-            else if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
+            return button == 0;
         };
-        auto beginExitConfirmation = [&]
+        bool suppressNextCloseEvent = false;
+        auto requestExit = [&](bool fromWindowClose)
         {
-            exitConfirmation.emplace(root, menu, 51, 200, 403, true);
             auto stopped = stopEffects();
             if (!stopped) { s2ne::report_error(stopped.error()); }
-            showExitConfirmation();
+            if (confirmExit()) { running = false; }
+            else if (fromWindowClose) { suppressNextCloseEvent = true; }
         };
         bool prologueRedraw = false;
         s2ne::Prologue* presentedPrologue = nullptr;
@@ -807,6 +800,14 @@ int s2ne::run_application(int argc, char** argv)
                 if (spiritSightImage) { image = *spiritSightImage; }
             }
 
+            // 覆盖层接管画面前，清除战场状态栏、命令提示及上一覆盖层留下的字体命令。
+            // 原程序先切换显示页的底图，再由该页重新提交自己的文字；不能让
+            // 逻辑帧已清除但 renderer 仍保留的文字跨页复用。
+            if (battleMenu || battleReports || promotionMenu || skillMenu || battleItems || itemMenu || saveMenu || overwriteConfirmation)
+            {
+                s2ne::texture_resources.clear_text_commands();
+            }
+
             if (options.skillInputSmoke)
             {
                 if (options.inputSkill == 47 && prologue->invisibility_presentation_pending())
@@ -868,6 +869,7 @@ int s2ne::run_application(int argc, char** argv)
             if (battleMenu)
             {
                 SDL_ShowCursor();
+                s2ne::texture_resources.clear_text_commands();
                 auto rendered = battleMenu->try_draw(image);
                 if (rendered)
                 {
@@ -881,6 +883,8 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (battleReports)
             {
+                s2ne::texture_resources.clear_text_commands();
+                s2ne::texture_resources.set_elapsed(gameTicks());
                 auto rendered = battleReports->try_draw();
                 if (rendered)
                 {
@@ -1054,7 +1058,9 @@ int s2ne::run_application(int argc, char** argv)
             }
             const auto& unit = prologue->events.units[size_t(selected)];
             std::vector<s2ne::OriginalBattleReports::Entry> entries{ { unit, unit.hostile(), unit.npc_class() ? 1 : 0, false } };
-            battleReports.emplace(root, s2ne::OriginalBattleReports::Page::roster, prologue->events, std::move(entries), prologue->draw(menu), nullptr, settingsState.small_font != 0);
+            auto report_background = prologue->draw(menu);
+            s2ne::texture_resources.clear_text_commands();
+            battleReports.emplace(root, s2ne::OriginalBattleReports::Page::roster, prologue->events, std::move(entries), std::move(report_background), nullptr, settingsState.small_font != 0);
             battleReports->detail();
             battleReports->close_to_battle();
             SDL_ShowCursor();
@@ -1145,7 +1151,7 @@ int s2ne::run_application(int argc, char** argv)
             inSetup = false;
             paused = true;
             showPrologue();
-            std::cout << "Original prologue stage=" << prologue->events.stage << ", difficulty=" << setup.confirmed << '\n';
+            std::print("Original prologue stage={}, difficulty={}\n", prologue->events.stage, setup.confirmed);
         };
         uint64_t next = gameTicks() + s2ne::original_ani_frame_ms(0xAF12, clips.front().delay);
         const uint64_t started = gameTicks();
@@ -1158,6 +1164,7 @@ int s2ne::run_application(int argc, char** argv)
         bool firstInput = true;
         std::optional<s2ne::StdioProtocol::Json> stdioPending;
         uint64_t stdioReadyAt{};
+        bool stdioScreenshotPending = false;
         unsigned stdioRemainingFrames{};
         std::deque<s2ne::StdioProtocol::Json> stdioSteps;
         std::optional<s2ne::StdioProtocol::Json> stdioTransaction;
@@ -1641,7 +1648,6 @@ int s2ne::run_application(int argc, char** argv)
                 state["usable_items"] = usableItems;
             }
             if (overwriteConfirmation) { state["modal"] = "overwrite_confirmation"; }
-            if (exitConfirmation) { state["modal"] = "exit_confirmation"; }
             if (itemLearningPublish) { state["modal"] = "item_learning_animation"; }
             if (prologue && prologue->growth_active())
             {
@@ -1871,7 +1877,7 @@ int s2ne::run_application(int argc, char** argv)
                                 return true;
                             });
                         prologue->battle().commit_external_action();
-                        std::cout << "Original45024C item=" << id << " target=" << target << " effect/inventory/RNG published once\n";
+                        std::print("Original45024C item={} target={} effect/inventory/RNG published once\n", id, target);
                     };
                     auto afterPose = [&, actor, target, hp, amount, learningNotices = std::move(learningNotices), publish = std::move(publish)]() mutable
                     {
@@ -1920,6 +1926,12 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (options.headlessSpeed) { headlessTicks += 16; }
             uint64_t nowUi = gameTicks();
+            static uint64_t reportFrame = 0;
+            if (battleReports && nowUi / 100 != reportFrame)
+            {
+                reportFrame = nowUi / 100;
+                showPrologue();
+            }
             if (promotionMenu && promotionMenu->tick(nowUi)) { showPrologue(); }
             auto musicSettings = settingsState;
             if (settings) { musicSettings = settings->state(); }
@@ -2029,7 +2041,7 @@ int s2ne::run_application(int argc, char** argv)
                                 s2ne::report_error(result.error());
                                 return 0u;
                             }
-                            if (diagnostics) { std::cerr << "Original action effect id=" << id << " channel=" << result.value() << '\n'; }
+                            if (diagnostics) { std::print(stderr, "Original action effect id={} channel={}\n", id, result.value()); }
                             return result.value();
                         });
                 }
@@ -2878,13 +2890,9 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         else if (command == "screenshot")
                         {
-                            auto* surface = SDL_CreateSurfaceFrom(640, 480, SDL_PIXELFORMAT_RGBA32, stdioLogicalFrame.data(), 640 * 4);
-                            if (!surface) { throw std::runtime_error(SDL_GetError()); }
-                            const auto path = *isolatedSaveRoot / "frame.bmp";
-                            const bool saved = SDL_SaveBMP(surface, path.string().c_str());
-                            SDL_DestroySurface(surface);
-                            if (!saved) { throw std::runtime_error(SDL_GetError()); }
-                            response["path"] = path.string();
+                            stdioScreenshotPending = true;
+                            stdioPending = response;
+                            stdioReadyAt = std::numeric_limits<uint64_t>::max();
                         }
                         else
                         {
@@ -2932,14 +2940,14 @@ int s2ne::run_application(int argc, char** argv)
                             }
                         }
                     }
-                    std::cout << "Continuous turn stage=" << prologue->events.stage << " turn=" << smokeDriver.state.continuousDiagnosticTurn << " allies=" << allies << " enemies=" << enemies << '\n';
+                    std::print("Continuous turn stage={} turn={} allies={} enemies={}\n", prologue->events.stage, smokeDriver.state.continuousDiagnosticTurn, allies, enemies);
                     if (prologue->events.stage == 12)
                     {
                         for (const auto& u : prologue->events.units)
                         {
                             if ((u.status_flags & 0x80) && !(u.status_flags & 0x20) && u.hp > 0)
                             {
-                                std::cout << " live=" << u.id << " side=" << u.behavior << " hp=" << u.hp << " xy=" << u.x << "," << u.y << " action=" << unsigned(u.action_state) << '\n';
+                                std::print(" live={} side={} hp={} xy={},{} action={}\n", u.id, u.behavior, u.hp, u.x, u.y, unsigned(u.action_state));
                             }
                         }
                     }
@@ -2947,12 +2955,12 @@ int s2ne::run_application(int argc, char** argv)
                 if (options.campaignSmoke && options.alternateSmoke && prologue->battle_turn() != smokeDriver.state.diagnosticTurn)
                 {
                     smokeDriver.state.diagnosticTurn = prologue->battle_turn();
-                    std::cout << "Natalia easy auto diagnostic turn=" << smokeDriver.state.diagnosticTurn << " difficulty=" << prologue->events.difficulty << '\n';
+                    std::print("Natalia easy auto diagnostic turn={} difficulty={}\n", smokeDriver.state.diagnosticTurn, prologue->events.difficulty);
                     for (const auto& u : prologue->events.units)
                     {
                         if (!u.hostile())
                         {
-                            std::cout << " ally=" << u.id << " behavior=" << u.behavior << " hp=" << u.hp << " ap=" << u.action_points << " action=" << unsigned(u.action_state) << " x=" << u.x << " y=" << u.y << '\n';
+                            std::print(" ally={} behavior={} hp={} ap={} action={} x={} y={}\n", u.id, u.behavior, u.hp, u.action_points, unsigned(u.action_state), u.x, u.y);
                         }
                     }
                 }
@@ -3012,7 +3020,7 @@ int s2ne::run_application(int argc, char** argv)
                 {
                     auto notice = std::move(skillGrowthNotices.front());
                     skillGrowthNotices.erase(skillGrowthNotices.begin());
-                    std::cout << "Original skill reward presentation after effect feedback/death settlement\n";
+                    std::print("Original skill reward presentation after effect feedback/death settlement\n");
                     if (!prologue->begin_reward_growth(std::move(notice.pending), notice.seconds, [](bool committed)
                             {
                                 if (!committed) { s2ne::report_error(s2ne::make_error("Skill reward presentation failed after settlement")); }
@@ -3056,7 +3064,7 @@ int s2ne::run_application(int argc, char** argv)
                     if (endingObserved != prologue->ending_page())
                     {
                         endingObserved = prologue->ending_page();
-                        std::cout << "Native ending presentation phase=" << endingObserved + 1 << "/" << prologue->ending_pages() << " " << prologue->ending_description() << '\n';
+                        std::print("Native ending presentation phase={}/{} {}\n", endingObserved + 1, prologue->ending_pages(), prologue->ending_description());
                     }
                     showPrologue();
                     if (prologue->ending_done())
@@ -3074,7 +3082,7 @@ int s2ne::run_application(int argc, char** argv)
                         {
                             s2ne::fatal("Ending persistent result changed on reload");
                         }
-                        std::cout << "Native41E9CF presentation returned after movie3;40D7CB returns to WinMain428F2E cleanup/exit. Native flags42=" << unsigned(prologue->events.flags[41]) << " 43=" << unsigned(prologue->events.flags[42]) << " 73=" << unsigned(prologue->events.flags[72]) << " 75=" << unsigned(prologue->events.flags[74]) << "; no invented completion flag; checkpoint=" << path.string() << '\n';
+                        std::print("Native41E9CF presentation returned after movie3;40D7CB returns to WinMain428F2E cleanup/exit. Native flags42={} 43={} 73={} 75={}; no invented completion flag; checkpoint={}\n", unsigned(prologue->events.flags[41]), unsigned(prologue->events.flags[42]), unsigned(prologue->events.flags[72]), unsigned(prologue->events.flags[74]), path.string());
                         if (options.clearSmoke)
                         {
                             smokeDriver.state.clearVerified = true;
@@ -3148,10 +3156,7 @@ int s2ne::run_application(int argc, char** argv)
                         skillGrowthNotices.clear();
                         const auto visualActorIndex = prologue->battle().ai_skill_actor().value_or(size_t(prologue->battle_selected()));
                         const auto& visualActor = prologue->events.units.at(visualActorIndex);
-                        std::cout << "Original AI visual context actor_index=" << visualActorIndex
-                                  << " actor_id=" << visualActor.id << " target_index=" << *pendingSkillTarget
-                                  << " target_id=" << target.id
-                                  << " selected_skill=" << skillMenu->selected().id << "\n";
+                        std::print("Original AI visual context actor_index={} actor_id={} target_index={} target_id={} selected_skill={}\n", visualActorIndex, visualActor.id, *pendingSkillTarget, target.id, skillMenu->selected().id);
                         bool visualStarted;
                         std::string visualError;
                         const char* visualDispatch = "skill32";
@@ -3230,7 +3235,7 @@ int s2ne::run_application(int argc, char** argv)
                                 battleItems->return_from_target(*rawSave);
                             }
                             if (visualError.empty()) { visualError = "visual dispatch returned false without an error"; }
-                            std::cerr << "Original " << visualDispatch << " visual rejected; no effect/payment committed reason=" << visualError << failureContext << "\n";
+                            std::print(stderr, "Original {} visual rejected; no effect/payment committed reason={}{}\n", visualDispatch, visualError, failureContext);
                             if (aiSkillActive && visualDispatch != std::string("skill32"))
                             {
                                 prologue->set_campaign_blocker("Original " + std::string(visualDispatch) + " visual transaction rejected; reload required: " + visualError);
@@ -3384,7 +3389,7 @@ int s2ne::run_application(int argc, char** argv)
                                                     prologue->battle().commit_external_action();
                                                     skillCastVerified = true;
                                                     *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-                                                    std::cout << "Original94 feedback/death complete; staged HP/reward/ST/AP/inventory/RNG published once\n";
+                                                    std::print("Original94 feedback/death complete; staged HP/reward/ST/AP/inventory/RNG published once\n");
                                                 };
                                                 if (finalVictim->hp == 0)
                                                 {
@@ -3408,7 +3413,7 @@ int s2ne::run_application(int argc, char** argv)
                                                     {
                                                         s2ne::fatal("Original94 secondary468BAC feedback rejected before settlement");
                                                     }
-                                                    std::cout << "Original94 secondary468BAC revived=" << outcome.revived << " reverse=" << outcome.reverse_heal << " consumed=" << outcome.consumed_item << " healing=" << healing << '\n';
+                                                    std::print("Original94 secondary468BAC revived={} reverse={} consumed={} healing={}\n", outcome.revived, outcome.reverse_heal, outcome.consumed_item, healing);
                                                 }
                                                 else
                                                 {
@@ -3427,9 +3432,9 @@ int s2ne::run_application(int argc, char** argv)
                                     result.roll = outcome.roll;
                                     if (swordFeedbackPending)
                                     {
-                                        std::cout << "Original94 accepted and suspended for468BAC numbers; no live payment yet\n";
+                                        std::print("Original94 accepted and suspended for468BAC numbers; no live payment yet\n");
                                     }
-                                    std::cout << "Original94 damage=" << outcome.damage << " xp=" << outcome.raw_xp << " proficiency=" << outcome.proficiency << " runtime39=" << sword.damage.target_status39 << " masks=" << masks[0] << ',' << masks[1] << " failure=" << int(outcome.failure) << '\n';
+                                    std::print("Original94 damage={} xp={} proficiency={} runtime39={} masks={},{} failure={}\n", outcome.damage, outcome.raw_xp, outcome.proficiency, sword.damage.target_status39, masks[0], masks[1], int(outcome.failure));
                                     return false;
                                 }
                                 if (!skillMenu->pipeline_supported() && !skillMenu->summon_supported()) { return false; }
@@ -3475,7 +3480,7 @@ int s2ne::run_application(int argc, char** argv)
                                     if (NativeDamageRecords::ordinary_sword(options.inputSkill) && !options.skillControl.empty())
                                     {
                                         smokeDriver.state.controlledAreaTargets = indices;
-                                        for (const auto& victim : victims) { std::cout << "CONTROLLED viewport target=" << victim.id << " hp=" << victim.hp << " status39=" << unsigned(victim.action_status_runtime->at(0x39)) << '\n'; }
+                                        for (const auto& victim : victims) { std::print("CONTROLLED viewport target={} hp={} status39={}\n", victim.id, victim.hp, unsigned(victim.action_status_runtime->at(0x39))); }
                                     }
                                     std::vector<s2ne::OriginalSkill94Transaction::Context> contexts;
                                     for (const auto& victim : victims)
@@ -3553,7 +3558,7 @@ int s2ne::run_application(int argc, char** argv)
                                             prologue->battle().commit_external_action();
                                             skillCastVerified = true;
                                             *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-                                            std::cout << "Original466082 area damage published once targets=" << indices.size() << '\n';
+                                            std::print("Original466082 area damage published once targets={}\n", indices.size());
                                         });
                                     if (!swordFeedbackPending) { s2ne::fatal("466082 feedback staging rejected"); }
                                     return false;
@@ -3669,7 +3674,7 @@ int s2ne::run_application(int argc, char** argv)
                                             publishItemSpell();
                                             prologue->battle().commit_external_action();
                                             skillCastVerified = true;
-                                            std::cout << "Original465E04 summon roster/payment published once\n";
+                                            std::print("Original465E04 summon roster/payment published once\n");
                                         });
                                     if (!started)
                                     {
@@ -3713,7 +3718,7 @@ int s2ne::run_application(int argc, char** argv)
                                                 prologue->battle().commit_external_action();
                                                 skillCastVerified = true;
                                                 *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-                                                std::cout << "Original45DB10 transfer arrival published once\n";
+                                                std::print("Original45DB10 transfer arrival published once\n");
                                             }))
                                     {
                                         return false;
@@ -3742,7 +3747,7 @@ int s2ne::run_application(int argc, char** argv)
                                     for (size_t n = 0; n < indices.size(); ++n)
                                     {
                                         const auto& outcome = result.drain_targets.at(n);
-                                        std::cout << "Original467625 staged damage=" << outcome.damage << " revived=" << outcome.revived << " reverse=" << outcome.reverse << " item=" << outcome.consumed_item << '\n';
+                                        std::print("Original467625 staged damage={} revived={} reverse={} item={}\n", outcome.damage, outcome.revived, outcome.reverse, outcome.consumed_item);
                                         presentation->push_back({ unsigned(indices[n]), prologue->events.units[indices[n]].hp, outcome.damage,
                                             outcome.healing, outcome.snapshot, outcome.killed, outcome.revived, outcome.reverse, victims[n],
                                             skillMenu->selected().effect(), outcome.caster_before, a.max_hp, outcome.reversed_damage, outcome.hit,
@@ -3773,7 +3778,7 @@ int s2ne::run_application(int argc, char** argv)
                                             prologue->battle().commit_external_action();
                                             skillCastVerified = true;
                                             *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-                                            std::cout << "Original467625 drain feedback/payment/reward published once\n";
+                                            std::print("Original467625 drain feedback/payment/reward published once\n");
                                         });
                                     if (!swordFeedbackPending) { s2ne::fatal("467625 drain feedback staging rejected"); }
                                     return false;
@@ -3847,8 +3852,8 @@ int s2ne::run_application(int argc, char** argv)
                                     }
                                     preparedInvisibility = std::move(prepared).value();
                                 }
-                                std::cout << "AREA production skill=" << skillMenu->selected().id << " center=" << center.x << "," << center.y << " targets=" << indices.size() << " stagedRNG=" << stream.draw_count() - rng.draw_count() << " unpublished=1\n";
-                                for (size_t n = 0; n < indices.size(); ++n) { std::cout << "AREA target=" << victims[n].id << " xy=" << victims[n].x << "," << victims[n].y << " feedback=" << int(result.target_hits[n]) << " status3e=" << unsigned(victims[n].status3e) << " status3f=" << unsigned(victims[n].status3f) << '\n'; }
+                                std::print("AREA production skill={} center={},{} targets={} stagedRNG={} unpublished=1\n", skillMenu->selected().id, center.x, center.y, indices.size(), stream.draw_count() - rng.draw_count());
+                                for (size_t n = 0; n < indices.size(); ++n) { std::print("AREA target={} xy={},{} feedback={} status3e={} status3f={}\n", victims[n].id, victims[n].x, victims[n].y, int(result.target_hits[n]), unsigned(victims[n].status3e), unsigned(victims[n].status3f)); }
                                 std::vector<std::pair<size_t, bool>> feedback;
                                 for (size_t i = 0; i < indices.size(); ++i) { feedback.emplace_back(indices[i], result.target_hits[i]); }
                                 if (revealArmy && feedback.empty()) { feedback.emplace_back(size_t(selected), false); }
@@ -3877,7 +3882,7 @@ int s2ne::run_application(int argc, char** argv)
                                         prologue->battle().commit_external_action();
                                         skillCastVerified = true;
                                         *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-                                        std::cout << "Original area feedback complete; all statuses/timers/payment/reward/RNG published once targets=" << indices.size() << '\n';
+                                        std::print("Original area feedback complete; all statuses/timers/payment/reward/RNG published once targets={}\n", indices.size());
                                     },
                                     healing || status || revealArmy, result.target_amounts, healing);
                                 return false;
@@ -3915,7 +3920,7 @@ int s2ne::run_application(int argc, char** argv)
                     skillGrowthAwards.clear();
                     skillGrowthSeconds.reset();
                     skillGrowthSummon.reset();
-                    std::cout << "Original skill" << skillMenu->selected().id << " target=" << prologue->events.units.at(target).id << " applied=" << applied << " hit=" << result.hit << " immune=" << result.immune << " chance=" << result.chance << " roll=" << result.roll << " removed=" << result.removed << " failure=" << int(result.failure) << '\n';
+                    std::print("Original skill{} target={} applied={} hit={} immune={} chance={} roll={} removed={} failure={}\n", skillMenu->selected().id, prologue->events.units.at(target).id, applied, result.hit, result.immune, result.chance, result.roll, result.removed, int(result.failure));
                     if (applied)
                     {
                         smokeDriver.state.skillInputMpGrowth += pendingMpGrowth;
@@ -3936,7 +3941,7 @@ int s2ne::run_application(int argc, char** argv)
                             {
                                 s2ne::fatal("Hostile32 equipment save mismatch");
                             }
-                            std::cout << "SDL hostile32 normal input cast save/reload verified checkpoint=" << path.string() << " (not ending)\n";
+                            std::print("SDL hostile32 normal input cast save/reload verified checkpoint={} (not ending)\n", path.string());
                         }
                         *rawSave = std::move(snapshot);
                     }
@@ -3972,13 +3977,13 @@ int s2ne::run_application(int argc, char** argv)
                         if (auto id = prologue->pickup_at_unit(i, rawSave->groups[0].inventory, rawSave->groups[0].metadata[4]))
                         {
                             prologue->battle().refresh_command_availability(prologue->events.units);
-                            std::cout << "Original category12 pickup item " << id << " by unit " << prologue->events.units[i].id << '\n';
+                            std::print("Original category12 pickup item {} by unit {}\n", id, prologue->events.units[i].id);
                         }
                     }
                 }
                 float x{}, y{}, rx{}, ry{};
                 SDL_GetMouseState(&x, &y);
-                bool edgeActive = !spiritSightImage && !battleMenu && !battleReports && !promotionMenu && !itemMenu && !saveMenu && !overwriteConfirmation && !exitConfirmation && !options.battleSmoke && !options.skillInputSmoke && prologue->in_battle() && !prologue->battle().animating_movement() && (prologue->battle_state() == s2ne::Battle::State::idle || prologue->battle_state() == s2ne::Battle::State::movement || prologue->battle_state() == s2ne::Battle::State::attack_target) && SDL_GetMouseFocus() == window && SDL_RenderCoordinatesFromWindow(renderer, x, y, &rx, &ry) && rx >= 0 && rx < 640 && ry >= 0 && ry < 480 && (rx < 10 || rx > 630 || ry < 10 || ry > 470);
+                bool edgeActive = !spiritSightImage && !battleMenu && !battleReports && !promotionMenu && !itemMenu && !saveMenu && !overwriteConfirmation && !options.battleSmoke && !options.skillInputSmoke && prologue->in_battle() && !prologue->battle().animating_movement() && (prologue->battle_state() == s2ne::Battle::State::idle || prologue->battle_state() == s2ne::Battle::State::movement || prologue->battle_state() == s2ne::Battle::State::attack_target) && SDL_GetMouseFocus() == window && SDL_RenderCoordinatesFromWindow(renderer, x, y, &rx, &ry) && rx >= 0 && rx < 640 && ry >= 0 && ry < 480 && (rx < 10 || rx > 630 || ry < 10 || ry > 470);
                 if (edgeScrollTiming.due(nowUi, edgeActive, unsigned(std::max(0, settingsState.screen_delay)) * 10u))
                 {
                     prologue->edge_scroll(rx, ry);
@@ -4022,6 +4027,20 @@ int s2ne::run_application(int argc, char** argv)
                 {
                     running = false;
                     break;
+                }
+                if (!stdio && (event.type == SDL_EVENT_QUIT || event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED))
+                {
+                    if (suppressNextCloseEvent)
+                    {
+                        suppressNextCloseEvent = false;
+                        continue;
+                    }
+                    requestExit(true);
+                    if (!running)
+                    {
+                        break;
+                    }
+                    continue;
                 }
                 if (prologue && prologue->growth_active() && event.type != SDL_EVENT_QUIT)
                 {
@@ -4074,19 +4093,11 @@ int s2ne::run_application(int argc, char** argv)
                         prologue->advance();
                         if (page != prologue->ending_page())
                         {
-                            std::cout << "Native ending normal input completed phase=" << page + 1 << "/" << prologue->ending_pages() << '\n';
+                            std::print("Native ending normal input completed phase={}/{}\n", page + 1, prologue->ending_pages());
                         }
                         showPrologue();
                     }
                     continue;
-                }
-                if (event.type == SDL_EVENT_QUIT)
-                {
-                    if (prologue && !prologue->original_save_boundary_ready())
-                    {
-                        continue;
-                    }
-                    running = false;
                 }
                 if (prologue && prologue->item_presentation_) { continue; }
                 if (itemLearningPublish) { continue; }
@@ -4187,7 +4198,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     if (!innMenu->blocker().empty())
                     {
-                        std::cerr << "Original inn unavailable: " << innMenu->blocker() << '\n';
+                        std::print(stderr, "Original inn unavailable: {}\n", innMenu->blocker());
                     }
                     if (innMenu->title_requested())
                     {
@@ -4325,7 +4336,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     if (!churchMenu->blocker().empty())
                     {
-                        std::cerr << "Original church unavailable: " << churchMenu->blocker() << '\n';
+                        std::print(stderr, "Original church unavailable: {}\n", churchMenu->blocker());
                     }
                     if (churchMenu->page() == s2ne::OriginalChurch::Page::closed)
                     {
@@ -4632,7 +4643,7 @@ int s2ne::run_application(int argc, char** argv)
                             auto failure = skillMenu->select(actor, partnerUnit, summonReady);
                             if (failure != s2ne::OriginalSkills::Failure::none)
                             {
-                                std::cerr << "Original spell selection rejected reason=" << int(failure) << '\n';
+                                std::print(stderr, "Original spell selection rejected reason={}\n", int(failure));
                                 if (options.campaignContinue && options.strengthenedFlow)
                                 {
                                     auto snapshot = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
@@ -4647,7 +4658,7 @@ int s2ne::run_application(int argc, char** argv)
                             }
                             else if (!skillMenu->summon_supported() && !skillMenu->transfer51_supported() && !skillMenu->hostile_supported() && !skillMenu->sword94_supported() && !skillMenu->curse33_supported() && !skillMenu->status_area_supported() && !skillMenu->effect_supported(skillMenu->selected()))
                             {
-                                std::cerr << "Original selected spell executor unavailable id=" << skillMenu->selected().id << '\n';
+                                std::print(stderr, "Original selected spell executor unavailable id={}\n", skillMenu->selected().id);
                                 skillMenu->resume();
                             }
                             else if (skillMenu->summon_supported() || skillMenu->selected().id == 88)
@@ -4684,18 +4695,18 @@ int s2ne::run_application(int argc, char** argv)
                             const auto& target = prologue->events.units.at(*skillTarget);
                             if (skillMenu->selected().id == 94 && !s2ne::OriginalSkill94Transaction::target_supported(prologue->events, target))
                             {
-                                std::cout << "Original94 unsupported death/runtime target rejected before preparation/payment\n";
+                                std::print("Original94 unsupported death/runtime target rejected before preparation/payment\n");
                                 continue;
                             }
                             if (!prologue->battle().target_visible(target, std::span(&caster, 1), 0))
                             {
-                                std::cout << "Original spell target hidden\n";
+                                std::print("Original spell target hidden\n");
                                 continue;
                             }
                             prologue->battle().set_hostile_resources(prologue->events);
                             if (!prologue->battle().present_skill32_preparation(prologue->events.units, size_t(selected), *skillTarget, (skillMenu->selected().id == 88 || skillMenu->selected().id == 94)))
                             {
-                                std::cout << "Original46C078 spell32 preparation unavailable\n";
+                                std::print("Original46C078 spell32 preparation unavailable\n");
                                 continue;
                             }
                             if (skillMenu->status_area_supported() && !sleepCenter) { sleepCenter = skillMenu->selected().raw[18] == 7 ? s2ne::Battle::Point{ caster.x, caster.y } : s2ne::Battle::Point{ target.x, target.y }; }
@@ -4762,7 +4773,7 @@ int s2ne::run_application(int argc, char** argv)
                                     unit = std::move(candidate.unit);
                                     rawSave->groups[0].inventory = std::move(candidate.inventory);
                                     prologue->battle().commit_external_action();
-                                    std::cout << "Original USE learning item " << usableItems.at(usableItemSelection) << " committed for unit " << unit.id << '\n';
+                                    std::print("Original USE learning item {} committed for unit {}\n", usableItems.at(usableItemSelection), unit.id);
                                     if (options.campaignContinue && options.strengthenedFlow && (prologue->events.stage == 61 || prologue->events.stage == 131) && (unit.learned[2] & 0x800))
                                     {
                                         auto snapshot = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
@@ -4785,7 +4796,7 @@ int s2ne::run_application(int argc, char** argv)
                                         {
                                             s2ne::fatal("Learned spell lost after original restore");
                                         }
-                                        std::cout << "SDL final quest partial: original pickup301 USE65 learned32 persisted and reloaded at turn=" << prologue->battle_turn() << " checkpoint=" << path.string() << "; continuing normal-input hostile32 quest, not an ending\n";
+                                        std::print("SDL final quest partial: original pickup301 USE65 learned32 persisted and reloaded at turn={} checkpoint={}; continuing normal-input hostile32 quest, not an ending\n", prologue->battle_turn(), path.string());
                                         smokeDriver.state.mineralQuestVerified = true;
                                     }
                                 }
@@ -4898,53 +4909,6 @@ int s2ne::run_application(int argc, char** argv)
                     else
                     {
                         showSettings();
-                    }
-                    continue;
-                }
-                if (exitConfirmation)
-                {
-                    if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
-                    {
-                        if (event.key.key == SDLK_ESCAPE)
-                        {
-                            exitConfirmation->cancel();
-                        }
-                        else if (event.key.key == SDLK_LEFT || event.key.key == SDLK_RIGHT || event.key.key == SDLK_TAB)
-                        {
-                            if (event.key.key == SDLK_TAB) { playEffect(100); }
-                            exitConfirmation->toggle();
-                        }
-                        else if (event.key.key == SDLK_RETURN || event.key.key == SDLK_SPACE)
-                        {
-                            if (event.key.key == SDLK_SPACE) { playEffect(100); }
-                            exitConfirmation->confirm();
-                        }
-                    }
-                    if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
-                    {
-                        SDL_ConvertEventToRenderCoordinates(renderer, &event);
-                        bool down = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
-                        if (down && event.button.button == SDL_BUTTON_RIGHT)
-                        {
-                            exitConfirmation->cancel();
-                        }
-                        else
-                        {
-                            exitConfirmation->mouse(down ? event.button.x : event.motion.x, down ? event.button.y : event.motion.y, down && event.button.button == SDL_BUTTON_LEFT);
-                        }
-                    }
-                    if (auto result = exitConfirmation->result(); result)
-                    {
-                        if (*result)
-                        {
-                            running = false;
-                        }
-                        exitConfirmation.reset();
-                        showMenu();
-                    }
-                    else
-                    {
-                        showExitConfirmation();
                     }
                     continue;
                 }
@@ -5164,6 +5128,10 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 if (battleMenu)
                 {
+                    if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+                    {
+                        s2ne::texture_resources.clear_text_commands();
+                    }
                     s2ne::OriginalSettings::Event input;
                     if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
                     {
@@ -5358,9 +5326,15 @@ int s2ne::run_application(int argc, char** argv)
                         overview.set_dynamic_object_chains(prologue->events.dynamic_object_chains);
                         overview.set_event_flags(prologue->events.flags);
                         overview.load(prologue->events.map_id);
-                        battleReports.emplace(root, page, prologue->events, std::move(entries), prologue->draw(menu), &overview, settingsState.small_font != 0);
+                        auto report_background = prologue->draw(menu);
+                        s2ne::texture_resources.clear_text_commands();
+                        battleReports.emplace(root, page, prologue->events, std::move(entries), std::move(report_background), &overview, settingsState.small_font != 0);
                     }
-                    if (!saveMenu && (request.action == s2ne::OriginalBattleMenu::Action::load || request.action == s2ne::OriginalBattleMenu::Action::save)) { saveMenu.emplace(root, request.action == s2ne::OriginalBattleMenu::Action::save ? 1 : 0, s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root)); }
+                    if (!saveMenu && (request.action == s2ne::OriginalBattleMenu::Action::load || request.action == s2ne::OriginalBattleMenu::Action::save))
+                    {
+                        s2ne::texture_resources.clear_text_commands();
+                        saveMenu.emplace(root, request.action == s2ne::OriginalBattleMenu::Action::save ? 1 : 0, s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root));
+                    }
                     if (auto code = battleMenu->return_code())
                     {
                         settingsState = battleMenu->settings_state();
@@ -5400,6 +5374,7 @@ int s2ne::run_application(int argc, char** argv)
                                 {
                                     return slot.occupied();
                                 });
+                            s2ne::texture_resources.clear_text_commands();
                             battleMenu.emplace(root, context, settingsState);
                             showPrologue();
                             continue;
@@ -5408,7 +5383,7 @@ int s2ne::run_application(int argc, char** argv)
                         {
                             auto [cx, cy] = prologue->camera();
                             auto p = prologue->battle().pick_surface(x, y, cx, cy);
-                            std::cout << "94 mouse delivered=" << x << ',' << y << " picked=" << p.x << ',' << p.y << " camera=" << cx << ',' << cy << " occupant=" << prologue->battle().occupant(prologue->events.units, p) << '\n';
+                            std::print("94 mouse delivered={},{} picked={},{} camera={},{} occupant={}\n", x, y, p.x, p.y, cx, cy, prologue->battle().occupant(prologue->events.units, p));
                         }
                         if (prologue->choosing() || prologue->in_battle())
                         {
@@ -5543,12 +5518,14 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (menu.selected == 1)
                         {
+                            s2ne::texture_resources.clear_text_commands();
                             saveMenu.emplace(root, 0, s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root));
                             continue;
                         }
                         if (menu.selected == 4)
                         {
-                            beginExitConfirmation();
+                            requestExit(false);
+                            if (!running) { break; }
                             continue;
                         }
                         if (menu.selected == 3)
@@ -5556,7 +5533,7 @@ int s2ne::run_application(int argc, char** argv)
                             beginSettings();
                             continue;
                         }
-                        std::cout << "Selected original menu row " << menu.selected << ", handler 0x" << std::hex << target << std::dec << " (not implemented)\n";
+                        std::print("Selected original menu row {}, handler 0x{:x} (not implemented)\n", menu.selected, target);
                     }
                     showMenu();
                 }
@@ -5611,12 +5588,14 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (menu.selected == 1)
                         {
+                            s2ne::texture_resources.clear_text_commands();
                             saveMenu.emplace(root, 0, s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root));
                             continue;
                         }
                         if (menu.selected == 4)
                         {
-                            beginExitConfirmation();
+                            requestExit(false);
+                            if (!running) { break; }
                             continue;
                         }
                         if (menu.selected == 3)
@@ -5624,7 +5603,7 @@ int s2ne::run_application(int argc, char** argv)
                             beginSettings();
                             continue;
                         }
-                        std::cout << "Selected original menu row " << menu.selected << ", handler 0x" << std::hex << target << std::dec << " (not implemented)\n";
+                        std::print("Selected original menu row {}, handler 0x{:x} (not implemented)\n", menu.selected, target);
                         SDL_SetWindowTitle(window, "Original menu selected - handler not implemented (see console)");
                     }
                     if (event.key.key == SDLK_SPACE && !inMenu)
@@ -5800,14 +5779,14 @@ int s2ne::run_application(int argc, char** argv)
                     if ((prologue->events.stage == 61 || prologue->events.stage == 131))
                     {
                         auto target = prologue->campaign_next_stage();
-                        std::cout << "Original61 post-victory route=" << target << " mode=" << (target ? s2ne::OriginalCampaign(root).stage(target).mode : 0) << " flags42=" << unsigned(prologue->events.flags[41]) << " flags43=" << unsigned(prologue->events.flags[42]) << " flags73=" << unsigned(prologue->events.flags[72]) << " flags75=" << unsigned(prologue->events.flags[74]) << '\n';
+                        std::print("Original61 post-victory route={} mode={} flags42={} flags43={} flags73={} flags75={}\n", target, (target ? s2ne::OriginalCampaign(root).stage(target).mode : 0), unsigned(prologue->events.flags[41]), unsigned(prologue->events.flags[42]), unsigned(prologue->events.flags[72]), unsigned(prologue->events.flags[74]));
                         auto snapshot = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                         auto path = root / "S2NE" / "out" / "strengthened-flow-acceptance" / ("run-" + std::to_string(GetCurrentProcessId()) + "-stage61-boss-outcome.sav");
                         auto bytes = s2ne::OriginalSave::encode(snapshot, saveItems);
                         std::ofstream output(path, std::ios::binary);
                         output.write(reinterpret_cast<const char*>(bytes.data()), std::streamsize(bytes.size()));
                         output.close();
-                        std::cout << "Original boss-outcome checkpoint=" << path.string() << '\n';
+                        std::print("Original boss-outcome checkpoint={}\n", path.string());
                     }
                     auto next = campaignAdapter.deploy_next(*rawSave);
                     auto transitioned = initialization.try_transition_stage(root, *rawSave, next);
@@ -5930,7 +5909,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     if (!rawSave)
                     {
-                        std::cerr << "Original autosave " << request.slot << " blocked: no complete original baseline\n";
+                        std::print(stderr, "Original autosave {} blocked: no complete original baseline\n", request.slot);
                         allSaved = false;
                         break;
                     }
@@ -6087,6 +6066,7 @@ int s2ne::run_application(int argc, char** argv)
             {
                 auto image = title;
                 menu.draw(image);
+                s2ne::texture_resources.clear_text_commands();
                 auto rendered = saveMenu->try_draw(image, menu);
                 if (!rendered)
                 {
@@ -6113,6 +6093,30 @@ int s2ne::run_application(int argc, char** argv)
             if (!SDL_RenderPresent(renderer))
             {
                 s2ne::fatal(SDL_GetError());
+            }
+            if (stdioScreenshotPending && stdioPending)
+            {
+                std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> surface(SDL_RenderReadPixels(renderer, nullptr), SDL_DestroySurface);
+                if (!surface)
+                {
+                    (*stdioPending)["ok"] = false;
+                    (*stdioPending)["error"] = SDL_GetError();
+                }
+                else
+                {
+                    const auto path = *isolatedSaveRoot / "frame.bmp";
+                    if (!SDL_SaveBMP(surface.get(), path.string().c_str()))
+                    {
+                        (*stdioPending)["ok"] = false;
+                        (*stdioPending)["error"] = SDL_GetError();
+                    }
+                    else
+                    {
+                        (*stdioPending)["path"] = path.string();
+                    }
+                }
+                stdioScreenshotPending = false;
+                stdioReadyAt = gameTicks();
             }
             if (firstPresent)
             {
@@ -6166,8 +6170,7 @@ int s2ne::run_application(int argc, char** argv)
                         {
                             visualResource = 33;
                         }
-                        std::cout << "SDL SPELLSP" << (visualResource)
-                                  << " frame=" << frame << " ticks=" << gameTicks() << '\n';
+                        std::print("SDL SPELLSP{} frame={} ticks={}\n", (visualResource), frame, gameTicks());
                     }
                     previous = frame;
                     smokeDriver.state.skillSequence << presented << ',' << gameTicks() << ',' << smokeDriver.state.skillInputPhase << ',' << prologue->battle().animating_movement() << ',' << frame << ',' << smokeDriver.state.skillInputImageHash << '\n';
@@ -6214,9 +6217,11 @@ int s2ne::run_application(int argc, char** argv)
         {
             s2ne::fatal("Feedback validation interrupted before HP, flash, numbers and original indexed reaction were observed");
         }
-        std::cout << "Presented " << presented << " frames\n";
+        std::print("Presented {} frames\n", presented);
         audio.stop();
 
         return 0;
     }
 }
+
+#include "terminal_output.hpp"

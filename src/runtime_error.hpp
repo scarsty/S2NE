@@ -1,6 +1,6 @@
 #pragma once
-#include <cstdio>
 #include <cstdlib>
+#include <print>
 #include <stacktrace>
 #include <string>
 #include <utility>
@@ -15,7 +15,7 @@ inline void print_stack(const StackTrace& stack) noexcept
     {
         const auto description = stack[i].description();
         const auto file = stack[i].source_file();
-        std::fprintf(stderr, "  #%zu %s (%s:%lu)\n", i, description.c_str(), file.c_str(), static_cast<unsigned long>(stack[i].source_line()));
+        std::print(stderr, "  #{} {} ({}:{})\n", i, description, file, static_cast<unsigned long>(stack[i].source_line()));
     }
     std::fflush(stderr);
 }
@@ -27,7 +27,7 @@ struct Error
 inline Error make_error(std::string message) { return { std::move(message), std::stacktrace::current(1) }; }
 inline void report_error(const Error& error) noexcept
 {
-    std::fprintf(stderr, "S2NE: %s\n", error.message.c_str());
+    std::print(stderr, "S2NE: {}\n", error.message);
     print_stack(error.stack);
 }
 [[noreturn]] inline void fatal(const Error& error) noexcept

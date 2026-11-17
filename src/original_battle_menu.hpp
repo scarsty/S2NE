@@ -152,7 +152,7 @@ private:
         }
         return system_ids.at(row);
     }
-    void draw_page(std::vector<uint8_t>& image, Page page, int selection) const
+    void draw_page(std::vector<uint8_t>& image, Page page, int selection, bool draw_labels = true) const
     {
         if (page == Page::root)
         {
@@ -161,6 +161,7 @@ private:
             {
                 sprite(image, 196, left_ + 145, top_ + 293, false);
             }
+            if (!draw_labels) { return; }
             for (int row = 0; row < (context_.byte_4f6f4d == 2 ? 6 : 5); ++row)
             {
                 auto bytes = font_.text_bytes(root_ids[row]);
@@ -470,7 +471,7 @@ public:
             return s2ne::Result<std::vector<uint8_t>>::success(battlefield);
         }
         auto image = battlefield;
-        draw_page(image, Page::root, page_ == Page::root ? selected_ : root_selected_);
+        draw_page(image, Page::root, page_ == Page::root ? selected_ : root_selected_, page_ == Page::root);
         const Page* visiblePage;
         if (page_ == Page::confirmation) { visiblePage = &(confirmation_parent_); }
         else if (page_ == Page::operation) { visiblePage = &(operation_parent_); }

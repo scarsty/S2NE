@@ -162,7 +162,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
         {
             s2ne::fatal("Audio/menu smoke test failed");
         }
-        std::cout << (audioAvailable ? "Audio playback position advanced\n" : "Silent mode verified\n");
+        std::print("{}", (audioAvailable ? "Audio playback position advanced\n" : "Silent mode verified\n"));
         running = false;
     }
     if (battleSmoke && SDL_GetTicks() - started > 100 + smokePhase * 100)
@@ -196,7 +196,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
         {
             observedCampaignStage = prologue->events.stage;
             campaignStageStarted = SDL_GetTicks();
-            std::cout << "Continuous campaign pending stage=" << prologue->events.stage << " name=" << campaign_name_utf8(s2ne::OriginalCampaign(root).stage(prologue->events.stage)) << " battle=" << prologue->in_battle() << " dialogue=" << prologue->campaign_dialogue() << '\n';
+            std::print("Continuous campaign pending stage={} name={} battle={} dialogue={}\n", prologue->events.stage, campaign_name_utf8(s2ne::OriginalCampaign(root).stage(prologue->events.stage)), prologue->in_battle(), prologue->campaign_dialogue());
         }
         if (campaignContinue && prologue && !prologue->campaign_blocker().empty())
         {
@@ -212,7 +212,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                 {
                     s2ne::fatal("Natalia blocker checkpoint persistence failed");
                 }
-                std::cout << "Natalia blocker checkpoint=" << path.string() << '\n';
+                std::print("Natalia blocker checkpoint={}\n", path.string());
             }
             if (rawSave && (prologue->events.stage == 61 || prologue->events.stage == 131))
             {
@@ -222,7 +222,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                 std::ofstream output(path, std::ios::binary);
                 output.write(reinterpret_cast<const char*>(bytes.data()), std::streamsize(bytes.size()));
                 output.close();
-                std::cout << "Native terminal checkpoint=" << path.string() << " flag42=" << unsigned(prologue->events.flags[41]) << " flag43=" << unsigned(prologue->events.flags[42]) << " flag73=" << unsigned(prologue->events.flags[72]) << " flag75=" << unsigned(prologue->events.flags[74]) << '\n';
+                std::print("Native terminal checkpoint={} flag42={} flag43={} flag73={} flag75={}\n", path.string(), unsigned(prologue->events.flags[41]), unsigned(prologue->events.flags[42]), unsigned(prologue->events.flags[72]), unsigned(prologue->events.flags[74]));
             }
             s2ne::fatal("Continuous campaign blocked at stage=" + std::to_string(prologue->events.stage) + ": " + prologue->campaign_blocker());
         }
@@ -263,7 +263,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
             }
             lastCampaignStage = prologue->events.stage;
             ++campaignCheckpoints;
-            std::cout << "Continuous campaign checkpoint=" << campaignCheckpoints << " stage=" << lastCampaignStage << " original autosave reload verified\n";
+            std::print("Continuous campaign checkpoint={} stage={} original autosave reload verified\n", campaignCheckpoints, lastCampaignStage);
             auto directory = root / "S2NE" / "out" / (strengthenedFlow ? "strengthened-flow-acceptance" : "campaign-acceptance");
             std::filesystem::create_directories(directory);
             auto path = directory / ("run-" + std::to_string(GetCurrentProcessId()) + "-stage" + std::to_string(lastCampaignStage) + "-start.sav");
@@ -291,10 +291,10 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
             };
             auto disc = app_domain_for_save(saved);
             auto discBytes = s2ne::OriginalDiscResources(root).dat_entry(disc, 5);
-            std::cout << "Continuous native checkpoint path=" << path.string() << " route=" << savedGlobal(12) << " progress=" << savedGlobal(8) << " resource-domain=" << unsigned(disc) << " DAT5bytes=" << discBytes.size() << '\n';
+            std::print("Continuous native checkpoint path={} route={} progress={} resource-domain={} DAT5bytes={}\n", path.string(), savedGlobal(12), savedGlobal(8), unsigned(disc), discBytes.size());
             if (nataliaStrengthened && !nataliaContinue && disc == s2ne::OriginalDisc::two)
             {
-                std::cout << "Natalia bounded batch reached first secondary-domain battle; not full route or ending evidence\n";
+                std::print("Natalia bounded batch reached first secondary-domain battle; not full route or ending evidence\n");
                 clearVerified = true;
                 running = false;
             }
@@ -325,7 +325,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
             {
                 s2ne::fatal("Fresh normal game restore failed");
             }
-            std::cout << "SDL normal title/setup/opening -> fresh stage=" << prologue->events.stage << " name=" << campaign_name_utf8(s2ne::OriginalCampaign(root).stage(prologue->events.stage)) << " original initialization/save/reload verified; no source SAVE or injected flags/items/stats\n";
+            std::print("SDL normal title/setup/opening -> fresh stage={} name={} original initialization/save/reload verified; no source SAVE or injected flags/items/stats\n", prologue->events.stage, campaign_name_utf8(s2ne::OriginalCampaign(root).stage(prologue->events.stage)));
             running = false;
             return true;
         }
@@ -346,7 +346,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
             {
                 s2ne::fatal("Next-battle autosave restored the wrong stage");
             }
-            std::cout << "SDL campaign victory -> rewards -> hub -> next battle stage=" << restored.events.stage << " name=" << campaign_name_utf8(s2ne::OriginalCampaign(root).stage(restored.events.stage)) << " -> original autosave complete byte reload verified\n";
+            std::print("SDL campaign victory -> rewards -> hub -> next battle stage={} name={} -> original autosave complete byte reload verified\n", restored.events.stage, campaign_name_utf8(s2ne::OriginalCampaign(root).stage(restored.events.stage)));
             clearVerified = true;
             running = false;
         }
@@ -359,7 +359,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
         }
         else if (clearSmoke && prologue && prologue->campaign_reward_report())
         {
-            std::cout << "SDL original first-battle scripts and victory report verified at turn=" << prologue->battle_turn() << "\n";
+            std::print("SDL original first-battle scripts and victory report verified at turn={}\n", prologue->battle_turn());
             if (prologue->battle_turn() > 99)
             {
                 s2ne::fatal("Victory report exceeded original turn deadline");
@@ -377,10 +377,10 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
         }
         else if (clearSmoke && prologue && prologue->campaign_defeated())
         {
-            std::cerr << "Campaign defeat stage=" << prologue->events.stage << " turn=" << prologue->battle_turn() << " difficulty=" << prologue->events.difficulty << '\n';
+            std::print(stderr, "Campaign defeat stage={} turn={} difficulty={}\n", prologue->events.stage, prologue->battle_turn(), prologue->events.difficulty);
             for (const auto& u : prologue->events.units)
             {
-                std::cerr << " unit=" << u.id << " behavior=" << u.behavior << " hp=" << u.hp << " status=" << unsigned(u.status_flags) << " x=" << u.x << " y=" << u.y << '\n';
+                std::print(stderr, " unit={} behavior={} hp={} status={} x={} y={}\n", u.id, u.behavior, u.hp, unsigned(u.status_flags), u.x, u.y);
             }
             s2ne::fatal("Production first-battle smoke reached original defeat");
         }
@@ -443,12 +443,12 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                 });
             if ((!hostile && !campaignContinue) || (!friendly && !(campaignContinue && livingAlliedNpc)))
             {
-                std::cout << "SDL first battle outcome: turn=" << prologue->battle_turn() << " friendly=" << friendly << " hostile=" << hostile << "\n";
+                std::print("SDL first battle outcome: turn={} friendly={} hostile={}\n", prologue->battle_turn(), friendly, hostile);
                 for (const auto& unit : prologue->events.units)
                 {
                     if (unit.controllable())
                     {
-                        std::cout << " actor=" << unit.id << " hp=" << unit.hp << " level=" << unit.level << " xp=" << unit.experience << "\n";
+                        std::print(" actor={} hp={} level={} xp={}\n", unit.id, unit.hp, unit.level, unit.experience);
                     }
                 }
                 if (!friendly)
@@ -479,7 +479,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                 {
                     if (boss.id == 20)
                     {
-                        std::cout << "Quest boss id=" << boss.id << " behavior=" << boss.behavior << " hp=" << boss.hp << " status=" << boss.status_flags << " xy=" << boss.x << ',' << boss.y << " accessory=" << boss.equipment[5] << " questRoute=" << bool(mineralInput) << '\n';
+                        std::print("Quest boss id={} behavior={} hp={} status={} xy={},{} accessory={} questRoute={}\n", boss.id, boss.behavior, boss.hp, boss.status_flags, boss.x, boss.y, boss.equipment[5], bool(mineralInput));
                     }
                 }
             }
@@ -547,7 +547,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                             }
                         }
                     }
-                    std::cout << "Exit input turn=" << prologue->battle_turn() << " hero=" << origin.x << "," << origin.y << " ap=" << actor->action_points << " state=" << int(prologue->battle_state()) << " selected=" << prologue->battle_selected() << " committedTurn=" << exitMoveTurn << '\n';
+                    std::print("Exit input turn={} hero={},{} ap={} state={} selected={} committedTurn={}\n", prologue->battle_turn(), origin.x, origin.y, actor->action_points, int(prologue->battle_state()), prologue->battle_selected(), exitMoveTurn);
                     std::vector<Point> queue{ origin };
                     std::map<std::pair<int, int>, Point> previous;
                     previous[{ origin.x, origin.y }] = origin;
@@ -589,7 +589,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                         }
                         if (nataliaContinue && hostile > 0)
                         {
-                            std::cout << "Temporary occupied objective route stage=" << prologue->events.stage << " turn=" << prologue->battle_turn() << " hostiles=" << hostile << "; normal automatic combat then retry; checkpoint=" << path.string() << '\n';
+                            std::print("Temporary occupied objective route stage={} turn={} hostiles={}; normal automatic combat then retry; checkpoint={}\n", prologue->events.stage, prologue->battle_turn(), hostile, path.string());
                             output.close();
                             prologue->cancel_battle_selection();
                             prologue->start_auto_battle();
@@ -924,7 +924,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                 {
                     s2ne::fatal("Detail report did not return to selected command");
                 }
-                std::cout << "SDL selected command3 -> original detail modal -> selected command return verified\n";
+                std::print("SDL selected command3 -> original detail modal -> selected command return verified\n");
                 running = false;
             }
         }
@@ -985,10 +985,10 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                 }
                 else
                 {
-                    std::cout << "SDL battlefield automatic combat menu -> friendly actions -> hostile actions -> player control verified\n";
+                    std::print("SDL battlefield automatic combat menu -> friendly actions -> hostile actions -> player control verified\n");
                     if (feedbackSmoke)
                     {
-                        std::cout << "Rendered original indexed reaction, hit silhouette, rising damage numbers and stepped HP reduction verified\n";
+                        std::print("Rendered original indexed reaction, hit silhouette, rising damage numbers and stepped HP reduction verified\n");
                     }
                     running = false;
                 }
@@ -1052,18 +1052,18 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
                         }
                         if (!enemy_moved || hostileActionFrames < 2)
                         {
-                            std::cerr << "Battle smoke movement diagnostic: turn=" << prologue->battle_turn() << " action_frames=" << hostileActionFrames << '\n';
+                            std::print(stderr, "Battle smoke movement diagnostic: turn={} action_frames={}\n", prologue->battle_turn(), hostileActionFrames);
                             for (size_t i = 0; i < prologue->events.units.size(); ++i)
                             {
                                 const auto& u = prologue->events.units[i];
                                 if (u.hostile())
                                 {
-                                    std::cerr << " enemy[" << i << "] behavior=" << u.behavior << " hp=" << u.hp << " origin=" << battleSmokeEnemyOrigins.at(i).first << ',' << battleSmokeEnemyOrigins.at(i).second << " now=" << u.x << ',' << u.y << " action=" << unsigned(u.action_state) << '\n';
+                                    std::print(stderr, " enemy[{}] behavior={} hp={} origin={},{} now={},{} action={}\n", i, u.behavior, u.hp, battleSmokeEnemyOrigins.at(i).first, battleSmokeEnemyOrigins.at(i).second, u.x, u.y, unsigned(u.action_state));
                                 }
                             }
                             s2ne::fatal("Enemy turn did not visibly execute movement");
                         }
-                        std::cout << "SDL campaign battle " << prologue->events.stage << ": player movement, visible enemy movement and two complete side-banner cycles verified (" << hostileActionFrames << " hostile frames)\n";
+                        std::print("SDL campaign battle {}: player movement, visible enemy movement and two complete side-banner cycles verified ({} hostile frames)\n", prologue->events.stage, hostileActionFrames);
                         running = false;
                     }
                     else
@@ -1232,7 +1232,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
         {
             s2ne::fatal("New-game dialogue smoke test failed");
         }
-        std::cout << "SDL new game -> original stage 140 -> second dialogue line verified\n";
+        std::print("SDL new game -> original stage 140 -> second dialogue line verified\n");
         running = false;
     }
     if (loadSmoke && SDL_GetTicks() - started > 100 + smokePhase * 150 && !prologue)
@@ -1271,7 +1271,7 @@ bool AppSmokeDriver::before_events(AppSmokeContext context)
         {
             s2ne::fatal("Isolated original save changed on reload");
         }
-        std::cout << "Original save restored through title menu, stage " << prologue->events.stage << ", turn " << prologue->battle_turn() << "; isolated slot52 write/reload verified\n";
+        std::print("Original save restored through title menu, stage {}, turn {}; isolated slot52 write/reload verified\n", prologue->events.stage, prologue->battle_turn());
         running = false;
     }
     if (loadSmoke && SDL_GetTicks() - started > 15000)
@@ -1372,7 +1372,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 {
                     fatal("465E04 variable roster, slot, ownership and original save restore mismatch");
                 }
-                std::cout << "PASS465E04 variable roster/slot/owner/level-preserving/action2 capture-decode-restore\n";
+                std::print("PASS465E04 variable roster/slot/owner/level-preserving/action2 capture-decode-restore\n");
             }
             if ((inputSkill == 51 || inputSkill == 29 || inputSkill == 18 || inputSkill == 40) && (std::string_view(name) == "cast-after.sav" || std::string_view(name) == "settled-after.sav"))
             {
@@ -1387,7 +1387,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         || live.ending_combat_value != loaded.ending_combat_value
                         || live.x != loaded.x || live.y != loaded.y || live.status_flags != loaded.status_flags) { fatal("Original spell full save restore mismatch"); }
                 }
-                std::cout << "PASS467625 caster/target HP/payment/reward capture/decode/restore\n";
+                std::print("PASS467625 caster/target HP/payment/reward capture/decode/restore\n");
             }
             if (NativeDamageRecords::ordinary_sword(inputSkill) && (std::string_view(name) == "cast-after.sav" || std::string_view(name) == "settled-after.sav"))
             {
@@ -1398,7 +1398,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     const auto& loaded = restored.events.units[index];
                     if (live.hp != loaded.hp || live.status_flags != loaded.status_flags || live.ending_losses != loaded.ending_losses) { fatal("466082 multi-target death save restore mismatch"); }
                 }
-                std::cout << "PASS466082 multi-target death capture/decode/restore\n";
+                std::print("PASS466082 multi-target death capture/decode/restore\n");
                 if (NativeDamageRecords::find(inputSkill)->raw[32] & 7)
                 {
                     for (auto index : { size_t(skillInputCaster), size_t(state.cooperativePartnerIndex) })
@@ -1407,7 +1407,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         const auto& loaded = restored.events.units[index];
                         if (live.hp != loaded.hp || live.mp != loaded.mp || live.st != loaded.st || live.action_points != loaded.action_points || live.experience != loaded.experience || live.learned_proficiency != loaded.learned_proficiency) { fatal("Cooperative damage settlement save restore mismatch"); }
                     }
-                    std::cout << "PASS cooperative damage both participants payment/reward save restore\n";
+                    std::print("PASS cooperative damage both participants payment/reward save restore\n");
                 }
             }
             if (s2ne::OriginalSave::encode(decoded, saveItems) != bytes)
@@ -1423,7 +1423,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     const auto& loaded = restored.events.units[index];
                     if (loaded.attack != live.attack || loaded.defense != live.defense || loaded.max_action_points != live.max_action_points || loaded.action_points != live.action_points || loaded.carry_points != live.carry_points || !std::equal(live.action_status_runtime->begin() + 0x38, live.action_status_runtime->begin() + 0xA0, loaded.action_status_runtime->begin() + 0x38)) { fatal("Stat production capture/decode/restore mismatch"); }
                 }
-                std::cout << "PASS production stat save/decode/restore all targets and timers\n";
+                std::print("PASS production stat save/decode/restore all targets and timers\n");
             }
             if (skill94Input && (std::string_view(name) == "cast-after.sav" || std::string_view(name) == "settled-after.sav"))
             {
@@ -1440,7 +1440,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     if (restored.events.army_modes != events.army_modes) { fatal("Army DE save restore mismatch"); }
                     if (inputSkill == 50 && std::string_view(name) != "reveal-expired.sav" && (!events.army_modes || !((*events.army_modes)[events.units[skillInputCaster].hostile() ? 1 : 0] & 1))) { fatal("4666C5 reveal bit missing"); }
                     if (inputSkill == 45 && (!state.spiritSightObserved || !state.spiritSightModifierRetained)) { fatal("46864F missing original input wait or473420 modifier filtering"); }
-                    std::cout << "PASS dedicated sight information/army-mode capture/decode/restore\n";
+                    std::print("PASS dedicated sight information/army-mode capture/decode/restore\n");
                 }
             }
             return bytes;
@@ -1466,7 +1466,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 {
                     for (unsigned i = 0; i < 11; ++i) { slots[i * 3] = 0; }
                 }
-                std::cout << "CONTROLLED summon learned/resources/slot fixture only, not natural\n";
+                std::print("CONTROLLED summon learned/resources/slot fixture only, not natural\n");
             }
             if (inputSkill == 51 && !options.skillControl.empty())
             {
@@ -1494,7 +1494,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     unit.learned[group] |= bit;
                     unit.st = unit.mp = 1000;
                 }
-                std::cout << "CONTROLLED drain learned/resources injection; not natural acquisition\n";
+                std::print("CONTROLLED drain learned/resources injection; not natural acquisition\n");
             }
             if (NativeDamageRecords::ordinary_sword(inputSkill))
             {
@@ -1539,7 +1539,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         actor.relationships[partner->id - 1] = 70;
                         partner->relationships[actor.id - 1] = 70;
                     }
-                    std::cout << "CONTROLLED damage adjacent partner/learning/relationship/resources injection; not natural\n";
+                    std::print("CONTROLLED damage adjacent partner/learning/relationship/resources injection; not natural\n");
                 }
             }
             bool found = false;
@@ -1649,7 +1649,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 {
                     if (NativeDamageRecords::ordinary_sword(inputSkill) && !options.skillControl.empty())
                     {
-                        std::cout << "CONTROLLED damage selection actor=" << u.id << " record=" << probe.selected().id << " partner=" << (partnerUnit ? partnerUnit->id : 0) << " failure=" << int(selectionFailure) << '\n';
+                        std::print("CONTROLLED damage selection actor={} record={} partner={} failure={}\n", u.id, probe.selected().id, (partnerUnit ? partnerUnit->id : 0), int(selectionFailure));
                     }
                     continue;
                 }
@@ -1697,7 +1697,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                                 candidate.action_status_runtime->at(0x39) = 0;
                                 for (unsigned p = 0x3C; p <= 0x3F; ++p) { candidate.action_status_runtime->at(p) = 0; }
                             }
-                            std::cout << "CONTROLLED drain survivor target relocation/maxHP; not natural deployment\n";
+                            std::print("CONTROLLED drain survivor target relocation/maxHP; not natural deployment\n");
                         }
                     }
                     if (inputSkill == 45 && options.skillControl == "enemy" && !prologue->events.units[t].hostile()) { continue; }
@@ -1707,7 +1707,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         auto& candidate = prologue->events.units[t];
                         candidate.x = u.x;
                         candidate.y = u.y + 1;
-                        std::cout << "CONTROLLED cooperative target adjacent relocation; not natural\n";
+                        std::print("CONTROLLED cooperative target adjacent relocation; not natural\n");
                     }
                     if (NativeDamageRecords::ordinary_sword(inputSkill) && !options.skillControl.empty() && NativeDamageRecords::find(inputSkill)->raw[17] == 1)
                     {
@@ -1716,7 +1716,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         {
                             candidate.x = u.x;
                             candidate.y = u.y + 1;
-                            std::cout << "CONTROLLED range1 target relocation; not natural deployment\n";
+                            std::print("CONTROLLED range1 target relocation; not natural deployment\n");
                         }
                     }
                     if ((skill94Input || NativeDamageRecords::ordinary_sword(inputSkill)) && (options.skillControl == "script82" || options.skillControl == "scriptfail82") && prologue->events.units[t].id != (prologue->events.stage == 6 ? 104u : 147u)) { continue; }
@@ -1808,7 +1808,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                                     }
                                 }
                                 if (!placed) { fatal("CONTROLLED self-centered damage has no original valid radial cell"); }
-                                std::cout << "CONTROLLED self-centered damage adjacent target relocation; not natural\n";
+                                std::print("CONTROLLED self-centered damage adjacent target relocation; not natural\n");
                                 break;
                             }
                         }
@@ -1849,7 +1849,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                             return true;
                         });
                     state.controlledAreaReady = true;
-                    std::cout << "CONTROLLED effect1 targets=" << state.controlledAreaTargets.size() << " HP/status/ST/proficiency/RNG injection; not natural\n";
+                    std::print("CONTROLLED effect1 targets={} HP/status/ST/proficiency/RNG injection; not natural\n", state.controlledAreaTargets.size());
                 }
                 if (skill94Input && !options.skillControl.empty() && !state.controlledAreaReady)
                 {
@@ -1902,7 +1902,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                             return true;
                         });
                     state.controlledAreaReady = true;
-                    std::cout << "CONTROLLED094 branch=" << options.skillControl << " HP/ST/proficiency/defense/equipment/status/RNG fixture; learning/coordinates/source SAVE unchanged; target=" << victim.id << '\n';
+                    std::print("CONTROLLED094 branch={} HP/ST/proficiency/defense/equipment/status/RNG fixture; learning/coordinates/source SAVE unchanged; target={}\n", options.skillControl, victim.id);
                 }
                 if (NativeAbilityBuffs::find(inputSkill) && !state.controlledAreaReady)
                 {
@@ -1920,7 +1920,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                             target.action_points = 10;
                             target.status34 = 12;
                         }
-                        std::cout << "CONTROLLED cooperative target HP/action/role fixture; NOT natural\n";
+                        std::print("CONTROLLED cooperative target HP/action/role fixture; NOT natural\n");
                     }
                     state.controlledAreaTargets = { skillInputTarget };
                     prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
@@ -1931,7 +1931,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                             return false;
                         });
                     state.controlledAreaReady = true;
-                    std::cout << "CONTROLLED ability family learned/ST/halfMP/RNG fixture; source SAVE read-only; NOT natural\n";
+                    std::print("CONTROLLED ability family learned/ST/halfMP/RNG fixture; source SAVE read-only; NOT natural\n");
                 }
                 if (const auto* buff = NativeTimedBuffs::find(inputSkill); buff && !state.controlledAreaReady)
                 {
@@ -1959,7 +1959,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                             return false;
                         });
                     state.controlledAreaReady = true;
-                    std::cout << "CONTROLLED timed buff learned/ST/halfMP/status/RNG fixture; original positions/source SAVE read-only; NOT natural\n";
+                    std::print("CONTROLLED timed buff learned/ST/halfMP/status/RNG fixture; original positions/source SAVE read-only; NOT natural\n");
                 }
                 if ((inputSkill == 6 || inputSkill == 9 || inputSkill == 10) && !options.skillControl.empty() && !state.controlledAreaReady)
                 {
@@ -2005,7 +2005,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                             blocked.status3e |= 1;
                             blocked.action_status_runtime->at(0x3E) |= 1;
                         }
-                        std::cout << "CONTROLLED branches: halfMP ability; full/blocked plus positive targets, or010 permanent timer255; NOT natural branch\n";
+                        std::print("CONTROLLED branches: halfMP ability; full/blocked plus positive targets, or010 permanent timer255; NOT natural branch\n");
                     }
                     if (inputSkill != 10 && state.controlledAreaTargets.size() < 2) { fatal("Restoration production requires multiple original allied targets"); }
                     prologue->battle().mutate_combat_random([&](auto& rng, uint32_t)
@@ -2015,7 +2015,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                             return true;
                         });
                     state.controlledAreaReady = true;
-                    std::cout << "CONTROLLED support HP/status/RNG fixture; original learning/coordinates/source SAVE unchanged, NOT natural success targets=" << state.controlledAreaTargets.size() << '\n';
+                    std::print("CONTROLLED support HP/status/RNG fixture; original learning/coordinates/source SAVE unchanged, NOT natural success targets={}\n", state.controlledAreaTargets.size());
                 }
                 if ((inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60 || inputSkill == 17 || inputSkill == 25 || inputSkill == 52 || inputSkill == 61 || inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96) && !options.skillControl.empty() && !state.controlledAreaReady)
                 {
@@ -2143,7 +2143,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         u.status3f = u.action_status_runtime->at(0x3F);
                     }
                     state.controlledAreaReady = true;
-                    std::cout << "CONTROLLED hostile timed status ST/abilities/status/roles/RNG/deployment; two existing enemies relocated (053 inside area, 013/015 outside single tile); learned bit explicitly injected on actor1; source SAVE untouched; NOT natural\n";
+                    std::print("CONTROLLED hostile timed status ST/abilities/status/roles/RNG/deployment; two existing enemies relocated (053 inside area, 013/015 outside single tile); learned bit explicitly injected on actor1; source SAVE untouched; NOT natural\n");
                 }
                 if (inputSkill == 2 && !options.skillControl.empty() && !state.controlledAreaReady)
                 {
@@ -2178,7 +2178,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                             }
                         }
                     }
-                    std::cout << "CONTROLLED probe=" << probe.selected().id << " center=" << center.x << "," << center.y << " emptyValid=" << cells.size() << "\n";
+                    std::print("CONTROLLED probe={} center={},{} emptyValid={}\n", probe.selected().id, center.x, center.y, cells.size());
                     for (size_t n = 0; n < units.size() && state.controlledAreaTargets.size() < 3; ++n)
                     {
                         if (n == skillInputTarget || n == skillInputCaster || (inputSkill == 48 && state.controlledAreaTargets.size() == 1 ? units[n].hostile() : !units[n].hostile()) || cells.empty()) { continue; }
@@ -2212,7 +2212,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                             return true;
                         });
                     state.controlledAreaReady = true;
-                    std::cout << "CONTROLLED002 explicit runtime fixture: three original enemy slots activated/relocated, HP/ST/role/immunity/seed injected; NOT natural source; empty area cells retained\n";
+                    std::print("CONTROLLED002 explicit runtime fixture: three original enemy slots activated/relocated, HP/ST/role/immunity/seed injected; NOT natural source; empty area cells retained\n");
                 }
                 if ((inputSkill == 4 || inputSkill == 5) && !options.skillControl.empty() && !state.controlledAreaReady)
                 {
@@ -2247,7 +2247,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     }
                     if (inputSkill == 4 && n < 3) { fatal("004 mixed production requires three original allied targets"); }
                     state.controlledAreaReady = true;
-                    std::cout << "CONTROLLED004/005 explicit status/timer fixture only; original learned/positions retained, NOT natural success, targets=" << n << '\n';
+                    std::print("CONTROLLED004/005 explicit status/timer fixture only; original learned/positions retained, NOT natural success, targets={}\n", n);
                 }
                 const auto& u = prologue->events.units[skillInputCaster];
                 auto point = prologue->screen_cell({ u.x, u.y });
@@ -2336,7 +2336,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     SDL_PushEvent(&motion);
                     SDL_PushEvent(&e);
                     skillInputPhase = skill88Positive && u.hp == u.max_hp ? 20 : 1;
-                    std::cout << "INPUT select caster=" << u.id << " target=" << prologue->events.units[skillInputTarget].id << " action=" << unsigned(u.action_state) << " click=" << point.x << ',' << point.y << " xy=" << u.x << ',' << u.y << '\n';
+                    std::print("INPUT select caster={} target={} action={} click={},{} xy={},{}\n", u.id, prologue->events.units[skillInputTarget].id, unsigned(u.action_state), point.x, point.y, u.x, u.y);
                 }
             }
         }
@@ -2360,7 +2360,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             e.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
             e.button.windowID = SDL_GetWindowID(window);
             e.button.button = SDL_BUTTON_LEFT;
-            std::cout << "INPUT33 phase=" << skillInputPhase << " menu=" << bool(context.battleMenu) << " roster=" << bool(context.battleReports) << " camera=" << prologue->camera().first << ',' << prologue->camera().second << '\n';
+            std::print("INPUT33 phase={} menu={} roster={} camera={},{}\n", skillInputPhase, bool(context.battleMenu), bool(context.battleReports), prologue->camera().first, prologue->camera().second);
             float x = 320, y = 220;
             if (skillInputPhase == 32)
             {
@@ -2402,7 +2402,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     }
                     if (inputSkill == 4 && n < 3) { fatal("004 mixed production requires three original allied targets"); }
                     state.controlledAreaReady = true;
-                    std::cout << "CONTROLLED004/005 explicit status/timer fixture only; original learned/positions retained, NOT natural success, targets=" << n << '\n';
+                    std::print("CONTROLLED004/005 explicit status/timer fixture only; original learned/positions retained, NOT natural success, targets={}\n", n);
                 }
                 const auto& u = prologue->events.units[skillInputCaster];
                 auto point = prologue->screen_cell({ u.x, u.y });
@@ -2424,7 +2424,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     }
                     if (picked) { break; }
                 }
-                std::cout << "INPUT33 roster locate then select id=" << u.id << " xy=" << u.x << ',' << u.y << '\n';
+                std::print("INPUT33 roster locate then select id={} xy={},{}\n", u.id, u.x, u.y);
             }
             SDL_RenderCoordinatesToWindow(renderer, x, y, &e.button.x, &e.button.y);
             SDL_Event motion{};
@@ -2479,7 +2479,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 SDL_PushEvent(&e);
                 skillInputPhase = 21;
                 skillInputNext = nowUi + 1000;
-                std::cout << "CONTACT input waypoint=" << x << "," << y << " turn=" << prologue->battle_turn() << std::endl;
+                std::print("CONTACT input waypoint={},{} turn={}\n", x, y, prologue->battle_turn());
             }
         }
         else if (skillInputPhase == 21 && !prologue->battle().animating_movement())
@@ -2492,7 +2492,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 s2ne::fatal("Bounded88 original movement rejected waypoint; no relocation fallback");
             }
             ++contactStep;
-            std::cout << "CONTACT moved actor=" << u.id << " xy=" << u.x << "," << u.y << " HP=" << u.hp << " ST=" << u.st << " AP=" << u.action_points << std::endl;
+            std::print("CONTACT moved actor={} xy={},{} HP={} ST={} AP={}\n", u.id, u.x, u.y, u.hp, u.st, u.action_points);
             key(SDLK_F10);
             skillInputPhase = 0;
         }
@@ -2517,7 +2517,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             {
                 if (skill94Input)
                 {
-                    std::cout << "94 submenu selected=" << prologue->events.units.at(size_t(prologue->battle_selected())).id << " index=" << prologue->battle().attack_index() << " secondAvailable=" << skillRules.executable_available(prologue->events.units.at(size_t(prologue->battle_selected())), s2ne::OriginalSkills::Context{ .second = true }, true) << '\n';
+                    std::print("94 submenu selected={} index={} secondAvailable={}\n", prologue->events.units.at(size_t(prologue->battle_selected())).id, prologue->battle().attack_index(), skillRules.executable_available(prologue->events.units.at(size_t(prologue->battle_selected())), s2ne::OriginalSkills::Context{ .second = true }, true));
                 }
                 if (prologue->battle().attack_index() != int(((NativeDamageRecords::ordinary_sword(inputSkill) && NativeDamageRecords::find(inputSkill)->raw[0] >= 9) || skill88Input || skill94Input || inputSkill == 96 || inputSkill == 86 || inputSkill == 92 || (NativeAbilityBuffs::find(inputSkill) && NativeAbilityBuffs::find(inputSkill)->group == 8)) ? 3 : 2))
                 {
@@ -2598,7 +2598,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             {
                 s2ne::fatal("Target cancel mutated original save");
             }
-            std::cout << "PASS normal target cancel no payment or RNG change\n";
+            std::print("PASS normal target cancel no payment or RNG change\n");
             skillInputPhase = 6;
         }
         else if (skillInputPhase == 8)
@@ -2617,7 +2617,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                             if (probe.percent(seconds) <= 30 && probe.percent(seconds) < 30)
                             {
                                 rng.restore_stream(seed, 0);
-                                std::cout << "CONTROLLED094 fixed preflight RNG seed=" << seed << " original percent table12, no live retry\n";
+                                std::print("CONTROLLED094 fixed preflight RNG seed={} original percent table12, no live retry\n", seed);
                                 return true;
                             }
                         }
@@ -2672,7 +2672,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     target.status3c = target.status3d = target.status3e = target.status3f = 0;
                     target.action_status_runtime->at(0x39) = 0;
                     for (unsigned p = 0x3C; p <= 0x3F; ++p) { target.action_status_runtime->at(p) = 0; }
-                    std::cout << "CONTROLLED drain original equipment special=" << special << " item=" << item << '\n';
+                    std::print("CONTROLLED drain original equipment special={} item={}\n", special, item);
                     if (special == 29)
                     {
                         const auto resolver = OriginalDrain::create(root).value();
@@ -2692,7 +2692,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                                     if (packet && packet.value().reverse)
                                     {
                                         random.restore_stream(seed, 0);
-                                        std::cout << "CONTROLLED drain reverse29 preflight seed=" << seed << "; no live retry\n";
+                                        std::print("CONTROLLED drain reverse29 preflight seed={}; no live retry\n", seed);
                                         return true;
                                     }
                                 }
@@ -2738,7 +2738,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                                 if (killed)
                                 {
                                     random.restore_stream(seed, 0);
-                                    std::cout << "CONTROLLED drain lethal preflight seed=" << seed << "; no live retry\n";
+                                    std::print("CONTROLLED drain lethal preflight seed={}; no live retry\n", seed);
                                     return true;
                                 }
                             }
@@ -2773,7 +2773,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             if (snapshot("transfer-destination-cancel-after.sav") != skillInputCommitted) { fatal("051 destination cancellation mutated save"); }
             key(SDLK_RETURN);
             skillInputPhase = 14;
-            std::cout << "PASS051 destination Escape returns to source without payment/RNG/save change\n";
+            std::print("PASS051 destination Escape returns to source without payment/RNG/save change\n");
         }
         else if (inputSkill == 51 && skillInputPhase == 14 && skillMenu)
         {
@@ -2843,7 +2843,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 if (!state.scriptDeathObserved)
                 {
                     state.scriptDeathObserved = true;
-                    std::cout << "CONTROLLED094 production lethal->original synchronous script stage=" << prologue->events.stage << " role=" << prologue->events.units[skillInputTarget].id << " flag13=" << unsigned(prologue->events.flags[12]) << " save/input locked; no payment\n";
+                    std::print("CONTROLLED094 production lethal->original synchronous script stage={} role={} flag13={} save/input locked; no payment\n", prologue->events.stage, prologue->events.units[skillInputTarget].id, unsigned(prologue->events.flags[12]));
                 }
                 if (options.skillControl == "scriptfail82" && !state.scriptFailureInjected)
                 {
@@ -2854,10 +2854,10 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     if (inputSkill == 29 || inputSkill == 18 || inputSkill == 40 || skill94Input || NativeDamageRecords::ordinary_sword(inputSkill))
                     {
                         if (!prologue->inject_synchronous_death_failure_for_test()) { fatal("Area synchronous rollback injection unavailable"); }
-                        std::cout << "CONTROLLED area invalid dialogue index injection after entry; real Result failure and complete cast rollback\n";
+                        std::print("CONTROLLED area invalid dialogue index injection after entry; real Result failure and complete cast rollback\n");
                         return true;
                     }
-                    std::cout << "CONTROLLED094 injecting runtime missing speaker after synchronous entry for script Result rollback\n";
+                    std::print("CONTROLLED094 injecting runtime missing speaker after synchronous entry for script Result rollback\n");
                 }
                 key(SDLK_RETURN);
                 return true;
@@ -2870,7 +2870,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         if (rng.seed_state() != state.controlledSeed || rng.draw_count() != state.controlledCalls) { fatal("094 script failure changed RNG"); }
                         return false;
                     });
-                std::cout << "PASS CONTROLLED094 production script failure restores units/events/flags/currency/inventory/payment/reward/RNG and input/save boundary; no return/payment callback\n";
+                std::print("PASS CONTROLLED094 production script failure restores units/events/flags/currency/inventory/payment/reward/RNG and input/save boundary; no return/payment callback\n");
                 state.skillInputVerified = true;
                 running = false;
                 return true;
@@ -2921,7 +2921,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         if (rng.seed_state() != state.controlledSeed || rng.draw_count() != state.controlledCalls) { fatal("Controlled002 rejected award changed RNG"); }
                         return false;
                     });
-                std::cout << "PASS CONTROLLED production failure=" << options.skillControl << ": all targets/state/payment/reward/RNG rolled back\n";
+                std::print("PASS CONTROLLED production failure={}: all targets/state/payment/reward/RNG rolled back\n", options.skillControl);
                 state.skillInputVerified = true;
                 running = false;
                 return true;
@@ -2944,7 +2944,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     if (options.skillControl == "consume28" && target.equipment == skillInputVictim->equipment) { fatal("Drain consumption mode did not remove item28"); }
                     if (options.skillControl == "revive25" && target.equipment != skillInputVictim->equipment) { fatal("Drain permanent resurrection item25 consumed"); }
                 }
-                std::cout << "PASS467625 actual secondary branch=" << options.skillControl << " finalHP=" << target.hp << '\n';
+                std::print("PASS467625 actual secondary branch={} finalHP={}\n", options.skillControl, target.hp);
             }
             if (inputSkill == 45 || inputSkill == 50)
             {
@@ -2958,7 +2958,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             if ((inputSkill == 29 || inputSkill == 18 || inputSkill == 40 || NativeDamageRecords::ordinary_sword(inputSkill)) && options.skillControl == "script82")
             {
                 if (!state.scriptDeathObserved || prologue->synchronous_death_active() || !prologue->original_save_boundary_ready() || (prologue->events.stage == 82 && prologue->events.flags[12] != 1)) { fatal("Original area script did not return with original flag/save boundary"); }
-                std::cout << "PASS466082 original script entry/return/flags and save unlock, deferred unique settlement\n";
+                std::print("PASS466082 original script entry/return/flags and save unlock, deferred unique settlement\n");
             }
             if (NativeDamageRecords::ordinary_sword(inputSkill))
             {
@@ -2972,7 +2972,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 const auto& caster = prologue->events.units[skillInputCaster];
                 const auto group = NativeDamageRecords::find(inputSkill)->raw[0] - 1;
                 if (caster.learned_proficiency[group] <= skillInputBefore->learned_proficiency[group] || caster.experience <= skillInputBefore->experience || caster.action_points != skillInputBefore->action_points - 45) { fatal("466082 original group reward/AP mismatch"); }
-                std::cout << "PASS CONTROLLED466082 deaths=" << deaths << " atomic area transaction\n";
+                std::print("PASS CONTROLLED466082 deaths={} atomic area transaction\n", deaths);
             }
             const auto& u = prologue->events.units[skillInputCaster];
             bool payment_mismatch = false;
@@ -3009,7 +3009,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                             if (record->raw[33] & 1) { mp = (before.abilities & 0x20) ? cost / 2 : cost; }
                             if (record->raw[33] & 2) { st = cost; }
                             payment_mismatch |= partner.mp != before.mp + partner.max_mp - before.max_mp - mp || partner.st != before.st + partner.max_st - before.max_st - st || partner.action_points != before.action_points - 45 || partner.experience <= before.experience || partner.learned_proficiency[record->raw[0] - 1] <= before.learned_proficiency[record->raw[0] - 1];
-                            std::cout << "PASS cooperative damage partner unique MP/ST/AP/proficiency/XP settlement ID=" << inputSkill << '\n';
+                            std::print("PASS cooperative damage partner unique MP/ST/AP/proficiency/XP settlement ID={}\n", inputSkill);
                         }
                     }
                 }
@@ -3253,7 +3253,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 if (options.skillControl == "kill" && (v.hp != 0 || !(v.status_flags & 0x20) || u.ending_kills != uint16_t(skillInputBefore->ending_kills + 1) || v.ending_losses != uint16_t(skillInputVictim->ending_losses + 1) || rawSave->groups[0].inventory[0] == 0)) { fatal("Controlled094 lethal/loot branch not reached"); }
                 if ((options.skillControl == "revive25" || options.skillControl == "consume28") && (v.hp != v.max_hp || (v.status_flags & 0x20) || (options.skillControl == "consume28" ? v.equipment[0] != 0 : v.equipment[0] != skillInputVictim->equipment[0]))) { fatal("Controlled094 revival branch not reached"); }
                 if (options.skillControl == "reverse29" && v.hp <= skillInputVictim->hp) { fatal("Controlled094 reversal not reached"); }
-                std::cout << "PASS CONTROLLED094 " << options.skillControl << " targetHP=" << skillInputVictim->hp << "->" << v.hp << " kills=" << u.ending_kills << " losses=" << v.ending_losses << " equipment=" << v.equipment[0] << " inventory0=" << unsigned(rawSave->groups[0].inventory[0]) << '\n';
+                std::print("PASS CONTROLLED094 {} targetHP={}->{} kills={} losses={} equipment={} inventory0={}\n", options.skillControl, skillInputVictim->hp, v.hp, u.ending_kills, v.ending_losses, v.equipment[0], unsigned(rawSave->groups[0].inventory[0]));
             }
             if (inputSkill == 6 || inputSkill == 9 || inputSkill == 10)
             {
@@ -3269,7 +3269,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         const auto& full = prologue->events.units[state.controlledAreaTargets[0]];
                         const auto& blocked = prologue->events.units[state.controlledAreaTargets[1]];
                         if (full.hp != full.max_hp || blocked.hp != std::max(1, blocked.max_hp / 2)) { fatal("Family full/blocked production branch mutated HP"); }
-                        std::cout << "PASS production fullHP skipped feedback/blocked zero feedback with positive neighbours; halfMP\n";
+                        std::print("PASS production fullHP skipped feedback/blocked zero feedback with positive neighbours; halfMP\n");
                     }
                     unsigned healed = 0;
                     for (auto i : state.controlledAreaTargets)
@@ -3277,7 +3277,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         if (prologue->events.units[i].hp > prologue->events.units[i].max_hp / 2) { ++healed; }
                     }
                     if (healed < 2) { fatal("Production multi-target healing not reached"); }
-                    std::cout << "PASS production multi-target healing changed=" << healed << '\n';
+                    std::print("PASS production multi-target healing changed={}\n", healed);
                 }
             }
             if (inputSkill == 13 || inputSkill == 15 || inputSkill == 53 || inputSkill == 34 || inputSkill == 38 || inputSkill == 54 || inputSkill == 96)
@@ -3362,7 +3362,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
 
                     const int proficiency = (cost + 6 - int(prologue->events.difficulty)) * 5 / 2 + 10;
                     if (u.action_points != skillInputBefore->action_points - 45 || u.learned_proficiency[group] != skillInputBefore->learned_proficiency[group] + proficiency || u.experience != skillInputBefore->experience + 6) { fatal("Hostile native once-only reward/AP oracle mismatch"); }
-                    std::cout << "PASS CONTROLLED hostile native status/timer and wake; 053 mixed new/immune/role MISS; no damage; halfMP once\n";
+                    std::print("PASS CONTROLLED hostile native status/timer and wake; 053 mixed new/immune/role MISS; no damage; halfMP once\n");
                 }
                 if (prologue->events.units[skillInputTarget].hp != skillInputVictim->hp) { fatal("Zero-power hostile status changed HP"); }
             }
@@ -3452,7 +3452,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     const auto& other = prologue->events.units[state.controlledAreaTargets[n]];
                     if (other.attack != 203 || other.defense != 157 || other.max_action_points != (inputSkill == 25 && n == 2 ? 90 : 100)) { fatal("Stat mixed immune/excluded neighbour mutated"); }
                 }
-                std::cout << "PASS CONTROLLED stat family exact attack/defense/AP current/limit/carry reduction and timer; mixed immunity/exclusion; unique payment\n";
+                std::print("PASS CONTROLLED stat family exact attack/defense/AP current/limit/carry reduction and timer; mixed immunity/exclusion; unique payment\n");
             }
             if (inputSkill == 8 || inputSkill == 12 || inputSkill == 35 || inputSkill == 39 || inputSkill == 48 || inputSkill == 56 || inputSkill == 60)
             {
@@ -3501,9 +3501,9 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     const auto& friendTarget = prologue->events.units[state.controlledAreaTargets[1]];
                     const auto& enemyTarget = prologue->events.units[state.controlledAreaTargets[2]];
                     if (friendTarget.hostile() || !enemyTarget.hostile() || (friendTarget.action_status_runtime->at(0x39) & 4) || (friendTarget.action_status_runtime->at(0x3D) & 0x80) || !(enemyTarget.action_status_runtime->at(0x39) & 4)) { fatal("048 production mixed friendly cure/enemy selective dispel mismatch"); }
-                    std::cout << "PASS CONTROLLED048 same transaction friendly cure/enemy selective dispel/ability immunity bypass; save all targets\n";
+                    std::print("PASS CONTROLLED048 same transaction friendly cure/enemy selective dispel/ability immunity bypass; save all targets\n");
                 }
-                std::cout << "PASS CONTROLLED special/clear native status oracle ID=" << inputSkill << "; no HP damage; single transaction payment\n";
+                std::print("PASS CONTROLLED special/clear native status oracle ID={}; no HP damage; single transaction payment\n", inputSkill);
             }
             if (inputSkill == 33)
             {
@@ -3512,13 +3512,13 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 {
                     s2ne::fatal("Curse33 HP/learning/proficiency invariant failed");
                 }
-                std::cout << "PASS INPUT33 natural learned[3]=" << u.learned[3] << " proficiency3=" << skillInputBefore->learned_proficiency[3] << "->" << u.learned_proficiency[3] << " targetHP=" << victim.hp << " status3e=" << unsigned(victim.status3e) << '\n';
+                std::print("PASS INPUT33 natural learned[3]={} proficiency3={}->{} targetHP={} status3e={}\n", u.learned[3], skillInputBefore->learned_proficiency[3], u.learned_proficiency[3], victim.hp, unsigned(victim.status3e));
             }
             if (inputSkill == 3)
             {
                 const auto& v = prologue->events.units[skillInputTarget];
                 if (!(v.status3f & 4) || !v.action_status_runtime || v.action_status_runtime->at(0x9F) < 4 || v.hp != skillInputVictim->hp) { fatal("Blessing3 production status/timer/HP mismatch"); }
-                std::cout << "PASS INPUT003 original friendly nine-cell state4000000/timer9F/unchangedHP\n";
+                std::print("PASS INPUT003 original friendly nine-cell state4000000/timer9F/unchangedHP\n");
             }
             if (state.controlledAreaReady && inputSkill == 2)
             {
@@ -3528,7 +3528,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     const auto& v = prologue->events.units[state.controlledAreaTargets[n]];
                     if (bool(v.status3e & 2) != (n == 0) || v.action_status_runtime->at(0x96) != (n == 0 ? 2 : 0)) { fatal("Controlled002 mixed HIT/immune/MISS status mismatch"); }
                 }
-                std::cout << "PASS CONTROLLED002 production nine-cell mixed HIT/ability immunity/role MISS/empty cells; once-only payment and serial feedback committed\n";
+                std::print("PASS CONTROLLED002 production nine-cell mixed HIT/ability immunity/role MISS/empty cells; once-only payment and serial feedback committed\n");
             }
             if (inputSkill == 4 || inputSkill == 5)
             {
@@ -3546,7 +3546,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                         ++n;
                     }
                 }
-                std::cout << "PASS INPUT004/005 exact status/timer and once-only MP/AP/XP/proficiency; HP unchanged\n";
+                std::print("PASS INPUT004/005 exact status/timer and once-only MP/AP/XP/proficiency; HP unchanged\n");
             }
             if (inputSkill == 76 || inputSkill == 78 || inputSkill == 79)
             {
@@ -3583,7 +3583,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 const auto& cooperativeTarget = prologue->events.units[skillInputTarget];
                 if (inputSkill == 78 && cooperativeTarget.hp <= skillInputVictim->hp) { fatal("078 production positive healing missing"); }
                 if (inputSkill == 79 && (cooperativeTarget.action_state != 0 || cooperativeTarget.status34 != 0 || cooperativeTarget.action_points <= skillInputVictim->action_points)) { fatal("079 production eligible reactivation missing"); }
-                std::cout << "PASS CONTROLLED cooperative production ID=" << inputSkill << " partner=" << partner.id << " both MP/AP/native rewards committed once; dedicated effect adapter\n";
+                std::print("PASS CONTROLLED cooperative production ID={} partner={} both MP/AP/native rewards committed once; dedicated effect adapter\n", inputSkill, partner.id);
             }
             if (const auto* ability = NativeAbilityBuffs::find(inputSkill); ability && inputSkill != 76 && inputSkill != 78 && inputSkill != 79)
             {
@@ -3639,16 +3639,16 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                     const int expected = skillInputVictim->max_action_points + (existing ? 0 : signedWord(timer + 1));
                     if (target.max_action_points != expected || (!existing && skillInputVictim->max_action_points < 110 && target.max_action_points > 110))
                     {
-                        std::cerr << "Ability AP before=" << skillInputVictim->max_action_points << " after=" << target.max_action_points << " delta=" << signedWord(timer + 1) << " existing=" << existing << " expected=" << expected << '\n';
+                        std::print(stderr, "Ability AP before={} after={} delta={} existing={} expected={}\n", skillInputVictim->max_action_points, target.max_action_points, signedWord(timer + 1), existing, expected);
                         fatal("Ability production AP delta/cap mismatch");
                     }
                 }
                 if (inputSkill == 47 && !(skillInputVictim->status3c & 0x10))
                 {
                     if (!state.invisibilityPresentations) { fatal("466D83 missing actual scratch1 SDL presentation"); }
-                    std::cout << "PASS4748F3 actual scratch1 SDL presentation/save lock frames=" << state.invisibilityPresentations << '\n';
+                    std::print("PASS4748F3 actual scratch1 SDL presentation/save lock frames={}\n", state.invisibilityPresentations);
                 }
-                std::cout << "PASS CONTROLLED ability family ID=" << inputSkill << " original CEL, stat mask/delta/timer and unique MP/ST/HP/AP/reward transaction\n";
+                std::print("PASS CONTROLLED ability family ID={} original CEL, stat mask/delta/timer and unique MP/ST/HP/AP/reward transaction\n", inputSkill);
             }
             if (const auto* buff = NativeTimedBuffs::find(inputSkill))
             {
@@ -3664,7 +3664,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 const unsigned flags = unsigned(r[0x3C]) | (unsigned(r[0x3D]) << 8);
                 const int cost = buff->tail[0];
                 if (!(flags & buff->mask) || r[0x85 + slot] != (inputSkill == 46 ? 255 : duration) || skillInputFrames != frames || u.action_points != skillInputBefore->action_points - 45 || u.mp != skillInputBefore->mp + skillInputMpGrowth - (buff->group == 8 ? 0 : cost / 2) || (buff->group == 8 && u.st != skillInputBefore->st - cost) || u.learned_proficiency[buff->group] <= skillInputBefore->learned_proficiency[buff->group] || v.hp != skillInputVictim->hp - (inputSkill == 92 && skillInputTarget == skillInputCaster ? cost : 0)) { fatal("Timed buff production oracle/payment/CEL mismatch"); }
-                std::cout << "PASS CONTROLLED timed buff ID=" << inputSkill << " mask=" << buff->mask << " timer=" << unsigned(r[0x85 + slot]) << " original branch, unique payment/reward, no HP damage\n";
+                std::print("PASS CONTROLLED timed buff ID={} mask={} timer={} original branch, unique payment/reward, no HP damage\n", inputSkill, buff->mask, unsigned(r[0x85 + slot]));
             }
             skillInputCommitted = snapshot("cast-after.sav");
             unsigned int abilityGroup;
@@ -3695,9 +3695,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
                 abilityGroup = 2;
             }
 
-            std::cout << "Skill input committed ID=" << inputSkill
-                      << " proficiency=" << skillInputBefore->learned_proficiency[abilityGroup] << "->" << u.learned_proficiency[abilityGroup]
-                      << " XP=" << skillInputBefore->experience << "->" << u.experience << " level=" << skillInputBefore->level << "->" << u.level << " SDL frames=" << skillInputFrames << '\n';
+            std::print("Skill input committed ID={} proficiency={}->{} XP={}->{} level={}->{} SDL frames={}\n", inputSkill, skillInputBefore->learned_proficiency[abilityGroup], u.learned_proficiency[abilityGroup], skillInputBefore->experience, u.experience, skillInputBefore->level, u.level, skillInputFrames);
             skillInputPhase = 10;
             skillInputNext = nowUi + 500;
         }
@@ -3707,7 +3705,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             {
                 s2ne::fatal("Post-cast idle input loop repeated payment or mutation");
             }
-            std::cout << "PASS restored idle loop500ms no duplicate MP/AP/proficiency/XP payment; Windows SDL driver=" << SDL_GetCurrentVideoDriver() << '\n';
+            std::print("PASS restored idle loop500ms no duplicate MP/AP/proficiency/XP payment; Windows SDL driver={}\n", SDL_GetCurrentVideoDriver());
             if (inputSkill == 50 && options.skillControl == "expire")
             {
                 state.revealExpiryTurn = prologue->battle_turn();
@@ -3728,7 +3726,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             if (prologue->battle_turn() <= state.revealExpiryTurn) { return true; }
             if (prologue->events.army_modes && (((*prologue->events.army_modes)[0] | (*prologue->events.army_modes)[1]) & 1)) { fatal("46044D reveal survived full production round"); }
             snapshot("reveal-expired.sav");
-            std::cout << "PASS438AA9/46044D original SDL F10 full round expires both reveal bits and save restores\n";
+            std::print("PASS438AA9/46044D original SDL F10 full round expires both reveal bits and save restores\n");
             skillInputVerified = true;
             running = false;
         }
@@ -3834,7 +3832,7 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
             {
                 s2ne::fatal("Promoted original class did not survive runtime restore");
             }
-            std::cout << "SDL earned save -> command4 -> original promotion selection/confirmation -> class " << promotionSmokeKind << " to " << promotionSmokeTarget << " -> save reload verified\n";
+            std::print("SDL earned save -> command4 -> original promotion selection/confirmation -> class {} to {} -> save reload verified\n", promotionSmokeKind, promotionSmokeTarget);
             promotionVerified = true;
             running = false;
         }
@@ -3843,3 +3841,5 @@ bool AppSmokeDriver::after_events(AppSmokeContext context, uint64_t nowUi, std::
     return false;
 }
 }    //namespace s2ne
+
+#include "terminal_output.hpp"

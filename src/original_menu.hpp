@@ -17,7 +17,6 @@ class OriginalMenu
     std::array<uint8_t, 768> title_palette_{};
     size_t strings{}, index{}, glyphs{};
     unsigned count{};
-    SimpleCC simple_cc_;
     unsigned word(size_t p) const { return bin.at(p) | (unsigned(bin.at(p + 1)) << 8); }
     unsigned dword(size_t p) const { return word(p) | (word(p + 2) << 16); }
     size_t entry(unsigned id) const
@@ -177,10 +176,7 @@ public:
     void set_simplified_chinese(bool enabled, const std::filesystem::path& dictionary_directory)
     {
         simplified_chinese = enabled;
-        if (enabled)
-        {
-            simple_cc_.init({ (dictionary_directory / "TSCharacters.txt").string(), (dictionary_directory / "TSPhrases.txt").string() });
-        }
+        SimpleCC::configure_once(dictionary_directory, enabled);
     }
     // sub_422402: BIN 12 contains 16x16 Big5 glyphs; BIN 15 contains 8x15 ASCII.
     s2ne::Result<bool> try_draw_small_validated(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, bool original_padding = false, std::vector<uint8_t>* indexed = nullptr) const
@@ -194,7 +190,7 @@ public:
             const auto utf8 = SimpleCC::big5_to_utf8(text);
             if (!utf8.empty())
             {
-                const auto translated = simplified_chinese ? simple_cc_.convert(utf8) : utf8;
+                const auto translated = SimpleCC::enabled() ? SimpleCC::shared().convert(utf8) : utf8;
                 const SDL_Color foreground{ uint8_t(std::min(255u, unsigned(pal.at(color * 3)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 1)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 2)) * 255 / 63)), 255 };
                 return texture_resources.draw_small_text(image, translated, x + (original_padding ? 1 : 0), y + (original_padding ? 1 : 0), foreground);
             }
@@ -329,7 +325,7 @@ public:
             const auto utf8 = SimpleCC::big5_to_utf8(text);
             if (!utf8.empty())
             {
-                const auto translated = simplified_chinese ? simple_cc_.convert(utf8) : utf8;
+                const auto translated = SimpleCC::enabled() ? SimpleCC::shared().convert(utf8) : utf8;
                 const SDL_Color foreground{ uint8_t(std::min(255u, unsigned(pal.at(color * 3)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 1)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 2)) * 255 / 63)), 255 };
                 return texture_resources.draw_large_text(image, translated, x, y, foreground);
             }
@@ -486,7 +482,7 @@ public:
             const auto utf8 = SimpleCC::big5_to_utf8(text);
             if (!utf8.empty())
             {
-                const auto translated = simplified_chinese ? simple_cc_.convert(utf8) : utf8;
+                const auto translated = SimpleCC::enabled() ? SimpleCC::shared().convert(utf8) : utf8;
                 const SDL_Color foreground{ uint8_t(std::min(255u, unsigned(pal.at(color * 3)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 1)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 2)) * 255 / 63)), 255 };
                 if (shadow)
                 {
@@ -579,30 +575,39 @@ public:
             size_t p = 0;
             for (unsigned row = 0; row < rows; ++row)
             {
-                std::vector<uint8_t> line;
-                unsigned units = 0;
-                while (p < text.size() && text[p] && text[p] != '\n' && units < columns * 2)
+                int compensation = 0;
+                for (unsigned cell = 0, units = 1; units < columns * 2; ++cell)
                 {
+                    if (p >= text.size() || !text[p] || text[p] == '\n') { return; }
                     const auto lead = text[p++];
-                    if (lead == '*') { break; }
-                    line.push_back(lead);
+                    if (lead == '*')
+                    {
+                        if (cell == 0) { --cell; }
+                        else
+                        {
+                            break;
+                        }
+                        continue;
+                    }
+                    std::vector<uint8_t> glyph{ uint8_t(std::max(30u, unsigned(lead))) };
                     if (lead > 128)
                     {
-                        if (p >= text.size()) { break; }
-                        line.push_back(text[p++]);
+                        if (p >= text.size())
+                        {
+                            report_error(make_error("Truncated Big5 wrapped text"));
+                            return;
+                        }
+                        glyph.push_back(text[p++]);
                         units += 2;
                     }
                     else
                     {
                         ++units;
                     }
-                }
-                if (!line.empty())
-                {
-                    auto drawn = try_draw_original_large(image, line, x, y + int(row) * row_height, color, shadow);
+                    auto drawn = try_draw_original_large(image, glyph, x + int(cell) * 28 - compensation, y + int(row) * row_height, color, shadow);
                     if (!drawn) { report_error(drawn.error()); }
+                    if (lead <= 128) { compensation += 8; }
                 }
-                while (p < text.size() && (text[p] == '\n' || text[p] == '*')) { ++p; }
             }
             return;
         }
@@ -686,7 +691,7 @@ public:
                 const auto text = SimpleCC::big5_to_utf8(text_bytes(ids[row]));
                 const unsigned palette_index = row == static_cast<unsigned>(selected) ? 2 : 15;
                 const SDL_Color color{ title_palette_[palette_index * 3], title_palette_[palette_index * 3 + 1], title_palette_[palette_index * 3 + 2], 255 };
-                auto drawn = texture_resources.draw_large_text(image, simplified_chinese ? simple_cc_.convert(text) : text, 278, 286 + int(row) * 30, color);
+                auto drawn = texture_resources.draw_large_text(image, SimpleCC::enabled() ? SimpleCC::shared().convert(text) : text, 278, 286 + int(row) * 30, color);
                 if (!drawn) { fatal(drawn.error()); }
             }
             return;

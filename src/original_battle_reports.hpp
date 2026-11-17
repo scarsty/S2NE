@@ -1,6 +1,7 @@
 #pragma once
 #include "original_map.hpp"
 #include "original_settings.hpp"
+#include "original_skills.hpp"
 #include "original_sprite.hpp"
 #include "original_unit_status.hpp"
 #include <functional>
@@ -17,7 +18,10 @@ public:
         roster,
         map,
         detail,
+        abilities,
         proficiencies,
+        status,
+        equipment,
         closed
     };
     struct Entry
@@ -37,7 +41,12 @@ public:
 private:
     OriginalMenu font_;
     OriginalUnitStatus status_;
-    SharedBytes cel_, pal_;
+    OriginalSkills skills_;
+    OriginalMap unit_resources_;
+    SharedBytes cel_, pal_, items_;
+    std::vector<int> combat_values_;
+    bool enemy_strength_visible_ = true;
+    std::vector<std::vector<uint8_t>> ability_names_;
     std::vector<uint8_t> background_, mini_;
     std::vector<Entry> entries_;
     std::vector<uint8_t> stage_name_, victory_, defeat_;
@@ -48,6 +57,12 @@ private:
     std::optional<std::pair<int, int>> locate_;
     unsigned detail_address_ = 0;
     int friendly_count_ = 0, npc_count_ = 0, enemy_count_ = 0;
+    unsigned detail_button_ = 0;
+    std::vector<std::array<bool, 2>> inspection_available_;
+    bool detail_button_available(unsigned button) const
+    {
+        return button < 2 || inspection_available_.at(size_t(first_ + row_)).at(button - 2);
+    }
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& p) { return read_shared_resource(p); }
@@ -90,56 +105,140 @@ private:
     }
     void large(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color) const { font_.draw_original_large(image, text, x, y, color); }
     void small(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color) const { font_.draw_small(image, text, x, y, color, true); }
+    s2ne::Result<bool> try_detail(std::vector<uint8_t>& image) const
+    {
+        ResourceReader palette_reader(pal_), archive(cel_);
+        const size_t group = palette_reader.number(816, 4) - 57;
+        const size_t offset = archive.number(group + 2 + (0xDB - 142) * 8, 4);
+        const int height = int(archive.number(group + offset + 2)) + 1;
+        if (!palette_reader || !archive) { return s2ne::Result<bool>::failure(make_error("Invalid 456179 background extent")); }
+        OriginalPalette palette(pal_);
+        auto dimmed = palette.try_transform_rect(image, 0, height, 640, 480 - height, 5);
+        if (!dimmed) { return dimmed; }
+        auto panel = try_sprite(image, 0xDB, 0, 0, false);
+        if (!panel) { return panel; }
+        const auto& unit = selected().unit;
+        auto status = status_.try_draw_report(font_, image, unit, 0, 0, selected().enemy);
+        if (!status) { return status; }
+        auto figure = unit_resources_.try_draw_status_figure(image, unit, 0x7D, 0x14A);
+        if (!figure) { return figure; }
+        const std::array<unsigned, 3> titles{ 0x1CC / 4, 4, 0x1C8 / 4 };
+        const std::array<int, 3> values{ combat_values_.at(size_t(first_ + row_)), int(unit.experience), int(unit.experience_threshold) };
+        for (unsigned i = 0; i < 3; ++i)
+        {
+            if (i == 0 && selected().enemy && !enemy_strength_visible_) { continue; }
+            const int y = 0x3F + int(i) * 0x16;
+            small(image, font_.text_bytes(titles[i]), 0x216, y, 179);
+            small(image, bytes(std::to_string(values[i])), 0x240, y, 60);
+        }
+        if (!selected().enemy && selected().runtime_kind)
+        {
+            small(image, bytes("NPC"), 0x246, 0x1E, 38);
+        }
+        else
+        {
+            small(image, font_.text_bytes(selected().enemy ? 20 : 19), 0x246, 0x1E, selected().enemy ? 60 : 40);
+        }
+        unsigned emblem = 0;
+        if (unit.movement_type >= 1 && unit.movement_type <= 5) { emblem = 0xE0; }
+        else if (unit.movement_type >= 6 && unit.movement_type <= 9) { emblem = 0xE1 + unsigned(unit.movement_type - 6); }
+        if (emblem)
+        {
+            auto icon = try_sprite(image, emblem, 0x226, 0x19);
+            if (!icon) { return icon; }
+        }
+        if (unit.movement_type == 10)
+        {
+            auto icon = try_sprite(image, 0xE4, 0x226, 0x19);
+            if (!icon) { return icon; }
+            const size_t offset = archive.number(group + 2 + (0xE4 - 142) * 8, 4);
+            const int stored_width = int(archive.number(group + offset));
+            if (!archive) { return s2ne::Result<bool>::failure(archive.error()); }
+            icon = try_sprite(image, 0xE0, 0x226 - stored_width, 0x19);
+            if (!icon) { return icon; }
+        }
+        const int button_left = 0x1B1 + int(detail_button_) * 50, button_right = 0x1DE + int(detail_button_) * 50;
+        if (page_ != Page::detail)
+        {
+            auto pressed = try_sprite(image, 0xDC + detail_button_, button_left, 0x9A);
+            if (!pressed) { return pressed; }
+        }
+        else
+        {
+            for (int y = 0x9A; y <= 0xB8; ++y)
+            {
+                for (int x = button_left; x <= button_right; ++x)
+                {
+                    if (x == button_left || x == button_right || y == 0x9A || y == 0xB8) { pixel(image, x, y, 60); }
+                }
+            }
+        }
+        ResourceReader reader(items_);
+        const unsigned count = reader.number(0);
+        for (unsigned i = 0; i < unit.equipment.size(); ++i)
+        {
+            const unsigned id = unit.equipment[i];
+            if (!id) { continue; }
+            const size_t start = 2 + size_t(id - 1) * 38 + 2;
+            if (id > count || !reader.extent(start, 12))
+            {
+                return s2ne::Result<bool>::failure(make_error("Invalid 456EEA equipment name"));
+            }
+            size_t end = start;
+            while (end < start + 12 && items_[end]) { ++end; }
+            large(image, { items_.begin() + start, items_.begin() + end }, 0x120, 0xA6 + int(i) * 0x23, 0xE9);
+            std::vector<uint8_t> animated_palette(pal_.begin(), pal_.end());
+            constexpr std::array<unsigned, 3> starts{ 3, 11, 19 }, counts{ 8, 8, 13 }, periods{ 170, 100, 100 };
+            for (unsigned band = 0; band < starts.size(); ++band)
+            {
+                const unsigned shift = unsigned(texture_resources.elapsed() / periods[band] % counts[band]);
+                for (unsigned color = 0; color < counts[band]; ++color)
+                {
+                    const unsigned from = starts[band] + (color + counts[band] - shift) % counts[band];
+                    for (unsigned component = 0; component < 3; ++component)
+                    {
+                        animated_palette[(starts[band] + color) * 3 + component] = pal_[from * 3 + component];
+                    }
+                }
+            }
+            auto icon = draw_original_cel_legacy(image, cel_, animated_palette, id + 0x1EC, 0xFE, 0xA1 + int(i) * 0x23, OriginalZeroRun::transparent);
+            if (!icon) { return icon; }
+        }
+        return skills_.try_draw_status_effects(image, unit);
+    }
     s2ne::Result<bool> try_roster_row_validated(std::vector<uint8_t>& image, int row, const Entry& entry) const
     {
-        int y = 5 + row * 118;
-        auto panel = try_sprite(image, 206, 5, y);
+        int base = 5 + row * 118;
+        auto panel = try_sprite(image, 206, 5, base);
         if (!panel)
         {
             return panel;
         }
-        std::vector<uint8_t> layer(640 * 480 * 4);
-        auto status = status_.try_draw(font_, layer, entry.unit, 0, entry.enemy);
-        if (!status)
-        {
-            return status;
-        }
-        // 4584FF uses the first (large) portrait in the character's pair.
+        // 45706D draws the portrait and the row fields directly.  The old
+        // implementation copied the battle status bar into the row, which is
+        // a different caller (4571EB) and produced the visibly corrupt list.
         if (entry.unit.portrait)
         {
-            size_t g = dword(pal_, 824) - 58, p = g + dword(cel_, g + 2 + (entry.unit.portrait * 2 - 2) * 8);
-            auto portrait = draw_original_sprite(image, cel_, pal_, p, true, 12, y + 4, OriginalZeroRun::transparent);
+            size_t g = dword(pal_, 824) - 58, p = g + dword(cel_, g + 2 + (entry.unit.portrait * 2 - 1) * 8);
+            auto portrait = draw_original_sprite(image, cel_, pal_, p, true, 12, base + 4, OriginalZeroRun::transparent);
             if (!portrait)
             {
                 return portrait;
             }
         }
-
-        for (int yy = 39; yy < 111; ++yy)
-        {
-            for (int x = 117; x < 511; ++x)
-            {
-                if (layer[(size_t(yy) * 640 + x) * 4 + 3])
-                {
-                    for (unsigned k = 0; k < 4; ++k)
-                    {
-                        image[(size_t(y + yy) * 640 + x + 11) * 4 + k] = layer[(size_t(yy) * 640 + x) * 4 + k];
-                    }
-                }
-            }
-        }
         if (!(entry.unit.status_flags & 0x10))
         {
-            large(image, entry.unit.name, 121, y + 7, entry.enemy ? 60 : 167);
+            large(image, entry.unit.name, 5 + 0x74, base + 7, entry.enemy ? 60 : 167);
         }
         auto title = entry.unit.profession;
         auto level = bytes(" " + std::to_string(entry.unit.level));
         title.insert(title.end(), level.begin(), level.end());
         auto suffix = font_.text_bytes(113);
         title.insert(title.end(), suffix.begin(), suffix.end());
-        large(image, title, 507 - int(title.size()) * 12, y + 7, 179);
-
-        return s2ne::Result<bool>::success(true);
+        large(image, title, 507 - int(title.size()) * 12, base + 7, 179);
+        auto figure = unit_resources_.try_draw_status_figure(image, entry.unit, 5 + 0x230, base + 0x76);
+        if (!figure) { return figure; }
+        return status_.try_draw_status_chain(font_, image, entry.unit, 5 + 0x6E, base + 0x21);
     }
     s2ne::Result<bool> try_roster_row(std::vector<uint8_t>& image, int row, const Entry& entry) const
     {
@@ -228,6 +327,38 @@ public:
             return s2ne::Result<bool>::failure(make_error("Battle report requires640x480 RGBA"));
         }
         pal_.mutable_at(0) = pal_.mutable_at(1) = pal_.mutable_at(2) = 0;
+        enemy_strength_visible_ = events.army_modes && ((*events.army_modes)[1] & 4);
+        auto skills = OriginalSkills::create(root, small_font);
+        if (!skills) { return s2ne::Result<bool>::failure(skills.error()); }
+        skills_ = std::move(skills).value();
+        auto figures = OriginalMap::create(root);
+        if (!figures) { return s2ne::Result<bool>::failure(figures.error()); }
+        unit_resources_ = std::move(figures).value();
+        auto items = try_read(root / "ITEMSP.BIN");
+        if (!items) { return s2ne::Result<bool>::failure(items.error()); }
+        items_ = std::move(items).value();
+        auto kinds = try_read(root / "KINDSP.BIN");
+        if (!kinds) { return s2ne::Result<bool>::failure(kinds.error()); }
+        ResourceReader reader(kinds.value());
+        size_t cursor = reader.number(6, 4);
+        const unsigned count = reader.number(10);
+        if (!reader) { return s2ne::Result<bool>::failure(reader.error()); }
+        if (!count || count > 33 || cursor >= kinds.value().size())
+        {
+            return s2ne::Result<bool>::failure(make_error("Invalid 427BD5 ability name table"));
+        }
+        ability_names_.clear();
+        for (unsigned i = 0; i < count; ++i)
+        {
+            const size_t start = cursor;
+            while (cursor < kinds.value().size() && kinds.value()[cursor]) { ++cursor; }
+            if (cursor == kinds.value().size())
+            {
+                return s2ne::Result<bool>::failure(make_error("Unterminated 427BD5 ability name"));
+            }
+            ability_names_.emplace_back(kinds.value().begin() + start, kinds.value().begin() + cursor);
+            ++cursor;
+        }
         font_.small_font = small_font;
         for (auto& entry : entries)
         {
@@ -248,6 +379,10 @@ public:
             {
                 ++friendly_count_;
             }
+            auto value = events.try_combat_value(entry.unit);
+            if (!value) { return s2ne::Result<bool>::failure(value.error()); }
+            combat_values_.push_back(value.value());
+            inspection_available_.push_back({ skills_.inspection_available(entry.unit, false), skills_.inspection_available(entry.unit, true) });
             entries_.push_back(std::move(entry));
         }
         if (page == Page::roster && entries_.empty())
@@ -314,7 +449,7 @@ public:
     void close_to_battle(bool enabled = true) { close_to_battle_ = enabled; }
     void close_detail()
     {
-        if (page_ == Page::proficiencies)
+        if (page_ == Page::abilities || page_ == Page::proficiencies || page_ == Page::status || page_ == Page::equipment)
         {
             page_ = Page::detail;
             detail_address_ = 0x455C7B;
@@ -333,10 +468,37 @@ public:
             detail_address_ = 0x456BC0;
         }
     }
+    void abilities()
+    {
+        if (page_ == Page::detail)
+        {
+            page_ = Page::abilities;
+            detail_address_ = 0x4569E2;
+        }
+    }
+    void status_page()
+    {
+        if (page_ == Page::detail && detail_button_available(2))
+        {
+            page_ = Page::status;
+            skills_.open_inspection(selected().unit, false);
+            detail_address_ = 0x456FC4;
+        }
+    }
+    void equipment_page()
+    {
+        if (page_ == Page::detail && detail_button_available(3))
+        {
+            page_ = Page::equipment;
+            skills_.open_inspection(selected().unit, true);
+            detail_address_ = 0x456FC4;
+        }
+    }
     void detail()
     {
         if (page_ == Page::roster)
         {
+            detail_button_ = 0;
             detail_address_ = 0x455C7B;
             page_ = Page::detail;
         }
@@ -447,8 +609,33 @@ public:
             }
             return {};
         }
-        if (page_ == Page::proficiencies)
+        if (page_ == Page::abilities || page_ == Page::proficiencies || page_ == Page::status || page_ == Page::equipment)
         {
+            if (page_ == Page::status || page_ == Page::equipment)
+            {
+                if (skills_.inspection_help())
+                {
+                    if ((key && e.scan) || (mouse && e.buttons))
+                    {
+                        skills_.close_inspection_help();
+                        return { true, 0x1F };
+                    }
+                    return {};
+                }
+                if ((key && e.scan == 1) || (mouse && (e.buttons & 2)))
+                {
+                    close_detail();
+                    return { true, 0x1F };
+                }
+                if (key) { skills_.navigate_inspection(e.scan, (e.modifiers & 0x20) != 0); }
+                const bool help = (key && (e.scan == 0x39 || e.scan == 0x3B)) || (mouse && skills_.mouse_inspection(e.x, e.y, (e.buttons & 1) != 0));
+                if (help)
+                {
+                    auto opened = skills_.try_open_inspection_help();
+                    if (!opened) { report_error(opened.error()); }
+                }
+                return { key || mouse, 0x1F };
+            }
             if ((key && e.scan) || (mouse && e.buttons))
             {
                 close_detail();
@@ -458,11 +645,32 @@ public:
         }
         if (page_ == Page::detail)
         {
+            if (key && (e.scan == 0x4B || e.scan == 0x4D))
+            {
+                do { detail_button_ = (detail_button_ + (e.scan == 0x4B ? 3 : 1)) % 4; } while (!detail_button_available(detail_button_));
+                return { true, 0x1F };
+            }
+            const bool over_button = mouse && e.x >= 0x1B2 && e.x < 0x27A && e.y >= 0x9A && e.y <= 0xB9;
+            const unsigned hovered = over_button ? unsigned((e.x - 0x1B2) / 0x32) : detail_button_;
+            if (over_button && detail_button_available(hovered)) { detail_button_ = hovered; }
+            if ((over_button && hovered == detail_button_ && (e.buttons & 1)) || (key && (e.scan == 0x1C || e.scan == 0x39)))
+            {
+                switch (detail_button_)
+                {
+                case 0: abilities(); break;
+                case 1: proficiencies(); break;
+                case 2: status_page(); break;
+                case 3: equipment_page(); break;
+                default: break;
+                }
+                return { true, 0x1F };
+            }
             if ((key && e.scan == 1) || (mouse && (e.buttons & 2)))
             {
                 close_detail();
                 return { true, 0x1F };
             }
+            if (over_button) { return { true, 0x1F }; }
             return {};
         }
         if (key)
@@ -584,6 +792,114 @@ public:
             }
             return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
         }
+        if (page_ == Page::abilities || page_ == Page::proficiencies)
+        {
+            auto status = try_detail(image);
+            if (!status) { return s2ne::Result<std::vector<uint8_t>>::failure(status.error()); }
+        }
+        if (page_ == Page::proficiencies)
+        {
+            ResourceReader palette(pal_), archive(cel_);
+            const unsigned address = palette.number(816, 4);
+            if (!palette) { return s2ne::Result<std::vector<uint8_t>>::failure(palette.error()); }
+            if (address < 57) { return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid proficiency CEL directory")); }
+            const size_t group = address - 57;
+            const size_t offset = archive.number(group + 2 + (0xE8 - 142) * 8, 4);
+            const int top = 480 - int(archive.number(group + offset + 2)) - 1;
+            if (!archive) { return s2ne::Result<std::vector<uint8_t>>::failure(archive.error()); }
+            texture_resources.cover_text(0, std::max(0, top - 24), 640, 480 - std::max(0, top - 24));
+            auto panel = try_sprite(image, 0xE8, 0, top, false);
+            if (!panel) { return s2ne::Result<std::vector<uint8_t>>::failure(panel.error()); }
+            const auto title = font_.text_bytes(0x27C / 4);
+            large(image, title, 320 - int(title.size()) * 6, top + 8, 0x49);
+            large(image, font_.text_bytes(0xA8 / 4), 0x87, top + 8, 0x49);
+            large(image, font_.text_bytes(0x280 / 4), 0x1C6, top + 8, 0x49);
+            const auto& unit = selected().unit;
+            for (unsigned i = 0; i < 6; ++i)
+            {
+                const int x = i < 5 ? 0x154 : 0x1EA;
+                const int y = 0x181 + int(i % 5) * 16;
+                small(image, font_.text_bytes(0x2B0 / 4 + i), x, y, 0xE9);
+                small(image, bytes(std::to_string(unit.weapon_proficiency[i])), x + 0x50, y, 0x89);
+            }
+            for (unsigned i = 0; i < 9; ++i)
+            {
+                const int x = i < 5 ? 0x14 : 0xA5;
+                const int y = 0x181 + int(i % 5) * 16;
+                small(image, font_.text_bytes(0x284 / 4 + i), x, y, 0xE9);
+                small(image, bytes(std::to_string(unit.learned_proficiency[i] / 10)), x + 0x60, y, 0x89);
+            }
+            for (unsigned i = 0; i < 2; ++i)
+            {
+                const int y = 0x1B1 + int(i) * 16;
+                small(image, font_.text_bytes(0x2A8 / 4 + i), 0x1EA, y, 0xE9);
+                small(image, bytes(std::to_string(unit.learned_proficiency[9 + i] / 10)), 0x23A, y, 0x89);
+            }
+            return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
+        }
+        if (page_ == Page::abilities)
+        {
+            ResourceReader palette(pal_), archive(cel_);
+            const unsigned address = palette.number(816, 4);
+            if (!palette) { return s2ne::Result<std::vector<uint8_t>>::failure(palette.error()); }
+            if (address < 57) { return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid ability CEL directory")); }
+            const size_t group = address - 57;
+            const size_t offset = archive.number(group + 2 + (0xE6 - 142) * 8, 4);
+            const int top = 480 - int(archive.number(group + offset + 2)) - 1;
+            if (!archive) { return s2ne::Result<std::vector<uint8_t>>::failure(archive.error()); }
+            texture_resources.cover_text(0, std::max(0, top - 24), 640, 480 - std::max(0, top - 24));
+            auto panel = try_sprite(image, 0xE6, 0, top, false);
+            if (!panel) { return s2ne::Result<std::vector<uint8_t>>::failure(panel.error()); }
+            const auto title = font_.text_bytes(0x278 / 4);
+            large(image, title, 320 - int(title.size()) * 6, top + 7, 0x49);
+            const uint32_t flags = selected().unit.abilities;
+            if (!flags)
+            {
+                const auto& none = ability_names_.at(0);
+                large(image, none, 320 - int(none.size()) * 6, top + 0x3D, 0xE9);
+                return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
+            }
+            unsigned learned = 0;
+            for (unsigned i = 1; i < ability_names_.size(); ++i)
+            {
+                if (flags & (1u << (i - 1))) { ++learned; }
+            }
+            int x = 324 - ((int(learned) - 1) / 2 + 1) * 0x24;
+            int y = top + 0x34;
+            unsigned drawn = 0;
+            for (unsigned i = 1; i < ability_names_.size(); ++i)
+            {
+                if (!(flags & (1u << (i - 1)))) { continue; }
+                large(image, ability_names_[i], x, y, 0xE9);
+                ++drawn;
+                if (drawn & 1) { y += 0x1E; }
+                else
+                {
+                    x += 0x48;
+                    y = top + 0x34;
+                }
+            }
+            return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
+        }
+        if (page_ == Page::status || page_ == Page::equipment)
+        {
+            auto detail = try_detail(image);
+            if (!detail) { return s2ne::Result<std::vector<uint8_t>>::failure(detail.error()); }
+            auto menu = skills_.try_draw_inspection(image, selected().unit);
+            if (!menu) { return s2ne::Result<std::vector<uint8_t>>::failure(menu.error()); }
+            return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
+        }
+        if (page_ == Page::detail)
+        {
+            // 456179 starts from CEL 0xDB and clears a complete dedicated
+            // detail page; it does not draw into the fourth roster row.
+            auto status = try_detail(image);
+            if (!status)
+            {
+                return s2ne::Result<std::vector<uint8_t>>::failure(status.error());
+            }
+            return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
+        }
         {
             auto rendered = try_sprite(image, 205, 0, 0, false);
             if (!rendered)
@@ -622,56 +938,6 @@ public:
             {
                 return s2ne::Result<std::vector<uint8_t>>::failure(rendered.error());
             }
-        }
-        if (page_ == Page::detail || page_ == Page::proficiencies)
-        {
-            {
-                auto rendered = try_sprite(image, 206, 5, 363);
-                if (!rendered)
-                {
-                    return s2ne::Result<std::vector<uint8_t>>::failure(rendered.error());
-                }
-            }
-            auto status = status_.try_draw(font_, image, selected().unit, 363, selected().enemy);
-            if (!status)
-            {
-                return s2ne::Result<std::vector<uint8_t>>::failure(status.error());
-            }
-        }
-        if (page_ == Page::proficiencies)
-        {
-            {
-                auto rendered = try_sprite(image, 232, 0, 343);
-                if (!rendered)
-                {
-                    return s2ne::Result<std::vector<uint8_t>>::failure(rendered.error());
-                }
-            }
-            auto title = font_.text_bytes(159);
-            large(image, title, 320 - int(title.size()) * 6, 351, 73);
-            large(image, font_.text_bytes(42), 135, 351, 73);
-            large(image, font_.text_bytes(160), 454, 351, 73);
-            const auto& u = selected().unit;
-            auto value = [&](unsigned n, int x, int y)
-            {
-                small(image, bytes(std::to_string(n)), x, y, 137);
-            };
-            for (unsigned i = 0; i < 6; ++i)
-            {
-                int x = i < 5 ? 340 : 490, y = i < 5 ? 385 + int(i) * 16 : 385;
-                small(image, font_.text_bytes(172 + i), x, y, 233);
-                value(u.weapon_proficiency[i], x + 80, y);
-            }
-            for (unsigned i = 0; i < 9; ++i)
-            {
-                int x = i < 5 ? 20 : 165, y = 385 + int(i < 5 ? i : i - 5) * 16;
-                small(image, font_.text_bytes(161 + i), x, y, 233);
-                value(u.learned_proficiency[i] / 10, x + 96, y);
-            }
-            small(image, font_.text_bytes(170), 490, 433, 233);
-            value(u.learned_proficiency[9] / 10, 570, 433);
-            small(image, font_.text_bytes(171), 490, 449, 233);
-            value(u.learned_proficiency[10] / 10, 570, 449);
         }
         return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
     }

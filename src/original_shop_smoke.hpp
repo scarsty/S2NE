@@ -173,7 +173,7 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
         {
             s2ne::fatal("411587 SDL fade/input lock");
         }
-        std::cout << "SDL411587 original16 palette steps/input lock PASS\n";
+        std::print("SDL411587 original16 palette steps/input lock PASS\n");
     }
     bool bought = false;
     for (const auto& file : std::filesystem::directory_iterator(root / "SAVE"))
@@ -331,7 +331,7 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
                 if (!inn.title_requested() || !inn.closed()) { s2ne::fatal("SDL inn title confirm"); }
             }
         }
-        std::cout << "SDL inn410FFE/411034 equipment/item mouse entry,16 presents/input lock/cancel and41104F title cancel/confirm PASS (genuine SAVE)\n";
+        std::print("SDL inn410FFE/411034 equipment/item mouse entry,16 presents/input lock/cancel and41104F title cancel/confirm PASS (genuine SAVE)\n");
     }
     {
         auto save = before;
@@ -365,7 +365,7 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
             s2ne::fatal("SDL auto equipment save roundtrip");
         }
         std::filesystem::remove(file);
-        std::cout << "SDL451ABC genuine SAVE original confirmation/cancel/submit/return and file roundtrip PASS\n";
+        std::print("SDL451ABC genuine SAVE original confirmation/cancel/submit/return and file roundtrip PASS\n");
     }
     {
         auto save = before;
@@ -388,7 +388,7 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
         {
             s2ne::fatal("SDL inn mode2 settings return");
         }
-        std::cout << "SDL inn434103(2) native settings entry/return and unchanged SAVE PASS\n";
+        std::print("SDL inn434103(2) native settings entry/return and unchanged SAVE PASS\n");
     }
     {
         auto save = before;
@@ -417,7 +417,7 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
         {
             s2ne::fatal("SDL revival exact original mutation");
         }
-        std::cout << "SDL41430B resurrection recipient/native217 page, cancel/confirm/return and exact HP/inventory preservation PASS (controlled dead role/money)\n";
+        std::print("SDL41430B resurrection recipient/native217 page, cancel/confirm/return and exact HP/inventory preservation PASS (controlled dead role/money)\n");
     }
     {
         bool done = false;
@@ -488,7 +488,7 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
                         {
                             s2ne::fatal("SDL scroll cancellation mutated SAVE");
                         }
-                        std::cout << "SDL4125FC original track bottom/up/top and immutable cancel PASS (controlled 12 identical original records)\n";
+                        std::print("SDL4125FC original track bottom/up/top and immutable cancel PASS (controlled 12 identical original records)\n");
                     }
                     auto baseline = save;
                     OriginalShopMenu live(root);
@@ -526,7 +526,7 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
                     {
                         s2ne::fatal("SDL equipment file roundtrip");
                     }
-                    std::cout << "SDL equipment genuine SAVE offer=" << id << " recipient=" << recipients.front() << " original comparison/cancel/replace/return and save roundtrip PASS\n";
+                    std::print("SDL equipment genuine SAVE offer={} recipient={} original comparison/cancel/replace/return and save roundtrip PASS\n", id, recipients.front());
                     done = true;
                     break;
                 }
@@ -634,9 +634,11 @@ inline void original_shop_smoke(const std::filesystem::path& root, SDL_Renderer*
     {
         s2ne::fatal("SDL large church native transaction");
     }
-    std::cout << "SDL large donation normal confirm/cancel/result/return + native XP/growth RNG exact delta PASS (controlled1000-money fixture)\n";
-    std::cout << "SDL inn original town rumor wait/return and church controlled99-money fee9 confirm/cancel/result/return PASS; church is controlled fixture, not natural qualifying SAVE\n";
-    std::cout << "SDL original town-gated consumable buy confirmation + exact original save delta/roundtrip PASS\n";
-    std::cout << "SDL normal hub/shop/sale/quantity/confirm/return input PASS; genuine inventory item=" << id << " price=" << price << " frames=" << frames << " exact native delta + saved file roundtrip; isolated hub entry, not campaign clear\n";
+    std::print("SDL large donation normal confirm/cancel/result/return + native XP/growth RNG exact delta PASS (controlled1000-money fixture)\n");
+    std::print("SDL inn original town rumor wait/return and church controlled99-money fee9 confirm/cancel/result/return PASS; church is controlled fixture, not natural qualifying SAVE\n");
+    std::print("SDL original town-gated consumable buy confirmation + exact original save delta/roundtrip PASS\n");
+    std::print("SDL normal hub/shop/sale/quantity/confirm/return input PASS; genuine inventory item={} price={} frames={} exact native delta + saved file roundtrip; isolated hub entry, not campaign clear\n", id, price, frames);
 }
 }    //namespace s2ne
+
+#include "terminal_output.hpp"

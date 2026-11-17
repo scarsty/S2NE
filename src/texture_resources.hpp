@@ -1,4 +1,5 @@
 #pragma once
+#include "ZipFile2.h"
 #include "resource_result.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
@@ -18,6 +19,7 @@ namespace s2ne
 class TextureResources
 {
     std::filesystem::path root_;
+    std::unique_ptr<ZipFile2> archive_;
     SDL_Renderer* renderer_{};
     std::unique_ptr<SDL_Texture, decltype(&SDL_DestroyTexture)> target_{ nullptr, SDL_DestroyTexture };
     std::unique_ptr<SDL_Texture, decltype(&SDL_DestroyTexture)> background_{ nullptr, SDL_DestroyTexture };
@@ -31,12 +33,12 @@ class TextureResources
     struct TextCommand
     {
         std::string text;
-        int left{};
-        int top{};
+        int left{}, top{};
         SDL_Color color{};
         bool small{};
     };
     std::vector<TextCommand> text_commands_;
+    std::vector<TextCommand> presented_text_commands_;
     uint64_t elapsed_{};
     bool batching_{};
     SDL_Texture* batch_previous_{};
@@ -50,7 +52,7 @@ class TextureResources
         explicit TargetRestore(SDL_Renderer* renderer) : renderer_(renderer), target_(SDL_GetRenderTarget(renderer)) {}
         ~TargetRestore()
         {
-            if (!SDL_SetRenderTarget(renderer_, target_)) { std::fprintf(stderr, "Texture render target restore failed: %s\n", SDL_GetError()); }
+            if (!SDL_SetRenderTarget(renderer_, target_)) { std::println(stderr, "Texture render target restore failed: {}", SDL_GetError()); }
         }
     };
 
@@ -60,15 +62,51 @@ class TextureResources
         int width{}, height{};
     };
 
+    Result<std::vector<char>> read_resource(const std::string& relative) const
+    {
+        if (archive_)
+        {
+            try
+            {
+                return Result<std::vector<char>>::success([&]
+                    {
+                        std::vector<char> content;
+                        archive_->readFileToBuffer(relative, content);
+                        return content;
+                    }());
+            } catch (const std::exception& error)
+            {
+                return Result<std::vector<char>>::failure(make_error("Cannot read texture archive " + relative + ": " + error.what()));
+            }
+        }
+        const auto file = root_ / std::filesystem::path(relative);
+        std::ifstream input(file, std::ios::binary);
+        if (!input) { return Result<std::vector<char>>::failure(make_error("Cannot read " + file.string())); }
+        return Result<std::vector<char>>::success({ std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>() });
+    }
+
+    Result<SDL_Surface*> load_png(const std::string& relative) const
+    {
+        auto bytes = read_resource(relative);
+        if (!bytes) { return Result<SDL_Surface*>::failure(bytes.error()); }
+        auto buffer = std::move(bytes).value();
+        auto* io = SDL_IOFromConstMem(buffer.data(), buffer.size());
+        if (!io) { return Result<SDL_Surface*>::failure(make_error(SDL_GetError())); }
+        auto* surface = SDL_LoadPNG_IO(io, true);
+        if (!surface) { return Result<SDL_Surface*>::failure(make_error(relative + ": " + SDL_GetError())); }
+        return Result<SDL_Surface*>::success(surface);
+    }
+
 public:
     Result<Image> load_image(const std::string& group, unsigned id) const
     {
         if (!active()) { return Result<Image>::failure(make_error("Texture resources are not active")); }
-        const auto file = root_ / group / (std::to_string(id) + ".png");
-        std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> source(SDL_LoadPNG(file.string().c_str()), SDL_DestroySurface);
-        if (!source) { return Result<Image>::failure(make_error(file.string() + ": " + SDL_GetError())); }
+        const auto relative = group + "/" + std::to_string(id) + ".png";
+        auto loaded = load_png(relative);
+        if (!loaded) { return Result<Image>::failure(loaded.error()); }
+        std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> source(loaded.value(), SDL_DestroySurface);
         std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> rgba(SDL_ConvertSurface(source.get(), SDL_PIXELFORMAT_RGBA32), SDL_DestroySurface);
-        if (!rgba) { return Result<Image>::failure(make_error("Invalid external image: " + file.string())); }
+        if (!rgba) { return Result<Image>::failure(make_error("Invalid external image: " + relative)); }
         std::vector<uint8_t> image(size_t(rgba->w) * rgba->h * 4);
         for (int y = 0; y < rgba->h; ++y) { std::memcpy(image.data() + size_t(y) * rgba->w * 4, static_cast<uint8_t*>(rgba->pixels) + y * rgba->pitch, size_t(rgba->w) * 4); }
         return Result<Image>::success({ std::move(image), rgba->w, rgba->h });
@@ -90,9 +128,9 @@ private:
         {
             if (!cycles_.contains(group))
             {
-                const auto file = root_ / group / "frames.txt";
-                std::ifstream input(file);
-                if (!input) { return Result<SDL_Texture*>::failure(make_error("Cannot read " + file.string())); }
+                auto frame_data = read_resource(group + "/frames.txt");
+                if (!frame_data) { return Result<SDL_Texture*>::failure(frame_data.error()); }
+                std::istringstream input(std::string(frame_data.value().begin(), frame_data.value().end()));
                 std::unordered_map<unsigned, unsigned> cycles;
                 std::string line;
                 while (std::getline(input, line))
@@ -100,36 +138,36 @@ private:
                     std::istringstream row(line);
                     unsigned id{}, delay{}, count{};
                     char colon{};
-                    if (!(row >> id >> colon) || colon != ':') { return Result<SDL_Texture*>::failure(make_error("Invalid animation table " + file.string())); }
+                    if (!(row >> id >> colon) || colon != ':') { return Result<SDL_Texture*>::failure(make_error("Invalid animation table " + group + "/frames.txt")); }
                     while (row >> delay)
                     {
-                        if (delay != 100) { return Result<SDL_Texture*>::failure(make_error("Invalid animation cadence " + file.string())); }
+                        if (delay != 100) { return Result<SDL_Texture*>::failure(make_error("Invalid animation cadence " + group + "/frames.txt")); }
                         ++count;
                         row >> std::ws;
                         if (row.eof()) { break; }
                         char comma{};
-                        if (!(row >> comma) || comma != ',') { return Result<SDL_Texture*>::failure(make_error("Invalid animation separator " + file.string())); }
+                        if (!(row >> comma) || comma != ',') { return Result<SDL_Texture*>::failure(make_error("Invalid animation separator " + group + "/frames.txt")); }
                     }
-                    if (!count) { return Result<SDL_Texture*>::failure(make_error("Empty animation " + file.string())); }
+                    if (!count) { return Result<SDL_Texture*>::failure(make_error("Empty animation " + group + "/frames.txt")); }
                     cycles[id] = count;
                 }
-                if (input.bad()) { return Result<SDL_Texture*>::failure(make_error("Cannot finish reading " + file.string())); }
+                if (input.bad()) { return Result<SDL_Texture*>::failure(make_error("Cannot finish reading " + group + "/frames.txt")); }
                 cycles_.emplace(group, std::move(cycles));
             }
             if (auto cycle = cycles_.at(group).find(frame); cycle != cycles_.at(group).end()) { filename += "_" + std::to_string((elapsed_ / 100) % cycle->second); }
         }
         const auto key = group + "/" + filename;
         if (auto found = textures_.find(key); found != textures_.end()) { return Result<SDL_Texture*>::success(found->second.get()); }
-        const auto file = root_ / group / (filename + ".png");
-        std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> surface(SDL_LoadPNG(file.string().c_str()), SDL_DestroySurface);
-        if (!surface) { return Result<SDL_Texture*>::failure(make_error(file.string() + ": " + SDL_GetError())); }
+        auto loaded = load_png(group + "/" + filename + ".png");
+        if (!loaded) { return Result<SDL_Texture*>::failure(loaded.error()); }
+        std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> surface(loaded.value(), SDL_DestroySurface);
         std::shared_ptr<SDL_Texture> texture(SDL_CreateTextureFromSurface(renderer_, surface.get()), SDL_DestroyTexture);
         if (!texture || !SDL_SetTextureBlendMode(texture.get(), SDL_BLENDMODE_BLEND) || !SDL_SetTextureScaleMode(texture.get(), SDL_SCALEMODE_NEAREST)) { return Result<SDL_Texture*>::failure(make_error(SDL_GetError())); }
         auto* result = texture.get();
         textures_.emplace(key, std::move(texture));
         if (!logged_.contains(group))
         {
-            std::fprintf(stderr, "Load texture group: %s (PNG, renderer-owned cache)\n", group.c_str());
+            std::println(stderr, "Load texture group: {} (PNG, renderer-owned cache)", group);
             logged_[group] = true;
         }
         return Result<SDL_Texture*>::success(result);
@@ -160,6 +198,7 @@ public:
 
 public:
     void set_elapsed(uint64_t elapsed) { elapsed_ = elapsed; }
+    uint64_t elapsed() const { return elapsed_; }
     Result<bool> begin_canvas(std::span<const uint8_t> image)
     {
         if (!renderer_ || batching_ || image.size() != 640u * 480 * 4) { return Result<bool>::failure(make_error("Invalid texture canvas begin")); }
@@ -217,7 +256,7 @@ public:
             textures_.emplace(key, std::move(texture));
             if (!logged_.contains("fonts"))
             {
-                std::fprintf(stderr, "Load texture group: fonts (original glyphs, renderer-owned cache)\n");
+                std::println(stderr, "Load texture group: fonts (original glyphs, renderer-owned cache)");
                 logged_["fonts"] = true;
             }
         }
@@ -250,12 +289,13 @@ public:
     void clear()
     {
         textures_.clear();
+        archive_.reset();
         target_.reset();
         background_.reset();
         presentation_.reset();
         large_font_.reset();
         small_font_.reset();
-        text_commands_.clear();
+        clear_text_commands();
         if (TTF_WasInit()) { TTF_Quit(); }
         renderer_ = nullptr;
         logged_.clear();
@@ -268,14 +308,28 @@ public:
     void configure(const std::filesystem::path& working)
     {
         clear();
+        const auto archive = working / "texture.zip";
         const auto path = working / "texture";
+        if (std::filesystem::exists(archive) && std::filesystem::is_regular_file(archive))
+        {
+            archive_ = std::make_unique<ZipFile2>();
+            archive_->openRead(archive.string());
+            root_ = archive;
+            std::println(stderr, "Texture resource archive: {}", archive.string());
+            return;
+        }
         if (!std::filesystem::exists(path)) { return; }
         if (!std::filesystem::is_directory(path)) { throw std::runtime_error("texture is not a directory"); }
         root_ = path;
-        std::fprintf(stderr, "Texture resource directory: %s\n", root_.string().c_str());
+        std::println(stderr, "Texture resource directory: {}", root_.string());
     }
     bool active() const { return !root_.empty(); }
     void bind(SDL_Renderer* renderer) { renderer_ = renderer; }
+    void clear_text_commands()
+    {
+        text_commands_.clear();
+        presented_text_commands_.clear();
+    }
     Result<bool> initialize_font(const std::filesystem::path& font_file)
     {
         if (!renderer_ || !TTF_Init()) { return Result<bool>::failure(make_error(SDL_GetError())); }
@@ -285,6 +339,13 @@ public:
     }
     bool font_ready() const { return large_font_ != nullptr; }
     bool small_font_ready() const { return small_font_ != nullptr; }
+    void cover_text(int left, int top, int width, int height)
+    {
+        std::erase_if(text_commands_, [=](const TextCommand& command)
+            {
+                return command.left >= left && command.left < left + width && command.top >= top && command.top < top + height;
+            });
+    }
     Result<bool> draw_large_text(std::vector<uint8_t>& image, std::string_view text, int left, int top, SDL_Color color)
     {
         if (!large_font_) { return Result<bool>::failure(make_error("SDL_ttf font is not initialized")); }
@@ -302,10 +363,9 @@ public:
         const auto key = group + "/" + std::to_string(id);
         if (!textures_.contains(key))
         {
-            const auto file = root_ / group / (std::to_string(id) + ".png");
-            auto* loaded = SDL_LoadPNG(file.string().c_str());
-            if (!loaded) { return Result<bool>::failure(make_error(file.string() + ": " + SDL_GetError())); }
-            std::shared_ptr<SDL_Surface> source(loaded, SDL_DestroySurface);
+            auto loaded = load_png(group + "/" + std::to_string(id) + ".png");
+            if (!loaded) { return Result<bool>::failure(loaded.error()); }
+            std::shared_ptr<SDL_Surface> source(loaded.value(), SDL_DestroySurface);
             auto* texture = SDL_CreateTextureFromSurface(renderer_, source.get());
             if (!texture) { return Result<bool>::failure(make_error(SDL_GetError())); }
             std::shared_ptr<SDL_Texture> owned(texture, SDL_DestroyTexture);
@@ -313,7 +373,7 @@ public:
             textures_.emplace(key, std::move(owned));
             if (!logged_.contains(group))
             {
-                std::fprintf(stderr, "Load texture group: %s (PNG, renderer-owned cache)\n", group.c_str());
+                std::println(stderr, "Load texture group: {} (PNG, renderer-owned cache)", group);
                 logged_[group] = true;
             }
         }
@@ -330,7 +390,7 @@ public:
             SDL_Texture* previous;
             ~Restore()
             {
-                if (!SDL_SetRenderTarget(renderer, previous)) { std::fprintf(stderr, "Texture render target restore failed: %s\n", SDL_GetError()); }
+                if (!SDL_SetRenderTarget(renderer, previous)) { std::println(stderr, "Texture render target restore failed: {}", SDL_GetError()); }
             }
         } restore{ renderer_, previous };
         float width{}, height{};
@@ -370,9 +430,10 @@ public:
         if (action * 4 + direction >= 30 || mask.size() != size_t(width) * height) { return Result<bool>::failure(make_error("Invalid external unit sequence/mask")); }
         if (!sequences_.contains(appearance))
         {
-            const auto file = root_ / "units" / std::to_string(appearance) / "frames.txt";
-            std::ifstream input(file);
-            if (!input) { return Result<bool>::failure(make_error("Cannot read " + file.string())); }
+            const auto relative = "units/" + std::to_string(appearance) + "/frames.txt";
+            auto description = read_resource(relative);
+            if (!description) { return Result<bool>::failure(description.error()); }
+            std::istringstream input(std::string(description.value().begin(), description.value().end()));
             std::array<std::pair<unsigned, unsigned>, 30> sequences{};
             std::string line;
             while (std::getline(input, line))
@@ -380,12 +441,12 @@ public:
                 std::istringstream row(line);
                 unsigned a{}, d{}, first{}, count{};
                 char comma{}, colon{}, second_comma{};
-                if (!(row >> a >> comma >> d >> colon >> first >> second_comma >> count) || comma != ',' || colon != ':' || second_comma != ',' || a >= 8 || d >= 4 || a * 4 + d >= sequences.size() || sequences[a * 4 + d].second) { return Result<bool>::failure(make_error("Invalid unit frames: " + file.string())); }
+                if (!(row >> a >> comma >> d >> colon >> first >> second_comma >> count) || comma != ',' || colon != ':' || second_comma != ',' || a >= 8 || d >= 4 || a * 4 + d >= sequences.size() || sequences[a * 4 + d].second) { return Result<bool>::failure(make_error("Invalid unit frames: " + relative)); }
                 row >> std::ws;
-                if (!row.eof()) { return Result<bool>::failure(make_error("Unexpected unit frame data: " + file.string())); }
+                if (!row.eof()) { return Result<bool>::failure(make_error("Unexpected unit frame data: " + relative)); }
                 sequences[a * 4 + d] = { first, count };
             }
-            if (input.bad()) { return Result<bool>::failure(make_error("Cannot finish reading " + file.string())); }
+            if (input.bad()) { return Result<bool>::failure(make_error("Cannot finish reading " + relative)); }
             sequences_.emplace(appearance, sequences);
         }
         const auto [first, count] = sequences_.at(appearance)[action * 4 + direction];
@@ -441,33 +502,44 @@ public:
         if (!presentation_)
         {
             presentation_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, 640, 480));
-            if (!presentation_ || !SDL_SetTextureScaleMode(presentation_.get(), SDL_SCALEMODE_NEAREST)) { return Result<SDL_Texture*>::failure(make_error(SDL_GetError())); }
+            if (!presentation_ || !SDL_SetTextureScaleMode(presentation_.get(), SDL_SCALEMODE_LINEAR)) { return Result<SDL_Texture*>::failure(make_error(SDL_GetError())); }
         }
-        if (!SDL_UpdateTexture(presentation_.get(), nullptr, image.data(), 640 * 4)) { return Result<SDL_Texture*>::failure(make_error(SDL_GetError())); }
+        if (!SDL_UpdateTexture(presentation_.get(), nullptr, image.data(), 640 * 4))
+        {
+            return Result<SDL_Texture*>::failure(make_error(SDL_GetError()));
+        }
+        presented_text_commands_ = std::move(text_commands_);
+        text_commands_.clear();
         return Result<SDL_Texture*>::success(presentation_.get());
     }
     Result<bool> flush_text()
     {
-        if (text_commands_.empty()) { return Result<bool>::success(true); }
+        if (presented_text_commands_.empty()) { return Result<bool>::success(true); }
         int output_width{}, output_height{};
         if (!SDL_GetRenderOutputSize(renderer_, &output_width, &output_height) || output_width <= 0 || output_height <= 0)
         {
+            presented_text_commands_.clear();
             return Result<bool>::failure(make_error(SDL_GetError()));
         }
         const float scale = std::min(float(output_width) / 640.0f, float(output_height) / 480.0f);
-        const float viewport_width = 640.0f * scale;
-        const float viewport_height = 480.0f * scale;
-        const float viewport_left = (float(output_width) - viewport_width) * 0.5f;
-        const float viewport_top = (float(output_height) - viewport_height) * 0.5f;
-        if (!SDL_SetRenderLogicalPresentation(renderer_, 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED)) { return Result<bool>::failure(make_error(SDL_GetError())); }
-        for (const auto& command : text_commands_)
+        if (!SDL_SetRenderLogicalPresentation(renderer_, 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED))
+        {
+            presented_text_commands_.clear();
+            return Result<bool>::failure(make_error(SDL_GetError()));
+        }
+        struct Restore
+        {
+            SDL_Renderer* renderer;
+            ~Restore() { SDL_SetRenderLogicalPresentation(renderer, 640, 480, SDL_LOGICAL_PRESENTATION_LETTERBOX); }
+        } restore{ renderer_ };
+        for (const auto& command : presented_text_commands_)
         {
             auto* font = command.small ? small_font_.get() : large_font_.get();
             const float base_size = command.small ? 16.0f : 24.0f;
             const int render_size = std::max(1, int(std::lround(base_size * scale)));
             if (!TTF_SetFontSize(font, float(render_size)))
             {
-                text_commands_.clear();
+                presented_text_commands_.clear();
                 return Result<bool>::failure(make_error(SDL_GetError()));
             }
             const auto key = std::string(command.small ? "font-window-small/" : "font-window/") + std::to_string(render_size) + "/" + command.text;
@@ -476,39 +548,38 @@ public:
             {
                 const SDL_Color white{ 255, 255, 255, 255 };
                 std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> surface(TTF_RenderText_Blended(font, command.text.c_str(), command.text.size(), white), SDL_DestroySurface);
-                if (!surface || surface->w <= 0 || surface->h <= 0)
+                if (!surface)
                 {
-                    text_commands_.clear();
+                    presented_text_commands_.clear();
                     return Result<bool>::failure(make_error(SDL_GetError()));
                 }
                 std::shared_ptr<SDL_Texture> texture(SDL_CreateTextureFromSurface(renderer_, surface.get()), SDL_DestroyTexture);
                 if (!texture || !SDL_SetTextureBlendMode(texture.get(), SDL_BLENDMODE_BLEND))
                 {
-                    text_commands_.clear();
+                    presented_text_commands_.clear();
                     return Result<bool>::failure(make_error(SDL_GetError()));
                 }
                 found = textures_.emplace(key, std::move(texture)).first;
             }
             if (!SDL_SetTextureColorMod(found->second.get(), command.color.r, command.color.g, command.color.b))
             {
-                text_commands_.clear();
+                presented_text_commands_.clear();
                 return Result<bool>::failure(make_error(SDL_GetError()));
             }
             float width{}, height{};
             if (!SDL_GetTextureSize(found->second.get(), &width, &height))
             {
-                text_commands_.clear();
+                presented_text_commands_.clear();
                 return Result<bool>::failure(make_error(SDL_GetError()));
             }
-            SDL_FRect destination{ viewport_left + command.left * scale, viewport_top + command.top * scale, width, height };
+            SDL_FRect destination{ (float(output_width) - 640.0f * scale) * 0.5f + command.left * scale,
+                (float(output_height) - 480.0f * scale) * 0.5f + command.top * scale, width, height };
             if (!SDL_RenderTexture(renderer_, found->second.get(), nullptr, &destination))
             {
-                text_commands_.clear();
+                presented_text_commands_.clear();
                 return Result<bool>::failure(make_error(SDL_GetError()));
             }
         }
-        text_commands_.clear();
-        if (!SDL_SetRenderLogicalPresentation(renderer_, 640, 480, SDL_LOGICAL_PRESENTATION_LETTERBOX)) { return Result<bool>::failure(make_error(SDL_GetError())); }
         return Result<bool>::success(true);
     }
 };

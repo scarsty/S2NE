@@ -93,6 +93,8 @@ inline void original_evacuation_smoke(const std::filesystem::path& root, SDL_Ren
     {
         s2ne::fatal("Evacuation SDL completion invariants");
     }
-    std::cout << "PASS SDL controlled original stage42 records14/17 role39, " << removed << " individual enemies, " << frames << " acknowledged frames, Escape/save lock, resume once; not natural campaign reachability\n";
+    std::print("PASS SDL controlled original stage42 records14/17 role39, {} individual enemies, {} acknowledged frames, Escape/save lock, resume once; not natural campaign reachability\n", removed, frames);
 }
 }    //namespace s2ne
+
+#include "terminal_output.hpp"

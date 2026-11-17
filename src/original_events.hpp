@@ -72,7 +72,7 @@ public:
         unsigned movement_visual_class{};
         bool movement_camera_pose{};
         unsigned movement_frame{};
-        int level{ 1 }, max_mp{}, max_st{}, max_sp{}, max_action_points{}, attack_limit{}, defense_limit{};    // max_action_points is runtime +12Ch, not current +12Eh.
+        int level{ 1 }, max_mp{}, max_st{}, max_sp{}, max_action_points{}, attack_limit{}, defense_limit{};    // max_action_points is WORD +12Ch; display uses WORD +12Eh / +0BFh.
         unsigned portrait{}, status_flags{ 0x80 }, experience{};
         std::vector<uint8_t> profession;
         std::array<unsigned, 6> equipment{};

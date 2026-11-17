@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "original_effect_audio.hpp"
 #include "original_music.hpp"
 #include "original_xmi.hpp"
@@ -32,7 +32,7 @@ class OpeningAudio
     static void fluid_log(int, const char* message, void*)
     {
         // FluidSynth默认INFO输出到stdout，会污染JSONL协议；保留诊断但固定送stderr。
-        std::fprintf(stderr, "fluidsynth: %s\n", message ? message : "");
+        std::println(stderr, "fluidsynth: {}", message ? message : "");
     }
     static void SDLCALL monitor(void* userdata, MIX_Mixer*, const SDL_AudioSpec*, float* pcm, int samples)
     {
@@ -147,7 +147,7 @@ public:
         if (result)
         {
             music_id_ = id;
-            if (diagnostics_) { std::cerr << "Original music id=" << id << " file=" << music_path_.filename().string() << '\n'; }
+            if (diagnostics_) { std::print(stderr, "Original music id={} file={}\n", id, music_path_.filename().string()); }
         }
         return result;
     }
@@ -227,12 +227,12 @@ public:
         {
             return failure(SDL_GetError());
         }
-        std::cout << "Audio driver: " << SDL_GetCurrentAudioDriver() << '\n';
+        std::print("Audio driver: {}\n", SDL_GetCurrentAudioDriver());
         int device_count = 0;
         auto* devices = SDL_GetAudioPlaybackDevices(&device_count);
         for (int i = 0; devices && i < device_count; ++i)
         {
-            std::cout << "Playback device: " << SDL_GetAudioDeviceName(devices[i]) << '\n';
+            std::print("Playback device: {}\n", SDL_GetAudioDeviceName(devices[i]));
         }
         SDL_free(devices);
         track = MIX_CreateTrack(mixer);
@@ -286,8 +286,10 @@ public:
     bool is_muted() const { return muted; }
     bool progressing() const
     {
-        std::cout << "Non-silent mixed samples: " << signal_samples.load() << '\n';
+        std::print("Non-silent mixed samples: {}\n", signal_samples.load());
         return MIX_TrackPlaying(track) && MIX_GetTrackPlaybackPosition(track) > 0 && signal_samples.load() > 0;
     }
 };
 }    //namespace s2ne
+
+#include "terminal_output.hpp"

@@ -1,7 +1,7 @@
 #pragma once
+#include "terminal_output.hpp"
 #include <chrono>
 #include <cstdlib>
-#include <iostream>
 #include <string_view>
 namespace s2ne
 {
@@ -18,8 +18,9 @@ public:
     {
         if (!enabled_) { return; }
         const auto now = Clock::now();
-        std::cerr << category_ << ' ' << name << " elapsed_ms=" << std::chrono::duration<double, std::milli>(now - start_).count()
-                  << " stage_ms=" << std::chrono::duration<double, std::milli>(now - previous_).count() << '\n';
+        std::println(stderr, "{} {} elapsed_ms={} stage_ms={}", category_, name,
+            std::chrono::duration<double, std::milli>(now - start_).count(),
+            std::chrono::duration<double, std::milli>(now - previous_).count());
         previous_ = now;
     }
 };

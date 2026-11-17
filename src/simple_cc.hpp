@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdio>
+#include <filesystem>
 #include <functional>
 #include <string>
 #include <unordered_map>
@@ -16,6 +17,8 @@ class SimpleCC
         std::unordered_map<std::string, Trie> children;
     };
     Trie root_;
+    bool initialized_{};
+    bool enabled_{};
 
     static int utf8_length(unsigned char value)
     {
@@ -42,6 +45,21 @@ class SimpleCC
     }
 
 public:
+    static SimpleCC& shared()
+    {
+        static SimpleCC instance;
+        return instance;
+    }
+    static void configure_once(const std::filesystem::path& directory, bool enabled)
+    {
+        auto& instance = shared();
+        instance.enabled_ = enabled;
+        if (enabled && !instance.initialized_)
+        {
+            instance.initialized_ = instance.init({ (directory / "TSCharacters.txt").string(), (directory / "TSPhrases.txt").string() });
+        }
+    }
+    static bool enabled() { return shared().enabled_; }
     static std::string big5_to_utf8(const std::vector<uint8_t>& text)
     {
         if (text.empty()) { return {}; }

@@ -39,7 +39,7 @@ class OriginalUnitStatus
             }
         }
     }
-    s2ne::Result<bool> try_portrait(std::vector<uint8_t>& image, unsigned id, int y) const
+    s2ne::Result<bool> try_portrait(std::vector<uint8_t>& image, unsigned id, int x, int y) const
     {
         if (!id || size_t(id) * 2 > word(cel_, heads_))
         {
@@ -47,12 +47,12 @@ class OriginalUnitStatus
         }
         // 4461D5/445D38 select the second (small) image of each portrait pair.
         size_t p = heads_ + dword(cel_, heads_ + 2 + (size_t(id) * 2 - 1) * 8);
-        return draw_original_sprite(image, cel_, pal_, p, true, 7, y, OriginalZeroRun::transparent);
+        return draw_original_sprite(image, cel_, pal_, p, true, x, y, OriginalZeroRun::transparent);
     }
 
-    void portrait(std::vector<uint8_t>& image, unsigned id, int y) const
+    void portrait(std::vector<uint8_t>& image, unsigned id, int x, int y) const
     {
-        auto result = try_portrait(image, id, y);
+        auto result = try_portrait(image, id, x, y);
         if (!result)
         {
             report_error(result.error());
@@ -100,20 +100,71 @@ public:
     {
         return !current || !limit ? 107 : int((int64_t(limit) - current) * 107 / limit);
     }
-    s2ne::Result<bool> try_draw(const OriginalMenu& font, std::vector<uint8_t>& image, const OriginalEvents::Unit& u, int panel_y, bool alternate_context = false) const
+    s2ne::Result<bool> try_draw_status_chain(const OriginalMenu& font, std::vector<uint8_t>& image, const OriginalEvents::Unit& u,
+        int x_base, int y_base) const
     {
         if (image.size() != 640 * 480 * 4)
         {
             return s2ne::Result<bool>::failure(make_error("Invalid status framebuffer"));
         }
-        auto portrait_result = try_portrait(image, u.portrait, panel_y + 3);
+        const std::array<int, 4> current{ u.hp, u.mp, u.st, u.action_points };
+        const std::array<int, 4> limit{ u.max_hp, u.max_mp, u.max_st, u.base_action_points };
+        const std::array<int, 4> gate_current{ u.hp, u.mp, u.st, u.action_points };
+        const std::array<int, 4> gate_limit{ u.max_hp, u.max_mp, u.max_st, u.base_action_points };
+        const std::array<int, 4> y_offsets{ 6, 0x17, 0x28, 0x39 };
+        const std::array<const char*, 4> labels{ "HP", "MP", "ST", "AP" };
+        auto small = [&](const std::vector<uint8_t>& text, int x, int y, unsigned color)
+        {
+            font.draw_small(image, text, x, y, color, true);
+        };
+        for (unsigned row = 0; row < 4; ++row)
+        {
+            const int y = y_base + y_offsets[row];
+            small(bytes(labels[row]), x_base + 0x0D, y, 187);
+            small(bytes(std::to_string(current[row])), x_base + 0xB8, y, 79);
+            small(bytes("/"), x_base + 0xD8, y, 79);
+            auto maximum = std::to_string(limit[row]);
+            if (row == 3 && u.carry_points > 0) { maximum += "+" + std::to_string(u.carry_points); }
+            small(bytes(maximum), x_base + 0xE0, y, 79);
+            if (gate_current[row] < gate_limit[row] || !current[row])
+            {
+                const int gap = missing_bar(current[row], limit[row]);
+                const int right = x_base + 0x9F;
+                const int top = y + 5;
+                rectangle(image, right - gap, top, right, top, 221);
+                rectangle(image, right - gap, top + 1, right, top + 2, 43);
+                rectangle(image, right - gap, top + 3, right, top + 5, 46);
+            }
+        }
+        const std::array<unsigned, 6> labels_id{ 7, 8, 10, 11, 9, 12 };
+        const std::array<int, 6> values{ u.attack, u.defense, u.strikeback, u.sp, u.tactics, u.fencing };
+        for (unsigned i = 0; i < 6; ++i)
+        {
+            const int column = i < 3 ? 0 : 0x41;
+            const int y = y_base + 9 + int(i % 3) * 0x16;
+            small(font.text_bytes(labels_id[i]), x_base + 0x10B + column, y, 54);
+            int adjustment = 0;
+            if (i % 3 == 0) { adjustment = 1; }
+            else if (i % 3 == 2) { adjustment = -1; }
+            small(bytes(std::to_string(values[i])), x_base + 0x131 + column, y + adjustment, 202);
+        }
+        return s2ne::Result<bool>::success(true);
+    }
+    s2ne::Result<bool> try_draw_report(const OriginalMenu& font, std::vector<uint8_t>& image, const OriginalEvents::Unit& u,
+        int x_base, int y_base, bool alternate_context = false) const
+    {
+        if (image.size() != 640 * 480 * 4)
+        {
+            return s2ne::Result<bool>::failure(make_error("Invalid status framebuffer"));
+        }
+        auto portrait_result = try_portrait(image, u.portrait, x_base + 0x15, y_base + 0x14);
         if (!portrait_result)
         {
             return portrait_result;
         }
         if (!(u.status_flags & 0x10))
         {
-            font.draw_original_large(image, u.name, 111, panel_y + 7, alternate_context ? 60 : 167);
+            font.draw_original_large(image, u.name, x_base + 0x82, y_base + 0x16, alternate_context ? 60 : 167);
         }
         auto small = [&](const std::vector<uint8_t>& text, int x, int y, unsigned color)
         {
@@ -124,59 +175,36 @@ public:
         title.insert(title.end(), level.begin(), level.end());
         auto suffix = font.text_bytes(113);
         title.insert(title.end(), suffix.begin(), suffix.end());
-        small(title, 276, panel_y + 11, 178);
-        small(font.text_bytes(4), 409, panel_y + 12, 54);
-        small(font.text_bytes(4), 408, panel_y + 11, 178);
-        auto number = [&](int value, int x, int y, unsigned color)
+        font.draw_original_large(image, title, x_base + 0x204 - int(title.size()) * 12, y_base + 0x16, 179);
+        auto status = try_draw_status_chain(font, image, u, x_base + 0x7B, y_base + 0x36);
+        if (!status)
         {
-            small(bytes(std::to_string(value)), x, panel_y + y, color);
-        };
-        number(int(u.experience), 449, 11, 60);
-        const std::array<int, 4> current{ u.hp, u.mp, u.st, u.max_action_points };
-        const std::array<int, 4> limit{ u.max_hp, u.max_mp, u.max_st, u.base_action_points };
-        // The original AP gate compares 12Eh to BFh, but the ratio uses 12Eh/BFh too.
-        const std::array<int, 4> gate_current{ u.hp, u.mp, u.st, u.max_action_points };
-        const std::array<int, 4> gate_limit{ u.max_hp, u.max_mp, u.max_st, u.base_action_points };
-        const std::array<const char*, 4> labels{ "HP", "MP", "ST", "AP" };
-        for (unsigned row = 0; row < 4; ++row)
-        {
-            int y = 39 + int(row) * 17;
-            small(bytes(labels[row]), 117, panel_y + y, 187);
-            number(current[row], 288, y, 79);
-            small(bytes("/"), 320, panel_y + y, 79);
-            if (row == 3 && u.carry_points > 0)
-            {
-                small(bytes(std::to_string(u.base_action_points) + "+" + std::to_string(u.carry_points)), 328, panel_y + y, 79);
-            }
-            else
-            {
-                number(row == 3 ? u.base_action_points : limit[row], 328, y, 79);
-            }
-            if (gate_current[row] < gate_limit[row] || !current[row])
-            {
-                int gap = missing_bar(current[row], limit[row]), right = 263, top = panel_y + 44 + int(row) * 17;
-                rectangle(image, right - gap, top, right, top, 221);
-                rectangle(image, right - gap, top + 1, right, top + 2, 43);
-                rectangle(image, right - gap, top + 3, right, top + 5, 46);
-            }
-        }
-        const std::array<unsigned, 6> label{ 7, 8, 10, 11, 9, 12 };
-        const std::array<int, 6> value{ u.attack_limit, u.defense_limit, u.strikeback, u.sp, u.tactics, u.fencing };
-        for (unsigned i = 0; i < 6; ++i)
-        {
-            int x = i < 3 ? 371 : 436, y = 42 + int(i % 3) * 22;
-            small(font.text_bytes(label[i]), x, panel_y + y, 54);
-            int numberOffset;
-            if (i % 3 == 2) { numberOffset = -1; }
-            else if (i % 3 == 0) { numberOffset = 1; }
-            else
-            {
-                numberOffset = 0;
-            }
-            number(value[i], i < 3 ? 409 : 475, y + (numberOffset),
-                202);
+            return status;
         }
         return s2ne::Result<bool>::success(true);
+    }
+    s2ne::Result<bool> try_draw(const OriginalMenu& font, std::vector<uint8_t>& image, const OriginalEvents::Unit& u, int panel_y,
+        bool alternate_context = false) const
+    {
+        if (image.size() != 640 * 480 * 4)
+        {
+            return s2ne::Result<bool>::failure(make_error("Invalid status framebuffer"));
+        }
+        auto portrait_result = try_portrait(image, u.portrait, 7, panel_y + 3);
+        if (!portrait_result) { return portrait_result; }
+        if (!(u.status_flags & 0x10))
+        {
+            font.draw_original_large(image, u.name, 111, panel_y + 7, alternate_context ? 60 : 167);
+        }
+        auto title = u.profession;
+        const auto level = bytes(" " + std::to_string(u.level));
+        title.insert(title.end(), level.begin(), level.end());
+        const auto suffix = font.text_bytes(113);
+        title.insert(title.end(), suffix.begin(), suffix.end());
+        font.draw_small(image, title, 276, panel_y + 11, 178, true);
+        font.draw_small(image, font.text_bytes(4), 408, panel_y + 11, 178, true);
+        font.draw_small(image, bytes(std::to_string(u.experience)), 449, panel_y + 11, 60, true);
+        return try_draw_status_chain(font, image, u, 104, panel_y + 33);
     }
     void draw(const OriginalMenu& font, std::vector<uint8_t>& image, const OriginalEvents::Unit& u, int panel_y, bool alternate_context = false) const
     {

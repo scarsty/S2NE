@@ -10,6 +10,7 @@
 #include "original_drain.hpp"
 #include "original_events.hpp"
 #include "original_menu.hpp"
+#include "original_palette.hpp"
 #include "original_promotion_transaction.hpp"
 #include "original_skill94_formula.hpp"
 #include "original_sprite.hpp"
@@ -100,6 +101,8 @@ public:
 private:
     OriginalMenu font_;
     SharedBytes bin_, pal_, cel_;
+    bool inspection_help_{};
+    std::vector<uint8_t> inspection_description_;
     std::vector<Group> groups_;
     size_t header_{};
     int ap_base_{}, ap_repeat_{};
@@ -240,7 +243,7 @@ public:
         }
         return false;
     }
-    void open(const OriginalEvents::Unit& unit, Context context)
+    void open(const OriginalEvents::Unit& unit, Context context, bool inspection = false)
     {
         item_source_ = false;
         context_ = context;
@@ -250,7 +253,7 @@ public:
         request_.reset();
         group_ = skill_ = 0;
         page_ = Page::closed;
-        if (!entry_available(unit, context))
+        if (!inspection && !entry_available(unit, context))
         {
             return;
         }
@@ -292,7 +295,215 @@ public:
         }
     }
     const std::vector<Group>& groups() const { return groups_; }
+    bool inspection_available(const OriginalEvents::Unit& unit, bool second) const
+    {
+        const unsigned begin = second ? bin_.at(header_ + 2) : 0;
+        const unsigned end = second ? begin + bin_.at(header_ + 3) : bin_.at(header_ + 2);
+        for (unsigned group = begin; group < end; ++group)
+        {
+            if (unit.learned.at(group)) { return true; }
+        }
+        return false;
+    }
+    void open_inspection(const OriginalEvents::Unit& unit, bool second)
+    {
+        inspection_help_ = false;
+        Context context{};
+        context.second = second;
+        open(unit, context, true);
+    }
+    s2ne::Result<bool> try_draw_status_effects(std::vector<uint8_t>& image, const OriginalEvents::Unit& unit) const
+    {
+        ResourceReader reader(bin_);
+        const unsigned count = reader.number(header_ + 1, 1), extra = reader.number(header_ + 8, 1);
+        const size_t names = header_ + 9 + count * 2 + reader.number(header_ + 7, 1) * 37;
+        const size_t data = names + (count + extra) * 2;
+        unsigned displayed = 0;
+        int x = 0x1C1, y = 0xCD;
+        auto draw = [&](unsigned name, int duration) -> s2ne::Result<bool>
+        {
+            if (name >= extra) { return s2ne::Result<bool>::failure(make_error("Invalid status effect name index")); }
+            const size_t start = data + reader.number(names + (count + name) * 2);
+            if (!reader || start >= bin_.size()) { return s2ne::Result<bool>::failure(make_error("Invalid status effect name extent")); }
+            size_t end = start;
+            while (end < bin_.size() && bin_[end]) { ++end; }
+            if (end == bin_.size()) { return s2ne::Result<bool>::failure(make_error("Unterminated status effect name")); }
+            std::vector<uint8_t> text{ bin_.begin() + start, bin_.begin() + end };
+            font_.draw_small(image, text, x + 17 - int(text.size()) * 4, y + 4, 54, true);
+            if (duration > 0)
+            {
+                const auto number = std::to_string(duration);
+                font_.draw_small(image, { number.begin(), number.end() }, x + 21 - int(number.size()) * 8, y + 10, 103, true);
+            }
+            ++displayed;
+            x += 45;
+            if (x >= 0x275)
+            {
+                x = 0x1C1;
+                y += 28;
+            }
+            return s2ne::Result<bool>::success(true);
+        };
+        for (unsigned bit = 0; bit < 27 && displayed < 24; ++bit)
+        {
+            uint32_t flags = uint32_t(unit.status3c) | (uint32_t(unit.status3d) << 8) | (uint32_t(unit.status3e) << 16) | (uint32_t(unit.status3f) << 24);
+            if (unit.action_status_runtime)
+            {
+                ResourceReader runtime(*unit.action_status_runtime);
+                flags = runtime.number(0x3C, 4);
+            }
+            if (!(flags & (1u << bit))) { continue; }
+            const int duration = unit.action_status_runtime ? int(int8_t(unit.action_status_runtime->at(0x85 + bit))) : 0;
+            auto result = draw(bit, duration);
+            if (!result) { return result; }
+        }
+        if (unit.action_status_runtime)
+        {
+            ResourceReader runtime(*unit.action_status_runtime);
+            const uint32_t flags = runtime.number(0x38, 4);
+            for (unsigned bit = 0; bit < 15 && displayed < 24; ++bit)
+            {
+                if (!(flags & (1u << bit))) { continue; }
+                size_t offset = 0x48 + bit * 3;
+                if (bit >= 14) { offset = 0x7C; }
+                else if (bit >= 9) { offset = 0x63 + (bit - 9) * 5; }
+                auto result = draw(27 + bit, int(int8_t(unit.action_status_runtime->at(offset))));
+                if (!result) { return result; }
+            }
+        }
+        return s2ne::Result<bool>::success(true);
+    }
+    s2ne::Result<bool> try_draw_inspection(std::vector<uint8_t>& image, const OriginalEvents::Unit& unit) const
+    {
+        auto output = image;
+        auto panel = draw_original_cel(output, cel_, pal_, 240, 0, 380, OriginalZeroRun::transparent);
+        if (!panel) { return panel; }
+        for (size_t g = 0; g < groups_.size(); ++g)
+        {
+            const auto& name = groups_[g].name;
+            font_.draw_small(output, name, 508 + int(g % 3) * 45 - int(name.size()) * 4, 394 + int(g / 3) * 28, g == group_ ? 60 : 105, true);
+        }
+        if (!groups_.empty() && !groups_[group_].records.empty())
+        {
+            for (size_t s = 0; s < groups_[group_].records.size(); ++s)
+            {
+                auto icon = draw_original_cel(output, cel_, pal_, 263 + 2 * (groups_[group_].records[s].id - 1) + (s == skill_ ? 1 : 0), 26 + int(s) * 34, 394, OriginalZeroRun::transparent);
+                if (!icon) { return icon; }
+            }
+            font_.draw_original_large(output, font_.text_bytes(0x388 / 4), 78 - int(font_.text_bytes(0x388 / 4).size()) * 6, 439, 41);
+            font_.draw_original_large(output, selected().name(), 148, 438, 168);
+            const unsigned flags = selected().raw[33] & 7;
+            unsigned count = 0;
+            for (unsigned bit = 0; bit < 3; ++bit)
+            {
+                if (flags & (1u << bit)) { ++count; }
+            }
+            int x = count == 3 ? 240 : 252;
+            if (count && count < 3)
+            {
+                int cost = selected().word(13);
+                if (unit.abilities & 0x20) { cost /= 2; }
+                const auto text = std::to_string(cost) + " /";
+                font_.draw_small(output, { text.begin(), text.end() }, x, 442, 43, true);
+                x += int(text.size()) * 8;
+            }
+            const std::array<const char*, 3> labels{ " MP:", " ST:", " HP:" };
+            const std::array<int, 3> values{ unit.mp, unit.st, unit.hp };
+            for (unsigned bit = 0; bit < 3; ++bit)
+            {
+                if (!(flags & (1u << bit))) { continue; }
+                const auto text = std::string(labels[bit]) + std::to_string(values[bit]);
+                font_.draw_small(output, { text.begin(), text.end() }, x, 442, selected().word(13) > values[bit] ? 60 : 43, true);
+                x += int(text.size()) * 8;
+            }
+            unsigned category = 2;
+            if (selected().effect() == 1) { category = 0; }
+            else if (selected().effect() == 14 || selected().effect() == 18 || selected().effect() == 90) { category = 1; }
+            font_.draw_original_large(output, font_.text_bytes(15 + category), x >= 410 ? 420 : 416, 439, 196);
+        }
+        if (inspection_help_)
+        {
+            texture_resources.cover_text(260, 36, 355, 335);
+            OriginalPalette palette(pal_);
+            auto dimmed = palette.try_transform_rect(output, 0, 0, 640, 480, 8);
+            if (!dimmed) { return dimmed; }
+            auto help = draw_original_cel_legacy(output, cel_, pal_, 239, 260, 36, OriginalZeroRun::opaque);
+            if (!help) { return help; }
+            const auto& record = selected();
+            unsigned category = 2;
+            if (record.effect() == 1) { category = 0; }
+            else if (record.effect() == 14 || record.effect() == 18 || record.effect() == 90) { category = 1; }
+            font_.draw_original_wrapped(output, font_.text_bytes(70), 289, 66, 108, 6, 6, 28, 54);
+            font_.draw_original_large(output, record.name(), 365, 66, 178, 54);
+            font_.draw_original_large(output, font_.text_bytes(15 + category), 365, 94, 178, 54);
+            font_.draw_original_large(output, font_.text_bytes(18 + record.raw[31]), 365, 122, 178, 54);
+            std::string area = "----";
+            if (record.raw[18] == 1) { area = "1"; }
+            else if (record.raw[18] > 1)
+            {
+                constexpr char digits[] = "0123456789ABCDEF";
+                area = "TYPE ";
+                area += digits[(record.raw[18] + 8) & 15];
+            }
+            auto text = std::vector<uint8_t>(area.begin(), area.end());
+            font_.draw_original_large(output, text, 365, 150, 178, 54);
+            auto payment = std::to_string(record.word(13));
+            const std::array<const char*, 3> labels{ "/MP", "/ST", "/HP" };
+            for (unsigned bit = 0; bit < 3; ++bit)
+            {
+                if (record.raw[33] & (1u << bit)) { payment += labels[bit]; }
+            }
+            text.assign(payment.begin(), payment.end());
+            font_.draw_original_large(output, text, 365, 178, 178, 54);
+            font_.draw_original_wrapped(output, inspection_description_, 365, 206, 178, 5, 8, 28, 54);
+        }
+        image.swap(output);
+        return s2ne::Result<bool>::success(true);
+    }
+    bool inspection_help() const { return inspection_help_; }
+    void close_inspection_help() { inspection_help_ = false; }
+    s2ne::Result<bool> try_open_inspection_help()
+    {
+        if (groups_.empty() || groups_[group_].records.empty()) { return s2ne::Result<bool>::success(false); }
+        ResourceReader reader(bin_);
+        const size_t help = entry(9), record = help + size_t(selected().id - 1) * 6;
+        const size_t start = help + reader.number(record, 4), size = reader.number(record + 4);
+        if (!reader.extent(start, size)) { return s2ne::Result<bool>::failure(reader.error()); }
+        const auto begin = bin_.begin() + start;
+        const auto end = std::find(begin, begin + size, 0);
+        inspection_description_.assign(begin, end);
+        inspection_help_ = true;
+        return s2ne::Result<bool>::success(true);
+    }
     Page page() const { return page_; }
+    void navigate_inspection(unsigned scan, bool change_group)
+    {
+        if (scan == 0x4B || scan == 0x4D) { navigate(scan, change_group); }
+    }
+    bool mouse_inspection(int x, int y, bool click)
+    {
+        if (groups_.empty()) { return false; }
+        if (click && x >= 490 && x < 625 && y >= 391 && y < 475)
+        {
+            const size_t group = size_t((y - 391) / 28 * 3 + (x - 490) / 45);
+            if (group < groups_.size() && group != group_)
+            {
+                group_ = group;
+                skill_ = 0;
+            }
+            return false;
+        }
+        if (x >= 26 && x < 434 && y >= 392 && y < 425)
+        {
+            const size_t skill = size_t(x - 26) / 34;
+            if (skill < groups_[group_].records.size())
+            {
+                skill_ = skill;
+                return click;
+            }
+        }
+        return click && x >= 20 && x < 136 && y >= 435 && y < 468;
+    }
     size_t selected_group() const { return group_; }
     size_t selected_skill() const { return skill_; }
     const Record& selected() const { return groups_.at(group_).records.at(skill_); }

@@ -142,6 +142,8 @@ inline void original_teleport_smoke(const std::filesystem::path& root, SDL_Rende
     {
         s2ne::fatal("Teleport save roundtrip");
     }
-    std::cout << "PASS SDL production side-end45DB10/454ED5 stage60, " << frames << " presented frames, source=" << source.string() << "; controlled pad placement/action exhaustion, not natural navigation E2E; isolated before/after SAVE roundtrip\n";
+    std::print("PASS SDL production side-end45DB10/454ED5 stage60, {} presented frames, source={}; controlled pad placement/action exhaustion, not natural navigation E2E; isolated before/after SAVE roundtrip\n", frames, source.string());
 }
 }    //namespace s2ne
+
+#include "terminal_output.hpp"

@@ -565,42 +565,45 @@ public:
             }
             return out;
         };
-        sprite(210, 0, 0);
-        text(substitute(font_.text_bytes(178), { unit_.name }), 34, 14, 186);
-        for (size_t i = 0; i < choices_.size(); ++i)
+        if (page_ == Page::selection)
         {
-            int x = 101 + int(i % 4) * 145, y = i < 4 ? 64 : 270;
-            text(choices_[i].name, x - int(choices_[i].name.size()) * 6, y, i == selected_ ? 40 : 51);
-            ResourceReader palette(pal_), data(prg_);
-            const unsigned index_address = palette.number(1320, 4), frame_address = palette.number(1328, 4);
-            if (!palette || index_address < 10 || frame_address < 11)
+            sprite(210, 0, 0);
+            text(substitute(font_.text_bytes(178), { unit_.name }), 34, 14, 186);
+            for (size_t i = 0; i < choices_.size(); ++i)
             {
-                return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid promotion PRG directory"));
-            }
-            const size_t index = index_address - 10, frames = frame_address - 11;
-            const unsigned first = data.number(index + 2 + size_t(choices_[i].kind - 1) * 8 + 2);
-            const unsigned frame = first + (i == selected_ ? 4 + animation_frame_ : 0);
-            const size_t entry = frames + 2 + size_t(frame) * 7;
-            const size_t offset = data.number(entry, 4), length = data.number(entry + 4);
-            if (!data.extent(frames + offset, length) || length < 4)
-            {
-                return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid promotion class frame"));
-            }
-            const unsigned w = data.number(frames + offset) + 1, h = data.number(frames + offset + 2) + 1;
-            auto rendered = draw_original_sprite(image, std::span<const uint8_t>(prg_).subspan(frames + offset, length), pal_, 0, false,
-                x + (i == selected_ ? int(i % 4) : 0) - int(w / 2), y + 190 - int(h), OriginalZeroRun::transparent);
-            if (!rendered) { return s2ne::Result<std::vector<uint8_t>>::failure(rendered.error()); }
-            if (i == selected_)
-            {
-                for (int xx = x - 65; xx <= x + 65; ++xx)
+                int x = 101 + int(i % 4) * 145, y = i < 4 ? 64 : 270;
+                text(choices_[i].name, x - int(choices_[i].name.size()) * 6, y, i == selected_ ? 40 : 51);
+                ResourceReader palette(pal_), data(prg_);
+                const unsigned index_address = palette.number(1320, 4), frame_address = palette.number(1328, 4);
+                if (!palette || index_address < 10 || frame_address < 11)
                 {
-                    pixel(xx, y - 8, 40);
-                    pixel(xx, y + 192, 40);
+                    return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid promotion PRG directory"));
                 }
-                for (int yy = y - 8; yy <= y + 192; ++yy)
+                const size_t index = index_address - 10, frames = frame_address - 11;
+                const unsigned first = data.number(index + 2 + size_t(choices_[i].kind - 1) * 8 + 2);
+                const unsigned frame = first + (i == selected_ ? 4 + animation_frame_ : 0);
+                const size_t entry = frames + 2 + size_t(frame) * 7;
+                const size_t offset = data.number(entry, 4), length = data.number(entry + 4);
+                if (!data.extent(frames + offset, length) || length < 4)
                 {
-                    pixel(x - 65, yy, 40);
-                    pixel(x + 65, yy, 40);
+                    return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid promotion class frame"));
+                }
+                const unsigned w = data.number(frames + offset) + 1, h = data.number(frames + offset + 2) + 1;
+                auto rendered = draw_original_sprite(image, std::span<const uint8_t>(prg_).subspan(frames + offset, length), pal_, 0, false,
+                    x + (i == selected_ ? int(i % 4) : 0) - int(w / 2), y + 190 - int(h), OriginalZeroRun::transparent);
+                if (!rendered) { return s2ne::Result<std::vector<uint8_t>>::failure(rendered.error()); }
+                if (i == selected_)
+                {
+                    for (int xx = x - 65; xx <= x + 65; ++xx)
+                    {
+                        pixel(xx, y - 8, 40);
+                        pixel(xx, y + 192, 40);
+                    }
+                    for (int yy = y - 8; yy <= y + 192; ++yy)
+                    {
+                        pixel(x - 65, yy, 40);
+                        pixel(x + 65, yy, 40);
+                    }
                 }
             }
         }

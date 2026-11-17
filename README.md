@@ -14,7 +14,7 @@
 
 普通启动仅保留错误／异常诊断，不逐次打印音乐、音效、招式帧及结算流水；`--stdio`与专项smoke保留协议及验收证据输出。
 
-纹理迁移例外：工作目录发现`texture`时向stderr输出目录，缺目录走旧路径。当前外部模式已接入UI、头像、地图地面／物件／场景／战场背景、普通人物动作、代表法术及原字形；原索引数据仍用于遮挡、规则和状态计算。正常输出仍经过CPU framebuffer与SDL render-target的过渡桥，特殊人物状态、部分内部演出及其它直接sprite路径尚未迁完，不能据启动日志认定已完成无读回的全盘GPU渲染。大字外部字体使用资源根`chinese.ttf`生成SDL_ttf纹理缓存，仅texture模式启用；`SUPERSP.CFG`的`SIMPLIFIED_CHINESE=0`为默认关闭，设为1后读取资源根`cc\TSCharacters.txt`和`cc\TSPhrases.txt`进行繁转简。SimpleCC来源及许可见[说明](doc/simplecc-license.txt)。关卡数据导出建议见[关卡数据导出方案](doc/level-data-export.md)。
+纹理迁移例外：工作目录优先读取`texture.zip`，不存在时回退读取`texture`目录；两者都缺失才走旧路径。当前外部模式已接入UI、头像、地图地面／物件／场景／战场背景、普通人物动作、代表法术及原字形；原索引数据仍用于遮挡、规则和状态计算。正常输出仍经过CPU framebuffer与SDL render-target的过渡桥，特殊人物状态、部分内部演出及其它直接sprite路径尚未迁完，不能据启动日志认定已完成无读回的全盘GPU渲染。大字外部字体使用资源根`chinese.ttf`生成SDL_ttf纹理缓存，仅texture模式启用；`SUPERSP.CFG`的`SIMPLIFIED_CHINESE=0`为默认关闭，设为1后读取资源根`cc\TSCharacters.txt`和`cc\TSPhrases.txt`进行繁转简。SimpleCC来源及许可见[说明](doc/simplecc-license.txt)。关卡数据导出建议见[关卡数据导出方案](doc/level-data-export.md)。
 
 ### 还原原则
 
@@ -27,7 +27,7 @@
 
 ### 准许保留的差异
 
-- 允许使用 SDL3／SDL3_ttf、现代纹理缓存与 renderer 纹理融合替代 DOS/VGA 直接绘图；允许将原资源导出为外部 `texture` PNG/TXT、使用资源根 `chinese.ttf` 生成字体纹理缓存，并使用 `cc` 目录词典做可选繁转简。上述差异仅改变显示后端、字体载入和发布介质，不得改变原剧情、菜单结构、事件、战斗规则、调色板语义或输入时序；未完成的特殊状态与无读回全盘纹理仍按缺口记录。
+- 允许使用 SDL3／SDL3_ttf、现代纹理缓存与 renderer 纹理融合替代 DOS/VGA 直接绘图；允许将原资源导出为外部 `texture` PNG/TXT、将其打包为资源根 `texture.zip`（运行时优先读取 ZIP，缺失时读取目录）、使用资源根 `chinese.ttf` 生成字体纹理缓存，并使用 `cc` 目录词典做可选繁转简。上述差异仅改变显示后端、字体载入和发布介质，不得改变原剧情、菜单结构、事件、战斗规则、调色板语义或输入时序；未完成的特殊状态与无读回全盘纹理仍按缺口记录。
 
 统一范围与约束见 [PROGRESS：准许保留的差异](PROGRESS.md#approved-differences)，不在本页重复维护。双人对战排除不影响单人合作技能待办；音视频后端／编解码／播放实现可现代化，但不得自行更换内容或删除事件。资源合并去重与免换盘已获准；经证据确认的明显原版错误可修，须逐项记录原行为、修正原因与影响，不得泛化为任意改规则。箭头纠正、最终输出柔化及上述例外均以集中差异表为准。音频完整还原仅暂缓，与现代后端许可不矛盾，非永久省略。
 
@@ -72,7 +72,7 @@ msbuild .\S2NE.sln /p:Configuration=Release /p:Platform=x64 /m
 
 CMake 兼容构建也默认不向资源根目录发布；仅显式配置 `-DS2NE_PUBLISH_RUNTIME=ON` 才启用该复制步骤。构建输出目录所需的 DLL 复制保留，不触发 DAT／PRG 重建。
 
-原生 Release 构建完成后仅同步一份 `S2NE.exe` 到资源根目录，使用 `SkipUnchangedFiles`，不打包、不复制运行库；Debug 构建绝不执行此同步。完整运行库发布仍由用户显式使用 `/p:PublishGameRuntime=true` 或资源根目录 `publish-release.bat` 完成，避免把 Debug 程序错误放入游戏目录。完整打包还包括外部 `texture`、`chinese.ttf` 和 `cc` 词典；纹理目录仍可在后续资源处理完成后重新打包。
+原生 Release 构建完成后仅同步一份 `S2NE.exe` 到资源根目录，使用 `SkipUnchangedFiles`，不打包、不复制运行库；Debug 构建绝不执行此同步。完整运行库发布仍由用户显式使用 `/p:PublishGameRuntime=true` 或资源根目录 `publish-release.bat` 完成，避免把 Debug 程序错误放入游戏目录。完整打包还包括外部 `texture.zip`、`chinese.ttf` 和 `cc` 词典；开发目录仍保留 `texture` 文件夹作为 ZIP 缺失时的回退来源。
 
 发布现由用户手动执行资源根目录 `publish-release.bat`，同步调用现有发布流程；结束直接退出，不暂停或另开终端，失败返回非零码。`publish-release.bat -SkipBuild`只同步并重打包。后续日常修改仅构建验证，不主动发布。工具维护清单见[tools/README](tools/README.md)。
 
