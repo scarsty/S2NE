@@ -1,0 +1,794 @@
+{
+  "map_id": 46,
+  "music": 19,
+  "route": {
+    "next_stage": 275,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 46,
+    "fantasy_stage": 275
+  },
+  "units": [
+    {
+      "id": 1,
+      "appearance": 91,
+      "name": "娜塔莉雅",
+      "x": 13,
+      "y": 74,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 700,
+      "max_hp": 102,
+      "equipment": [
+        23,
+        137,
+        153,
+        169,
+        194,
+        0
+      ]
+    },
+    {
+      "id": 2,
+      "appearance": 19,
+      "name": "穆爾",
+      "x": 14,
+      "y": 72,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 720,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        119,
+        149,
+        176,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 3,
+      "appearance": 22,
+      "name": "泰普",
+      "x": 13,
+      "y": 76,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 790,
+      "max_hp": 0,
+      "equipment": [
+        66,
+        137,
+        156,
+        179,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 4,
+      "appearance": 64,
+      "name": "蘇",
+      "x": 14,
+      "y": 74,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 542,
+      "max_hp": 188,
+      "equipment": [
+        37,
+        111,
+        160,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 5,
+      "appearance": 10,
+      "name": "古斯塔夫",
+      "x": 12,
+      "y": 76,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 755,
+      "max_hp": 0,
+      "equipment": [
+        66,
+        137,
+        156,
+        179,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 6,
+      "appearance": 54,
+      "name": "黛西",
+      "x": 14,
+      "y": 76,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 600,
+      "max_hp": 20,
+      "equipment": [
+        52,
+        122,
+        157,
+        177,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 27,
+      "name": "特殊戰隊",
+      "x": 19,
+      "y": 42,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 442,
+      "max_hp": 0,
+      "equipment": [
+        28,
+        116,
+        165,
+        183,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 27,
+      "name": "特殊戰隊",
+      "x": 9,
+      "y": 64,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 442,
+      "max_hp": 0,
+      "equipment": [
+        28,
+        116,
+        165,
+        183,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 27,
+      "name": "特殊戰隊",
+      "x": 13,
+      "y": 26,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 442,
+      "max_hp": 0,
+      "equipment": [
+        28,
+        116,
+        165,
+        183,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 27,
+      "name": "特殊戰隊",
+      "x": 9,
+      "y": 48,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 442,
+      "max_hp": 0,
+      "equipment": [
+        28,
+        116,
+        165,
+        183,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 65,
+      "name": "異界法師",
+      "x": 21,
+      "y": 41,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 337,
+      "max_hp": 154,
+      "equipment": [
+        44,
+        117,
+        160,
+        182,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 65,
+      "name": "異界法師",
+      "x": 12,
+      "y": 66,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 337,
+      "max_hp": 154,
+      "equipment": [
+        44,
+        117,
+        160,
+        182,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 65,
+      "name": "異界法師",
+      "x": 2,
+      "y": 43,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 337,
+      "max_hp": 154,
+      "equipment": [
+        44,
+        117,
+        160,
+        182,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 65,
+      "name": "異界法師",
+      "x": 14,
+      "y": 38,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 337,
+      "max_hp": 154,
+      "equipment": [
+        44,
+        117,
+        160,
+        182,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 25,
+      "name": "強弓手",
+      "x": 23,
+      "y": 39,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 410,
+      "max_hp": 0,
+      "equipment": [
+        58,
+        116,
+        165,
+        183,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 25,
+      "name": "強弓手",
+      "x": 5,
+      "y": 63,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 410,
+      "max_hp": 0,
+      "equipment": [
+        58,
+        116,
+        165,
+        183,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 25,
+      "name": "強弓手",
+      "x": 10,
+      "y": 38,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 410,
+      "max_hp": 0,
+      "equipment": [
+        58,
+        116,
+        165,
+        183,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 58,
+      "name": "女劍俠",
+      "x": 21,
+      "y": 36,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 420,
+      "max_hp": 0,
+      "equipment": [
+        14,
+        116,
+        165,
+        183,
+        193,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 58,
+      "name": "女劍俠",
+      "x": 9,
+      "y": 70,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 420,
+      "max_hp": 0,
+      "equipment": [
+        14,
+        116,
+        165,
+        183,
+        193,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 58,
+      "name": "女劍俠",
+      "x": 16,
+      "y": 22,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 420,
+      "max_hp": 0,
+      "equipment": [
+        14,
+        116,
+        165,
+        183,
+        193,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 58,
+      "name": "女劍俠",
+      "x": 5,
+      "y": 50,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 420,
+      "max_hp": 0,
+      "equipment": [
+        14,
+        116,
+        165,
+        183,
+        193,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 25,
+      "y": 46,
+      "direction": 3,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 26,
+      "y": 44,
+      "direction": 3,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 25,
+      "y": 48,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 27,
+      "y": 48,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 27,
+      "y": 46,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 26,
+      "y": 46,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 26,
+      "y": 48,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 26,
+      "y": 48.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 27,
+      "y": 48.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 29,
+      "y": 48.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 29,
+      "y": 49.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 30,
+      "y": 50.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 7526.0,
+    "base_stage": 46
+  },
+  "objects": [],
+  "name": "北方合流篇-274-底座46",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      },
+      "lines": [
+        {
+          "speaker": 6,
+          "name": "黛西",
+          "text": "這裡的駐兵不多，不像是戰略要地啊。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "....也許吧，我們自己不能大意就是了，這裡應該都是菁英部隊在把守著。"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "夥伴們，準備好了嗎？"
+        },
+        {
+          "speaker": 5,
+          "name": "古斯塔夫",
+          "text": "沒問題，可以動手了。"
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "completion_flag": 15,
+      "lines": [
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "搞定了，現在我們真的要炸水壩嗎？"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "....不，進攻這裡只是威嚇而已，目的是希望南方領能自行退去，如果真的炸水壩傷亡太慘重了。"
+        },
+        {
+          "speaker": 3,
+          "name": "泰普",
+          "text": "那....我們攻下這座水壩後接下來要做什麼？"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "下山，然後離開水壩。"
+        },
+        {
+          "speaker": 14,
+          "name": "飛霜",
+          "text": "什麼？"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "沒辦法....我們又不能真的蠻幹，下山去看看南方領的反應吧。"
+        }
+      ]
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 12,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 10,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 9,
+      "completion_flag": 13,
+      "condition": 7
+    },
+    {
+      "type": 10,
+      "completion_flag": 14,
+      "condition": 1,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 286,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "有個洞窟，看起來好深，有繩索嗎？"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "有啊，之前我們有撿到。"
+        }
+      ]
+    },
+    {
+      "type": 9,
+      "completion_flag": 0,
+      "condition": 6,
+      "route_stage": 64,
+      "lines": [
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "等會進去看看。"
+        }
+      ]
+    }
+  ]
+}

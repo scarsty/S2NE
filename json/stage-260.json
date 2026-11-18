@@ -1,0 +1,920 @@
+{
+  "map_id": 10,
+  "music": 6,
+  "route": {
+    "next_stage": 261,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 10,
+    "fantasy_stage": 261
+  },
+  "units": [
+    {
+      "id": 50,
+      "appearance": 95,
+      "name": "護衛隊長",
+      "x": 5,
+      "y": 7,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 212,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 70,
+      "appearance": 20,
+      "name": "駐軍隊長",
+      "x": 6,
+      "y": 45,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 324,
+      "max_hp": 0,
+      "equipment": [
+        5,
+        132,
+        151,
+        172,
+        188,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 13,
+      "name": "哨站弓弩手",
+      "x": 7,
+      "y": 31,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 184,
+      "max_hp": 0,
+      "equipment": [
+        49,
+        120,
+        151,
+        172,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 13,
+      "name": "哨站弓弩手",
+      "x": 3,
+      "y": 31,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 184,
+      "max_hp": 0,
+      "equipment": [
+        49,
+        120,
+        151,
+        172,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 13,
+      "name": "哨站弓弩手",
+      "x": 3,
+      "y": 42,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 184,
+      "max_hp": 0,
+      "equipment": [
+        49,
+        120,
+        151,
+        172,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 13,
+      "name": "哨站弓弩手",
+      "x": 4,
+      "y": 40,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 184,
+      "max_hp": 0,
+      "equipment": [
+        49,
+        120,
+        151,
+        172,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 13,
+      "name": "哨站弓弩手",
+      "x": 18,
+      "y": 8,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 184,
+      "max_hp": 0,
+      "equipment": [
+        49,
+        120,
+        151,
+        172,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 15,
+      "name": "哨站拳術師",
+      "x": 7,
+      "y": 27,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 248,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        102,
+        149,
+        171,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 15,
+      "name": "哨站拳術師",
+      "x": 6,
+      "y": 29,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 248,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        102,
+        149,
+        171,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 15,
+      "name": "哨站拳術師",
+      "x": 2,
+      "y": 30,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 248,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        102,
+        149,
+        171,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 15,
+      "name": "哨站拳術師",
+      "x": 1,
+      "y": 32,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 248,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        102,
+        149,
+        171,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 15,
+      "name": "哨站拳術師",
+      "x": 5,
+      "y": 35,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 248,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        102,
+        149,
+        171,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 15,
+      "name": "哨站拳術師",
+      "x": 16,
+      "y": 10,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 248,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        102,
+        149,
+        171,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 15,
+      "name": "哨站拳術師",
+      "x": 15,
+      "y": 21,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 248,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        102,
+        149,
+        171,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 50,
+      "name": "哨站治療師",
+      "x": 7,
+      "y": 29,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 173,
+      "max_hp": 71,
+      "equipment": [
+        34,
+        105,
+        159,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 50,
+      "name": "哨站治療師",
+      "x": 2,
+      "y": 34,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 173,
+      "max_hp": 71,
+      "equipment": [
+        34,
+        105,
+        159,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 50,
+      "name": "哨站治療師",
+      "x": 6,
+      "y": 39,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 173,
+      "max_hp": 71,
+      "equipment": [
+        34,
+        105,
+        159,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 50,
+      "name": "哨站治療師",
+      "x": 17,
+      "y": 12,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 173,
+      "max_hp": 71,
+      "equipment": [
+        34,
+        105,
+        159,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 53,
+      "name": "哨站法師",
+      "x": 8,
+      "y": 29,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 149,
+      "max_hp": 81,
+      "equipment": [
+        34,
+        104,
+        159,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 53,
+      "name": "哨站法師",
+      "x": 2,
+      "y": 32,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 149,
+      "max_hp": 81,
+      "equipment": [
+        34,
+        104,
+        159,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 53,
+      "name": "哨站法師",
+      "x": 5,
+      "y": 40,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 149,
+      "max_hp": 81,
+      "equipment": [
+        34,
+        104,
+        159,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 53,
+      "name": "哨站法師",
+      "x": 7,
+      "y": 36,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 149,
+      "max_hp": 81,
+      "equipment": [
+        34,
+        104,
+        159,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 53,
+      "name": "哨站法師",
+      "x": 16,
+      "y": 17,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 149,
+      "max_hp": 81,
+      "equipment": [
+        34,
+        104,
+        159,
+        167,
+        0,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 2,
+      "y": 10,
+      "direction": 1,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 3,
+      "y": 8,
+      "direction": 1,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 2,
+      "y": 12,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 2,
+      "y": 6,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 4,
+      "y": 8,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 3,
+      "y": 10,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 1,
+      "y": 10,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 1,
+      "y": 10.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 2,
+      "y": 10.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 4,
+      "y": 10.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 4,
+      "y": 11.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 6617.0,
+    "base_stage": 10
+  },
+  "objects": [],
+  "name": "北方合流篇-260-底座10",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 13,
+      "trigger": {
+        "kind": "turn",
+        "turn": 2
+      },
+      "lines": [
+        {
+          "speaker": 70,
+          "name": "駐軍隊長",
+          "text": "站住！所有過往商旅都要停下受檢。"
+        },
+        {
+          "speaker": 12,
+          "name": "南巡使",
+          "text": "怎麼辦，要停下來受檢嗎？"
+        },
+        {
+          "speaker": 70,
+          "name": "駐軍隊長",
+          "text": "猶豫什麼！趕快過來受檢！"
+        }
+      ]
+    },
+    {
+      "type": 9,
+      "completion_flag": 16,
+      "condition": 1,
+      "required_flags": [
+        44
+      ]
+    },
+    {
+      "type": 9,
+      "completion_flag": 0,
+      "condition": 2,
+      "required_flags": [
+        14
+      ]
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 11,
+      "raw_operands": {
+        "offset_3": 16,
+        "offset_5": 5,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 12,
+      "raw_operands": {
+        "offset_3": 16,
+        "offset_5": 5,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 6,
+      "completion_flag": 4,
+      "raw_operands": {
+        "offset_3": 16,
+        "offset_5": 50,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 50,
+          "music_after": 27,
+          "name": "商隊隊長",
+          "text": "啊..請等一下，麥隊長。"
+        },
+        {
+          "speaker": 70,
+          "name": "駐軍隊長",
+          "text": "旅行商隊的護衛隊長？這些人和你有關係嗎？"
+        },
+        {
+          "speaker": 50,
+          "name": "商隊隊長",
+          "text": "是的，這次我們商隊之所以能安全逃過沙盜的追擊，全靠這幾位朋友幫忙，我可以保證他們不是歹人，希望麥隊長能順利予以放行。"
+        },
+        {
+          "speaker": 70,
+          "name": "駐軍隊長",
+          "text": "....既然你肯擔保，就讓他們通過也無妨，我看這幾個傢伙也不像是盜賊，好吧，你們繳交通關費之後就可以過去了。"
+        },
+        {
+          "speaker": 50,
+          "name": "商隊隊長",
+          "text": "多謝麥隊長賞臉。"
+        },
+        {
+          "speaker": 70,
+          "name": "駐軍隊長",
+          "text": "好了，下次多陪我喝兩杯便是了。"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "那我們過關吧。"
+        }
+      ]
+    },
+    {
+      "type": 9,
+      "completion_flag": 0
+    },
+    {
+      "type": 1,
+      "completion_flag": 17,
+      "trigger": {
+        "kind": "turn",
+        "turn": 3
+      }
+    },
+    {
+      "type": 9,
+      "completion_flag": 1,
+      "condition": 1,
+      "required_flags": [
+        14,
+        17
+      ],
+      "lines": [
+        {
+          "speaker": 12,
+          "name": "南巡使",
+          "text": "旁邊有路可以跑啊，快溜吧！"
+        },
+        {
+          "speaker": 14,
+          "name": "飛霜",
+          "text": "予以否決！"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "沒辦法，又要打一場了。"
+        },
+        {
+          "speaker": 70,
+          "name": "駐軍隊長",
+          "text": "好個善良百姓，眾衛兵全上！"
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "completion_flag": 15,
+      "condition": 2,
+      "lines": [
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "呼....好累，下次不玩了。"
+        },
+        {
+          "speaker": 12,
+          "name": "南巡使",
+          "text": "沒辦法，總不能被搜身啊，不跑不行。"
+        },
+        {
+          "speaker": 14,
+          "name": "飛霜",
+          "text": "把你送到亞修斯後，我一定要好好打一場。"
+        }
+      ]
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 11,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": -5,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 12,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": -5,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    }
+  ]
+}

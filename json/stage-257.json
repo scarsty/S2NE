@@ -1,0 +1,856 @@
+{
+  "map_id": 76,
+  "music": 6,
+  "route": {
+    "next_stage": 258,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 76,
+    "fantasy_stage": 258
+  },
+  "units": [
+    {
+      "id": 110,
+      "appearance": 60,
+      "name": "弓兵統領",
+      "x": 1,
+      "y": 71,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 8,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 336,
+      "max_hp": 0,
+      "equipment": [
+        49,
+        120,
+        150,
+        170,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 20,
+      "name": "指揮官",
+      "x": 10,
+      "y": 33,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 320,
+      "max_hp": 0,
+      "equipment": [
+        5,
+        120,
+        149,
+        171,
+        185,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 48,
+      "name": "十字弓隊",
+      "x": 2,
+      "y": 66,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 8,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 192,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 48,
+      "name": "十字弓隊",
+      "x": 3,
+      "y": 72,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 8,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 192,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 48,
+      "name": "十字弓隊",
+      "x": 1,
+      "y": 68,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 8,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 192,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 48,
+      "name": "十字弓隊",
+      "x": 3,
+      "y": 69,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 8,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 192,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 48,
+      "name": "十字弓隊",
+      "x": 1,
+      "y": 75,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 8,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 192,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 14,
+      "name": "忍者",
+      "x": 12,
+      "y": 63,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 172,
+      "max_hp": 0,
+      "equipment": [
+        18,
+        100,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 14,
+      "name": "忍者",
+      "x": 22,
+      "y": 69,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 172,
+      "max_hp": 0,
+      "equipment": [
+        18,
+        100,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 14,
+      "name": "忍者",
+      "x": 15,
+      "y": 34,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 172,
+      "max_hp": 0,
+      "equipment": [
+        18,
+        100,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 14,
+      "name": "忍者",
+      "x": 7,
+      "y": 33,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 172,
+      "max_hp": 0,
+      "equipment": [
+        18,
+        100,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 14,
+      "name": "忍者",
+      "x": 3,
+      "y": 71,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 172,
+      "max_hp": 0,
+      "equipment": [
+        18,
+        100,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 9,
+      "name": "魔法師",
+      "x": 15,
+      "y": 58,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 109,
+      "max_hp": 65,
+      "equipment": [
+        32,
+        99,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 9,
+      "name": "魔法師",
+      "x": 21,
+      "y": 71,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 109,
+      "max_hp": 65,
+      "equipment": [
+        32,
+        99,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 9,
+      "name": "魔法師",
+      "x": 9,
+      "y": 37,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 109,
+      "max_hp": 65,
+      "equipment": [
+        32,
+        99,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 9,
+      "name": "魔法師",
+      "x": 13,
+      "y": 38,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 109,
+      "max_hp": 65,
+      "equipment": [
+        32,
+        99,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 38,
+      "name": "長槍兵",
+      "x": 14,
+      "y": 60,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 154,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        149,
+        168,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 38,
+      "name": "長槍兵",
+      "x": 20,
+      "y": 73,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 154,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        149,
+        168,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 38,
+      "name": "長槍兵",
+      "x": 13,
+      "y": 33,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 154,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        149,
+        168,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 38,
+      "name": "長槍兵",
+      "x": 1,
+      "y": 67,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 154,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        149,
+        168,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "守門戰士",
+      "x": 11,
+      "y": 67,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 248,
+      "max_hp": 0,
+      "equipment": [
+        62,
+        129,
+        150,
+        168,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "守門戰士",
+      "x": 10,
+      "y": 65,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 248,
+      "max_hp": 0,
+      "equipment": [
+        62,
+        129,
+        150,
+        168,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "守門戰士",
+      "x": 14,
+      "y": 74,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 248,
+      "max_hp": 0,
+      "equipment": [
+        62,
+        129,
+        150,
+        168,
+        186,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 1,
+      "y": 45,
+      "direction": 2,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 2,
+      "y": 47,
+      "direction": 2,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 2,
+      "y": 49,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 1,
+      "y": 49,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 0,
+      "y": 47,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 2,
+      "y": 44,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 2,
+      "y": 44.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 3,
+      "y": 44.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 5,
+      "y": 44.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 5,
+      "y": 45.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 6,
+      "y": 46.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 8,
+      "y": 47.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 6572.0,
+    "base_stage": 76
+  },
+  "objects": [],
+  "name": "北方合流篇-257-底座76",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 13,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      },
+      "lines": [
+        {
+          "speaker": 5,
+          "name": "古斯塔夫",
+          "text": "娜塔，我們的目標是什麼？"
+        }
+      ]
+    },
+    {
+      "type": 8,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 21,
+        "offset_7": 73,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 8,
+      "completion_flag": 0,
+      "condition": 7,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 90,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "看到通往城門口旁的兩枝軍旗了嗎？我們在那裡點火焚旗，把城內的守軍都引出來。"
+        },
+        {
+          "speaker": 3,
+          "name": "泰普",
+          "text": "放火？呵呵呵就交給我吧。"
+        },
+        {
+          "speaker": 2,
+          "name": "穆爾",
+          "text": "城門可不是等閒之地，隨時有敵軍會來支援的，我們可得快點。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "不錯，動作越快越安全。"
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "completion_flag": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 8
+      },
+      "lines": [
+        {
+          "speaker": 110,
+          "name": "弓兵統領",
+          "text": "還站在原地發呆啊！不要死守原地，攻擊入侵者！"
+        }
+      ]
+    },
+    {
+      "type": 9,
+      "completion_flag": 14
+    },
+    {
+      "type": 13,
+      "completion_flag": 0,
+      "condition": 1,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 168,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 9,
+      "completion_flag": 3,
+      "lines": [
+        {
+          "speaker": 6,
+          "name": "黛西",
+          "text": "大功告成！"
+        }
+      ]
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 11,
+      "raw_operands": {
+        "offset_3": 8,
+        "offset_5": 10,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 12,
+      "raw_operands": {
+        "offset_3": 8,
+        "offset_5": 15,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 9,
+      "completion_flag": 4,
+      "lines": [
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "起火了，我們快走。"
+        }
+      ]
+    }
+  ]
+}

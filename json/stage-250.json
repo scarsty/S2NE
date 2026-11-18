@@ -1,0 +1,703 @@
+{
+  "map_id": 99,
+  "music": 29,
+  "route": {
+    "next_stage": 251,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 99,
+    "fantasy_stage": 251
+  },
+  "units": [
+    {
+      "id": 149,
+      "appearance": 131,
+      "name": "山野村夫",
+      "x": 0,
+      "y": 65,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 240,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        132,
+        150,
+        0,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 75,
+      "name": "骷髏大帝",
+      "x": 5,
+      "y": 34,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 777,
+      "max_hp": 150,
+      "equipment": [
+        24,
+        140,
+        156,
+        0,
+        199,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 71,
+      "name": "亡靈法師",
+      "x": 7,
+      "y": 40,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 313,
+      "max_hp": 153,
+      "equipment": [
+        20,
+        132,
+        150,
+        0,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 71,
+      "name": "亡靈法師",
+      "x": 4,
+      "y": 54,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 313,
+      "max_hp": 153,
+      "equipment": [
+        41,
+        109,
+        162,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 71,
+      "name": "亡靈法師",
+      "x": 14,
+      "y": 40,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 313,
+      "max_hp": 153,
+      "equipment": [
+        41,
+        109,
+        162,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 70,
+      "name": "骷髏戰士",
+      "x": 10,
+      "y": 40,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 240,
+      "max_hp": 0,
+      "equipment": [
+        41,
+        109,
+        162,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 70,
+      "name": "骷髏戰士",
+      "x": 7,
+      "y": 45,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 240,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        132,
+        150,
+        0,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 70,
+      "name": "骷髏戰士",
+      "x": 9,
+      "y": 45,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 240,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        132,
+        150,
+        0,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 70,
+      "name": "骷髏戰士",
+      "x": 5,
+      "y": 46,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 240,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        132,
+        150,
+        0,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 70,
+      "name": "骷髏戰士",
+      "x": 4,
+      "y": 61,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 240,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        132,
+        150,
+        0,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 70,
+      "name": "骷髏戰士",
+      "x": 1,
+      "y": 50,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 240,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        132,
+        150,
+        0,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 70,
+      "name": "骷髏戰士",
+      "x": 2,
+      "y": 62,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 240,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        132,
+        150,
+        0,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 70,
+      "name": "骷髏戰士",
+      "x": 15,
+      "y": 43,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 240,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        132,
+        150,
+        0,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 70,
+      "name": "骷髏戰士",
+      "x": 19,
+      "y": 48,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 240,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        132,
+        150,
+        0,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 70,
+      "name": "骷髏戰士",
+      "x": 13,
+      "y": 38,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 240,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        132,
+        150,
+        0,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 70,
+      "name": "骷髏戰士",
+      "x": 3,
+      "y": 36,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 240,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        132,
+        150,
+        0,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 70,
+      "name": "骷髏戰士",
+      "x": 6,
+      "y": 33,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 240,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        132,
+        150,
+        0,
+        190,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 15,
+      "y": 61,
+      "direction": 3,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 16,
+      "y": 65,
+      "direction": 3,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 15,
+      "y": 63,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 16,
+      "y": 63,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 17,
+      "y": 61,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 14,
+      "y": 65,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 15,
+      "y": 65,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 16,
+      "y": 61,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 16,
+      "y": 61.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 17,
+      "y": 61.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 19,
+      "y": 61.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 19,
+      "y": 62.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 6196.0,
+    "base_stage": 99
+  },
+  "objects": [],
+  "name": "北方合流篇-250-底座99",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      },
+      "lines": [
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "骷髏兵團？南方領真是人才濟濟啊。"
+        },
+        {
+          "speaker": 3,
+          "name": "泰普",
+          "text": "聖堂騎士派完了叫不死怪物迎戰，我看這兩支部隊才是一對兒。"
+        },
+        {
+          "speaker": 35,
+          "name": "歐西德",
+          "text": "兩邊都是害人的兵器，留不得。"
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "completion_flag": 13
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 12,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 10,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 6,
+      "completion_flag": 0,
+      "condition": 2,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 149,
+        "offset_7": 0,
+        "offset_9": 65
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 7,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 149,
+        "offset_7": 6,
+        "offset_9": 54
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 149,
+          "name": "山野村夫",
+          "text": "這....這些惡鬼是你們打敗的嗎？"
+        },
+        {
+          "speaker": 5,
+          "name": "古斯塔夫",
+          "text": "是啊，大家一起上就不會太難對付了。"
+        },
+        {
+          "speaker": 6,
+          "name": "黛西",
+          "text": "捉妖打鬼我們很在行的，這點妖怪不算什麼。"
+        },
+        {
+          "speaker": 149,
+          "name": "山野村夫",
+          "text": "真的是你們打敗的！太好了！太謝謝你們了！"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "不客氣。請問有比官道更快通往奧爾登軍港的便道嗎？"
+        },
+        {
+          "speaker": 149,
+          "name": "山野村夫",
+          "text": "有的有的。往這裡切過去會經過沼澤地帶，比較辛苦但也快些。"
+        },
+        {
+          "speaker": 2,
+          "name": "穆爾",
+          "text": "那官道呢？"
+        },
+        {
+          "speaker": 149,
+          "name": "山野村夫",
+          "text": "最近這兩天有好多巡邏隊來來往往，會找路人麻煩，被碰上就倒楣了。"
+        }
+      ]
+    },
+    {
+      "type": 9,
+      "completion_flag": 0,
+      "condition": 6,
+      "route_stage": 102
+    },
+    {
+      "type": 9,
+      "completion_flag": 0,
+      "condition": 6,
+      "route_stage": 101
+    }
+  ]
+}

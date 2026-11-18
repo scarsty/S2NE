@@ -236,3 +236,24 @@ SDL资源实验（2026-11-16）：已按用户授权生成`out/textures-sdl`简�
 - `OriginalBattleMenu` no longer reports the palette transform error every frame when the texture framebuffer is not indexed; it preserves the battlefield image instead. This prevents the prior fatal/error flood, but does not yet reproduce the original indexed-palette translucency in texture mode.
 - No claim is made that the translucent personal battle-option backing or the complete original UI reproduction is finished.
 
+## Third-route deployment checkpoint
+
+### JSON stage loading boundary (2026-11-19)
+
+- Third-route campaign routing now reads `stage-201.json` through `stage-312.json` directly for `next_stage` and `mode`; it no longer derives those fields from an original BIN stage header.
+- Third-route event count, type, completion flag, trigger turn, flag, condition, and exported event operands are loaded from the JSON event array. The third-route loader no longer runs the original BIN event-directory validation before loading the JSON stage.
+- This is an incremental loading boundary, not a completed JSON-only implementation. Unit initialization, dynamic object chains, rewards, and some public event semantics still use original resource tables. They remain explicitly unclaimed until separately exported and validated.
+
+- The 201-312 JSON stages now preserve the verified original deployment array for their mapped base stage. Stages whose original JSON has no deployment array (base 26, 57, and 58) intentionally keep an empty override so the runtime BIN deployment decoder remains authoritative; no synthetic coordinates are added.
+- The third-route roster order is `11,1,14,15,13,2,3,4`. The original south envoy role 12 is excluded from third-route deployment candidates. Natalia (role 1) is assigned to the first available original slot and marked fixed by the deployment runtime.
+- Third-route interbattle town selection now reads `route.interbattle_town_id` instead of treating logical stage IDs 201+ as town IDs. This is code- and build-verified; end-to-end village service interaction still requires a fresh CLI run.
+- The current route order remains the original base-stage numeric order. No攻略/official strength table was found in the repository, so it is not claimed to be a weak-to-strong ordering.
+
+# 2025-02-14 第三路线短回归（未完成）
+
+- `stage-201` 当前已确认由 JSON 提供 2 个真实敌军（原始 stage 162），不是“无敌人”数据。
+- 保留 `stage-140` 的三项路线选择；第三路线选择后可进入 `stage-201` 的 briefing 状态。
+- 对同一 `OriginalEvents` 实例增加了同阶段加载幂等保护，并在序幕阶段切换处避免重复加载当前阶段；Release x64 构建和 clang-format 校验通过。
+- 短回归仍未通过：进程可到达 `stage=201, prologue_phase=4`，发送 `briefing_advance` 后在协议响应前卡住，尚未取得第一回合的真实 fatal 栈。
+- stderr 仍显示恢复/序幕创建路径交替加载 140/201；这说明目前还有跨对象的恢复路径重复加载，不能以静默去重掩盖，需继续按调用链拆除。
+- 因此不能宣称第一关自动通关，也不能宣称 JSON-only 已完成。

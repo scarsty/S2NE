@@ -13,7 +13,7 @@ class OriginalDeployment
     OriginalMenu font_;
     OriginalShopMenu graphics_;
     OriginalMap map_;
-    Battle picker_;
+    std::optional<Battle> picker_;
     OriginalEvents events_;
     OriginalSave::State raw_;
     std::vector<size_t> roles_;
@@ -285,15 +285,19 @@ class OriginalDeployment
     }
 
 public:
-    OriginalDeployment(const std::filesystem::path& root, OriginalEvents events, OriginalSave::State raw, OriginalDisc disc) : root_(root), disc_(disc), font_(root), graphics_(root, disc), map_(root, disc), picker_(Battle::load(root, events.map_id, disc)), events_(std::move(events)), raw_(std::move(raw))
+    OriginalDeployment(const std::filesystem::path& root, OriginalEvents events, OriginalSave::State raw, OriginalDisc disc) : root_(root), disc_(disc), font_(root), graphics_(root, disc), map_(root, disc), events_(std::move(events)), raw_(std::move(raw))
     {
+        auto picker = Battle::try_load(root, events_.map_id, disc);
+        if (!picker) { fatal(picker.error()); }
+        picker_.emplace(std::move(picker).value());
         slots_ = events_.deployment_slots();
         fixed_.resize(events_.units.size());
         for (size_t i = 0; i < raw_.groups[0].units.size(); ++i)
         {
             auto& u = events_.units.at(i);
             // 4414FC(mode=1)：0x20、0x40、控制类型1和0x10均不列入出阵候选。
-            if (!(u.status_flags & 0x70) && u.behavior != 1 && word(raw_.groups[0].units[i], 8) != 1)
+            const bool third_route_role = events_.stage >= 201 && (u.id == 11 || u.id == 14 || u.id == 15 || u.id == 13 || u.id == 1 || u.id == 2 || u.id == 3 || u.id == 4);
+            if (!(u.status_flags & 0x70) && u.behavior != 1 && word(raw_.groups[0].units[i], 8) != 1 && (events_.stage < 201 || third_route_role))
             {
                 roles_.push_back(i);
                 // 原4414FC(mode=1)只重建可部署候选的登场状态。
@@ -302,10 +306,33 @@ public:
         }
         if (roles_.empty() || slots_.empty())
         {
+            if (events_.stage >= 201)
+            {
+                fatal("Third-route deployment requires both protagonists");
+            }
             done_ = true;
             return;
         }
+        if (events_.stage >= 201 && roles_.size() < 8)
+        {
+            fatal("Third-route deployment requires all eight core roster members");
+        }
         assignment_.assign(capacity(), -1);
+        if (events_.stage >= 201)
+        {
+            size_t mandatory_count = 0;
+            for (size_t role : roles_)
+            {
+                const int id = int(events_.units[role].id);
+                if (id == 11 || id == 1)
+                {
+                    if (mandatory_count >= capacity()) { fatal("Third-route deployment has no slot for protagonist"); }
+                    assign(role, mandatory_count);
+                    fixed_[role] = true;
+                    ++mandatory_count;
+                }
+            }
+        }
         // 原44AED2先保留指定角色；没有指定角色时仅默认第一人出阵。
         for (size_t s = 0; s < capacity(); ++s)
         {
@@ -330,7 +357,8 @@ public:
         placement_cell_.assign(icons.begin() + placement + 4, icons.begin() + placement + 2052);
         for (size_t i = 0; i < 2; ++i) { backgrounds_[i] = dword(cells_, 2 + i * 8); }
         map_.load(events_.map_id);
-        picker_.set_mask_surfaces(true);
+        std::print(stderr, "Original deployment ctor map loaded stage={} slots={} roles={}\n", events_.stage, slots_.size(), roles_.size());
+        picker_->set_mask_surfaces(true);
     }
     size_t capacity() const { return std::min(slots_.size(), roles_.size()); }
     bool done() const { return done_; }
@@ -341,7 +369,17 @@ public:
     const auto& events() const { return events_; }
     const auto& raw() const { return raw_; }
     const auto& slots() const { return slots_; }
-    auto cell_screen(int x, int y) const { return map_.screen_position(x, y); }
+    auto cell_screen(int x, int y) const
+    {
+        auto result = map_.try_screen_position(x, y);
+        if (!result)
+        {
+            const auto [width, height] = map_.dimensions();
+            fatal("Invalid third-route deployment cell x=" + std::to_string(x) + " y=" + std::to_string(y) + " map="
+                + std::to_string(events_.map_id) + " dimensions=" + std::to_string(width) + "x" + std::to_string(height));
+        }
+        return std::move(result).value();
+    }
     size_t selected_role() const { return selected(); }
     size_t option() const { return option_; }
     bool select_option(size_t option)
@@ -556,8 +594,8 @@ public:
                 return;
             }
             map_.edge_scroll(float(x), float(y));
-            cursor_ = picker_.pick_surface(float(x), float(y), map_.camera_x, map_.camera_y);
-            picker_.hover(events_.units, cursor_);
+            cursor_ = picker_->pick_surface(float(x), float(y), map_.camera_x, map_.camera_y);
+            picker_->hover(events_.units, cursor_);
             if (left)
             {
                 if (inspect_) { inspect_role(); }
@@ -639,12 +677,12 @@ public:
                     }
                 }
             }
-            picker_.draw_selection(image, events_.units, map_.camera_x, map_.camera_y, 0, [&](auto& bitmap, auto cell)
+            picker_->draw_selection(image, events_.units, map_.camera_x, map_.camera_y, 0, [&](auto& bitmap, auto cell)
                 {
                     map_.mask_selection(bitmap, cell.x, cell.y);
                 });
             map_.draw_units(image, events_.units, 1, 0);
-            picker_.draw_selection(image, events_.units, map_.camera_x, map_.camera_y, 1, [&](auto& bitmap, auto cell)
+            picker_->draw_selection(image, events_.units, map_.camera_x, map_.camera_y, 1, [&](auto& bitmap, auto cell)
                 {
                     map_.mask_selection(bitmap, cell.x, cell.y);
                 });
@@ -662,7 +700,7 @@ public:
                 const auto& u = events_.units[role];
                 int x = 75 + int(n) * 122;
                 graphics_.role_portrait(image, u.portrait, x - 48, 8);
-                if (slot_for(role) >= 0) { OriginalPalette(palette_).transform_rect(image, x - 48, 8, 96, 128, 6); }
+
                 font_.draw_original_large(image, u.name, x - int(u.name.size()) * 6, 142, slot_for(role) >= 0 ? 42 : 54);
                 font_.draw_original_large(image, u.profession, x - int(u.profession.size()) * 6, 171, slot_for(role) >= 0 ? 42 : 54);
             }
@@ -757,7 +795,7 @@ public:
             {
                 const auto& u = events_.units.at(placing_);
                 auto point = map_.screen_position(u.x, u.y);
-                picker_.draw_finish_directions(image, point.first - 12, point.second - 12, u.direction);
+                picker_->draw_finish_directions(image, point.first - 12, point.second - 12, u.direction);
             }
             confirmation_->draw(image, font_);
         }

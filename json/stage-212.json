@@ -1,0 +1,825 @@
+{
+  "map_id": 26,
+  "music": 6,
+  "route": {
+    "next_stage": 213,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 26,
+    "fantasy_stage": 213
+  },
+  "units": [
+    {
+      "id": 22,
+      "appearance": 133,
+      "name": "奧帕兒",
+      "x": 2,
+      "y": 12,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 376,
+      "max_hp": 88,
+      "equipment": [
+        88,
+        108,
+        150,
+        181,
+        195,
+        0
+      ]
+    },
+    {
+      "id": 32,
+      "appearance": 20,
+      "name": "法科爾",
+      "x": 14,
+      "y": 18,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 2,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 420,
+      "max_hp": 0,
+      "equipment": [
+        7,
+        134,
+        153,
+        177,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 205,
+      "appearance": 37,
+      "name": "領主府衛兵",
+      "x": 3,
+      "y": 14,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 200,
+      "max_hp": 0,
+      "equipment": [
+        5,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 206,
+      "appearance": 37,
+      "name": "領主府衛兵",
+      "x": 2,
+      "y": 15,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 200,
+      "max_hp": 0,
+      "equipment": [
+        5,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 87,
+      "appearance": 37,
+      "name": "領主府衛兵",
+      "x": 4,
+      "y": 17,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 200,
+      "max_hp": 0,
+      "equipment": [
+        5,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 80,
+      "appearance": 30,
+      "name": "大魔導士",
+      "x": 5,
+      "y": 38,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 320,
+      "max_hp": 180,
+      "equipment": [
+        38,
+        111,
+        162,
+        182,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 111,
+      "appearance": 61,
+      "name": "暗殺使者",
+      "x": 16,
+      "y": 42,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 308,
+      "max_hp": 0,
+      "equipment": [
+        23,
+        122,
+        157,
+        178,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 200,
+      "appearance": 14,
+      "name": "暗殺士",
+      "x": 15,
+      "y": 39,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 212,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        118,
+        149,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 201,
+      "appearance": 14,
+      "name": "暗殺士",
+      "x": 14,
+      "y": 40,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 212,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        118,
+        149,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 202,
+      "appearance": 14,
+      "name": "暗殺士",
+      "x": 14,
+      "y": 37,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 212,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        118,
+        149,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 203,
+      "appearance": 14,
+      "name": "暗殺士",
+      "x": 13,
+      "y": 35,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 212,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        118,
+        149,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 204,
+      "appearance": 14,
+      "name": "暗殺士",
+      "x": 12,
+      "y": 35,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 212,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        118,
+        149,
+        169,
+        0,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 2,
+      "y": 12,
+      "direction": 1,
+      "role_id": 11,
+      "fixed": true,
+      "source": "original first-turn arrival coordinate"
+    },
+    {
+      "x": 3,
+      "y": 14,
+      "direction": 1,
+      "role_id": 1,
+      "fixed": true,
+      "source": "original first-turn arrival coordinate"
+    },
+    {
+      "x": 2,
+      "y": 15,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "original first-turn arrival coordinate"
+    },
+    {
+      "x": 4,
+      "y": 17,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "original first-turn arrival coordinate"
+    },
+    {
+      "x": 3,
+      "y": 12,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment coordinate"
+    },
+    {
+      "x": 2,
+      "y": 14,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment coordinate"
+    },
+    {
+      "x": 2,
+      "y": 16,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment coordinate"
+    },
+    {
+      "x": 4,
+      "y": 16,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment coordinate"
+    },
+    {
+      "x": 4,
+      "y": 11,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment coordinate"
+    },
+    {
+      "x": 1,
+      "y": 15,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment coordinate"
+    },
+    {
+      "x": 3,
+      "y": 16,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment coordinate"
+    },
+    {
+      "x": 3,
+      "y": 16,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment coordinate"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "original first-turn arrival coordinates plus adjacent hex extensions",
+    "strength_score": 2388.0,
+    "base_stage": 26
+  },
+  "objects": [],
+  "name": "北方合流篇-212-底座26",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 13,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      }
+    },
+    {
+      "type": 7,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 22,
+        "offset_7": 9,
+        "offset_9": 27
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 12,
+      "completion_flag": 0,
+      "condition": 10,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 22,
+        "offset_7": 0,
+        "offset_9": 3
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 8,
+      "completion_flag": 0,
+      "condition": 7,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 120,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "......。"
+        }
+      ]
+    },
+    {
+      "type": 6,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 87,
+        "offset_7": 205,
+        "offset_9": 206
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 12,
+      "completion_flag": 0,
+      "condition": 10,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 22,
+        "offset_7": 1,
+        "offset_9": 1
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 87,
+          "name": "領主府衛兵",
+          "text": "等一下....。"
+        }
+      ]
+    },
+    {
+      "type": 12,
+      "completion_flag": 14,
+      "condition": 10,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 22,
+        "offset_7": 0,
+        "offset_9": 3
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 87,
+          "name": "領主府衛兵",
+          "text": "小姐，如果妳就這樣走了，我們都會被處罰的，請留下來吧。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "......。"
+        },
+        {
+          "speaker": 87,
+          "name": "領主府衛兵",
+          "text": "小姐失禮了，和我們回去吧。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "咦？"
+        }
+      ]
+    },
+    {
+      "type": 6,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 111,
+        "offset_7": 200,
+        "offset_9": 201
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 6,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 202,
+        "offset_7": 203,
+        "offset_9": 204
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 111,
+          "name": "暗殺使者",
+          "text": "急什麼，既然好不容易出來了，就讓我們送你回家吧！"
+        },
+        {
+          "speaker": 87,
+          "name": "領主府衛兵",
+          "text": "有刺客！大家留神！"
+        },
+        {
+          "speaker": 111,
+          "name": "暗殺使者",
+          "text": "那有這般容易，上！"
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "completion_flag": 15,
+      "trigger": {
+        "kind": "turn",
+        "turn": 2
+      },
+      "lines": [
+        {
+          "speaker": 32,
+          "name": "法爾科",
+          "text": "....嘿，居然這麼多人在打架，好不熱鬧。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "法爾科！"
+        },
+        {
+          "speaker": 32,
+          "name": "法爾科",
+          "text": "奧帕兒公主？哦....原來不是鬧著玩的。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "法爾科劍士，請快過來幫忙吧。"
+        },
+        {
+          "speaker": 32,
+          "name": "法爾科",
+          "text": "好，我來了。"
+        }
+      ]
+    },
+    {
+      "type": 12,
+      "completion_flag": 0,
+      "condition": 22,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 22,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 12,
+      "completion_flag": 0,
+      "condition": 22,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 32,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 3,
+      "completion_flag": 16,
+      "condition": 2,
+      "role_id": 111,
+      "lines": [
+        {
+          "speaker": 111,
+          "name": "暗殺使者",
+          "text": "該....該死。"
+        }
+      ]
+    },
+    {
+      "type": 6,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 16,
+        "offset_5": 80,
+        "offset_7": 0,
+        "offset_9": 1
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 80,
+          "name": "大魔導士",
+          "text": "任務失敗....當然該死。"
+        },
+        {
+          "speaker": 32,
+          "name": "法爾科",
+          "text": "好啊，幕後主使者出現了。咦？你....你是貝洛元帥手下六護衛之一，難道....？"
+        },
+        {
+          "speaker": 80,
+          "name": "大魔導士",
+          "text": "....既然你知道了，我是不能饒你了。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "貝洛！殺手是貝洛派來的！"
+        },
+        {
+          "speaker": 80,
+          "name": "大魔導士",
+          "text": "談話就到此為止，準備受死吧。"
+        }
+      ]
+    },
+    {
+      "type": 14,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 16,
+        "offset_5": 32,
+        "offset_7": 22,
+        "offset_9": 40
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 14,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 16,
+        "offset_5": 22,
+        "offset_7": 32,
+        "offset_9": 30
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 3,
+      "completion_flag": 17,
+      "condition": 2,
+      "role_id": 80,
+      "lines": [
+        {
+          "speaker": 80,
+          "name": "大魔導士",
+          "text": "法..法爾科，貝洛大人並不是只派出我而已，你們的日子難過了。"
+        },
+        {
+          "speaker": 32,
+          "name": "法爾科",
+          "text": "看來我們不能往回走了。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "帶我離開亞修斯吧，這個地方不能待了。"
+        },
+        {
+          "speaker": 32,
+          "name": "法爾科",
+          "text": "那妳打算到那裡去？"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "跟我來吧。"
+        }
+      ]
+    },
+    {
+      "type": 12,
+      "completion_flag": 0,
+      "condition": 1,
+      "raw_operands": {
+        "offset_3": 17,
+        "offset_5": 22,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 12,
+      "completion_flag": 4,
+      "condition": 1,
+      "raw_operands": {
+        "offset_3": 17,
+        "offset_5": 32,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    }
+  ]
+}

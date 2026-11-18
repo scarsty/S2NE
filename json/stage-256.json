@@ -1,0 +1,672 @@
+{
+  "map_id": 28,
+  "music": 1,
+  "route": {
+    "next_stage": 257,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 28,
+    "fantasy_stage": 257
+  },
+  "units": [
+    {
+      "id": 74,
+      "appearance": 24,
+      "name": "聖堂騎士",
+      "x": 2,
+      "y": 49,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 416,
+      "max_hp": 64,
+      "equipment": [
+        80,
+        136,
+        157,
+        178,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 56,
+      "name": "吟唱使者",
+      "x": 4,
+      "y": 50,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 280,
+      "max_hp": 140,
+      "equipment": [
+        38,
+        110,
+        160,
+        180,
+        198,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 56,
+      "name": "吟唱使者",
+      "x": 10,
+      "y": 43,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 280,
+      "max_hp": 140,
+      "equipment": [
+        38,
+        110,
+        160,
+        180,
+        198,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 56,
+      "name": "吟唱使者",
+      "x": 2,
+      "y": 40,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 280,
+      "max_hp": 140,
+      "equipment": [
+        38,
+        110,
+        160,
+        180,
+        198,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 62,
+      "name": "聖職護佐",
+      "x": 2,
+      "y": 44,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 296,
+      "max_hp": 136,
+      "equipment": [
+        38,
+        110,
+        160,
+        180,
+        193,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 62,
+      "name": "聖職護佐",
+      "x": 8,
+      "y": 36,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 296,
+      "max_hp": 136,
+      "equipment": [
+        38,
+        110,
+        160,
+        180,
+        193,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 62,
+      "name": "聖職護佐",
+      "x": 7,
+      "y": 44,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 296,
+      "max_hp": 136,
+      "equipment": [
+        38,
+        110,
+        160,
+        180,
+        193,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 11,
+      "name": "十字劍士",
+      "x": 11,
+      "y": 43,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 312,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 11,
+      "name": "十字劍士",
+      "x": 17,
+      "y": 38,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 312,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 11,
+      "name": "十字劍士",
+      "x": 8,
+      "y": 31,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 312,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 11,
+      "name": "十字劍士",
+      "x": 6,
+      "y": 30,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 312,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 11,
+      "name": "十字劍士",
+      "x": 12,
+      "y": 39,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 312,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 11,
+      "name": "十字劍士",
+      "x": 3,
+      "y": 40,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 312,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 11,
+      "name": "十字劍士",
+      "x": 7,
+      "y": 50,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 312,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 11,
+      "name": "十字劍士",
+      "x": 1,
+      "y": 55,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 312,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 11,
+      "name": "十字劍士",
+      "x": 6,
+      "y": 55,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 312,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 13,
+      "y": 17,
+      "direction": 0,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 16,
+      "y": 22,
+      "direction": 0,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 15,
+      "y": 20,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 12,
+      "y": 17,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 14,
+      "y": 23,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 11,
+      "y": 15,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 14,
+      "y": 20,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 15,
+      "y": 26,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 15,
+      "y": 26.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 16,
+      "y": 26.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 18,
+      "y": 26.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 18,
+      "y": 27.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 6552.0,
+    "base_stage": 28
+  },
+  "objects": [],
+  "name": "北方合流篇-256-底座28",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 13,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      },
+      "lines": [
+        {
+          "speaker": 34,
+          "name": "庫庫克",
+          "text": "哎呀，這麼多的教士，不會是來捉我的吧？"
+        },
+        {
+          "speaker": 11,
+          "name": "白志超",
+          "text": "....這應該是夏普派來阻止我們的部隊，只是想不到聖堂騎士也被夏普收買了。"
+        },
+        {
+          "speaker": 74,
+          "name": "聖堂騎士",
+          "text": "收買？你這個野蠻人居然敢侮辱聖堂騎士，我代上天處罰你！"
+        },
+        {
+          "speaker": 14,
+          "name": "飛霜",
+          "text": "收買又怎麼樣，瞧你一副不敢承認的樣子，要比價碼我還比你強得多呢！"
+        }
+      ]
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 2,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 34,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 34,
+          "name": "庫庫克",
+          "text": "哇！大姐。真帶勁啊。"
+        },
+        {
+          "speaker": 14,
+          "name": "飛霜",
+          "text": "嘻，那裡，那裡。"
+        },
+        {
+          "speaker": 74,
+          "name": "聖堂騎士",
+          "text": "渾蛋！收拾這些骯髒的異教徒！"
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "completion_flag": 0,
+      "lines": [
+        {
+          "speaker": 14,
+          "name": "飛霜",
+          "text": "哼....技術這樣差，想當殺手都沒有別人願意請你呢！還敢在那邊扭捏作態，噁心！"
+        },
+        {
+          "speaker": 34,
+          "name": "庫庫克",
+          "text": "大姐！我越來越崇拜你了！"
+        }
+      ]
+    },
+    {
+      "type": 14,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 34,
+        "offset_7": 14,
+        "offset_9": 10
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 14,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 14,
+        "offset_7": 34,
+        "offset_9": 3
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 11,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 10,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    }
+  ]
+}

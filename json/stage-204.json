@@ -1,818 +1,214 @@
 {
-  "map_id": 4,
-  "music": 8,
+  "map_id": 26,
+  "music": 1,
   "route": {
-    "next_stage": 0,
+    "next_stage": 205,
     "alternate_stage": 0,
-    "mode": 3,
-    "interbattle_town_id": 4,
-    "fantasy_stage": 0
+    "mode": 1,
+    "interbattle_town_id": 68,
+    "fantasy_stage": 205
   },
-  "units": [
-    {
-      "id": 0,
-      "appearance": 38,
-      "name": "哨站守衛",
-      "x": 4,
-      "y": 45,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 134,
-      "max_hp": 0,
-      "equipment": [
-        75,
-        129,
-        149,
-        168,
-        187,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 38,
-      "name": "哨站守衛",
-      "x": 5,
-      "y": 47,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 134,
-      "max_hp": 0,
-      "equipment": [
-        75,
-        129,
-        149,
-        168,
-        187,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 38,
-      "name": "哨站守衛",
-      "x": 5,
-      "y": 49,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 134,
-      "max_hp": 0,
-      "equipment": [
-        75,
-        129,
-        149,
-        168,
-        187,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 38,
-      "name": "哨站守衛",
-      "x": 3,
-      "y": 46,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 134,
-      "max_hp": 0,
-      "equipment": [
-        75,
-        129,
-        149,
-        168,
-        187,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 4,
-      "name": "哨站守衛",
-      "x": 1,
-      "y": 43,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 112,
-      "max_hp": 0,
-      "equipment": [
-        48,
-        128,
-        149,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 4,
-      "name": "哨站守衛",
-      "x": 7,
-      "y": 54,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 112,
-      "max_hp": 0,
-      "equipment": [
-        48,
-        128,
-        149,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 4,
-      "name": "哨站守衛",
-      "x": 1,
-      "y": 49,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 112,
-      "max_hp": 0,
-      "equipment": [
-        48,
-        128,
-        149,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 4,
-      "name": "哨站守衛",
-      "x": 3,
-      "y": 55,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 112,
-      "max_hp": 0,
-      "equipment": [
-        48,
-        128,
-        149,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 102,
-      "appearance": 52,
-      "name": "哨站隊長",
-      "x": 2,
-      "y": 52,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 10,
-      "hp": 180,
-      "max_hp": 68,
-      "equipment": [
-        34,
-        104,
-        159,
-        180,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 6,
-      "name": "傭兵戰士",
-      "x": 6,
-      "y": 41,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 172,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        102,
-        147,
-        171,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 6,
-      "name": "傭兵戰士",
-      "x": 8,
-      "y": 45,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 172,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        102,
-        147,
-        171,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 6,
-      "name": "傭兵戰士",
-      "x": 5,
-      "y": 36,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 172,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        102,
-        147,
-        171,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 6,
-      "name": "傭兵戰士",
-      "x": 6,
-      "y": 37,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 172,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        102,
-        147,
-        171,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 6,
-      "name": "傭兵戰士",
-      "x": 9,
-      "y": 43,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 172,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        102,
-        147,
-        171,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 6,
-      "name": "傭兵戰士",
-      "x": 13,
-      "y": 30,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 172,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        102,
-        147,
-        171,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 9,
-      "name": "傭兵法師",
-      "x": 8,
-      "y": 41,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 101,
-      "max_hp": 57,
-      "equipment": [
-        33,
-        103,
-        159,
-        167,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 9,
-      "name": "傭兵法師",
-      "x": 7,
-      "y": 41,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 101,
-      "max_hp": 57,
-      "equipment": [
-        33,
-        103,
-        159,
-        167,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 9,
-      "name": "傭兵法師",
-      "x": 8,
-      "y": 34,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 101,
-      "max_hp": 57,
-      "equipment": [
-        33,
-        103,
-        159,
-        167,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 9,
-      "name": "傭兵法師",
-      "x": 8,
-      "y": 27,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 101,
-      "max_hp": 57,
-      "equipment": [
-        33,
-        103,
-        159,
-        167,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 42,
-      "name": "傭兵術士",
-      "x": 11,
-      "y": 43,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 106,
-      "max_hp": 61,
-      "equipment": [
-        33,
-        103,
-        159,
-        167,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 42,
-      "name": "傭兵術士",
-      "x": 4,
-      "y": 31,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 106,
-      "max_hp": 61,
-      "equipment": [
-        33,
-        103,
-        159,
-        167,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 42,
-      "name": "傭兵術士",
-      "x": 6,
-      "y": 32,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 106,
-      "max_hp": 61,
-      "equipment": [
-        33,
-        103,
-        159,
-        167,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 42,
-      "name": "傭兵術士",
-      "x": 10,
-      "y": 38,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 106,
-      "max_hp": 61,
-      "equipment": [
-        33,
-        103,
-        159,
-        167,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 46,
-      "name": "傭兵劍士",
-      "x": 9,
-      "y": 36,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 180,
-      "max_hp": 0,
-      "equipment": [
-        4,
-        129,
-        149,
-        170,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 46,
-      "name": "傭兵劍士",
-      "x": 11,
-      "y": 29,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 180,
-      "max_hp": 0,
-      "equipment": [
-        4,
-        129,
-        149,
-        170,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 62,
-      "appearance": 12,
-      "name": "傭兵隊長",
-      "x": 9,
-      "y": 30,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 8,
-      "hp": 295,
-      "max_hp": 0,
-      "equipment": [
-        76,
-        131,
-        152,
-        170,
-        188,
-        0
-      ]
-    }
-  ],
+  "units": [],
   "player_party": [
     {
       "slot": 0,
       "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
       "deployment": {
         "x": 14,
         "y": 23,
         "direction": 0
       },
       "mandatory_role": false,
-      "source": "save.group[0].units"
-    },
-    {
-      "slot": 1,
-      "role_id": 14,
-      "deployment": {
-        "x": 12,
-        "y": 19,
-        "direction": 0
-      },
-      "mandatory_role": false,
-      "source": "save.group[0].units"
-    },
-    {
-      "slot": 2,
-      "role_id": 15,
-      "deployment": {
-        "x": 12,
-        "y": 21,
-        "direction": 0
-      },
-      "mandatory_role": false,
-      "source": "save.group[0].units"
+      "source": "original stage-1/stage-71 roster"
     },
     {
       "slot": 3,
-      "role_id": 13,
+      "role_id": 15,
       "deployment": {
         "x": 13,
-        "y": 19,
+        "y": 23,
         "direction": 0
       },
       "mandatory_role": false,
-      "source": "save.group[0].units"
+      "source": "original stage-1/stage-71 roster"
     },
     {
       "slot": 4,
-      "role_id": 12,
+      "role_id": 13,
       "deployment": {
-        "x": 14,
-        "y": 19,
+        "x": 13,
+        "y": 25,
         "direction": 0
       },
       "mandatory_role": false,
-      "source": "save.group[0].units"
+      "source": "original stage-1/stage-71 roster"
     },
     {
       "slot": 5,
-      "role_id": 16,
+      "role_id": 2,
       "deployment": {
-        "x": 13,
-        "y": 21,
-        "direction": 0
+        "x": 14,
+        "y": 25,
+        "direction": 2
       },
       "mandatory_role": false,
-      "source": "save.group[0].units"
+      "source": "original stage-1/stage-71 roster"
     },
     {
       "slot": 6,
-      "role_id": 17,
+      "role_id": 3,
       "deployment": {
-        "x": 13,
-        "y": 17,
-        "direction": 0
+        "x": 15,
+        "y": 27,
+        "direction": 2
       },
       "mandatory_role": false,
-      "source": "save.group[0].units"
+      "source": "original stage-1/stage-71 roster"
     },
     {
       "slot": 7,
-      "role_id": 18,
+      "role_id": 4,
       "deployment": {
-        "x": 14,
-        "y": 21,
+        "x": 17,
+        "y": 36,
         "direction": 0
       },
       "mandatory_role": false,
-      "source": "save.group[0].units"
+      "source": "original stage-1/stage-71 roster"
     }
   ],
   "deployment": [
     {
+      "x": 13,
+      "y": 21,
+      "direction": 0,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
       "x": 14,
       "y": 23,
       "direction": 0,
-      "role_id": 11,
-      "fixed": false
+      "role_id": 1,
+      "fixed": true
     },
     {
-      "x": 12,
-      "y": 19,
+      "x": 13,
+      "y": 23,
       "direction": 0,
-      "role_id": 14,
-      "fixed": false
-    },
-    {
-      "x": 12,
-      "y": 21,
-      "direction": 0,
-      "role_id": 15,
+      "role_id": 0,
       "fixed": false
     },
     {
       "x": 13,
-      "y": 19,
+      "y": 23.0,
       "direction": 0,
-      "role_id": 13,
-      "fixed": false
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
     },
     {
       "x": 14,
-      "y": 19,
+      "y": 23.0,
       "direction": 0,
-      "role_id": 12,
-      "fixed": false
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
     },
     {
-      "x": 13,
-      "y": 21,
+      "x": 16,
+      "y": 23.0,
       "direction": 0,
-      "role_id": 16,
-      "fixed": false
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
     },
     {
-      "x": 13,
-      "y": 17,
+      "x": 16,
+      "y": 24.0,
       "direction": 0,
-      "role_id": 17,
-      "fixed": false
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
     },
     {
-      "x": 14,
-      "y": 21,
+      "x": 17,
+      "y": 25.0,
       "direction": 0,
-      "role_id": 18,
-      "fixed": false
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 19,
+      "y": 26.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 19,
+      "y": 28.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 20,
+      "y": 30.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 22,
+      "y": 32.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
     }
   ],
   "deployment_rules": {
-    "mandatory_role_ids": [],
-    "source": "original deployment flow; not inferred from fixed slot flag"
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 0.0,
+    "base_stage": 68
   },
   "objects": [],
-  "name": "聯合遠征 204",
-  "briefing": "最後的線索指向北方密使的真正據點。",
+  "name": "北方合流篇-204-底座68",
+  "briefing": "",
   "objectives": {
-    "victory": "完成本關任務並保護聯合隊伍。",
-    "defeat": "任一主角或關鍵使者撤退。"
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜莉雅陣亡。"
   },
-  "events": [
-    {
-      "type": 1,
-      "completion_flag": 0,
-      "trigger": {
-        "kind": "turn",
-        "turn": 1
-      },
-      "lines": [
-        {
-          "speaker": 11,
-          "name": "白志超",
-          "text": "我是白志超，先替大家探路。"
-        },
-        {
-          "speaker": 1,
-          "name": "娜塔莉雅",
-          "text": "我是娜塔莉雅，帶來奚族的線索。"
-        },
-        {
-          "speaker": 11,
-          "name": "白志超",
-          "text": "那就一起查清真相。"
-        }
-      ]
-    },
-    {
-      "type": 2,
-      "completion_flag": 13,
-      "lines": [
-        {
-          "speaker": 42,
-          "name": "彥清風",
-          "text": "選擇聯合隊伍的行動。"
-        },
-        {
-          "speaker": 42,
-          "name": "彥清風",
-          "text": "保護使者並取得命令。"
-        },
-        {
-          "speaker": 42,
-          "name": "彥清風",
-          "text": "追蹤北方密使。"
-        }
-      ],
-      "branch_flag": 13,
-      "condition": 0
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 11,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 5,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 12,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 5,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    }
-  ]
+  "events": []
 }

@@ -1,0 +1,322 @@
+{
+  "map_id": 87,
+  "music": 31,
+  "route": {
+    "next_stage": 211,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 87,
+    "fantasy_stage": 211
+  },
+  "units": [
+    {
+      "id": 0,
+      "appearance": 80,
+      "name": "戰鬥機甲",
+      "x": 11,
+      "y": 33,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 320,
+      "max_hp": 0,
+      "equipment": [
+        83,
+        144,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 80,
+      "name": "戰鬥機甲",
+      "x": 11,
+      "y": 45,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 320,
+      "max_hp": 0,
+      "equipment": [
+        83,
+        144,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 80,
+      "name": "戰鬥機甲",
+      "x": 2,
+      "y": 49,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 320,
+      "max_hp": 0,
+      "equipment": [
+        83,
+        144,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 80,
+      "name": "戰鬥機甲",
+      "x": 21,
+      "y": 61,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 320,
+      "max_hp": 0,
+      "equipment": [
+        83,
+        144,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 80,
+      "name": "戰鬥機甲",
+      "x": 19,
+      "y": 52,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 320,
+      "max_hp": 0,
+      "equipment": [
+        83,
+        144,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 3,
+      "y": 77,
+      "direction": 2,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 3,
+      "y": 79,
+      "direction": 2,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 1,
+      "y": 75,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 4,
+      "y": 79,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 2,
+      "y": 75,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 2,
+      "y": 77,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 2,
+      "y": 77.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 3,
+      "y": 77.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 5,
+      "y": 77.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 5,
+      "y": 78.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 6,
+      "y": 79.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 8,
+      "y": 80.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 2100.0,
+    "base_stage": 87
+  },
+  "objects": [],
+  "name": "北方合流篇-210-底座87",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": []
+}

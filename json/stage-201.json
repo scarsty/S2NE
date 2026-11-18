@@ -1,30 +1,30 @@
 {
-  "map_id": 1,
-  "music": 1,
+  "map_id": 14,
+  "music": 22,
   "route": {
     "next_stage": 202,
     "alternate_stage": 0,
-    "mode": 3,
-    "interbattle_town_id": 1,
+    "mode": 1,
+    "interbattle_town_id": null,
     "fantasy_stage": 202
   },
   "units": [
     {
-      "id": 16,
-      "appearance": 126,
-      "name": "刑天",
-      "x": 1,
-      "y": 20,
+      "id": 51,
+      "appearance": 1,
+      "name": "暹族戰士",
+      "x": 12,
+      "y": 30,
       "direction": 1,
       "animation_action": 0,
-      "first_turn": 5,
+      "first_turn": 1,
       "last_turn": 0,
-      "behavior": 1,
-      "hp": 200,
+      "behavior": 2,
+      "hp": 256,
       "max_hp": 0,
       "equipment": [
-        4,
-        120,
+        62,
+        129,
         149,
         168,
         186,
@@ -32,376 +32,24 @@
       ]
     },
     {
-      "id": 64,
-      "appearance": 14,
-      "name": "盜賊頭子",
-      "x": 4,
-      "y": 36,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 8,
-      "hp": 164,
-      "max_hp": 0,
-      "equipment": [
-        17,
-        102,
-        148,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 5,
-      "y": 37,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 104,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 6,
-      "y": 36,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 104,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 40,
-      "name": "飛賊",
-      "x": 2,
-      "y": 35,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 92,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 40,
-      "name": "飛賊",
-      "x": 4,
+      "id": 54,
+      "appearance": 4,
+      "name": "暹族戰士",
+      "x": 10,
       "y": 31,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 92,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 55,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 11,
-      "y": 37,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 104,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 13,
-      "y": 40,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 104,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 8,
-      "y": 39,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 104,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 10,
-      "y": 36,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 104,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 40,
-      "name": "飛賊",
-      "x": 10,
-      "y": 40,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 92,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 40,
-      "name": "飛賊",
-      "x": 11,
-      "y": 35,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 92,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 40,
-      "name": "飛賊",
-      "x": 16,
-      "y": 40,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 92,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 90,
-      "appearance": 40,
-      "name": "飛賊",
-      "x": 5,
-      "y": 14,
       "direction": 1,
       "animation_action": 0,
-      "first_turn": 4,
+      "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 112,
+      "hp": 224,
       "max_hp": 0,
       "equipment": [
-        17,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 40,
-      "name": "飛賊",
-      "x": 6,
-      "y": 12,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 4,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 106,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 4,
-      "y": 16,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 4,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 125,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 3,
-      "y": 13,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 4,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 125,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 6,
-      "y": 20,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 4,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 125,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
+        62,
+        130,
+        151,
+        169,
+        187,
         0
       ]
     }
@@ -415,11 +63,22 @@
         "y": 21,
         "direction": 0
       },
-      "mandatory_role": false,
-      "source": "save.group[0].units"
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
     },
     {
       "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
       "role_id": 14,
       "deployment": {
         "x": 14,
@@ -427,10 +86,10 @@
         "direction": 0
       },
       "mandatory_role": false,
-      "source": "save.group[0].units"
+      "source": "original stage-1/stage-71 roster"
     },
     {
-      "slot": 2,
+      "slot": 3,
       "role_id": 15,
       "deployment": {
         "x": 13,
@@ -438,10 +97,10 @@
         "direction": 0
       },
       "mandatory_role": false,
-      "source": "save.group[0].units"
+      "source": "original stage-1/stage-71 roster"
     },
     {
-      "slot": 3,
+      "slot": 4,
       "role_id": 13,
       "deployment": {
         "x": 13,
@@ -449,67 +108,143 @@
         "direction": 0
       },
       "mandatory_role": false,
-      "source": "save.group[0].units"
+      "source": "original stage-1/stage-71 roster"
     },
     {
-      "slot": 4,
-      "role_id": 12,
+      "slot": 5,
+      "role_id": 2,
       "deployment": {
-        "x": 12,
-        "y": 23,
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
         "direction": 0
       },
       "mandatory_role": false,
-      "source": "save.group[0].units"
+      "source": "original stage-1/stage-71 roster"
     }
   ],
   "deployment": [
     {
-      "x": 13,
-      "y": 21,
-      "direction": 0,
+      "x": 20,
+      "y": 50,
+      "direction": 3,
       "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 21,
+      "y": 52,
+      "direction": 3,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 20,
+      "y": 52,
+      "direction": 3,
+      "role_id": 0,
       "fixed": false
     },
     {
-      "x": 14,
-      "y": 23,
-      "direction": 0,
-      "role_id": 14,
+      "x": 19,
+      "y": 54,
+      "direction": 3,
+      "role_id": 0,
       "fixed": false
     },
     {
-      "x": 13,
-      "y": 23,
-      "direction": 0,
-      "role_id": 15,
+      "x": 19,
+      "y": 52,
+      "direction": 3,
+      "role_id": 0,
       "fixed": false
     },
     {
-      "x": 13,
-      "y": 25,
-      "direction": 0,
-      "role_id": 13,
+      "x": 20,
+      "y": 54,
+      "direction": 3,
+      "role_id": 0,
       "fixed": false
     },
     {
-      "x": 12,
-      "y": 23,
-      "direction": 0,
-      "role_id": 12,
+      "x": 20,
+      "y": 50,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 21,
+      "y": 52,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 20,
+      "y": 52,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 19,
+      "y": 54,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 19,
+      "y": 52,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 20,
+      "y": 54,
+      "direction": 3,
+      "role_id": 0,
       "fixed": false
     }
   ],
   "deployment_rules": {
-    "mandatory_role_ids": [],
-    "source": "original deployment flow; not inferred from fixed slot flag"
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "verified stage-162 deployment cells reused for twelve slots",
+    "strength_score": 680,
+    "base_stage": 162
   },
   "objects": [],
-  "name": "聯合遠征 201",
-  "briefing": "白志超先行偵查，娜塔莉雅隨後帶來奚族線索。",
+  "name": "罕泉",
+  "briefing": "",
   "objectives": {
-    "victory": "完成本關任務並保護聯合隊伍。",
-    "defeat": "任一主角或關鍵使者撤退。"
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
   },
   "events": [
     {
@@ -521,196 +256,141 @@
       },
       "lines": [
         {
-          "speaker": 11,
-          "name": "白志超",
-          "text": "我是白志超，先替大家探路。"
+          "speaker": 5,
+          "name": "古斯塔夫",
+          "text": "罕泉到了。"
         },
         {
-          "speaker": 1,
-          "name": "娜塔莉雅",
-          "text": "我是娜塔莉雅，帶來奚族的線索。"
+          "speaker": 3,
+          "name": "泰普",
+          "text": "嘿嘿..我看到兩個暹族的笨蛋了！"
         },
         {
-          "speaker": 11,
-          "name": "白志超",
-          "text": "那就一起查清真相。"
+          "speaker": 51,
+          "name": "暹族戰士",
+          "text": "來了，來了....就是她們..。"
+        },
+        {
+          "speaker": 54,
+          "name": "暹族射手",
+          "text": "快去報告給賈老闆知道。"
         }
       ]
     },
     {
-      "type": 1,
+      "type": 12,
       "completion_flag": 0,
-      "trigger": {
-        "kind": "turn",
-        "turn": 4
+      "condition": 16,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 51,
+        "offset_7": 3,
+        "offset_9": 0
       },
-      "lines": [
-        {
-          "speaker": 42,
-          "name": "彥清風",
-          "text": "選擇聯合隊伍的行動。"
-        },
-        {
-          "speaker": 42,
-          "name": "彥清風",
-          "text": "保護使者並取得命令。"
-        },
-        {
-          "speaker": 42,
-          "name": "彥清風",
-          "text": "追蹤北方密使。"
-        }
-      ],
-      "branch_flag": 13,
-      "condition": 0
+      "raw_operands_semantics": "unconfirmed"
     },
     {
-      "type": 1,
+      "type": 12,
       "completion_flag": 0,
-      "trigger": {
-        "kind": "turn",
-        "turn": 5
+      "condition": 16,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 54,
+        "offset_7": 3,
+        "offset_9": 0
       },
-      "lines": [
-        {
-          "speaker": 16,
-          "music_before": 13,
-          "name": "刑天",
-          "text": "好久不見，白老弟別來無恙？"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "我說大劍客啊，沒看到我正在忙嗎？快來幫忙掃清這些毛賊吧。"
-        },
-        {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "唉，也罷，時至今日寶劍只能飲盜賊血，越來越差勁了。"
-        },
-        {
-          "speaker": 14,
-          "name": "飛霜",
-          "text": "刑天大人，別懷古幽思了，再晚點來連盜賊都沒得砍了。"
-        },
-        {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "也罷！我來了。"
-        },
-        {
-          "speaker": 64,
-          "name": "盜賊頭子",
-          "text": "....別唬人了，這傢伙怎麼可能是刑天？....騙人的。"
-        }
-      ]
+      "raw_operands_semantics": "unconfirmed"
     },
     {
-      "type": 3,
-      "completion_flag": 14,
-      "condition": 2,
-      "role_id": 90,
+      "type": 16,
+      "completion_flag": 0,
+      "condition": 4,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 2,
+        "offset_7": 3,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 16,
+      "completion_flag": 0,
+      "condition": 5,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 51,
+        "offset_7": 9,
+        "offset_9": 22
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 16,
+      "completion_flag": 0,
+      "condition": 5,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 54,
+        "offset_7": 8,
+        "offset_9": 24
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 16,
+      "completion_flag": 0,
+      "condition": 7,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 0,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 9,
+      "completion_flag": 0,
       "lines": [
         {
-          "speaker": 90,
-          "name": "飛賊",
-          "text": "哇....。"
+          "speaker": 6,
+          "name": "黛西",
+          "text": "賈老闆？是那個惡名昭彰的賈得耶？"
+        },
+        {
+          "speaker": 2,
+          "name": "穆爾",
+          "text": "那有趣極了，暹族的人不長進到居然和賈得耶同流合汙了。"
+        },
+        {
+          "speaker": 5,
+          "name": "古斯塔夫",
+          "text": "那我們要跟著追過去嗎？"
+        },
+        {
+          "speaker": 6,
+          "name": "黛西",
+          "text": "不會有埋伏吧，他們已經知道我們要來了。"
+        },
+        {
+          "speaker": 3,
+          "name": "泰普",
+          "text": "有埋伏更好，人多打起來才過癮，怕什麼？"
         }
       ]
     },
     {
       "type": 9,
       "completion_flag": 0,
-      "condition": 1,
-      "required_flags": [
-        13,
-        14
-      ],
-      "lines": [
-        {
-          "speaker": 64,
-          "name": "盜賊頭子",
-          "text": "看來不太妙啊....。"
-        }
-      ]
-    },
-    {
-      "type": 3,
-      "completion_flag": 15,
-      "condition": 2,
-      "role_id": 64,
-      "lines": [
-        {
-          "speaker": 64,
-          "name": "盜賊頭子",
-          "text": "那....那有這麼強的商旅啊....。"
-        }
-      ]
+      "condition": 6,
+      "route_stage": 81
     },
     {
       "type": 9,
       "completion_flag": 0,
-      "condition": 2,
-      "required_flags": [
-        13
-      ]
-    },
-    {
-      "type": 3,
-      "completion_flag": 0,
-      "condition": 3,
-      "victim_role_id": 64,
-      "killer_role_id": 16,
-      "lines": [
-        {
-          "speaker": 64,
-          "name": "盜賊頭子",
-          "text": "你真的是刑天嗎？"
-        },
-        {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "如假包換！"
-        }
-      ]
-    },
-    {
-      "type": 2,
-      "completion_flag": 0,
-      "condition": 1,
-      "lines": [
-        {
-          "speaker": 16,
-          "music_before": 7,
-          "name": "刑天",
-          "text": "這些毛賊真是瞎了眼，居然把你們當成是一般的商旅，徒然送命。"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "這就別提了。秋月呢？"
-        },
-        {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "她最近作客茱迪家中，有事嗎？"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "這次所接的任務是前往南方領，我想多找幾個幫手，以免在異地吃虧，我想你們也閒很久了吧。"
-        },
-        {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "正是。我想不但秋月會同意，茱迪也會有興趣的。"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "那我們先往鏡湖的方向去吧。"
-        }
-      ]
+      "condition": 6,
+      "route_stage": 82
     }
   ]
 }

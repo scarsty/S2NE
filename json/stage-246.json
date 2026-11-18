@@ -1,0 +1,652 @@
+{
+  "map_id": 85,
+  "music": 21,
+  "route": {
+    "next_stage": 247,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 85,
+    "fantasy_stage": 247
+  },
+  "units": [
+    {
+      "id": 145,
+      "appearance": 118,
+      "name": "惡魔",
+      "x": 27,
+      "y": 29,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 470,
+      "max_hp": 117,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 110,
+      "name": "僵屍",
+      "x": 11,
+      "y": 51,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 230,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 110,
+      "name": "僵屍",
+      "x": 9,
+      "y": 47,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 230,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 110,
+      "name": "僵屍",
+      "x": 12,
+      "y": 30,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 230,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 110,
+      "name": "僵屍",
+      "x": 21,
+      "y": 18,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 230,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 110,
+      "name": "僵屍",
+      "x": 22,
+      "y": 23,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 230,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 110,
+      "name": "僵屍",
+      "x": 26,
+      "y": 32,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 230,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 110,
+      "name": "僵屍",
+      "x": 28,
+      "y": 22,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 230,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 110,
+      "name": "僵屍",
+      "x": 28,
+      "y": 45,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 230,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 107,
+      "name": "蝙蝠",
+      "x": 9,
+      "y": 51,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 107,
+      "name": "蝙蝠",
+      "x": 9,
+      "y": 58,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 107,
+      "name": "蝙蝠",
+      "x": 24,
+      "y": 10,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 107,
+      "name": "蝙蝠",
+      "x": 27,
+      "y": 17,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 107,
+      "name": "蝙蝠",
+      "x": 7,
+      "y": 54,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 9,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 107,
+      "name": "蝙蝠",
+      "x": 9,
+      "y": 57,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 9,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 107,
+      "name": "蝙蝠",
+      "x": 8,
+      "y": 53,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 9,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 105,
+      "name": "石化蜥蜴",
+      "x": 12,
+      "y": 51,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 180,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 105,
+      "name": "石化蜥蜴",
+      "x": 25,
+      "y": 17,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 180,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 105,
+      "name": "石化蜥蜴",
+      "x": 27,
+      "y": 35,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 180,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 105,
+      "name": "石化蜥蜴",
+      "x": 27,
+      "y": 46,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 180,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 6,
+      "y": 13,
+      "direction": 1,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 6,
+      "y": 10,
+      "direction": 1,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 5,
+      "y": 17,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 4,
+      "y": 14,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 5,
+      "y": 12,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 3,
+      "y": 17,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 3,
+      "y": 17.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 4,
+      "y": 17.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 6,
+      "y": 17.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 6,
+      "y": 18.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 7,
+      "y": 19.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 9,
+      "y": 20.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 5772.0,
+    "base_stage": 85
+  },
+  "objects": [],
+  "name": "北方合流篇-246-底座85",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": []
+}

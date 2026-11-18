@@ -20,12 +20,25 @@ class OriginalEvents
     std::filesystem::path root_;
     SharedBytes bin_, pal_, kinds_, items_;
     std::vector<std::optional<uint8_t>> event_types_;
+    std::vector<unsigned> json_event_turns_, json_event_flags_, json_event_conditions_, json_event_completion_flags_;
+    std::vector<std::array<int, 5>> json_event_operands_;
     size_t events_{};
     int proficiency_difficulty_scale_{};
     size_t combat_config_{};
     unsigned word(size_t p) const { return bin_.at(p) | (unsigned(bin_.at(p + 1)) << 8); }
     unsigned dword(size_t p) const { return word(p) | (word(p + 2) << 16); }
-    static unsigned custom_stage_base(unsigned id) { return id >= 201 ? id - 200 : id; }
+    static unsigned custom_stage_base(unsigned id)
+    {
+        if (id < 201) { return id; }
+        static constexpr std::array<unsigned, 112> route_order = {
+            162, 66, 67, 68, 69, 70, 19, 93, 84, 87, 73, 26, 15, 72, 71, 86, 18, 22, 1, 74, 3, 6, 89, 97,
+            40, 2, 64, 65, 4, 23, 95, 8, 96, 11, 82, 9, 7, 45, 109, 5, 75, 38, 35, 12, 79, 85, 78, 80,
+            29, 99, 20, 25, 105, 63, 13, 28, 76, 17, 91, 10, 81, 77, 21, 94, 98, 24, 32, 101, 31, 16, 90,
+            108, 52, 46, 92, 112, 36, 39, 100, 30, 103, 33, 102, 41, 57, 58, 88, 27, 107, 111, 43, 59, 55,
+            110, 37, 14, 83, 104, 34, 106, 44, 47, 49, 48, 42, 56, 50, 53, 60, 62, 54, 61
+        };
+        return route_order.at(id - 201);
+    }
     size_t entry(unsigned id) const
     {
         size_t p = 848 + (id - 1) * 8;
@@ -67,6 +80,7 @@ public:
     }
     unsigned stage{}, first_stage{}, alternate_stage{};
     unsigned fantasy_stage{};
+    unsigned interbattle_town_id{};
     unsigned stage_music{};
     std::optional<int32_t> script_route;
     std::optional<int32_t> camera_step_delay;
@@ -157,8 +171,13 @@ public:
         int role{};
         bool fixed{};
     };
+    std::vector<DeploymentSlot> json_deployment_slots_;
     std::vector<DeploymentSlot> deployment_slots() const
     {
+        if (!json_deployment_slots_.empty())
+        {
+            return json_deployment_slots_;
+        }
         const unsigned source_id = custom_stage_base(stage);
         size_t h = entry(1) + 2 + (source_id - 1) * 30, data = entry(1) + dword(h), characters = data + dword(h + 26);
         std::vector<DeploymentSlot> result;
@@ -1029,6 +1048,23 @@ public:
     }
     Result<bool> try_load_stage(unsigned id)
     {
+        if (json_stage_loaded_ && stage == id)
+        {
+            return Result<bool>::success(false);
+        }
+        if (id >= 201)
+        {
+            auto candidate = *this;
+            candidate.load_stage_validated(id);
+            auto json = candidate.try_load_stage_json(id);
+            if (!json)
+            {
+                return Result<bool>::failure(json.error());
+            }
+            using std::swap;
+            swap(*this, candidate);
+            return Result<bool>::success(true);
+        }
         const unsigned source_id = custom_stage_base(id);
         ResourceReader bin(bin_), pal(pal_), kinds(kinds_), items(items_);
         unsigned raw = pal.number(848, 4);
@@ -1166,10 +1202,17 @@ public:
     {
         const unsigned source_id = custom_stage_base(id);
         event_types_.clear();
+        json_event_turns_.clear();
+        json_event_flags_.clear();
+        json_event_conditions_.clear();
+        json_event_completion_flags_.clear();
+        json_event_operands_.clear();
         json_line_overrides_.clear();
         json_event_overrides_.clear();
+        json_deployment_slots_.clear();
         json_stage_loaded_ = false;
         fantasy_stage = 0;
+        interbattle_town_id = 0;
         stage_adjustment = 0;
         size_t table = entry(1);
         if (!source_id || source_id > word(table))
@@ -1500,7 +1543,14 @@ public:
             fatal(result.error());
         }
     }
-    size_t event_count() const { return word(events_); }
+    size_t event_count() const
+    {
+        if (json_stage_loaded_)
+        {
+            return json_event_turns_.size();
+        }
+        return word(events_);
+    }
     std::vector<uint16_t> save_event_states() const
     {
         std::vector<uint16_t> result;
@@ -1544,6 +1594,10 @@ public:
         {
             return Result<int>::failure(make_error("Invalid original event operand"));
         }
+        if (event < json_event_operands_.size())
+        {
+            return Result<int>::success(json_event_operands_.at(event).at((offset - 1) / 2));
+        }
         auto position = try_record(event);
         if (!position)
         {
@@ -1553,15 +1607,43 @@ public:
     }
     int event_word(size_t event, unsigned offset) const { return try_event_word(event, offset).value(); }
     void clear_stage_flags() { std::fill_n(flags.begin(), 40, uint8_t(0)); }
-    unsigned completion_flag(size_t event) const { return bin_.at(record(event) + 11); }
+    unsigned completion_flag(size_t event) const
+    {
+        if (event < json_event_completion_flags_.size())
+        {
+            return json_event_completion_flags_.at(event);
+        }
+        return bin_.at(record(event) + 11);
+    }
     unsigned type(size_t event) const
     {
         if (event < event_types_.size() && event_types_[event]) { return *event_types_[event]; }
         return event < json_event_overrides_.size() && json_event_overrides_[event].type ? *json_event_overrides_[event].type : bin_.at(record(event));
     }
-    unsigned turn(size_t event) const { return word(record(event) + 3); }
-    unsigned flag(size_t event) const { return event < json_event_overrides_.size() && json_event_overrides_[event].flag ? *json_event_overrides_[event].flag : word(record(event) + 3); }
-    unsigned condition(size_t event) const { return event < json_event_overrides_.size() && json_event_overrides_[event].condition ? *json_event_overrides_[event].condition : word(record(event) + 1); }
+    unsigned turn(size_t event) const
+    {
+        if (event < json_event_turns_.size())
+        {
+            return json_event_turns_.at(event);
+        }
+        return word(record(event) + 3);
+    }
+    unsigned flag(size_t event) const
+    {
+        if (event < json_event_flags_.size())
+        {
+            return json_event_flags_.at(event);
+        }
+        return event < json_event_overrides_.size() && json_event_overrides_[event].flag ? *json_event_overrides_[event].flag : word(record(event) + 3);
+    }
+    unsigned condition(size_t event) const
+    {
+        if (event < json_event_conditions_.size())
+        {
+            return json_event_conditions_.at(event);
+        }
+        return event < json_event_overrides_.size() && json_event_overrides_[event].condition ? *json_event_overrides_[event].condition : word(record(event) + 1);
+    }
     bool flag_trigger(size_t event) const
     {
         unsigned f = flag(event);
@@ -1703,10 +1785,63 @@ public:
             auto parsed = nlohmann::json::parse(text, nullptr, false);
             found = parsed_stage_json.emplace(key, std::move(parsed)).first;
         }
+        std::print(stderr, "JSON stage loaded: stage={} path={}\n", id, path.string());
         const auto& json = found->second;
         if (json.is_discarded() || !json.is_object())
         {
             return Result<bool>::failure(make_error("Invalid stage JSON format: " + path.string()));
+        }
+        if (id == 140)
+        {
+            if (!json.contains("route") || !json.at("route").is_object() || !json.at("route").contains("fantasy_stage")
+                || !json.at("route").at("fantasy_stage").is_number_unsigned())
+            {
+                return Result<bool>::failure(make_error("Invalid fantasy stage route: " + path.string()));
+            }
+        }
+        if (id >= 201 && json.contains("player_party") && json.at("player_party").is_array())
+        {
+            if (json.contains("route") && json.at("route").is_object() && json.at("route").contains("interbattle_town_id")
+                && json.at("route").at("interbattle_town_id").is_number_unsigned())
+            {
+                interbattle_town_id = json.at("route").at("interbattle_town_id").get<unsigned>();
+            }
+            for (const auto& entry : json.at("player_party"))
+            {
+                if (!entry.is_object() || !entry.contains("role_id") || !entry.at("role_id").is_number()
+                    || !entry.contains("deployment") || !entry.at("deployment").is_object())
+                {
+                    return Result<bool>::failure(make_error("Invalid third-route player party: " + path.string()));
+                }
+                const auto& deployment = entry.at("deployment");
+                if (!deployment.contains("x") || !deployment.contains("y") || !deployment.contains("direction")
+                    || !deployment.at("x").is_number() || !deployment.at("y").is_number()
+                    || !deployment.at("direction").is_number() || deployment.at("direction").get<int>() < 0)
+                {
+                    return Result<bool>::failure(make_error("Invalid third-route deployment: " + path.string()));
+                }
+                json_deployment_slots_.push_back({ deployment.at("x").get<int>(), deployment.at("y").get<int>(), deployment.at("direction").get<unsigned>(), entry.at("role_id").get<int>(), false });
+            }
+            if (json_deployment_slots_.size() != 8)
+            {
+                return Result<bool>::failure(make_error("Third-route player party requires eight core members: " + path.string()));
+            }
+            if (!json.contains("deployment") || !json.at("deployment").is_array())
+            {
+                return Result<bool>::failure(make_error("Third-route stage requires an original deployment field: " + path.string()));
+            }
+            json_deployment_slots_.clear();
+            for (const auto& slot : json.at("deployment"))
+            {
+                if (!slot.is_object() || !slot.contains("x") || !slot.contains("y") || !slot.contains("direction")
+                    || !slot.at("x").is_number() || !slot.at("y").is_number()
+                    || !slot.at("direction").is_number()
+                    || slot.at("direction").get<int>() < 0)
+                {
+                    return Result<bool>::failure(make_error("Invalid third-route deployment slot: " + path.string()));
+                }
+                json_deployment_slots_.push_back({ slot.at("x").get<int>(), slot.at("y").get<int>(), slot.at("direction").get<unsigned>(), slot.value("role_id", 0), slot.value("fixed", false) });
+            }
         }
         for (const char* key : { "map_id", "music", "name", "briefing", "objectives", "events" })
         {
@@ -1715,6 +1850,76 @@ public:
         if (!json.at("events").is_array())
         {
             return Result<bool>::failure(make_error("Invalid stage JSON events: " + path.string()));
+        }
+        if (id == 140 || id >= 201)
+        {
+            const auto& events = json.at("events");
+            json_event_turns_.assign(events.size(), 0);
+            json_event_flags_.assign(events.size(), 0);
+            json_event_conditions_.assign(events.size(), 0);
+            json_event_completion_flags_.assign(events.size(), 0);
+            json_event_operands_.assign(events.size(), {});
+            event_types_.assign(events.size(), std::nullopt);
+            json_stage_loaded_ = true;
+        }
+        if (id >= 201)
+        {
+            std::vector<size_t> json_unit_targets;
+            for (size_t i = 0; i < units.size(); ++i)
+            {
+                if (units[i].behavior != 0) { json_unit_targets.push_back(i); }
+            }
+            if (!json.contains("units") || !json.at("units").is_array() || json.at("units").size() != json_unit_targets.size())
+            {
+                return Result<bool>::failure(make_error("Third-route JSON non-player unit count does not match stage data: " + path.string()));
+            }
+            const auto read_unit_number = [&](const nlohmann::json& item, const char* key, int& value) -> bool
+            {
+                if (!item.contains(key) || !item.at(key).is_number_integer()) { return false; }
+                value = item.at(key).get<int>();
+                return true;
+            };
+            for (size_t i = 0; i < json_unit_targets.size(); ++i)
+            {
+                const auto& source = json.at("units").at(i);
+                auto& target = units.at(json_unit_targets.at(i));
+                if (!source.is_object()) { return Result<bool>::failure(make_error("Invalid third-route JSON unit: " + path.string())); }
+                int value = 0;
+                if (!read_unit_number(source, "id", value)) { return Result<bool>::failure(make_error("Missing third-route unit id: " + path.string())); }
+                target.id = unsigned(value);
+                if (!read_unit_number(source, "appearance", value)) { return Result<bool>::failure(make_error("Missing third-route unit appearance: " + path.string())); }
+                target.appearance = unsigned(value);
+                for (const char* key : { "x", "y", "first_turn", "last_turn", "behavior", "hp" })
+                {
+                    if (!read_unit_number(source, key, value)) { return Result<bool>::failure(make_error("Missing third-route unit field: " + std::string(key))); }
+                }
+                target.x = source.at("x").get<int>();
+                target.y = source.at("y").get<int>();
+                target.first_turn = source.at("first_turn").get<int>();
+                target.last_turn = source.at("last_turn").get<int>();
+                target.behavior = source.at("behavior").get<int>();
+                target.hp = source.at("hp").get<int>();
+                if (source.contains("max_hp")) { target.max_hp = source.at("max_hp").get<int>(); }
+                if (!source.contains("direction") || !source.at("direction").is_number_integer() || source.at("direction").get<int>() < 0
+                    || !source.contains("animation_action") || !source.at("animation_action").is_number_integer() || source.at("animation_action").get<int>() < 0)
+                {
+                    return Result<bool>::failure(make_error("Missing third-route unit facing: " + path.string()));
+                }
+                target.direction = unsigned(source.at("direction").get<int>());
+                target.animation_action = unsigned(source.at("animation_action").get<int>());
+                if (!source.contains("equipment") || !source.at("equipment").is_array() || source.at("equipment").size() != target.equipment.size())
+                {
+                    return Result<bool>::failure(make_error("Missing third-route unit equipment: " + path.string()));
+                }
+                for (size_t slot = 0; slot < units[i].equipment.size(); ++slot)
+                {
+                    if (!source.at("equipment").at(slot).is_number_unsigned())
+                    {
+                        return Result<bool>::failure(make_error("Invalid third-route unit equipment: " + path.string()));
+                    }
+                    target.equipment[slot] = source.at("equipment").at(slot).get<unsigned>();
+                }
+            }
         }
         if (json.at("events").size() != event_count())
         {
@@ -1763,9 +1968,89 @@ public:
         for (size_t event = 0; event < event_count(); ++event)
         {
             const auto& source = json.at("events").at(event);
-            if (!source.is_object() || !source.contains("lines"))
+            if (!source.is_object() || !source.contains("type") || !source.at("type").is_number_unsigned()
+                || !source.contains("completion_flag") || !source.at("completion_flag").is_number_unsigned())
             {
-                continue;
+                return Result<bool>::failure(make_error("Incomplete third-route JSON event: " + path.string()));
+            }
+            event_types_[event] = source.at("type").get<uint8_t>();
+            json_event_completion_flags_[event] = source.at("completion_flag").get<unsigned>();
+            auto& operands = json_event_operands_.at(event);
+            if (source.contains("condition") && source.at("condition").is_number_integer())
+            {
+                operands[0] = source.at("condition").get<int>();
+            }
+            if (source.contains("trigger") && source.at("trigger").is_object() && source.at("trigger").contains("turn")
+                && source.at("trigger").at("turn").is_number_integer())
+            {
+                operands[1] = source.at("trigger").at("turn").get<int>();
+            }
+            if (source.contains("branch_flag") && source.at("branch_flag").is_number_integer())
+            {
+                operands[1] = source.at("branch_flag").get<int>();
+            }
+            const auto read_operand = [&](const char* key, size_t index) -> bool
+            {
+                if (!source.contains(key))
+                {
+                    return true;
+                }
+                if (!source.at(key).is_number_integer())
+                {
+                    return false;
+                }
+                operands.at(index) = source.at(key).get<int>();
+                return true;
+            };
+            if (!read_operand("role_id", 1) || !read_operand("victim_role_id", 1) || !read_operand("killer_role_id", 2)
+                || !read_operand("route_stage", 1))
+            {
+                return Result<bool>::failure(make_error("Invalid third-route event operand: " + path.string()));
+            }
+            if (source.contains("raw_operands") && source.at("raw_operands").is_object())
+            {
+                const auto& raw = source.at("raw_operands");
+                for (size_t operand = 0; operand < 4; ++operand)
+                {
+                    const auto key = "offset_" + std::to_string(operand == 0 ? 1 : operand * 2 + 1);
+                    if (raw.contains(key) && raw.at(key).is_number_integer())
+                    {
+                        operands.at(operand) = raw.at(key).get<int>();
+                    }
+                }
+            }
+            if (source.contains("trigger") && source.at("trigger").is_object())
+            {
+                const auto& trigger = source.at("trigger");
+                if (trigger.contains("turn") && trigger.at("turn").is_number_unsigned())
+                {
+                    json_event_turns_[event] = trigger.at("turn").get<unsigned>();
+                }
+                if (trigger.contains("flag") && trigger.at("flag").is_number_unsigned())
+                {
+                    json_event_flags_[event] = trigger.at("flag").get<unsigned>();
+                }
+                if (trigger.contains("condition") && trigger.at("condition").is_number_unsigned())
+                {
+                    json_event_conditions_[event] = trigger.at("condition").get<unsigned>();
+                }
+            }
+            if (source.contains("any_flags") && source.at("any_flags").is_array() && !source.at("any_flags").empty()
+                && source.at("any_flags").at(0).is_number_unsigned())
+            {
+                json_event_flags_[event] = source.at("any_flags").at(0).get<unsigned>();
+            }
+            if (source.contains("condition") && source.at("condition").is_number_unsigned())
+            {
+                json_event_conditions_[event] = source.at("condition").get<unsigned>();
+            }
+            if (source.contains("branch_flag") && source.at("branch_flag").is_number_unsigned())
+            {
+                json_event_flags_[event] = source.at("branch_flag").get<unsigned>();
+            }
+            if (source.contains("lines") && !source.at("lines").is_array())
+            {
+                return Result<bool>::failure(make_error("Invalid stage JSON event lines: " + path.string()));
             }
             if (source.contains("type"))
             {
@@ -1782,7 +2067,11 @@ public:
                 if (!source.at("branch_flag").is_number_unsigned()) { return Result<bool>::failure(make_error("Invalid stage JSON branch flag: " + path.string())); }
                 event_overrides[event].flag = source.at("branch_flag").get<unsigned>();
             }
-            if (!source.at("lines").is_array() || source.at("lines").size() > 64)
+            if (!source.contains("lines"))
+            {
+                continue;
+            }
+            if (source.at("lines").size() > 64)
             {
                 return Result<bool>::failure(make_error("Invalid stage JSON event lines: " + path.string()));
             }
@@ -1806,6 +2095,11 @@ public:
         }
         map_id = json.at("map_id").get<unsigned>();
         stage_music = json.at("music").get<unsigned>();
+        if (json.contains("route") && json.at("route").is_object() && json.at("route").contains("interbattle_town_id")
+            && json.at("route").at("interbattle_town_id").is_number_unsigned())
+        {
+            interbattle_town_id = json.at("route").at("interbattle_town_id").get<unsigned>();
+        }
         if (json.contains("route") && json.at("route").is_object() && json.at("route").contains("fantasy_stage"))
         {
             if (!json.at("route").at("fantasy_stage").is_number_unsigned())
@@ -1828,7 +2122,6 @@ public:
             }
         }
         json_line_overrides_ = std::move(loaded);
-        json_event_overrides_ = std::move(event_overrides);
         json_stage_loaded_ = true;
         return Result<bool>::success(true);
     }

@@ -1,0 +1,729 @@
+{
+  "map_id": 59,
+  "music": 8,
+  "route": {
+    "next_stage": 293,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 59,
+    "fantasy_stage": 293
+  },
+  "units": [
+    {
+      "id": 1,
+      "appearance": 91,
+      "name": "娜塔莉雅",
+      "x": 1,
+      "y": 83,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 560,
+      "max_hp": 168,
+      "equipment": [
+        25,
+        137,
+        155,
+        178,
+        194,
+        243
+      ]
+    },
+    {
+      "id": 2,
+      "appearance": 19,
+      "name": "穆爾",
+      "x": 1,
+      "y": 85,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 608,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        119,
+        149,
+        176,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 3,
+      "appearance": 22,
+      "name": "泰普",
+      "x": 3,
+      "y": 87,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 700,
+      "max_hp": 0,
+      "equipment": [
+        66,
+        137,
+        156,
+        179,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 4,
+      "appearance": 64,
+      "name": "蘇",
+      "x": 1,
+      "y": 87,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 410,
+      "max_hp": 240,
+      "equipment": [
+        37,
+        110,
+        160,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 5,
+      "appearance": 10,
+      "name": "古斯塔夫",
+      "x": 2,
+      "y": 87,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 680,
+      "max_hp": 0,
+      "equipment": [
+        66,
+        137,
+        156,
+        179,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 6,
+      "appearance": 54,
+      "name": "黛西",
+      "x": 2,
+      "y": 85,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 478,
+      "max_hp": 50,
+      "equipment": [
+        52,
+        122,
+        157,
+        177,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 37,
+      "appearance": 65,
+      "name": "西碧拉",
+      "x": 7,
+      "y": 52,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 1280,
+      "max_hp": 280,
+      "equipment": [
+        44,
+        117,
+        164,
+        182,
+        0,
+        216
+      ]
+    },
+    {
+      "id": 20,
+      "appearance": 94,
+      "name": "克雷布特里",
+      "x": 5,
+      "y": 49,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 840,
+      "max_hp": 0,
+      "equipment": [
+        14,
+        125,
+        165,
+        183,
+        199,
+        237
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 80,
+      "name": "機械警衛",
+      "x": 1,
+      "y": 64,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 720,
+      "max_hp": 0,
+      "equipment": [
+        83,
+        140,
+        0,
+        0,
+        244,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 80,
+      "name": "機械警衛",
+      "x": 13,
+      "y": 37,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 720,
+      "max_hp": 0,
+      "equipment": [
+        83,
+        140,
+        0,
+        245,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 80,
+      "name": "機械警衛",
+      "x": 26,
+      "y": 58,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 720,
+      "max_hp": 0,
+      "equipment": [
+        83,
+        140,
+        246,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 80,
+      "name": "機械警衛",
+      "x": 15,
+      "y": 66,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 720,
+      "max_hp": 0,
+      "equipment": [
+        83,
+        140,
+        246,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 80,
+      "name": "機械警衛",
+      "x": 14,
+      "y": 68,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 720,
+      "max_hp": 0,
+      "equipment": [
+        83,
+        140,
+        0,
+        245,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 80,
+      "name": "機械警衛",
+      "x": 10,
+      "y": 57,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 720,
+      "max_hp": 0,
+      "equipment": [
+        83,
+        140,
+        0,
+        0,
+        244,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 10,
+      "y": 43,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 490,
+      "max_hp": 169,
+      "equipment": [
+        58,
+        117,
+        164,
+        181,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 3,
+      "y": 57,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 490,
+      "max_hp": 169,
+      "equipment": [
+        58,
+        117,
+        164,
+        181,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 16,
+      "y": 38,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 490,
+      "max_hp": 169,
+      "equipment": [
+        58,
+        117,
+        164,
+        181,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 14,
+      "y": 66,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 490,
+      "max_hp": 169,
+      "equipment": [
+        58,
+        117,
+        164,
+        181,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 15,
+      "y": 68,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 490,
+      "max_hp": 169,
+      "equipment": [
+        58,
+        117,
+        164,
+        181,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 19,
+      "y": 58,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 490,
+      "max_hp": 169,
+      "equipment": [
+        58,
+        117,
+        164,
+        181,
+        0,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 22,
+      "y": 83,
+      "direction": 3,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 23,
+      "y": 88,
+      "direction": 3,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 24,
+      "y": 86,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 22,
+      "y": 88,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 25,
+      "y": 84,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 23,
+      "y": 86,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 24,
+      "y": 84,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 24,
+      "y": 84.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 25,
+      "y": 84.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 27,
+      "y": 84.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 27,
+      "y": 85.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 28,
+      "y": 86.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 10780.0,
+    "base_stage": 59
+  },
+  "objects": [],
+  "name": "北方合流篇-292-底座59",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      },
+      "lines": [
+        {
+          "speaker": 20,
+          "name": "克雷布特里",
+          "text": "呵呵呵，歡迎各位，在我即將返鄉的日子裡，還能見到各位一面，真是有緣啊。"
+        },
+        {
+          "speaker": 15,
+          "name": "艾文",
+          "text": "你在胡說些什麼？"
+        },
+        {
+          "speaker": 3,
+          "name": "泰普",
+          "text": "討厭的酸秀才，看我一斧頭把你劈了！"
+        },
+        {
+          "speaker": 20,
+          "name": "克雷布特里",
+          "text": "愚蠢的人啊，我不屬於你們，也不屬於這個世界。算了....我說這麼多幹嘛，反正一切順利，我就快要回家了....。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "克雷布特里！告訴我，南方領之所以攻打奚族，是因為@@WA7,00D4D@@你@@RWRD@@的關係嗎？"
+        },
+        {
+          "speaker": 20,
+          "name": "克雷布特里",
+          "text": "那又如何？貝洛也好，夏普也罷。當我告訴他們最新進武器的製作方法時，他們那裡能不起征伐的念頭？於是只要我說奚族的礦場有所需的原料，妳們的礦場就有麻煩了，然後我再說這裡能提供更棒更好的原料時，妳們兩邊能不打起來嗎？哈哈哈....而我也順順利利地來到這裡，這一切不是很完美嗎？"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "既然你才是整個事件的元兇，那準備為所做的事情付出代價吧！"
+        },
+        {
+          "speaker": 20,
+          "name": "克雷布特里",
+          "text": "這可不行，我還有事要辦，就讓西碧拉陪你們玩玩吧。"
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "completion_flag": 13,
+      "trigger": {
+        "kind": "turn",
+        "turn": 2
+      },
+      "lines": [
+        {
+          "speaker": 20,
+          "name": "克雷布特里",
+          "text": "恕我不敬之罪，要先告辭了，各位請安心和我的手下們玩玩吧，保證沒有援軍，哈哈哈。"
+        }
+      ]
+    },
+    {
+      "type": 6,
+      "completion_flag": 0,
+      "condition": 3,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 20,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    }
+  ]
+}

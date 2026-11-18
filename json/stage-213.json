@@ -1,0 +1,723 @@
+{
+  "map_id": 15,
+  "music": 4,
+  "route": {
+    "next_stage": 214,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 15,
+    "fantasy_stage": 214
+  },
+  "units": [
+    {
+      "id": 22,
+      "appearance": 133,
+      "name": "奧帕兒",
+      "x": 15,
+      "y": 51,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 112,
+      "max_hp": 48,
+      "equipment": [
+        86,
+        110,
+        160,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 74,
+      "appearance": 24,
+      "name": "護衛隊長",
+      "x": 16,
+      "y": 49,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 354,
+      "max_hp": 32,
+      "equipment": [
+        80,
+        136,
+        157,
+        178,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "貼身護衛",
+      "x": 16,
+      "y": 55,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 212,
+      "max_hp": 0,
+      "equipment": [
+        77,
+        132,
+        152,
+        169,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "貼身護衛",
+      "x": 18,
+      "y": 48,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 212,
+      "max_hp": 0,
+      "equipment": [
+        77,
+        132,
+        152,
+        169,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "貼身護衛",
+      "x": 18,
+      "y": 51,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 212,
+      "max_hp": 0,
+      "equipment": [
+        77,
+        132,
+        152,
+        169,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "貼身護衛",
+      "x": 15,
+      "y": 46,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 212,
+      "max_hp": 0,
+      "equipment": [
+        77,
+        132,
+        152,
+        169,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 37,
+      "name": "貼身護衛",
+      "x": 14,
+      "y": 55,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 186,
+      "max_hp": 0,
+      "equipment": [
+        5,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 37,
+      "name": "貼身護衛",
+      "x": 16,
+      "y": 45,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 186,
+      "max_hp": 0,
+      "equipment": [
+        5,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 37,
+      "name": "貼身護衛",
+      "x": 18,
+      "y": 54,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 186,
+      "max_hp": 0,
+      "equipment": [
+        5,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 37,
+      "name": "貼身護衛",
+      "x": 14,
+      "y": 48,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 186,
+      "max_hp": 0,
+      "equipment": [
+        5,
+        121,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 122,
+      "appearance": 72,
+      "name": "丑腦",
+      "x": 24,
+      "y": 45,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 432,
+      "max_hp": 90,
+      "equipment": [
+        0,
+        117,
+        148,
+        178,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 200,
+      "appearance": 72,
+      "name": "丑善",
+      "x": 23,
+      "y": 40,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 396,
+      "max_hp": 80,
+      "equipment": [
+        0,
+        117,
+        148,
+        178,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 201,
+      "appearance": 72,
+      "name": "丑惡",
+      "x": 26,
+      "y": 47,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 396,
+      "max_hp": 80,
+      "equipment": [
+        0,
+        117,
+        148,
+        178,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 202,
+      "appearance": 72,
+      "name": "丑黑",
+      "x": 14,
+      "y": 29,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 396,
+      "max_hp": 80,
+      "equipment": [
+        0,
+        117,
+        148,
+        178,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 203,
+      "appearance": 72,
+      "name": "丑白",
+      "x": 18,
+      "y": 36,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 396,
+      "max_hp": 80,
+      "equipment": [
+        0,
+        117,
+        148,
+        178,
+        0,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 7,
+      "y": 32,
+      "direction": 1,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 8,
+      "y": 28,
+      "direction": 1,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 9,
+      "y": 28,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 6,
+      "y": 34,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 7,
+      "y": 30,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 5,
+      "y": 34,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 8,
+      "y": 30,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 6,
+      "y": 32,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 6,
+      "y": 32.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 7,
+      "y": 32.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 9,
+      "y": 32.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 9,
+      "y": 33.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 2516.0,
+    "base_stage": 15
+  },
+  "objects": [],
+  "name": "北方合流篇-213-底座15",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 13,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      },
+      "lines": [
+        {
+          "speaker": 14,
+          "name": "飛霜",
+          "text": "前面來有衛兵！"
+        },
+        {
+          "speaker": 16,
+          "name": "刑天",
+          "text": "....嗯，看來是私人的傭兵，不是罕泉的駐兵！"
+        },
+        {
+          "speaker": 74,
+          "name": "護衛隊長",
+          "text": "小姐，前面就是罕泉鎮了，我們終於到了！"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "看來我們甩掉那幾個奇怪的小丑了，不知道是誰派來的。"
+        },
+        {
+          "speaker": 74,
+          "name": "護衛隊長",
+          "text": "還是請小姐您先進城吧，調查的事可以先擱下來....。"
+        }
+      ]
+    },
+    {
+      "type": 6,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 122,
+        "offset_7": 200,
+        "offset_9": 201
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 6,
+      "completion_flag": 46,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 203,
+        "offset_7": 202,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 122,
+          "music_after": 6,
+          "name": "丑腦",
+          "text": "不必這麼辛苦了！你們都要死在這裡！"
+        },
+        {
+          "speaker": 122,
+          "name": "丑腦",
+          "text": "丑黑、丑白你們兩個去執行任務，那些路人要是找死就一併除去。"
+        },
+        {
+          "speaker": 18,
+          "name": "茱迪",
+          "text": "好狂妄，才兩個人而已....。"
+        },
+        {
+          "speaker": 17,
+          "name": "秋月",
+          "text": "大家要小心應戰，這五人強得離譜，不要落單了！"
+        }
+      ]
+    },
+    {
+      "type": 3,
+      "completion_flag": 14,
+      "condition": 2,
+      "role_id": 202,
+      "lines": [
+        {
+          "speaker": 122,
+          "name": "丑腦",
+          "text": "....丑善、丑惡全上！"
+        }
+      ]
+    },
+    {
+      "type": 3,
+      "completion_flag": 15,
+      "condition": 2,
+      "role_id": 203,
+      "lines": [
+        {
+          "speaker": 122,
+          "name": "丑善",
+          "text": "！！！"
+        }
+      ]
+    },
+    {
+      "type": 9,
+      "completion_flag": 0,
+      "condition": 1,
+      "required_flags": [
+        14,
+        15
+      ],
+      "lines": [
+        {
+          "speaker": 122,
+          "name": "丑腦",
+          "text": "你們到底是何方神聖！？"
+        }
+      ]
+    },
+    {
+      "type": 9,
+      "completion_flag": 16,
+      "condition": 3,
+      "any_flags": [
+        14,
+        15
+      ]
+    },
+    {
+      "type": 12,
+      "completion_flag": 0,
+      "condition": 25,
+      "raw_operands": {
+        "offset_3": 16,
+        "offset_5": 200,
+        "offset_7": 1,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 12,
+      "completion_flag": 0,
+      "condition": 25,
+      "raw_operands": {
+        "offset_3": 16,
+        "offset_5": 201,
+        "offset_7": 1,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 12,
+      "completion_flag": 0,
+      "condition": 25,
+      "raw_operands": {
+        "offset_3": 16,
+        "offset_5": 122,
+        "offset_7": 1,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 1,
+      "completion_flag": 4,
+      "trigger": {
+        "kind": "turn",
+        "turn": 10
+      },
+      "lines": [
+        {
+          "speaker": 122,
+          "name": "丑腦",
+          "text": "....我知道你們是什麼人了，既然如此，計畫就不用一成不變了，再會吧。"
+        }
+      ]
+    }
+  ]
+}

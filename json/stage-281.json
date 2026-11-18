@@ -1,0 +1,973 @@
+{
+  "map_id": 103,
+  "music": 18,
+  "route": {
+    "next_stage": 282,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 103,
+    "fantasy_stage": 282
+  },
+  "units": [
+    {
+      "id": 42,
+      "appearance": 127,
+      "name": "清風",
+      "x": 5,
+      "y": 15,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 7,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 800,
+      "max_hp": 70,
+      "equipment": [
+        7,
+        123,
+        157,
+        177,
+        195,
+        0
+      ]
+    },
+    {
+      "id": 151,
+      "appearance": 124,
+      "name": "伊娃",
+      "x": 7,
+      "y": 12,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 7,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 780,
+      "max_hp": 150,
+      "equipment": [
+        80,
+        135,
+        156,
+        177,
+        191,
+        0
+      ]
+    },
+    {
+      "id": 75,
+      "appearance": 25,
+      "name": "雙龍城衛兵",
+      "x": 14,
+      "y": 11,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 5,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 340,
+      "max_hp": 0,
+      "equipment": [
+        51,
+        121,
+        151,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 25,
+      "name": "雙龍城衛兵",
+      "x": 6,
+      "y": 12,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 5,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 340,
+      "max_hp": 0,
+      "equipment": [
+        51,
+        121,
+        151,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 25,
+      "name": "雙龍城衛兵",
+      "x": 6,
+      "y": 18,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 5,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 340,
+      "max_hp": 0,
+      "equipment": [
+        51,
+        121,
+        151,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 62,
+      "name": "雙龍城衛兵",
+      "x": 13,
+      "y": 11,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 5,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 276,
+      "max_hp": 152,
+      "equipment": [
+        35,
+        107,
+        159,
+        180,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 62,
+      "name": "雙龍城衛兵",
+      "x": 7,
+      "y": 12,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 5,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 276,
+      "max_hp": 152,
+      "equipment": [
+        35,
+        107,
+        159,
+        180,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 62,
+      "name": "雙龍城衛兵",
+      "x": 4,
+      "y": 16,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 5,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 276,
+      "max_hp": 152,
+      "equipment": [
+        35,
+        107,
+        159,
+        180,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 40,
+      "appearance": 57,
+      "name": "柯莉特",
+      "x": 8,
+      "y": 30,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 700,
+      "max_hp": 20,
+      "equipment": [
+        66,
+        138,
+        157,
+        178,
+        196,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 26,
+      "name": "黑騎士",
+      "x": 12,
+      "y": 39,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 372,
+      "max_hp": 54,
+      "equipment": [
+        79,
+        135,
+        156,
+        177,
+        199,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 26,
+      "name": "黑騎士",
+      "x": 8,
+      "y": 19,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 372,
+      "max_hp": 54,
+      "equipment": [
+        79,
+        135,
+        156,
+        177,
+        199,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 26,
+      "name": "黑騎士",
+      "x": 17,
+      "y": 56,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 6,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 372,
+      "max_hp": 54,
+      "equipment": [
+        79,
+        135,
+        156,
+        177,
+        199,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 26,
+      "name": "黑騎士",
+      "x": 17,
+      "y": 57,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 6,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 372,
+      "max_hp": 54,
+      "equipment": [
+        79,
+        135,
+        156,
+        177,
+        199,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 26,
+      "name": "黑騎士",
+      "x": 23,
+      "y": 52,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 6,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 372,
+      "max_hp": 54,
+      "equipment": [
+        79,
+        135,
+        156,
+        177,
+        199,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 26,
+      "name": "黑騎士",
+      "x": 23,
+      "y": 56,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 6,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 372,
+      "max_hp": 54,
+      "equipment": [
+        79,
+        135,
+        156,
+        177,
+        199,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 21,
+      "name": "森林法師",
+      "x": 8,
+      "y": 33,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 280,
+      "max_hp": 148,
+      "equipment": [
+        37,
+        109,
+        160,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 21,
+      "name": "森林法師",
+      "x": 15,
+      "y": 33,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 280,
+      "max_hp": 148,
+      "equipment": [
+        37,
+        109,
+        160,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 21,
+      "name": "森林法師",
+      "x": 12,
+      "y": 13,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 280,
+      "max_hp": 148,
+      "equipment": [
+        37,
+        109,
+        160,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 55,
+      "name": "魔法劍士",
+      "x": 8,
+      "y": 37,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 310,
+      "max_hp": 84,
+      "equipment": [
+        7,
+        122,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 55,
+      "name": "魔法劍士",
+      "x": 17,
+      "y": 42,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 310,
+      "max_hp": 84,
+      "equipment": [
+        7,
+        122,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 55,
+      "name": "魔法劍士",
+      "x": 10,
+      "y": 23,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 310,
+      "max_hp": 84,
+      "equipment": [
+        7,
+        122,
+        149,
+        169,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 19,
+      "name": "武術家",
+      "x": 14,
+      "y": 43,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 390,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        119,
+        150,
+        176,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 19,
+      "name": "武術家",
+      "x": 19,
+      "y": 20,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 390,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        119,
+        150,
+        176,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 19,
+      "name": "武術家",
+      "x": 11,
+      "y": 16,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 390,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        119,
+        150,
+        176,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "刀斧手",
+      "x": 18,
+      "y": 36,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 430,
+      "max_hp": 0,
+      "equipment": [
+        65,
+        135,
+        156,
+        178,
+        194,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "刀斧手",
+      "x": 16,
+      "y": 22,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 430,
+      "max_hp": 0,
+      "equipment": [
+        65,
+        135,
+        156,
+        178,
+        194,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "刀斧手",
+      "x": 5,
+      "y": 27,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 430,
+      "max_hp": 0,
+      "equipment": [
+        65,
+        135,
+        156,
+        178,
+        194,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 21,
+      "y": 50,
+      "direction": 3,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 23,
+      "y": 52,
+      "direction": 3,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 23,
+      "y": 50,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 22,
+      "y": 50,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 22,
+      "y": 48,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 22,
+      "y": 54,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 21,
+      "y": 52,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 22,
+      "y": 52,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 22,
+      "y": 52.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 23,
+      "y": 52.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 25,
+      "y": 52.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 25,
+      "y": 53.0,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 9062.0,
+    "base_stage": 103
+  },
+  "objects": [],
+  "name": "北方合流篇-281-底座103",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      },
+      "lines": [
+        {
+          "speaker": 40,
+          "name": "柯莉特",
+          "text": "哼，妳們果然來了。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "柯莉特，現在妳已經被我們追上，是戰是降就憑妳一句話吧。"
+        },
+        {
+          "speaker": 40,
+          "name": "柯莉特",
+          "text": "笑話，我堂堂南方領柯大將軍，那有向蠻族投降的道理。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": ".....。"
+        },
+        {
+          "speaker": 3,
+          "name": "泰普",
+          "text": "蠻族？就讓妳瞧瞧我們的厲害！"
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "completion_flag": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 5
+      },
+      "lines": [
+        {
+          "speaker": 75,
+          "name": "雙龍城衛兵",
+          "text": "那裡來的盜賊敢在雙龍城械鬥？大公的侍衛隊就要到了！"
+        },
+        {
+          "speaker": 40,
+          "name": "柯莉特",
+          "text": "赤子國的彥清風？太麻煩了，要在他到之前收拾掉妳們！"
+        },
+        {
+          "speaker": 3,
+          "name": "泰普",
+          "text": "哈哈哈，真是妄想！"
+        },
+        {
+          "speaker": 4,
+          "name": "蘇",
+          "text": "娜塔，柯莉特可能還有援兵。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "嗯....大家留意點。"
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "completion_flag": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 7
+      },
+      "lines": [
+        {
+          "speaker": 42,
+          "name": "清風",
+          "text": "....南方領的柯將軍？不知我國那裡得罪了貴國？讓妳興師動眾派人到此？"
+        },
+        {
+          "speaker": 151,
+          "name": "伊娃",
+          "text": "另一邊的人好像是奚族的人....。"
+        },
+        {
+          "speaker": 40,
+          "name": "柯莉特",
+          "text": "（為今之計，只有盡速除掉娜塔莉雅，免得再生事非....。）"
+        },
+        {
+          "speaker": 40,
+          "name": "柯莉特",
+          "text": "娜塔莉雅，準備接招吧！"
+        },
+        {
+          "speaker": 42,
+          "name": "清風",
+          "text": "柯將軍再不停手，彥清風只有得罪了。"
+        },
+        {
+          "speaker": 40,
+          "name": "柯莉特",
+          "text": "有本事就來試試吧，就不信你們魔法起家的赤子國能出什麼好戰士！"
+        }
+      ]
+    },
+    {
+      "type": 3,
+      "completion_flag": 0,
+      "condition": 2,
+      "role_id": 40,
+      "lines": [
+        {
+          "speaker": 40,
+          "name": "柯莉特",
+          "text": "....今天妳們人多，下次再找妳們討回來。"
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "completion_flag": 13,
+      "lines": [
+        {
+          "speaker": 42,
+          "name": "清風",
+          "text": "各位可是來自奚族的勇士....。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "不敢，我們正是奚族部落的人，現在還有事要辦，不多留了。"
+        },
+        {
+          "speaker": 42,
+          "name": "清風",
+          "text": "等等....。"
+        }
+      ]
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 11,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 5,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 12,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 15,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    }
+  ]
+}

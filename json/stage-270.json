@@ -1,0 +1,905 @@
+{
+  "map_id": 16,
+  "music": 2,
+  "route": {
+    "next_stage": 271,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 16,
+    "fantasy_stage": 271
+  },
+  "units": [
+    {
+      "id": 1,
+      "appearance": 89,
+      "name": "娜塔莉雅",
+      "x": 2,
+      "y": 23,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 300,
+      "max_hp": 68,
+      "equipment": [
+        21,
+        110,
+        160,
+        180,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 2,
+      "appearance": 19,
+      "name": "穆爾",
+      "x": 2,
+      "y": 21,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 290,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        119,
+        149,
+        171,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 5,
+      "appearance": 10,
+      "name": "古斯塔夫",
+      "x": 1,
+      "y": 23,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 360,
+      "max_hp": 0,
+      "equipment": [
+        63,
+        133,
+        152,
+        169,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 4,
+      "appearance": 53,
+      "name": "蘇",
+      "x": 1,
+      "y": 21,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 0,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 180,
+      "max_hp": 101,
+      "equipment": [
+        35,
+        107,
+        160,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 19,
+      "appearance": 93,
+      "name": "夏普",
+      "x": 14,
+      "y": 32,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 800,
+      "max_hp": 96,
+      "equipment": [
+        83,
+        116,
+        158,
+        173,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 20,
+      "appearance": 94,
+      "name": "克雷布特里",
+      "x": 11,
+      "y": 30,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 480,
+      "max_hp": 0,
+      "equipment": [
+        14,
+        116,
+        157,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 21,
+      "appearance": 35,
+      "name": "蘭瑟姆",
+      "x": 17,
+      "y": 42,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 740,
+      "max_hp": 60,
+      "equipment": [
+        10,
+        137,
+        157,
+        178,
+        195,
+        0
+      ]
+    },
+    {
+      "id": 22,
+      "appearance": 133,
+      "name": "奧帕兒",
+      "x": 12,
+      "y": 31,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 112,
+      "max_hp": 48,
+      "equipment": [
+        37,
+        110,
+        160,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 40,
+      "appearance": 57,
+      "name": "柯莉特",
+      "x": 15,
+      "y": 36,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 600,
+      "max_hp": 20,
+      "equipment": [
+        66,
+        138,
+        157,
+        178,
+        196,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 23,
+      "name": "宮庭劍師",
+      "x": 17,
+      "y": 55,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 246,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 23,
+      "name": "宮庭劍師",
+      "x": 15,
+      "y": 59,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 246,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 23,
+      "name": "宮庭劍師",
+      "x": 3,
+      "y": 27,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 246,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 23,
+      "name": "宮庭劍師",
+      "x": 2,
+      "y": 30,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 246,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 65,
+      "name": "宮庭法師",
+      "x": 17,
+      "y": 62,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 198,
+      "max_hp": 96,
+      "equipment": [
+        36,
+        107,
+        160,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 65,
+      "name": "宮庭法師",
+      "x": 18,
+      "y": 59,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 198,
+      "max_hp": 96,
+      "equipment": [
+        36,
+        107,
+        160,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 65,
+      "name": "宮庭法師",
+      "x": 0,
+      "y": 27,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 198,
+      "max_hp": 96,
+      "equipment": [
+        36,
+        107,
+        160,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 65,
+      "name": "宮庭法師",
+      "x": 2,
+      "y": 24,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 198,
+      "max_hp": 96,
+      "equipment": [
+        36,
+        107,
+        160,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 61,
+      "name": "宮庭殺手",
+      "x": 2,
+      "y": 42,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 3,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 264,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        121,
+        149,
+        170,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 61,
+      "name": "宮庭殺手",
+      "x": 3,
+      "y": 45,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 3,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 264,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        121,
+        149,
+        170,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 61,
+      "name": "宮庭殺手",
+      "x": 4,
+      "y": 47,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 3,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 264,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        121,
+        149,
+        170,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 61,
+      "name": "宮庭殺手",
+      "x": 5,
+      "y": 49,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 3,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 264,
+      "max_hp": 0,
+      "equipment": [
+        20,
+        121,
+        149,
+        170,
+        0,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 9,
+      "y": 36,
+      "direction": 2,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 8,
+      "y": 36,
+      "direction": 2,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 9,
+      "y": 38,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 8,
+      "y": 38,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 8,
+      "y": 38.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 9,
+      "y": 38.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 11,
+      "y": 38.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 11,
+      "y": 39.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 12,
+      "y": 40.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 14,
+      "y": 41.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 14,
+      "y": 43.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 15,
+      "y": 45.0,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 7264.0,
+    "base_stage": 16
+  },
+  "objects": [],
+  "name": "北方合流篇-270-底座16",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 13,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      },
+      "lines": [
+        {
+          "speaker": 20,
+          "name": "克雷布特里",
+          "text": "....接下來參加宴會的人是小姐的朋友，他們在罕泉鎮上擋住了刺客，才使小姐免於受到傷害....。"
+        },
+        {
+          "speaker": 19,
+          "name": "夏普",
+          "text": "嗯，小夥子你做得不錯，我重重有賞。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "爹！晚宴快開始了，讓我和朋友們一起用餐吧。"
+        },
+        {
+          "speaker": 19,
+          "name": "夏普",
+          "text": "妳先進去招待賓客，為父要給你這些朋友一些賞賜，會花點時間。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "好的，那我先進去了。志超，等會記得來找我。"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "當然，我會記得的。"
+        }
+      ]
+    },
+    {
+      "type": 7,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 22,
+        "offset_7": 6,
+        "offset_9": 21
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 7,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 22,
+        "offset_7": 1,
+        "offset_9": 19
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 12,
+      "completion_flag": 0,
+      "condition": 17,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 22,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 19,
+          "name": "夏普",
+          "text": "進去了？"
+        },
+        {
+          "speaker": 20,
+          "music_after": 27,
+          "name": "克雷布特里",
+          "text": "是的，小姐已經進入用餐室了。"
+        },
+        {
+          "speaker": 19,
+          "name": "夏普",
+          "text": "好，那可以動手了。"
+        },
+        {
+          "speaker": 20,
+          "name": "克雷布特里",
+          "text": "侍衛隊聽令！立即將這四人拿下！"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "什麼？！"
+        },
+        {
+          "speaker": 16,
+          "name": "刑天",
+          "text": "怎麼回事？"
+        },
+        {
+          "speaker": 40,
+          "name": "柯莉特",
+          "text": "可憐的老鼠，被人識破了還不知道。"
+        },
+        {
+          "speaker": 21,
+          "name": "蘭瑟姆",
+          "text": "......。"
+        },
+        {
+          "speaker": 15,
+          "name": "艾文",
+          "text": "到底那裡錯了？"
+        },
+        {
+          "speaker": 20,
+          "name": "克雷布特里",
+          "text": "侍衛隊不要猶豫，立即行動！"
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "completion_flag": 14,
+      "trigger": {
+        "kind": "turn",
+        "turn": 2
+      }
+    },
+    {
+      "type": 6,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 1,
+        "offset_7": 2,
+        "offset_9": 5
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 6,
+      "completion_flag": 1,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 4,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 1,
+          "music_before": 18,
+          "name": "娜塔莉雅",
+          "text": "夏普！識得我族的圖騰嗎！"
+        },
+        {
+          "speaker": 19,
+          "name": "夏普",
+          "text": "奚族的人！今天混進來的刺客還真不少啊。"
+        },
+        {
+          "speaker": 40,
+          "name": "柯莉特",
+          "text": "來多少都一樣！違背南方領利益的都得死！"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "夏普！回答我，你為何派兵強佔我村莊與礦場！虐殺我老幼！"
+        },
+        {
+          "speaker": 19,
+          "name": "夏普",
+          "text": "少囉唆了，我還要去參加晚宴呢，沒時間回答妳這些無中生有的鬼話。"
+        },
+        {
+          "speaker": 5,
+          "name": "古斯塔夫",
+          "text": "和這種獨裁者沒什麼好說的，殺了他為族人報仇！"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "要打嗎？還是....。"
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "completion_flag": 15,
+      "lines": [
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "快走吧，不要戀戰了....。"
+        }
+      ]
+    },
+    {
+      "type": 14,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 11,
+        "offset_7": 1,
+        "offset_9": 60
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 14,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 1,
+        "offset_7": 11,
+        "offset_9": 55
+      },
+      "raw_operands_semantics": "unconfirmed"
+    }
+  ]
+}

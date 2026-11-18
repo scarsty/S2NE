@@ -1337,6 +1337,7 @@ public:
         // sub_42C50A uses the staggered cell's left/top, not its center.
         return Result<std::pair<int, int>>::success({ x * 64 + (y & 1) * 32 - camera_x, y * 16 - camera_y - std::max(0, h - 1) * 16 });
     }
+    std::pair<unsigned, unsigned> dimensions() const { return { width, height }; }
     std::pair<int, int> screen_position(int x, int y) const { return try_screen_position(x, y).value(); }
     Result<std::pair<int, int>> try_completion_location(unsigned completion) const
     {

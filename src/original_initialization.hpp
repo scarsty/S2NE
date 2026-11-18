@@ -11,6 +11,18 @@ class OriginalInitialization
     std::filesystem::path root_;
     SharedBytes bin_, pal_, prg_;
     std::vector<uint8_t> items_;
+    static unsigned custom_stage_base(unsigned id)
+    {
+        if (id < 201) { return id; }
+        static constexpr std::array<unsigned, 112> route_order = {
+            162, 66, 67, 68, 69, 70, 19, 93, 84, 87, 73, 26, 15, 72, 71, 86, 18, 22, 1, 74, 3, 6, 89, 97,
+            40, 2, 64, 65, 4, 23, 95, 8, 96, 11, 82, 9, 7, 45, 109, 5, 75, 38, 35, 12, 79, 85, 78, 80,
+            29, 99, 20, 25, 105, 63, 13, 28, 76, 17, 91, 10, 81, 77, 21, 94, 98, 24, 32, 101, 31, 16, 90,
+            108, 52, 46, 92, 112, 36, 39, 100, 30, 103, 33, 102, 41, 57, 58, 88, 27, 107, 111, 43, 59, 55,
+            110, 37, 14, 83, 104, 34, 106, 44, 47, 49, 48, 42, 56, 50, 53, 60, 62, 54, 61
+        };
+        return route_order.at(id - 201);
+    }
     static unsigned get(const std::vector<uint8_t>& b, size_t p, unsigned n = 2)
     {
         unsigned v = 0;
@@ -473,7 +485,7 @@ public:
         unit = std::move(state.unit);
         if (source.group && game_mode != 1)
         {
-            const size_t stage = entry(1) + 2 + size_t(events.stage - 1) * 30;
+            const size_t stage = entry(1) + 2 + size_t(custom_stage_base(events.stage) - 1) * 30;
             if (bin_.at(stage + 21) != 3)
             {
                 size_t config = entry(10);
@@ -563,6 +575,7 @@ public:
     }
     Result<std::vector<Source>> try_sources(unsigned stage) const
     {
+        const unsigned source_stage = custom_stage_base(stage);
         ResourceReader pal(pal_), bin(bin_);
         unsigned raw = pal.number(848, 4);
         if (!pal)
@@ -575,11 +588,11 @@ public:
         }
         size_t table = raw - 11;
         unsigned count = bin.number(table);
-        if (!stage || stage > count)
+        if (!source_stage || source_stage > count)
         {
             return Result<std::vector<Source>>::failure(make_error("Invalid initialization stage"));
         }
-        size_t h = table + 2 + size_t(stage - 1) * 30;
+        size_t h = table + 2 + size_t(source_stage - 1) * 30;
         if (!bin.extent(h, 30))
         {
             return Result<std::vector<Source>>::failure(bin.error());
@@ -1005,7 +1018,8 @@ public:
         const std::array<uint8_t, 80>& opening_flags, const Setup& setup) const
     {
         auto config = opening();
-        if (stage != (opening_flags[40] ? config.alternate_stage : config.primary_stage))
+        const bool custom_stage = stage >= 201;
+        if (!custom_stage && stage != (opening_flags[40] ? config.alternate_stage : config.primary_stage))
         {
             return Result<OriginalSave::State>::failure(make_error("Fresh stage does not match original opening flag40"));
         }
@@ -1035,7 +1049,8 @@ public:
         put(raw.settings_4f7cf0, 12, setup.effects);
         put(raw.settings_4f7cf0, 16, setup.speech);
         std::copy(setup.switches.begin(), setup.switches.end(), raw.settings_4f7cf0.begin() + 20);
-        size_t table = entry(1), h = table + 2 + (stage - 1) * 30, data = table + get(bin_, h, 4);
+        const unsigned source_stage = custom_stage_base(stage);
+        size_t table = entry(1), h = table + 2 + (source_stage - 1) * 30, data = table + get(bin_, h, 4);
         put(raw.globals_4f7cd0, 8, stage);
         put(raw.globals_4f7cd0, 12, 1);
         put(raw.globals_4f7cd0, 16, bin_.at(h + 12));
@@ -1082,6 +1097,57 @@ public:
             return arrived;
         }
         raw = std::move(arrived).value();
+        if (custom_stage)
+        {
+            OriginalEvents male(root, difficulty);
+            male.load_stage(1);
+            OriginalEvents female(root, difficulty);
+            female.load_stage(71);
+            auto male_sources = try_sources(1);
+            auto female_sources = try_sources(71);
+            if (!male_sources || !female_sources)
+            {
+                return Result<OriginalSave::State>::failure(make_error("Third-route core roster source expansion failed"));
+            }
+            const std::array<unsigned, 4> male_roles{ 11, 14, 15, 13 };
+            const std::array<unsigned, 4> female_roles{ 1, 2, 3, 4 };
+            auto add_core_roles = [&](const OriginalEvents& events, const std::vector<Source>& sources, const auto& ids) -> Result<bool>
+            {
+                for (unsigned id : ids)
+                {
+                    if (std::any_of(raw.groups[0].units.begin(), raw.groups[0].units.end(), [&](const auto& unit)
+                            {
+                                return OriginalSaveBridge::get(unit, 2) == id;
+                            }))
+                    {
+                        continue;
+                    }
+                    auto numeric = std::find_if(events.units.begin(), events.units.end(), [&](const auto& unit)
+                        {
+                            return unit.id == id;
+                        });
+                    auto source = std::find_if(sources.begin(), sources.end(), [&](const auto& value)
+                        {
+                            return value.id() == id;
+                        });
+                    if (numeric == events.units.end() || source == sources.end() || raw.groups[0].units.size() >= 50)
+                    {
+                        return Result<bool>::failure(make_error("Third-route core roster member missing from original source"));
+                    }
+                    auto role = try_new_role(*source, *numeric, unsigned(raw.groups[0].units.size() + 1), map, raw.groups[0].units, raw.groups[1].units);
+                    if (!role)
+                    {
+                        return Result<bool>::failure(role.error());
+                    }
+                    raw.groups[0].units.push_back(std::move(role).value());
+                }
+                return Result<bool>::success(true);
+            };
+            auto added = add_core_roles(male, male_sources.value(), male_roles);
+            if (!added) { return Result<OriginalSave::State>::failure(added.error()); }
+            added = add_core_roles(female, female_sources.value(), female_roles);
+            if (!added) { return Result<OriginalSave::State>::failure(added.error()); }
+        }
         auto described = try_describe(raw, expanded);
         if (!described)
         {
@@ -1131,7 +1197,7 @@ public:
         {
             return Result<OriginalSave::State>::failure(make_error("Transition not authorized by original stage header/event"));
         }
-        unsigned target_mode = bin_.at(table + 2 + (deployed.stage - 1) * 30 + 21);
+        unsigned target_mode = bin_.at(table + 2 + (custom_stage_base(deployed.stage) - 1) * 30 + 21);
         if (target_mode != 1 && target_mode != 3)
         {
             return Result<OriginalSave::State>::failure(make_error("Original intermediary stage requires separate scripted entry"));
@@ -1188,7 +1254,7 @@ public:
         raw.flags_4f7d10 = deployed.flags;
         raw.event_states = deployed.save_event_states();
         OriginalSaveBridge::put(raw.globals_4f7cd0, 4, 0, 4);
-        size_t h = table + 2 + (deployed.stage - 1) * 30, data = table + get(bin_, h, 4);
+        size_t h = table + 2 + (custom_stage_base(deployed.stage) - 1) * 30, data = table + get(bin_, h, 4);
         OriginalSaveBridge::put(raw.globals_4f7cd0, 8, deployed.stage, 4);
         OriginalSaveBridge::put(raw.globals_4f7cd0, 12, 1, 4);
         OriginalSaveBridge::put(raw.globals_4f7cd0, 16, bin_.at(h + 12), 4);

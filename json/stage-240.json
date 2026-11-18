@@ -1,0 +1,818 @@
+{
+  "map_id": 5,
+  "music": 30,
+  "route": {
+    "next_stage": 241,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 5,
+    "fantasy_stage": 241
+  },
+  "units": [
+    {
+      "id": 50,
+      "appearance": 95,
+      "name": "護衛隊長",
+      "x": 5,
+      "y": 15,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 200,
+      "max_hp": 0,
+      "equipment": [
+        3,
+        129,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "商隊護衛",
+      "x": 8,
+      "y": 11,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 170,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "商隊護衛",
+      "x": 7,
+      "y": 17,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 170,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "商隊護衛",
+      "x": 8,
+      "y": 8,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 170,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "商隊護衛",
+      "x": 2,
+      "y": 16,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 170,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "商隊護衛",
+      "x": 3,
+      "y": 21,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 170,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "商隊護衛",
+      "x": 1,
+      "y": 20,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 170,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "商隊護衛",
+      "x": 9,
+      "y": 15,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 170,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "商隊護衛",
+      "x": 5,
+      "y": 20,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 170,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "商隊護衛",
+      "x": 6,
+      "y": 11,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 170,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 104,
+      "appearance": 54,
+      "name": "沙盜弩手",
+      "x": 18,
+      "y": 13,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 214,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        150,
+        170,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 54,
+      "name": "沙盜弩手",
+      "x": 20,
+      "y": 12,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 198,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        150,
+        170,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 54,
+      "name": "沙盜弩手",
+      "x": 19,
+      "y": 10,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 198,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        150,
+        170,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 54,
+      "name": "沙盜弩手",
+      "x": 19,
+      "y": 35,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 198,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        150,
+        170,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 54,
+      "name": "沙盜弩手",
+      "x": 16,
+      "y": 35,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 198,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        150,
+        170,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 54,
+      "name": "沙盜弩手",
+      "x": 21,
+      "y": 47,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 198,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        150,
+        170,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 54,
+      "name": "沙盜弩手",
+      "x": 11,
+      "y": 34,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 198,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        150,
+        170,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 54,
+      "name": "沙盜弩手",
+      "x": 11,
+      "y": 39,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 198,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        150,
+        170,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 130,
+      "appearance": 102,
+      "name": "沙盜戰士",
+      "x": 9,
+      "y": 53,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 240,
+      "max_hp": 0,
+      "equipment": [
+        18,
+        130,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 102,
+      "name": "沙盜戰士",
+      "x": 6,
+      "y": 54,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 214,
+      "max_hp": 0,
+      "equipment": [
+        18,
+        130,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 102,
+      "name": "沙盜戰士",
+      "x": 11,
+      "y": 51,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 214,
+      "max_hp": 0,
+      "equipment": [
+        18,
+        130,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 102,
+      "name": "沙盜戰士",
+      "x": 7,
+      "y": 40,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 214,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        130,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 102,
+      "name": "沙盜戰士",
+      "x": 3,
+      "y": 35,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 214,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        130,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 102,
+      "name": "沙盜戰士",
+      "x": 6,
+      "y": 32,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 214,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        130,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 102,
+      "name": "沙盜戰士",
+      "x": 9,
+      "y": 35,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 214,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        130,
+        150,
+        170,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 102,
+      "name": "沙盜戰士",
+      "x": 13,
+      "y": 37,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 214,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        130,
+        150,
+        170,
+        186,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 4,
+      "y": 12,
+      "direction": 1,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "direction": 1,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 3,
+      "y": 8,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 3,
+      "y": 12,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 4,
+      "y": 10,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 4,
+      "y": 9,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 3,
+      "y": 10,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 5,
+      "y": 12,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 5,
+      "y": 12.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 6,
+      "y": 12.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 8,
+      "y": 12.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 8,
+      "y": 13.0,
+      "direction": 1,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 4938.0,
+    "base_stage": 5
+  },
+  "objects": [],
+  "name": "北方合流篇-240-底座5",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      },
+      "lines": [
+        {
+          "speaker": 50,
+          "name": "護衛隊長",
+          "text": "沙盜接近了！"
+        },
+        {
+          "speaker": 14,
+          "name": "飛霜",
+          "text": "呵呵，好久沒碰上這種大陣仗了。"
+        },
+        {
+          "speaker": 104,
+          "name": "沙盜弩手",
+          "text": "衝啊！不用在意這些蠢蛋護衛。"
+        },
+        {
+          "speaker": 130,
+          "name": "沙盜戰士",
+          "text": "上啊！上啊！搶到的東西都是我們的！哈哈哈！"
+        },
+        {
+          "speaker": 50,
+          "name": "護衛隊長",
+          "text": "兄弟們留神了！"
+        }
+      ]
+    }
+  ]
+}

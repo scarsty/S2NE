@@ -20,7 +20,18 @@ class OriginalCampaign
     OriginalMenu font_;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static unsigned custom_stage_base(unsigned id) { return id >= 201 ? id - 200 : id; }
+    static unsigned custom_stage_base(unsigned id)
+    {
+        if (id < 201) { return id; }
+        static constexpr std::array<unsigned, 112> route_order = {
+            162, 66, 67, 68, 69, 70, 19, 93, 84, 87, 73, 26, 15, 72, 71, 86, 18, 22, 1, 74, 3, 6, 89, 97,
+            40, 2, 64, 65, 4, 23, 95, 8, 96, 11, 82, 9, 7, 45, 109, 5, 75, 38, 35, 12, 79, 85, 78, 80,
+            29, 99, 20, 25, 105, 63, 13, 28, 76, 17, 91, 10, 81, 77, 21, 94, 98, 24, 32, 101, 31, 16, 90,
+            108, 52, 46, 92, 112, 36, 39, 100, 30, 103, 33, 102, 41, 57, 58, 88, 27, 107, 111, 43, 59, 55,
+            110, 37, 14, 83, 104, 34, 106, 44, 47, 49, 48, 42, 56, 50, 53, 60, 62, 54, 61
+        };
+        return route_order.at(id - 201);
+    }
     size_t table() const { return dword(pal_, 848) - 11; }
     s2ne::Result<size_t> try_header(unsigned stage) const
     {
@@ -168,6 +179,36 @@ public:
     }
     Result<Stage> try_stage(unsigned id) const
     {
+        if (id >= 201)
+        {
+            const auto json_path = root_ / "json" / ("stage-" + std::to_string(id) + ".json");
+            if (!std::filesystem::exists(json_path))
+            {
+                return Result<Stage>::failure(make_error("Missing third-route stage JSON: " + json_path.string()));
+            }
+            std::ifstream input(json_path, std::ios::binary);
+            if (!input)
+            {
+                return Result<Stage>::failure(make_error("Cannot open third-route stage JSON: " + json_path.string()));
+            }
+            std::string text(std::istreambuf_iterator<char>(input), {});
+            auto json = nlohmann::json::parse(text, nullptr, false);
+            if (json.is_discarded() || !json.is_object() || !json.contains("route") || !json.at("route").is_object())
+            {
+                return Result<Stage>::failure(make_error("Invalid third-route stage JSON: " + json_path.string()));
+            }
+            const auto& route = json.at("route");
+            if (!route.contains("next_stage") || !route.at("next_stage").is_number_unsigned() || !route.contains("mode")
+                || !route.at("mode").is_number_unsigned())
+            {
+                return Result<Stage>::failure(make_error("Incomplete third-route stage route: " + json_path.string()));
+            }
+            Stage stage;
+            stage.id = id;
+            stage.next = route.at("next_stage").get<unsigned>();
+            stage.mode = route.at("mode").get<unsigned>();
+            return Result<Stage>::success(std::move(stage));
+        }
         const unsigned source_id = custom_stage_base(id);
         ResourceReader pal(pal_), bin(bin_);
         unsigned raw = pal.number(848, 4);

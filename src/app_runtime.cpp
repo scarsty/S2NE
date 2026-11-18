@@ -2136,8 +2136,8 @@ int s2ne::run_application(int argc, char** argv)
                         {
                             if (!inSetup || !request->contains("index") || !request->at("index").is_number_integer()) { throw std::runtime_error("difficulty selection requires original setup and integer index"); }
                             const int index = request->at("index").get<int>();
-                            if (!prologue->interbattle_services_allowed()) { throw std::runtime_error("original town has no village services; automatic departure pending"); }
                             if (index < 0 || index > 4) { throw std::runtime_error("difficulty index must be 0..4"); }
+                            if (!prologue || !prologue->interbattle_services_allowed()) { throw std::runtime_error("original town has no village services; automatic departure pending"); }
                             setup.move(index - setup.difficulty);
                             showSetup();
                         }
@@ -2473,8 +2473,11 @@ int s2ne::run_application(int argc, char** argv)
                         else if (command == "briefing_advance")
                         {
                             if (!prologue || prologue->diagnostic_phase() != 4 || deployment) { throw std::runtime_error("briefing unavailable"); }
+                            std::print(stderr, "briefing advance begin stage={} offset-phase={}\n", prologue->events.stage, prologue->diagnostic_phase());
                             prologue->advance();
+                            std::print(stderr, "briefing advance after advance stage={} phase={}\n", prologue->events.stage, prologue->diagnostic_phase());
                             showPrologue();
+                            std::print(stderr, "briefing advance after show stage={} phase={}\n", prologue->events.stage, prologue->diagnostic_phase());
                             stdioPending = response;
                             stdioReadyAt = nowUi;
                         }
@@ -5856,6 +5859,7 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (prologue && rawSave && prologue->deployment_requested() && !deployment)
             {
+                std::print(stderr, "Original deployment branch begin stage={}\n", prologue->events.stage);
                 auto captured = s2ne::OriginalSaveBridge::try_capture(prologue->events, 1, prologue->camera(), &*rawSave);
                 if (!captured)
                 {
@@ -5863,6 +5867,7 @@ int s2ne::run_application(int argc, char** argv)
                     return EXIT_FAILURE;
                 }
                 deployment.emplace(root, prologue->events, std::move(captured).value(), s2ne::app_domain_for_save(*rawSave));
+                std::print(stderr, "Original deployment branch end stage={}\n", prologue->events.stage);
                 showPrologue();
             }
             if (deployment && deployment->done())

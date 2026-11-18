@@ -1,0 +1,764 @@
+{
+  "map_id": 25,
+  "music": 3,
+  "route": {
+    "next_stage": 253,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 25,
+    "fantasy_stage": 253
+  },
+  "units": [
+    {
+      "id": 1,
+      "appearance": 89,
+      "name": "娜塔莉雅",
+      "x": 5,
+      "y": 39,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 316,
+      "max_hp": 74,
+      "equipment": [
+        35,
+        110,
+        160,
+        180,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 2,
+      "appearance": 19,
+      "name": "穆爾",
+      "x": 4,
+      "y": 37,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 330,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        119,
+        149,
+        171,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 5,
+      "appearance": 10,
+      "name": "古斯塔夫",
+      "x": 6,
+      "y": 38,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 420,
+      "max_hp": 0,
+      "equipment": [
+        63,
+        133,
+        152,
+        169,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 4,
+      "appearance": 64,
+      "name": "蘇",
+      "x": 4,
+      "y": 39,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 284,
+      "max_hp": 158,
+      "equipment": [
+        35,
+        110,
+        160,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 3,
+      "appearance": 22,
+      "name": "泰普",
+      "x": 3,
+      "y": 37,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 494,
+      "max_hp": 0,
+      "equipment": [
+        35,
+        107,
+        159,
+        167,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 6,
+      "appearance": 54,
+      "name": "黛西",
+      "x": 4,
+      "y": 37,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 332,
+      "max_hp": 20,
+      "equipment": [
+        52,
+        121,
+        151,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 76,
+      "appearance": 26,
+      "name": "指揮官",
+      "x": 6,
+      "y": 64,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 457,
+      "max_hp": 63,
+      "equipment": [
+        79,
+        135,
+        157,
+        177,
+        194,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 12,
+      "name": "騎兵團",
+      "x": 8,
+      "y": 61,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 296,
+      "max_hp": 0,
+      "equipment": [
+        77,
+        132,
+        152,
+        174,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 12,
+      "name": "騎兵團",
+      "x": 1,
+      "y": 64,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 296,
+      "max_hp": 0,
+      "equipment": [
+        77,
+        132,
+        152,
+        174,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 12,
+      "name": "騎兵團",
+      "x": 4,
+      "y": 66,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 296,
+      "max_hp": 0,
+      "equipment": [
+        77,
+        132,
+        152,
+        174,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 12,
+      "name": "騎兵團",
+      "x": 6,
+      "y": 60,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 296,
+      "max_hp": 0,
+      "equipment": [
+        77,
+        132,
+        152,
+        174,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 12,
+      "name": "騎兵團",
+      "x": 7,
+      "y": 61,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 296,
+      "max_hp": 0,
+      "equipment": [
+        77,
+        132,
+        152,
+        174,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "步兵團",
+      "x": 19,
+      "y": 57,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 318,
+      "max_hp": 0,
+      "equipment": [
+        63,
+        133,
+        152,
+        173,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "步兵團",
+      "x": 17,
+      "y": 59,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 318,
+      "max_hp": 0,
+      "equipment": [
+        63,
+        133,
+        152,
+        173,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "步兵團",
+      "x": 18,
+      "y": 62,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 318,
+      "max_hp": 0,
+      "equipment": [
+        63,
+        133,
+        152,
+        173,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "步兵團",
+      "x": 16,
+      "y": 63,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 318,
+      "max_hp": 0,
+      "equipment": [
+        63,
+        133,
+        152,
+        173,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "步兵團",
+      "x": 18,
+      "y": 65,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 318,
+      "max_hp": 0,
+      "equipment": [
+        63,
+        133,
+        152,
+        173,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 48,
+      "name": "弓弩手",
+      "x": 15,
+      "y": 30,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 228,
+      "max_hp": 0,
+      "equipment": [
+        51,
+        121,
+        151,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 48,
+      "name": "弓弩手",
+      "x": 12,
+      "y": 32,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 228,
+      "max_hp": 0,
+      "equipment": [
+        51,
+        121,
+        151,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 48,
+      "name": "弓弩手",
+      "x": 13,
+      "y": 29,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 228,
+      "max_hp": 0,
+      "equipment": [
+        51,
+        121,
+        151,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 48,
+      "name": "弓弩手",
+      "x": 11,
+      "y": 29,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 228,
+      "max_hp": 0,
+      "equipment": [
+        51,
+        121,
+        151,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 48,
+      "name": "弓弩手",
+      "x": 13,
+      "y": 34,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 228,
+      "max_hp": 0,
+      "equipment": [
+        51,
+        121,
+        151,
+        169,
+        0,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 17,
+      "y": 40,
+      "direction": 0,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 19,
+      "y": 38,
+      "direction": 0,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 18,
+      "y": 40,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 18,
+      "y": 42,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 18,
+      "y": 38,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 19,
+      "y": 40,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 19,
+      "y": 40.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 20,
+      "y": 40.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 22,
+      "y": 40.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 22,
+      "y": 41.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 23,
+      "y": 42.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 25,
+      "y": 43.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 6267.0,
+    "base_stage": 25
+  },
+  "objects": [],
+  "name": "北方合流篇-252-底座25",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      },
+      "lines": [
+        {
+          "speaker": 76,
+          "name": "指揮官",
+          "text": "前面的奸細聽好，乖乖地丟下武器投降，我們可以考慮饒你們一命！"
+        },
+        {
+          "speaker": 15,
+          "name": "艾文",
+          "text": "哈哈哈，真好笑。"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "娜塔莉雅，妳有什麼打算？"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "我們先解決旁邊的弓箭手，再去對付那個狂傲的指揮官。"
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "completion_flag": 13,
+      "lines": [
+        {
+          "speaker": 1,
+          "music_before": 11,
+          "name": "娜塔莉雅",
+          "text": "這裡不能再待下去了，隨時都有可能會有衛兵來搜查。"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "既然不能留在城裡，不如出城去追擊那兩支南方領的特遣隊，把這次南方領出兵前的準備工作都給破壞吧。"
+        }
+      ]
+    },
+    {
+      "type": 9,
+      "completion_flag": 52
+    },
+    {
+      "type": 9,
+      "completion_flag": 51
+    },
+    {
+      "type": 9,
+      "completion_flag": 0,
+      "condition": 6,
+      "route_stage": 30
+    },
+    {
+      "type": 9,
+      "completion_flag": 0,
+      "condition": 6,
+      "route_stage": 28
+    }
+  ]
+}

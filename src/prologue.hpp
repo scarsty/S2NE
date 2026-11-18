@@ -5018,6 +5018,10 @@ public:
                 return Result<bool>::success(true);
             }
             interbattle_ = std::move(staged_hub);
+            if (events.stage >= 201 && interbattle_ && events.interbattle_town_id)
+            {
+                interbattle_->configure_town(root_, events.interbattle_town_id);
+            }
             phase_ = Phase::interbattle;
             campaign_blocker_.clear();
             return Result<bool>::success(true);
@@ -5041,6 +5045,23 @@ public:
         if (choosing())
         {
             chosen_ = unsigned(selection_ + 1);
+            if (events.stage == 140 && chosen_ == 3 && events.fantasy_stage)
+            {
+                events.clear_stage_flags();
+                events.load_stage(events.fantasy_stage);
+                if (auto request = OriginalCampaign::save_request(OriginalCampaign::SavePoint::before_stage_story, 0, 1))
+                {
+                    autosave_requests_.push_back(*request);
+                }
+                map_.set_dynamic_object_chains(events.dynamic_object_chains);
+                map_.set_event_flags(events.flags);
+                map_.load(events.map_id);
+                map_.center(events.units.front().x, events.units.front().y);
+                phase_ = Phase::briefing;
+                briefing_offset_ = 0;
+                prepare_briefing();
+                return Result<bool>::success(true);
+            }
             if (synchronous_death_active())
             {
                 auto chosen = synchronous_death_stack_->finish_choice(events, chosen_);
@@ -5094,20 +5115,8 @@ public:
             }
             if (chosen_ == 3 && events.fantasy_stage)
             {
-                // 新增路线的分支记录来自 JSON，不能继续使用选择事件自身的对白。
-                for (size_t i = 0; i < events.event_count(); ++i)
-                {
-                    if (events.type(i) == 5 && events.condition(i) == 3 && events.flag(i) == 13)
-                    {
-                        event_ = i;
-                        events.consume_branch(i);
-                        line_ = 0;
-                        phase_ = Phase::branch;
-                        prepare();
-                        return Result<bool>::success(true);
-                    }
-                }
-                return Result<bool>::failure(make_error("Missing JSON fantasy choice branch"));
+                phase_ = Phase::flag_dialogue;
+                return Result<bool>::success(true);
             }
             return Result<bool>::failure(make_error("Missing original choice branch"));
         }
@@ -5241,11 +5250,6 @@ public:
         }
         else if (phase_ == Phase::branch)
         {
-            if (chosen_ == 3 && events.type(event_) == 5 && events.condition(event_) == 3 && events.fantasy_stage)
-            {
-                phase_ = Phase::flag_dialogue;
-                return Result<bool>::success(true);
-            }
             for (size_t i = 0; i < events.event_count(); ++i)
             {
                 if (events.flag_dialogue_trigger(i))
@@ -5268,7 +5272,10 @@ public:
                 next_stage = events.fantasy_stage;
             }
             if (next_stage > 168 && next_stage < 201) { return Result<bool>::failure(make_error("Fantasy route target stage is not exported: " + std::to_string(next_stage))); }
-            events.load_stage(next_stage);
+            if (events.stage != next_stage)
+            {
+                events.load_stage(next_stage);
+            }
             if (auto request = OriginalCampaign::save_request(OriginalCampaign::SavePoint::before_stage_story, 0, 1))
             {
                 autosave_requests_.push_back(*request);

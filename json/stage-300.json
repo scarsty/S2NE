@@ -1,0 +1,1167 @@
+{
+  "map_id": 106,
+  "music": 22,
+  "route": {
+    "next_stage": 301,
+    "alternate_stage": 0,
+    "mode": 1,
+    "interbattle_town_id": 106,
+    "fantasy_stage": 301
+  },
+  "units": [
+    {
+      "id": 85,
+      "appearance": 35,
+      "name": "防衛指揮官",
+      "x": 11,
+      "y": 48,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 500,
+      "max_hp": 70,
+      "equipment": [
+        10,
+        137,
+        157,
+        178,
+        195,
+        0
+      ]
+    },
+    {
+      "id": 125,
+      "appearance": 122,
+      "name": "戰船指揮官",
+      "x": 7,
+      "y": 68,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 399,
+      "max_hp": 164,
+      "equipment": [
+        0,
+        111,
+        160,
+        181,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 96,
+      "appearance": 46,
+      "name": "海岸防衛隊",
+      "x": 19,
+      "y": 61,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 308,
+      "max_hp": 0,
+      "equipment": [
+        8,
+        122,
+        156,
+        178,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 46,
+      "name": "海岸防衛隊",
+      "x": 10,
+      "y": 43,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 308,
+      "max_hp": 0,
+      "equipment": [
+        8,
+        122,
+        156,
+        178,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 46,
+      "name": "海岸防衛隊",
+      "x": 12,
+      "y": 26,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 308,
+      "max_hp": 0,
+      "equipment": [
+        8,
+        122,
+        156,
+        178,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 46,
+      "name": "海岸防衛隊",
+      "x": 18,
+      "y": 38,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 308,
+      "max_hp": 0,
+      "equipment": [
+        8,
+        122,
+        156,
+        178,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 46,
+      "name": "海岸防衛隊",
+      "x": 12,
+      "y": 43,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 308,
+      "max_hp": 0,
+      "equipment": [
+        8,
+        122,
+        156,
+        178,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 16,
+      "name": "海岸防衛隊",
+      "x": 17,
+      "y": 61,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 286,
+      "max_hp": 130,
+      "equipment": [
+        37,
+        109,
+        163,
+        180,
+        193,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 16,
+      "name": "海岸防衛隊",
+      "x": 10,
+      "y": 46,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 286,
+      "max_hp": 130,
+      "equipment": [
+        37,
+        109,
+        163,
+        180,
+        193,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 16,
+      "name": "海岸防衛隊",
+      "x": 15,
+      "y": 32,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 286,
+      "max_hp": 130,
+      "equipment": [
+        37,
+        109,
+        163,
+        180,
+        193,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 16,
+      "name": "海岸防衛隊",
+      "x": 14,
+      "y": 48,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 286,
+      "max_hp": 130,
+      "equipment": [
+        37,
+        109,
+        163,
+        180,
+        193,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 25,
+      "name": "海岸防衛隊",
+      "x": 19,
+      "y": 65,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 306,
+      "max_hp": 52,
+      "equipment": [
+        53,
+        122,
+        156,
+        178,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 25,
+      "name": "海岸防衛隊",
+      "x": 8,
+      "y": 43,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 306,
+      "max_hp": 52,
+      "equipment": [
+        53,
+        122,
+        156,
+        178,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 25,
+      "name": "海岸防衛隊",
+      "x": 3,
+      "y": 32,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 306,
+      "max_hp": 52,
+      "equipment": [
+        53,
+        122,
+        156,
+        178,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 25,
+      "name": "海岸防衛隊",
+      "x": 9,
+      "y": 20,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 306,
+      "max_hp": 52,
+      "equipment": [
+        53,
+        122,
+        156,
+        178,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 25,
+      "name": "海岸防衛隊",
+      "x": 21,
+      "y": 44,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 306,
+      "max_hp": 52,
+      "equipment": [
+        53,
+        122,
+        156,
+        178,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 123,
+      "appearance": 73,
+      "name": "海員",
+      "x": 7,
+      "y": 63,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 440,
+      "max_hp": 12,
+      "equipment": [
+        20,
+        134,
+        147,
+        173,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 73,
+      "name": "海員",
+      "x": 9,
+      "y": 66,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 440,
+      "max_hp": 12,
+      "equipment": [
+        20,
+        134,
+        147,
+        173,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 73,
+      "name": "海員",
+      "x": 13,
+      "y": 74,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 440,
+      "max_hp": 12,
+      "equipment": [
+        20,
+        134,
+        147,
+        173,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 73,
+      "name": "海員",
+      "x": 5,
+      "y": 54,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 440,
+      "max_hp": 12,
+      "equipment": [
+        20,
+        134,
+        147,
+        173,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 116,
+      "appearance": 66,
+      "name": "官道巡邏隊",
+      "x": 13,
+      "y": 15,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 10,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 400,
+      "max_hp": 32,
+      "equipment": [
+        80,
+        136,
+        156,
+        177,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 66,
+      "name": "官道巡邏隊",
+      "x": 10,
+      "y": 14,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 10,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 400,
+      "max_hp": 32,
+      "equipment": [
+        80,
+        136,
+        156,
+        177,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 66,
+      "name": "官道巡邏隊",
+      "x": 22,
+      "y": 40,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 10,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 400,
+      "max_hp": 32,
+      "equipment": [
+        80,
+        136,
+        156,
+        177,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 66,
+      "name": "官道巡邏隊",
+      "x": 20,
+      "y": 33,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 10,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 400,
+      "max_hp": 32,
+      "equipment": [
+        80,
+        136,
+        156,
+        177,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 24,
+      "name": "官道巡邏隊",
+      "x": 21,
+      "y": 31,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 10,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 380,
+      "max_hp": 48,
+      "equipment": [
+        80,
+        136,
+        156,
+        177,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 24,
+      "name": "官道巡邏隊",
+      "x": 15,
+      "y": 16,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 10,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 380,
+      "max_hp": 48,
+      "equipment": [
+        80,
+        136,
+        156,
+        177,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 24,
+      "name": "官道巡邏隊",
+      "x": 12,
+      "y": 15,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 10,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 380,
+      "max_hp": 48,
+      "equipment": [
+        80,
+        136,
+        156,
+        177,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 24,
+      "name": "官道巡邏隊",
+      "x": 11,
+      "y": 17,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 10,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 380,
+      "max_hp": 48,
+      "equipment": [
+        80,
+        136,
+        156,
+        177,
+        197,
+        0
+      ]
+    }
+  ],
+  "player_party": [
+    {
+      "slot": 0,
+      "role_id": 11,
+      "deployment": {
+        "x": 13,
+        "y": 21,
+        "direction": 0
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 1,
+      "role_id": 1,
+      "deployment": {
+        "x": 15,
+        "y": 26,
+        "direction": 2
+      },
+      "mandatory_role": true,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 2,
+      "role_id": 14,
+      "deployment": {
+        "x": 14,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 3,
+      "role_id": 15,
+      "deployment": {
+        "x": 13,
+        "y": 23,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 4,
+      "role_id": 13,
+      "deployment": {
+        "x": 13,
+        "y": 25,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 5,
+      "role_id": 2,
+      "deployment": {
+        "x": 14,
+        "y": 25,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 6,
+      "role_id": 3,
+      "deployment": {
+        "x": 15,
+        "y": 27,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    },
+    {
+      "slot": 7,
+      "role_id": 4,
+      "deployment": {
+        "x": 17,
+        "y": 36,
+        "direction": 0
+      },
+      "mandatory_role": false,
+      "source": "original stage-1/stage-71 roster"
+    }
+  ],
+  "deployment": [
+    {
+      "x": 13,
+      "y": 18,
+      "direction": 0,
+      "role_id": 11,
+      "fixed": true
+    },
+    {
+      "x": 21,
+      "y": 32,
+      "direction": 0,
+      "role_id": 1,
+      "fixed": true
+    },
+    {
+      "x": 14,
+      "y": 16,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 22,
+      "y": 34,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 14,
+      "y": 18,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 13,
+      "y": 16,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 21,
+      "y": 34,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 22,
+      "y": 32,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 22,
+      "y": 32.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 23,
+      "y": 32.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 25,
+      "y": 32.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    },
+    {
+      "x": 25,
+      "y": 33.0,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false,
+      "source": "adjacent extension of original deployment slot"
+    }
+  ],
+  "deployment_rules": {
+    "mandatory_role_ids": [
+      11,
+      1
+    ],
+    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
+    "strength_score": 12793.0,
+    "base_stage": 106
+  },
+  "objects": [],
+  "name": "北方合流篇-300-底座106",
+  "briefing": "",
+  "objectives": {
+    "victory": "消滅所有敵軍。",
+    "defeat": "白志超或娜塔莉雅陣亡。"
+  },
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 21,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      }
+    },
+    {
+      "type": 13,
+      "completion_flag": 0,
+      "condition": 1,
+      "raw_operands": {
+        "offset_3": 21,
+        "offset_5": 171,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 85,
+          "name": "防衛指揮官",
+          "text": "敵人已經到了，各部隊就戰鬥位置！"
+        },
+        {
+          "speaker": 96,
+          "name": "海岸防衛隊",
+          "text": "得令！"
+        },
+        {
+          "speaker": 125,
+          "name": "戰船指揮官",
+          "text": "殺光所有附近的遊民，不許消息外洩！"
+        },
+        {
+          "speaker": 123,
+          "name": "海員",
+          "text": "是！"
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "completion_flag": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 10
+      },
+      "lines": [
+        {
+          "speaker": 116,
+          "name": "獨角獸騎士",
+          "text": "運輸船尚未落入敵手，全軍突擊！"
+        }
+      ]
+    },
+    {
+      "type": 9,
+      "completion_flag": 13
+    },
+    {
+      "type": 9,
+      "completion_flag": 20,
+      "lines": [
+        {
+          "speaker": 2,
+          "name": "穆爾",
+          "text": "大功告成！這下子南方領沒有兵器可用了！"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "我們這裡的任務算是達成了，不知道白志超那邊進行得如何？"
+        },
+        {
+          "speaker": 27,
+          "name": "寶兒",
+          "text": "我們早點回亞修斯吧，看看白志超哥哥的狀況。"
+        }
+      ]
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 12,
+      "raw_operands": {
+        "offset_3": 18,
+        "offset_5": 10,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 8,
+      "raw_operands": {
+        "offset_3": 18,
+        "offset_5": 600,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "一次難得的經驗啊....。"
+        }
+      ]
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 11,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 5,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 12,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 5,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 8,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 200,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "一次難得的經驗啊....。"
+        }
+      ]
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 11,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 10,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 12,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 5,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 11,
+      "raw_operands": {
+        "offset_3": 16,
+        "offset_5": 15,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 12,
+      "raw_operands": {
+        "offset_3": 16,
+        "offset_5": 15,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 10,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 11,
+        "offset_7": 169,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 10,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 25,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 10,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 41,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 10,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 68,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 10,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 56,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 10,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 82,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 10,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 11,
+        "offset_7": 169,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 10,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 25,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 10,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 41,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 10,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 68,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 10,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 56,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 10,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 82,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 9,
+      "completion_flag": 4
+    }
+  ]
+}
