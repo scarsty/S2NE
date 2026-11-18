@@ -1,11 +1,9 @@
 #pragma once
-#include "ZipFile2.h"
 #include "resource_result.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -19,7 +17,6 @@ namespace s2ne
 class TextureResources
 {
     std::filesystem::path root_;
-    std::unique_ptr<ZipFile2> archive_;
     SDL_Renderer* renderer_{};
     std::unique_ptr<SDL_Texture, decltype(&SDL_DestroyTexture)> target_{ nullptr, SDL_DestroyTexture };
     std::unique_ptr<SDL_Texture, decltype(&SDL_DestroyTexture)> background_{ nullptr, SDL_DestroyTexture };
@@ -30,15 +27,6 @@ class TextureResources
     std::unordered_map<std::string, bool> logged_;
     std::unordered_map<unsigned, std::array<std::pair<unsigned, unsigned>, 30>> sequences_;
     std::unordered_map<std::string, std::unordered_map<unsigned, std::vector<unsigned>>> cycles_;
-    struct TextCommand
-    {
-        std::string text;
-        int left{}, top{};
-        SDL_Color color{};
-        bool small{};
-    };
-    std::vector<TextCommand> text_commands_;
-    std::vector<TextCommand> presented_text_commands_;
     uint64_t elapsed_{};
     bool batching_{};
     SDL_Texture* batch_previous_{};
@@ -64,21 +52,6 @@ class TextureResources
 
     Result<std::vector<char>> read_resource(const std::string& relative) const
     {
-        if (archive_)
-        {
-            try
-            {
-                return Result<std::vector<char>>::success([&]
-                    {
-                        std::vector<char> content;
-                        archive_->readFileToBuffer(relative, content);
-                        return content;
-                    }());
-            } catch (const std::exception& error)
-            {
-                return Result<std::vector<char>>::failure(make_error("Cannot read texture archive " + relative + ": " + error.what()));
-            }
-        }
         const auto file = root_ / std::filesystem::path(relative);
         std::ifstream input(file, std::ios::binary);
         if (!input) { return Result<std::vector<char>>::failure(make_error("Cannot read " + file.string())); }
@@ -115,8 +88,7 @@ public:
     Result<bool> draw_small_text(std::vector<uint8_t>& image, std::string_view text, int left, int top, SDL_Color color)
     {
         if (!small_font_) { return Result<bool>::failure(make_error("SDL_ttf small font is not initialized")); }
-        text_commands_.push_back({ std::string(text), left, top, color, true });
-        return Result<bool>::success(true);
+        return draw_ttf_text(image, text, left, top, color, small_font_.get(), 16.0f);
     }
 
 private:
@@ -212,8 +184,10 @@ public:
         if (!target_) { target_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 640, 480)); }
         if (!background_) { background_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, 640, 480)); }
         if (!target_ || !background_) { return Result<bool>::failure(make_error(SDL_GetError())); }
+        if (!SDL_SetTextureBlendMode(background_.get(), SDL_BLENDMODE_NONE)) { return Result<bool>::failure(make_error(SDL_GetError())); }
+        if (!SDL_SetTextureBlendMode(target_.get(), SDL_BLENDMODE_NONE)) { return Result<bool>::failure(make_error(SDL_GetError())); }
         batch_previous_ = SDL_GetRenderTarget(renderer_);
-        if (!SDL_UpdateTexture(background_.get(), nullptr, image.data(), 640 * 4) || !SDL_SetRenderTarget(renderer_, target_.get()) || !SDL_RenderTexture(renderer_, background_.get(), nullptr, nullptr)) { return Result<bool>::failure(make_error(SDL_GetError())); }
+        if (!SDL_UpdateTexture(background_.get(), nullptr, image.data(), 640 * 4) || !SDL_SetRenderTarget(renderer_, target_.get()) || !SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255) || !SDL_RenderClear(renderer_) || !SDL_RenderTexture(renderer_, background_.get(), nullptr, nullptr)) { return Result<bool>::failure(make_error(SDL_GetError())); }
         batching_ = true;
         return Result<bool>::success(true);
     }
@@ -296,13 +270,11 @@ public:
     void clear()
     {
         textures_.clear();
-        archive_.reset();
         target_.reset();
         background_.reset();
         presentation_.reset();
         large_font_.reset();
         small_font_.reset();
-        clear_text_commands();
         if (TTF_WasInit()) { TTF_Quit(); }
         renderer_ = nullptr;
         logged_.clear();
@@ -315,16 +287,7 @@ public:
     void configure(const std::filesystem::path& working)
     {
         clear();
-        const auto archive = working / "texture.zip";
         const auto path = working / "texture";
-        if (std::filesystem::exists(archive) && std::filesystem::is_regular_file(archive))
-        {
-            archive_ = std::make_unique<ZipFile2>();
-            archive_->openRead(archive.string());
-            root_ = archive;
-            std::println(stderr, "Texture resource archive: {}", archive.string());
-            return;
-        }
         if (!std::filesystem::exists(path)) { return; }
         if (!std::filesystem::is_directory(path)) { throw std::runtime_error("texture is not a directory"); }
         root_ = path;
@@ -332,32 +295,47 @@ public:
     }
     bool active() const { return !root_.empty(); }
     void bind(SDL_Renderer* renderer) { renderer_ = renderer; }
-    void clear_text_commands()
-    {
-        text_commands_.clear();
-        presented_text_commands_.clear();
-    }
     Result<bool> initialize_font(const std::filesystem::path& font_file)
     {
         if (!renderer_ || !TTF_Init()) { return Result<bool>::failure(make_error(SDL_GetError())); }
-        large_font_.reset(TTF_OpenFont(font_file.string().c_str(), 36.0f));
+        large_font_.reset(TTF_OpenFont(font_file.string().c_str(), 24.0f));
         if (!large_font_) { return Result<bool>::failure(make_error(font_file.string() + ": " + SDL_GetError())); }
         return Result<bool>::success(true);
     }
     bool font_ready() const { return large_font_ != nullptr; }
     bool small_font_ready() const { return small_font_ != nullptr; }
-    void cover_text(int left, int top, int width, int height)
-    {
-        std::erase_if(text_commands_, [=](const TextCommand& command)
-            {
-                return command.left >= left && command.left < left + width && command.top >= top && command.top < top + height;
-            });
-    }
     Result<bool> draw_large_text(std::vector<uint8_t>& image, std::string_view text, int left, int top, SDL_Color color)
     {
         if (!large_font_) { return Result<bool>::failure(make_error("SDL_ttf font is not initialized")); }
-        text_commands_.push_back({ std::string(text), left, top, color, false });
-        return Result<bool>::success(true);
+        return draw_ttf_text(image, text, left, top, color, large_font_.get(), 24.0f);
+    }
+    Result<bool> draw_ttf_text(std::vector<uint8_t>& image, std::string_view text, int left, int top, SDL_Color color, TTF_Font* font, float size)
+    {
+        if (!font || image.size() != 640u * 480 * 4) { return Result<bool>::failure(make_error("Invalid SDL_ttf draw target")); }
+        if (!TTF_SetFontSize(font, size)) { return Result<bool>::failure(make_error(SDL_GetError())); }
+        std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> surface(TTF_RenderText_Blended(font, std::string(text).c_str(), text.size(), SDL_Color{ 255, 255, 255, 255 }), SDL_DestroySurface);
+        if (!surface) { return Result<bool>::failure(make_error(SDL_GetError())); }
+        std::shared_ptr<SDL_Texture> texture(SDL_CreateTextureFromSurface(renderer_, surface.get()), SDL_DestroyTexture);
+        if (!texture || !SDL_SetTextureBlendMode(texture.get(), SDL_BLENDMODE_BLEND)) { return Result<bool>::failure(make_error(SDL_GetError())); }
+        if (!SDL_SetTextureColorMod(texture.get(), color.r, color.g, color.b)) { return Result<bool>::failure(make_error(SDL_GetError())); }
+        auto begun = begin_canvas(image);
+        if (!begun) { return begun; }
+        float width{}, height{};
+        if (!SDL_GetTextureSize(texture.get(), &width, &height))
+        {
+            auto ended = end_canvas(image);
+            (void)ended;
+            return Result<bool>::failure(make_error(SDL_GetError()));
+        }
+        SDL_FRect destination{ float(left), float(top), width, height };
+        if (!SDL_RenderTexture(renderer_, texture.get(), nullptr, &destination))
+        {
+            const std::string error = SDL_GetError();
+            auto ended = end_canvas(image);
+            (void)ended;
+            return Result<bool>::failure(make_error(error));
+        }
+        return end_canvas(image);
     }
     Result<bool> draw_large_text_utf8(std::vector<uint8_t>& image, std::string_view text, int left, int top, SDL_Color color)
     {
@@ -501,79 +479,7 @@ public:
         {
             return Result<SDL_Texture*>::failure(make_error(SDL_GetError()));
         }
-        presented_text_commands_ = std::move(text_commands_);
-        text_commands_.clear();
         return Result<SDL_Texture*>::success(presentation_.get());
-    }
-    Result<bool> flush_text()
-    {
-        if (presented_text_commands_.empty()) { return Result<bool>::success(true); }
-        int output_width{}, output_height{};
-        if (!SDL_GetRenderOutputSize(renderer_, &output_width, &output_height) || output_width <= 0 || output_height <= 0)
-        {
-            presented_text_commands_.clear();
-            return Result<bool>::failure(make_error(SDL_GetError()));
-        }
-        const float scale = std::min(float(output_width) / 640.0f, float(output_height) / 480.0f);
-        if (!SDL_SetRenderLogicalPresentation(renderer_, 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED))
-        {
-            presented_text_commands_.clear();
-            return Result<bool>::failure(make_error(SDL_GetError()));
-        }
-        struct Restore
-        {
-            SDL_Renderer* renderer;
-            ~Restore() { SDL_SetRenderLogicalPresentation(renderer, 640, 480, SDL_LOGICAL_PRESENTATION_LETTERBOX); }
-        } restore{ renderer_ };
-        for (const auto& command : presented_text_commands_)
-        {
-            auto* font = command.small ? small_font_.get() : large_font_.get();
-            const float base_size = command.small ? 16.0f : 24.0f;
-            const int render_size = std::max(1, int(std::lround(base_size * scale)));
-            if (!TTF_SetFontSize(font, float(render_size)))
-            {
-                presented_text_commands_.clear();
-                return Result<bool>::failure(make_error(SDL_GetError()));
-            }
-            const auto key = std::string(command.small ? "font-window-small/" : "font-window/") + std::to_string(render_size) + "/" + command.text;
-            auto found = textures_.find(key);
-            if (found == textures_.end())
-            {
-                const SDL_Color white{ 255, 255, 255, 255 };
-                std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> surface(TTF_RenderText_Blended(font, command.text.c_str(), command.text.size(), white), SDL_DestroySurface);
-                if (!surface)
-                {
-                    presented_text_commands_.clear();
-                    return Result<bool>::failure(make_error(SDL_GetError()));
-                }
-                std::shared_ptr<SDL_Texture> texture(SDL_CreateTextureFromSurface(renderer_, surface.get()), SDL_DestroyTexture);
-                if (!texture || !SDL_SetTextureBlendMode(texture.get(), SDL_BLENDMODE_BLEND))
-                {
-                    presented_text_commands_.clear();
-                    return Result<bool>::failure(make_error(SDL_GetError()));
-                }
-                found = textures_.emplace(key, std::move(texture)).first;
-            }
-            if (!SDL_SetTextureColorMod(found->second.get(), command.color.r, command.color.g, command.color.b))
-            {
-                presented_text_commands_.clear();
-                return Result<bool>::failure(make_error(SDL_GetError()));
-            }
-            float width{}, height{};
-            if (!SDL_GetTextureSize(found->second.get(), &width, &height))
-            {
-                presented_text_commands_.clear();
-                return Result<bool>::failure(make_error(SDL_GetError()));
-            }
-            SDL_FRect destination{ (float(output_width) - 640.0f * scale) * 0.5f + command.left * scale,
-                (float(output_height) - 480.0f * scale) * 0.5f + command.top * scale, width, height };
-            if (!SDL_RenderTexture(renderer_, found->second.get(), nullptr, &destination))
-            {
-                presented_text_commands_.clear();
-                return Result<bool>::failure(make_error(SDL_GetError()));
-            }
-        }
-        return Result<bool>::success(true);
     }
 };
 inline TextureResources texture_resources;

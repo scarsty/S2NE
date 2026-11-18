@@ -615,12 +615,13 @@ public:
             image.at(p + 3) = 255;
         };
         const auto& ground_image = raw(item(3, ground - 1));
+        bool ground_drawn = false;
         if (texture_resources.active())
         {
-            auto ground_drawn = texture_resources.draw_map_sprite(image, "ground", ground_image.texture_id, 526, panel_y + 40);
-            if (!ground_drawn) { report_error(ground_drawn.error()); }
+            auto result = texture_resources.draw_map_sprite(image, "ground", ground_image.texture_id, 526, panel_y + 40);
+            ground_drawn = bool(result);
         }
-        else
+        if (!ground_drawn)
         {
             for (unsigned yy = 0; yy < ground_image.h; ++yy)
             {
@@ -637,12 +638,13 @@ public:
         if (visible_object)
         {
             const auto& object_image = raw(item(4, object - 1));
+            bool object_drawn = false;
             if (texture_resources.active())
             {
-                auto object_drawn = texture_resources.draw_map_sprite(image, "objects", object_image.texture_id, 526, panel_y - 56);
-                if (!object_drawn) { report_error(object_drawn.error()); }
+                auto result = texture_resources.draw_map_sprite(image, "objects", object_image.texture_id, 526, panel_y - 56);
+                object_drawn = bool(result);
             }
-            else
+            if (!object_drawn)
             {
                 // 42C16F copies only the bottom 64x32 of the original 64x96 object image.
                 for (unsigned yy = 0; yy < 32; ++yy)
@@ -662,8 +664,8 @@ public:
         small("Y=" + std::to_string(y), 595, 64);
         font.draw_original_large(image, [&]
             {
-                auto s = std::to_string(prg_.at(cell));
-                return std::vector<uint8_t>(s.begin(), s.end());
+                auto value = std::to_string(prg_.at(cell));
+                return std::vector<uint8_t>(value.begin(), value.end());
             }(),
             531, panel_y + 14, 141);
         unsigned local = attr & 255;
@@ -2249,12 +2251,13 @@ public:
             const bool external_pose = texture_resources.active() && !silhouette && !reaction && !disappearance_.active()
                 && !arrival_target_ && !summon_target_ && !hidden && !(pose.unit.status_flags & 0x10)
                 && pose.unit.action_state != 2 && !write_invisibility_world_;
+            bool external_drawn = false;
             if (external_pose)
             {
                 const uint64_t pose_time = pose.unit.movement_pose ? uint64_t(pose.unit.movement_frame) * 190 : idle_pose_time_.value_or(elapsed_ms);
                 auto drawn = texture_resources.draw_unit(image, pose.unit.appearance, pose.unit.animation_action, pose.unit.direction & 3, pose_time,
                     pose.left, pose.top, pose.w, pose.h, pose.pixels);
-                if (!drawn) { return drawn; }
+                external_drawn = bool(drawn);
             }
             for (unsigned y = 0; y < pose.h; ++y)
             {
@@ -2284,7 +2287,7 @@ public:
                     {
                         indexed->at(dst / 4) = uint8_t(c);
                     }
-                    if (external_pose) { continue; }
+                    if (external_drawn) { continue; }
                     for (unsigned k = 0; k < 3; ++k)
                     {
                         image.at(dst + k) = uint8_t(unsigned(pal_.at(c * 3 + k)) * 255 / 63);
@@ -2589,8 +2592,7 @@ public:
         if (texture_resources.active())
         {
             auto drawn = texture_resources.draw_masked(image, "spells/" + std::to_string(frame.texture_visual), frame.texture_frame, left, top, frame.width, frame.height, pixels);
-            if (!drawn) { fatal(drawn.error()); }
-            return image;
+            if (drawn) { return image; }
         }
         std::vector<int16_t> blended;
         if (visual) { blended.assign(256 * 256, -1); }
@@ -2692,8 +2694,7 @@ public:
         if (texture_resources.active())
         {
             auto drawn = texture_resources.draw_masked(image, "spells/" + std::to_string(visual.texture_visual()), unsigned(visual.texture_frame(frame_index.value_or(visual.frame()))), left, top, frame.width, frame.height, pixels);
-            if (!drawn) { fatal(drawn.error()); }
-            return image;
+            if (drawn) { return image; }
         }
         std::vector<int16_t> blended(256 * 256, -1);
         for (unsigned y = 0; y < frame.height; ++y)
@@ -2799,6 +2800,7 @@ public:
             }
             auto started = texture_resources.begin_canvas(image);
             if (!started) { fatal(started.error()); }
+            bool all_drawn = true;
             for (const auto& placement : texture_placements_)
             {
                 const auto& sprite = placement.image;
@@ -2816,11 +2818,11 @@ public:
                 auto mask = sprite.pixels;
                 if (!placement.transparent) { std::fill(mask.begin(), mask.end(), uint8_t(1)); }
                 auto drawn = texture_resources.draw_masked(image, group_name, sprite.texture_id, placement.x - camera_x, placement.y - camera_y, sprite.w, sprite.h, mask);
-                if (!drawn) { fatal(drawn.error()); }
+                if (!drawn) { all_drawn = false; }
             }
             auto completed = texture_resources.end_canvas(image);
             if (!completed) { fatal(completed.error()); }
-            return image;
+            if (all_drawn) { return image; }
         }
         for (int y = 0; y < 480; ++y)
         {

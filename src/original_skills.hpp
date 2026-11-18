@@ -423,7 +423,6 @@ public:
         }
         if (inspection_help_)
         {
-            texture_resources.cover_text(260, 36, 355, 335);
             OriginalPalette palette(pal_);
             auto dimmed = palette.try_transform_rect(output, 0, 0, 640, 480, 8);
             if (!dimmed) { return dimmed; }
@@ -548,6 +547,16 @@ public:
             }
         }
         return cells;
+    }
+    bool directional_cell_in_range(const OriginalEvents::Unit& actor, int x, int y) const
+    {
+        if (!directional_skill()) { return false; }
+        for (unsigned direction = 0; direction < 4; ++direction)
+        {
+            const auto cells = ai_direction_cells(actor, direction);
+            if (std::find(cells.begin(), cells.end(), std::pair{ x, y }) != cells.end()) { return true; }
+        }
+        return false;
     }
     // 原443235只查学习组；470EF6才检查AP、禁用与3D40，不能借玩家菜单可用性代替。
     bool ai_group_available(const OriginalEvents::Unit& unit, Context context) const
@@ -939,6 +948,7 @@ public:
         auto center = actor;
         center.x = x;
         center.y = y;
+        if (directional_skill()) { return directional_cell_in_range(actor, x, y); }
         if (status_area_supported()) { return sleep2_center_in_range(actor, center); }
         const int dx = 2 * (x - actor.x) + (y & 1) - (actor.y & 1), dy = y - actor.y;
         if (selected().id == 88 || reveal50_supported()) { return x == actor.x && y == actor.y; }
@@ -1155,6 +1165,7 @@ public:
         int dx = 2 * (center.x - actor.x) + int(center.y & 1) - int(actor.y & 1), dy = center.y - actor.y;
         return status_area_supported() && ((damage_supported() && selected().raw[18] == 7) || std::max(std::abs(dx), std::abs(dy)) <= int(selected().raw[17]));
     }
+    bool directional_skill() const { return page_ != Page::closed && selected().raw[18] == 5; }
     void set_area_camera(std::pair<int, int> camera) { area_camera_ = camera; }
     std::function<int(int, int)> area_elevation_;
     std::function<bool(int, int)> area_valid_;
@@ -1371,6 +1382,11 @@ public:
         }
         if (reveal50_supported()) { return actor.id == target.id && actor.appearance == target.appearance; }
         if (spirit45_supported()) { return target.hp > 0 && (target.status_flags & 0x80) && !(target.status_flags & 0x20) && sleep2_center_in_range(actor, target); }
+        if (directional_skill())
+        {
+            return target.hp > 0 && (target.status_flags & 0x80) && !(target.status_flags & 0x20) && actor.hostile() != target.hostile()
+                && directional_cell_in_range(actor, target.x, target.y);
+        }
         if (damage_supported() && selected().raw[17] == 0 && selected().raw[18] != 7) { return actor.id == target.id && actor.appearance == target.appearance; }
         if (hostile_stat_supported() && selected().raw[18] == 7) { return status_area_target(actor, target) && target.hp > 0 && (target.status_flags & 0x80) && !(target.status_flags & 0x20) && sleep2_area(actor, target); }
         if (fissure29_supported() || damage_supported() || drain_supported() || special_status_supported() || friendly_status_supported()) { return status_area_target(actor, target) && target.hp > 0 && (target.status_flags & 0x80) && !(target.status_flags & 0x20) && sleep2_center_in_range(actor, target); }

@@ -44,6 +44,8 @@ private:
     OriginalSkills skills_;
     OriginalMap unit_resources_;
     SharedBytes cel_, pal_, items_;
+    mutable OriginalPalette palette_;
+    mutable OriginalPalette equipment_palette_;
     std::vector<int> combat_values_;
     bool enemy_strength_visible_ = true;
     std::vector<std::vector<uint8_t>> ability_names_;
@@ -112,8 +114,7 @@ private:
         const size_t offset = archive.number(group + 2 + (0xDB - 142) * 8, 4);
         const int height = int(archive.number(group + offset + 2)) + 1;
         if (!palette_reader || !archive) { return s2ne::Result<bool>::failure(make_error("Invalid 456179 background extent")); }
-        OriginalPalette palette(pal_);
-        auto dimmed = palette.try_transform_rect(image, 0, height, 640, 480 - height, 5);
+        auto dimmed = palette_.try_transform_rect(image, 0, height, 640, 480 - height, 5);
         if (!dimmed) { return dimmed; }
         auto panel = try_sprite(image, 0xDB, 0, 0, false);
         if (!panel) { return panel; }
@@ -157,7 +158,7 @@ private:
             icon = try_sprite(image, 0xE0, 0x226 - stored_width, 0x19);
             if (!icon) { return icon; }
         }
-        const int button_left = 0x1B1 + int(detail_button_) * 50, button_right = 0x1DE + int(detail_button_) * 50;
+        const int button_left = 0x1B2 + int(detail_button_) * 50, button_right = 0x1D9 + int(detail_button_) * 50;
         if (page_ != Page::detail)
         {
             auto pressed = try_sprite(image, 0xDC + detail_button_, button_left, 0x9A);
@@ -190,6 +191,7 @@ private:
             auto icon = draw_original_cel(image, cel_, pal_, id + 0x1EC, 0xFE, 0xA1 + int(i) * 0x23, OriginalZeroRun::transparent);
             if (!icon) { return icon; }
         }
+        equipment_palette_.cycle_rect(image, 0xFE, 0xA1, 0x40, 0x23 * int(unit.equipment.size()), texture_resources.elapsed());
         return skills_.try_draw_status_effects(image, unit);
     }
     s2ne::Result<bool> try_roster_row_validated(std::vector<uint8_t>& image, int row, const Entry& entry) const
@@ -299,12 +301,14 @@ public:
                                                                                                                                                             status_(root),
                                                                                                                                                             cel_(read(root / "SUPERSP.CEL")),
                                                                                                                                                             pal_(read(root / "SUPERSP.PAL")),
+                                                                                                                                                            palette_(pal_),
                                                                                                                                                             background_(background),
                                                                                                                                                             stage_name_(events.stage_name),
                                                                                                                                                             victory_(events.victory_objective),
                                                                                                                                                             defeat_(events.defeat_objective),
                                                                                                                                                             stage_(events.stage),
-                                                                                                                                                            page_(page) {}
+                                                                                                                                                            page_(page),
+                                                                                                                                                            equipment_palette_(pal_) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, Page page, const OriginalEvents& events,
         std::vector<Entry> entries, const std::vector<uint8_t>& background, const OriginalMap* map, bool small_font, int dword_4f7cd0)
     {
@@ -399,12 +403,14 @@ public:
                                                                                                                                                                status_(root),
                                                                                                                                                                cel_(read(root / "SUPERSP.CEL")),
                                                                                                                                                                pal_(read(root / "SUPERSP.PAL")),
+                                                                                                                                                               palette_(pal_),
                                                                                                                                                                background_(background),
                                                                                                                                                                stage_name_(events.stage_name),
                                                                                                                                                                victory_(events.victory_objective),
                                                                                                                                                                defeat_(events.defeat_objective),
                                                                                                                                                                stage_(events.stage),
-                                                                                                                                                               page_(page)
+                                                                                                                                                               page_(page),
+                                                                                                                                                               equipment_palette_(pal_)
     {
         auto result = initialize(root, page, events, std::move(entries), background, map, small_font, dword_4f7cd0);
         if (!result)
@@ -793,8 +799,7 @@ public:
             const size_t offset = archive.number(group + 2 + (0xE8 - 142) * 8, 4);
             const int top = 480 - int(archive.number(group + offset + 2)) - 1;
             if (!archive) { return s2ne::Result<std::vector<uint8_t>>::failure(archive.error()); }
-            texture_resources.cover_text(0, std::max(0, top - 24), 640, 480 - std::max(0, top - 24));
-            auto panel = try_sprite(image, 0xE8, 0, top, false);
+            auto panel = try_sprite(image, 0xE8, 0, top, true);
             if (!panel) { return s2ne::Result<std::vector<uint8_t>>::failure(panel.error()); }
             const auto title = font_.text_bytes(0x27C / 4);
             large(image, title, 320 - int(title.size()) * 6, top + 8, 0x49);
@@ -833,8 +838,7 @@ public:
             const size_t offset = archive.number(group + 2 + (0xE6 - 142) * 8, 4);
             const int top = 480 - int(archive.number(group + offset + 2)) - 1;
             if (!archive) { return s2ne::Result<std::vector<uint8_t>>::failure(archive.error()); }
-            texture_resources.cover_text(0, std::max(0, top - 24), 640, 480 - std::max(0, top - 24));
-            auto panel = try_sprite(image, 0xE6, 0, top, false);
+            auto panel = try_sprite(image, 0xE6, 0, top, true);
             if (!panel) { return s2ne::Result<std::vector<uint8_t>>::failure(panel.error()); }
             const auto title = font_.text_bytes(0x278 / 4);
             large(image, title, 320 - int(title.size()) * 6, top + 7, 0x49);

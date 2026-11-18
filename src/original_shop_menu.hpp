@@ -1,12 +1,15 @@
-#pragma once
+﻿#pragma once
 #include "original_confirmation.hpp"
 #include "original_equipment.hpp"
 #include "original_interbattle.hpp"
 #include "original_shop.hpp"
 #include "original_sprite.hpp"
+#include "original_town_data.hpp"
 #include <chrono>
 #include <ctime>
+#include <fstream>
 #include <memory>
+#include <nlohmann/json.hpp>
 namespace s2ne
 {
 class OriginalShopMenu
@@ -225,13 +228,28 @@ public:
     OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc, InitializationTag) : root_(root), shop_(root), font_(root), background_(root, disc, 14), cel_(read_shared_resource(root / "SUPERSP.CEL").value()), pal_(read_shared_resource(root / "SUPERSP.PAL").value()) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, OriginalDisc disc)
     {
-        auto bin = read(root / "SUPERSP.BIN");
-        size_t town = dword(pal_, 848 + 3 * 8) - 14, size = dword(pal_, 852 + 3 * 8) - 14;
-        if (town > bin.size() || size > bin.size() - town)
+        const auto json_path = root / "json" / "towns.json";
+        auto json_towns = try_load_towns_json(root);
+        if (!json_towns)
         {
-            return s2ne::Result<bool>::failure(make_error("Invalid original town BIN4"));
+            return s2ne::Result<bool>::failure(json_towns.error());
         }
-        towns_.assign(bin.begin() + town, bin.begin() + town + size);
+        if (!json_towns.value().empty())
+        {
+            towns_ = std::move(json_towns).value();
+            std::println("Data source towns=JSON shop path={}", json_path.string());
+        }
+        else
+        {
+            auto bin = read(root / "SUPERSP.BIN");
+            size_t town = dword(pal_, 848 + 3 * 8) - 14, size = dword(pal_, 852 + 3 * 8) - 14;
+            if (town > bin.size() || size > bin.size() - town)
+            {
+                return s2ne::Result<bool>::failure(make_error("Invalid original town BIN4"));
+            }
+            towns_.assign(bin.begin() + town, bin.begin() + town + size);
+            std::println("Data source towns=BIN shop path={}", (root / "SUPERSP.BIN").string());
+        }
         auto bytes = OriginalDiscResources(root).dat_entry(disc, 3);
         size_t p = 2;
         unsigned count = word(bytes, 0);

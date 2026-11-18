@@ -1,0 +1,225 @@
+{
+  "map_id": 62,
+  "music": 2,
+  "route": {
+    "next_stage": 1,
+    "alternate_stage": 0,
+    "mode": 3,
+    "fantasy_stage": 200
+  },
+  "units": [
+    {
+      "id": 11,
+      "appearance": 81,
+      "name": "志超",
+      "x": 5,
+      "y": 38,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 172,
+      "max_hp": 0,
+      "equipment": [
+        4,
+        120,
+        149,
+        168,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 1,
+      "appearance": 87,
+      "name": "娜塔莉雅",
+      "x": 6,
+      "y": 36,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 164,
+      "max_hp": 0,
+      "equipment": [
+        18,
+        120,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 42,
+      "appearance": 127,
+      "name": "彥清風",
+      "x": 11,
+      "y": 36,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 164,
+      "max_hp": 0,
+      "equipment": [
+        18,
+        120,
+        149,
+        168,
+        0,
+        0
+      ]
+    }
+  ],
+  "player_party": [],
+  "deployment": [],
+  "deployment_rules": {
+    "mandatory_role_ids": [],
+    "source": "original deployment flow; not inferred from fixed slot flag"
+  },
+  "objects": [],
+  "name": "選擇",
+  "briefing": "兩條命運原本各自前行；但在傳說交會之處，白志超與娜塔莉雅或許能並肩踏上同一段旅程。這是一條尚未被命運寫定的幻想路線，選擇前請準備迎接兩位主角共同出發的故事。",
+  "objectives": {
+    "victory": "1.無。",
+    "defeat": "1.主角掛了。"
+  },
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 13,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      },
+      "lines": [
+        {
+          "speaker": 11,
+          "name": "白志超",
+          "text": "呵呵呵，各位玩者好久不見了，我是二代最帥的配角白志超，現在終於當上男主角了。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "聽過奚族部落與南方領的傳說故事嗎？在@@WA7,00D6D@@＜北方密使＞@@RWRD@@中我娜塔莉雅是擔任女主角一職。"
+        },
+        {
+          "speaker": 11,
+          "name": "白志超",
+          "text": "我們兩個人所經歷的故事是不一樣的。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "同時連出發點、夥伴也都是不同的。"
+        },
+        {
+          "speaker": 11,
+          "name": "白志超",
+          "text": "我可是一個瀟灑出眾的無敵劍士，從迦納國出發。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "我是善於配合使用魔法與快刀的魔法使，奚族部落是出發點。"
+        },
+        {
+          "speaker": 11,
+          "name": "白志超",
+          "text": "在路上我們早晚會碰上的，不是嗎？"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "一路上都會碰到與互相幫助，熱鬧極了。"
+        },
+        {
+          "speaker": 11,
+          "name": "白志超",
+          "text": "現在請做個決定吧。"
+        }
+      ]
+    },
+    {
+      "type": 5,
+      "completion_flag": 0,
+      "branch_flag": 13,
+      "lines": [
+        {
+          "speaker": 42,
+          "name": "彥清風",
+          "text": "好好地想清楚，不要後悔了。"
+        },
+        {
+          "speaker": 42,
+          "name": "彥清風",
+          "text": "以男主角白志超來進行遊戲。"
+        },
+        {
+          "speaker": 42,
+          "name": "彥清風",
+          "text": "以女主角娜塔莉雅來進行遊戲。"
+        },
+        {
+          "speaker": 42,
+          "name": "彥清風",
+          "text": "讓兩位主角合流，走一條未曾寫定的幻想路線。"
+        }
+      ]
+    },
+    {
+      "type": 5,
+      "completion_flag": 14,
+      "condition": 1,
+      "branch_flag": 13,
+      "branch_value": 1,
+      "lines": [
+        {
+          "speaker": 11,
+          "name": "白志超",
+          "text": "呵呵，我要當主角了。"
+        }
+      ]
+    },
+    {
+      "type": 5,
+      "completion_flag": 15,
+      "condition": 2,
+      "branch_flag": 13,
+      "branch_value": 2,
+      "lines": [
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "讓我們一起為遊戲中的世界而努力吧。"
+        }
+      ]
+    },
+    {
+      "type": 5,
+      "completion_flag": 0,
+      "condition": 3,
+      "branch_flag": 13,
+      "branch_value": 3,
+      "lines": [
+        { "speaker": 11, "name": "白志超", "text": "這一次，我們不再各走各的路。" },
+        { "speaker": 1, "name": "娜塔莉雅", "text": "就讓兩段旅程在此交會，一起走下去吧。" }
+      ]
+    },
+    {
+      "type": 9,
+      "completion_flag": 41,
+      "lines": [
+        {
+          "speaker": 42,
+          "name": "彥清風",
+          "text": "遊戲要開始了....。"
+        }
+      ]
+    }
+  ]
+}

@@ -1144,28 +1144,6 @@ private:
         return Result<size_t>::success(g + dword(cel_, g + 2 + index * 8));
     }
     size_t sprite_offset(unsigned archive, unsigned index) const { return try_sprite_offset(archive, index).value(); }
-    void sprite_shadow(std::vector<uint8_t>& image, size_t p, int left, int top) const
-    {
-        int width = int(word(cel_, p)) + 1, height = int(word(cel_, p + 2)) + 1 - 10;
-        if (width <= 0 || width > 630 || height <= 0 || height > 468)
-        {
-            return;
-        }
-        // 424D47: two eight-pixel table6 strips, not a black rectangle.
-        if (left < 8)
-        {
-            if (top + height + 18 >= 479)
-            {
-                return;
-            }
-            palette_effects_->transform_rect(image, 0, top + 8 + height, width, 8, 6);
-        }
-        else
-        {
-            palette_effects_->transform_rect(image, left - 8, top + 8, 8, height, 6);
-            palette_effects_->transform_rect(image, left - 8, top + 8 + height, width, 8, 6);
-        }
-    }
     Result<bool> sprite_validated(std::vector<uint8_t>& image, size_t p, bool typed, int left, int top, bool opaque_zero = false) const
     {
         return draw_original_sprite(image, cel_, pal_, p, typed, left, top, opaque_zero ? OriginalZeroRun::opaque : OriginalZeroRun::transparent);
@@ -2565,7 +2543,23 @@ public:
     struct InitializationTag
     {
     };
-    Prologue(const std::filesystem::path& root, unsigned difficulty, InitializationTag) : unit_status_(root), map_(root), root_(root), events(root, difficulty) {}
+    Prologue(const std::filesystem::path& root, unsigned difficulty, InitializationTag) : unit_status_(root), map_(root), root_(root), events(root, difficulty)
+    {
+        const auto json_path = root / "json" / "stage-140.json";
+        auto override_result = events.try_load_opening_dialogue_override(json_path);
+        if (override_result && override_result.value())
+        {
+            std::println("Data source stage=140 dialogue=JSON path={}", json_path.string());
+        }
+        else if (override_result)
+        {
+            std::println("Data source stage=140 dialogue=BIN");
+        }
+        if (!override_result)
+        {
+            fatal(override_result.error());
+        }
+    }
     Result<bool> initialize(const std::filesystem::path& root)
     {
         auto cel = read_shared_resource(root / "SUPERSP.CEL"), pal = read_shared_resource(root / "SUPERSP.PAL"), items = read_shared_resource(root / "ITEMSP.BIN");
@@ -4573,6 +4567,13 @@ public:
         {
             if (finish_confirmation_)
             {
+                if (battle_->selected() < 0 || size_t(battle_->selected()) >= events.units.size())
+                {
+                    finish_confirmation_.reset();
+                    finish_direction_.reset();
+                    cancel_battle_selection();
+                    return;
+                }
                 finish_confirmation_->mouse(x, y, click);
                 if (finish_confirmation_->result())
                 {
@@ -4606,6 +4607,12 @@ public:
                 return;
             }
             sync_movement_contexts();
+            if ((battle_->state() == Battle::State::command || battle_->state() == Battle::State::attack_menu || battle_->state() == Battle::State::finish_confirm)
+                && (battle_->selected() < 0 || size_t(battle_->selected()) >= events.units.size()))
+            {
+                cancel_battle_selection();
+                return;
+            }
             auto before = battle_->state();
             unsigned context = 0;
             if (events.army_modes)
@@ -4636,7 +4643,7 @@ public:
     }
     void begin_finish_confirmation()
     {
-        if (!in_battle() || battle_->state() != Battle::State::finish_confirm || finish_confirmation_)
+        if (!in_battle() || battle_->state() != Battle::State::finish_confirm || finish_confirmation_ || battle_->selected() < 0 || size_t(battle_->selected()) >= events.units.size())
         {
             return;
         }
@@ -5230,7 +5237,14 @@ public:
         else if (phase_ == Phase::flag_dialogue)
         {
             events.clear_stage_flags();
-            events.load_stage(chosen_ == 1 ? events.first_stage : events.alternate_stage);
+            unsigned next_stage = chosen_ == 1 ? events.first_stage : events.alternate_stage;
+            if (chosen_ == 3)
+            {
+                if (!events.fantasy_stage) { return Result<bool>::failure(make_error("Fantasy route target is not configured")); }
+                next_stage = events.fantasy_stage;
+            }
+            if (next_stage > 168) { return Result<bool>::failure(make_error("Fantasy route target stage is not exported: " + std::to_string(next_stage))); }
+            events.load_stage(next_stage);
             if (auto request = OriginalCampaign::save_request(OriginalCampaign::SavePoint::before_stage_story, 0, 1))
             {
                 autosave_requests_.push_back(*request);
@@ -5250,21 +5264,17 @@ public:
     void draw_status_terrain(const OriginalMenu& font, std::vector<uint8_t>& image, const OriginalEvents::Unit& unit, int panel_y) const
     {
         map_.draw_terrain(font, image, unit.x, unit.y, panel_y);
-        const auto tile = battle_->cell({ unit.x, unit.y });
-        if (tile.ground == 1) { return; }
-        const auto effect = battle_->terrain_effect(events, unit, { unit.x, unit.y });
-        if (effect.result != 1) { return; }
-        // 426598 stores CEL1 at 4F7064: 42C3C6's 4F7358/4F735C are CEL190/191.
-        sprite(image, sprite_offset(2, 190u - 142u), false, 527, panel_y + 91);
-        sprite(image, sprite_offset(2, 191u - 142u), false, 577, panel_y + 91);
-        for (unsigned i = 0; i < 2; ++i)
+    }
+    void draw_terrain_panel(const OriginalMenu& font, std::vector<uint8_t>& image, int x, int y, int panel_y) const
+    {
+        const auto before = image;
+        sprite(image, sprite_offset(2, 143 - 142), false, 0, panel_y);
+        for (int row = 0; row < 117; ++row)
         {
-            int value = int(int8_t(effect.bytes[i + 1]));
-            auto sign = std::string(value < 0 ? "-" : "+");
-            auto number = std::to_string(std::abs(value));
-            font.draw_small(image, { sign.begin(), sign.end() }, i ? 599 : 548, panel_y + 92, 137, true);
-            font.draw_small(image, { number.begin(), number.end() }, i ? 607 : 556, panel_y + 92, 137, true);
+            const size_t offset = size_t(panel_y + row) * 640 * 4;
+            std::copy_n(before.begin() + offset, 520 * 4, image.begin() + offset);
         }
+        map_.draw_terrain(font, image, x, y, panel_y);
     }
     void mask_ground_selection(std::vector<uint8_t>& pixels, Battle::Point cell) const { map_.mask_selection(pixels, cell.x, cell.y); }
     std::vector<uint8_t> draw(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay = {}) const
@@ -5633,7 +5643,6 @@ public:
                     {
                         if (battle_->attack_command_available(events.units, attack))
                         {
-                            sprite_shadow(image, sprite_offset(2, Battle::attack_icons[attack] - 142), origin.x + slot * 32, origin.y);
                             ++slot;
                         }
                     }
@@ -5659,15 +5668,6 @@ public:
                 }
                 else
                 {
-                    int shadow_slot = 0;
-                    for (int command = 0; command < 6; ++command)
-                    {
-                        if (battle_->command_available(events.units, command))
-                        {
-                            sprite_shadow(image, sprite_offset(2, Battle::command_icons[command] - 142), origin.x + shadow_slot * 32, origin.y);
-                            ++shadow_slot;
-                        }
-                    }
                     int slot = 0;
                     for (int command = 0; command < 6; ++command)
                     {
@@ -5719,8 +5719,7 @@ public:
                         status_panel_side_ = 1;
                     }
                     const int panel_y = status_panel_side_ == 2 ? 363 : 0;
-                    sprite(image, sprite_offset(2, 143 - 142), false, 0, panel_y);
-                    map_.draw_terrain(font, image, battle_->hovered_cell().x, battle_->hovered_cell().y, panel_y);
+                    draw_terrain_panel(font, image, battle_->hovered_cell().x, battle_->hovered_cell().y, panel_y);
                 }
                 else if (battle_->state() == Battle::State::movement && battle_->selected() >= 0)
                 {
@@ -5769,6 +5768,10 @@ public:
                 if (lead <= 0x80)
                 {
                     continue;
+                }
+                if (p >= briefing_page_.size())
+                {
+                    break;
                 }
                 font.draw_big5(image, { uint8_t(lead), briefing_page_.at(p++) }, x, y, 56);
                 x += 24;

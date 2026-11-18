@@ -8,7 +8,7 @@
 
 项目仍在开发中，不代表原版全部功能已经实现。本页仅介绍游戏与项目；实现状态、未完成项与原函数／实现／测试／历史证据统一见 [PROGRESS](PROGRESS.md#current-status)；[分项验证导航](PROGRESS.md#validation)区分正常输入、受控专项与未验证边界。
 
-音频现状：已接原资源效果音、ANI声音cue、关卡及关间BGM与XMI合成；现代SoundFont不等同原声卡音色，但听感差异不作为缺口。跨阶段未实现展示所需的音乐／音效入口仍是缺口，不宣称全音频完成。自然习得已验证原技能菜单施放、熟练度跨阈值、学习通知与隔离存读档；不代表双线正常通关。详细证据与边界见[进度报告](PROGRESS.md)。
+音频现状：已接原资源效果音、ANI声音cue、关卡及关间BGM与XMI合成；现代SoundFont不等同原声卡音色，但听感差异不作为缺口。跨阶段未实现展示所需的音乐／音效入口仍是缺口，不宣称全音频完成。自然习得已验证原技能菜单施放、熟练度跨阈值、学习通知与隔离存读档；不代表双线正常通关。详细证据与边界见[进度报告](PROGRESS.md)。阶段与村庄 JSON 字段说明见资源根 [json/README.md](../json/README.md)。
 
 现代设备原声卡听感不作为验收条件（2026-11-16）。生产补齐按PROGRESS第1至6条顺序推进，第7条暂不推进。当前[剩余缺口摘要](PROGRESS.md#当前剩余缺口摘要)区分用户报告待定位问题、已有实现的等价核对及工具／证据缺口；用户已确认全关卡AI流程跑通，后续以汇编／原资源及局部回归验收，不要求重复全关卡。
 
@@ -149,6 +149,8 @@ python .\tools\play-stdio.py .\out\manual-session .\out\growth-check\legal\eligi
 技能增加原记录`name_bytes/name/index`，保留技能ID、组、费用及拒绝原因。剧情选项、人物／职业、学习文字同样解码。城镇、旅店、教会、商店分类／物品、部署及设置增加对应`*_items`／`*_options`；目标保留原索引数组，附加`*_items`人物名称；物品保留原数组并增加`usable_item_options`。范围仍用原坐标／目标索引表示，不给格子自造名称。`semantic_actions`是当前场景的协议命令目录（未知原文字显示unknown），**不是可用性授权**，输入锁、enabled、模态及原命令拒绝仍有效。原确认O/X是图像，不伪造原文“确定／取消”。`tools\invoke-campaign002-actions.ps1`打印这些字段，但原JSONL及机器字段不删除。
 
 `key.modifiers`为可选数组，支持SDL名称Left/Right Shift、Ctrl、Alt、GUI，只作用于当前按键事件，不留下全局按住状态。此前单独发送修饰键不能为后续按键提供`event.key.mod`，因此技能页Shift导航、设置页左右Ctrl分支及Alt+C无法完整表达；现可发送组合键。普通点击、右键取消、鼠标移动及原菜单键盘路径已有入口；本次输入分派检查不等于全游戏每个菜单均已实测，尚未实现的游戏功能不会因协议支持键鼠而自动补齐。
+
+剧情／关卡扩展的数据边界见[JSON数据方案](doc/combined-route-proposal.md)：地图仍使用`SUPERSP.PRG`连续二进制，关卡点位、角色、部署、动态对象和事件逐步导出为JSON，新增剧情文字直接使用UTF-8可读字符串。当前只有第140阶段开场覆盖已接入，168个阶段的JSON主驱动、Unicode渲染和存档版本迁移尚未完成；不能把现有覆盖层当作全量JSON驱动。
 
 `tools\invoke-campaign002-actions.ps1 -SettleAutomaticRound -AutomaticRounds N`可在同一进程连续执行至多N次原自动战斗，每次回到空闲边界先原保存slot5并记录独立`round-N.json`，再打开原第4项及确认；选择、失败和奖励边界仍优先停止／处理，不以次数判断胜利。默认N=1，提交奖励仍须显式`-CommitAutomaticVictory`。原自动战斗确认沿既有`key Return`入口，不使用仅适用于战场选择的`battle_confirm`。
 

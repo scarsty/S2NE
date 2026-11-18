@@ -592,7 +592,7 @@ int s2ne::run_application(int argc, char** argv)
         }
         auto settingsState = s2ne::OriginalSettings::load_state(root);
         const bool simplifiedChinese = settingsState.simplified_chinese != 0;
-        if (s2ne::texture_resources.active())
+        if (std::filesystem::exists(root / "chinese.ttf"))
         {
             auto font = s2ne::texture_resources.initialize_font(root / "chinese.ttf");
             if (!font) { s2ne::fatal(font.error()); }
@@ -805,7 +805,6 @@ int s2ne::run_application(int argc, char** argv)
             // 逻辑帧已清除但 renderer 仍保留的文字跨页复用。
             if (battleMenu || battleReports || promotionMenu || skillMenu || battleItems || itemMenu || saveMenu || overwriteConfirmation)
             {
-                s2ne::texture_resources.clear_text_commands();
             }
 
             if (options.skillInputSmoke)
@@ -869,7 +868,6 @@ int s2ne::run_application(int argc, char** argv)
             if (battleMenu)
             {
                 SDL_ShowCursor();
-                s2ne::texture_resources.clear_text_commands();
                 auto rendered = battleMenu->try_draw(image);
                 if (rendered)
                 {
@@ -883,7 +881,6 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (battleReports)
             {
-                s2ne::texture_resources.clear_text_commands();
                 s2ne::texture_resources.set_elapsed(gameTicks());
                 auto rendered = battleReports->try_draw();
                 if (rendered)
@@ -1059,7 +1056,6 @@ int s2ne::run_application(int argc, char** argv)
             const auto& unit = prologue->events.units[size_t(selected)];
             std::vector<s2ne::OriginalBattleReports::Entry> entries{ { unit, unit.hostile(), unit.npc_class() ? 1 : 0, false } };
             auto report_background = prologue->draw(menu);
-            s2ne::texture_resources.clear_text_commands();
             battleReports.emplace(root, s2ne::OriginalBattleReports::Page::roster, prologue->events, std::move(entries), std::move(report_background), nullptr, settingsState.small_font != 0);
             battleReports->detail();
             battleReports->close_to_battle();
@@ -1591,7 +1587,7 @@ int s2ne::run_application(int argc, char** argv)
                                 if (!prologue->battle().skill_area_cell({ x, y }) || !skillMenu->selection_cell_in_range(caster, x, y)) { continue; }
                                 auto p = s2ne::Battle::center({ x, y });
                                 state["skill_cells"].push_back({ { "x", x }, { "y", y }, { "input_x", p.x - camera.first }, { "input_y", p.y - camera.second } });
-                                if (skillMenu->status_area_supported())
+                                if (skillMenu->status_area_supported() && !skillMenu->directional_skill())
                                 {
                                     auto center = caster;
                                     center.x = x;
@@ -2740,7 +2736,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         else if (command == "skill_area_select")
                         {
-                            if (!prologue || !skillMenu || skillMenu->page() != s2ne::OriginalSkills::Page::requested || !skillMenu->status_area_supported() || prologue->battle_selected() < 0 || pendingSkillTarget) { throw std::runtime_error("area skill selection unavailable"); }
+                            if (!prologue || !skillMenu || skillMenu->page() != s2ne::OriginalSkills::Page::requested || !skillMenu->status_area_supported() || skillMenu->directional_skill() || prologue->battle_selected() < 0 || pendingSkillTarget) { throw std::runtime_error("area skill selection unavailable"); }
                             if (!request->contains("x") || !request->contains("y") || !request->at("x").is_number_integer() || !request->at("y").is_number_integer()) { throw std::runtime_error("skill_area_select requires integer x and y"); }
                             const s2ne::Battle::Point cell{ request->at("x").get<int>(), request->at("y").get<int>() };
                             const auto actor = size_t(prologue->battle_selected());
@@ -4591,7 +4587,7 @@ int s2ne::run_application(int argc, char** argv)
                                     confirm = click && event.button.button == SDL_BUTTON_LEFT;
                                 }
                             }
-                            else if (skillMenu->status_area_supported())
+                            else if (skillMenu->status_area_supported() && !skillMenu->directional_skill())
                             {
                                 auto center = prologue->events.units.at(size_t(selected));
                                 center.x = cell.x;
@@ -4709,7 +4705,7 @@ int s2ne::run_application(int argc, char** argv)
                                 std::print("Original46C078 spell32 preparation unavailable\n");
                                 continue;
                             }
-                            if (skillMenu->status_area_supported() && !sleepCenter) { sleepCenter = skillMenu->selected().raw[18] == 7 ? s2ne::Battle::Point{ caster.x, caster.y } : s2ne::Battle::Point{ target.x, target.y }; }
+                            if (skillMenu->status_area_supported() && !skillMenu->directional_skill() && !sleepCenter) { sleepCenter = skillMenu->selected().raw[18] == 7 ? s2ne::Battle::Point{ caster.x, caster.y } : s2ne::Battle::Point{ target.x, target.y }; }
                             pendingSkillTarget = skillTarget;
                             skillTarget.reset();
                         }
@@ -5130,7 +5126,6 @@ int s2ne::run_application(int argc, char** argv)
                 {
                     if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
-                        s2ne::texture_resources.clear_text_commands();
                     }
                     s2ne::OriginalSettings::Event input;
                     if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
@@ -5327,12 +5322,10 @@ int s2ne::run_application(int argc, char** argv)
                         overview.set_event_flags(prologue->events.flags);
                         overview.load(prologue->events.map_id);
                         auto report_background = prologue->draw(menu);
-                        s2ne::texture_resources.clear_text_commands();
                         battleReports.emplace(root, page, prologue->events, std::move(entries), std::move(report_background), &overview, settingsState.small_font != 0);
                     }
                     if (!saveMenu && (request.action == s2ne::OriginalBattleMenu::Action::load || request.action == s2ne::OriginalBattleMenu::Action::save))
                     {
-                        s2ne::texture_resources.clear_text_commands();
                         saveMenu.emplace(root, request.action == s2ne::OriginalBattleMenu::Action::save ? 1 : 0, s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root));
                     }
                     if (auto code = battleMenu->return_code())
@@ -5364,7 +5357,7 @@ int s2ne::run_application(int argc, char** argv)
                         bool click = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT;
                         float x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x;
                         float y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y;
-                        if (prologue->in_battle() && event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT && prologue->battle_state() == s2ne::Battle::State::idle)
+                        if (prologue->in_battle() && event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT && !prologue->computer_actions())
                         {
                             auto stopped = stopEffects();    // 原431DE8入口停止效果音，并非所有模态窗口都停止。
                             if (!stopped) { s2ne::report_error(stopped.error()); }
@@ -5374,7 +5367,6 @@ int s2ne::run_application(int argc, char** argv)
                                 {
                                     return slot.occupied();
                                 });
-                            s2ne::texture_resources.clear_text_commands();
                             battleMenu.emplace(root, context, settingsState);
                             showPrologue();
                             continue;
@@ -5518,7 +5510,6 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (menu.selected == 1)
                         {
-                            s2ne::texture_resources.clear_text_commands();
                             saveMenu.emplace(root, 0, s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root));
                             continue;
                         }
@@ -5588,7 +5579,6 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (menu.selected == 1)
                         {
-                            s2ne::texture_resources.clear_text_commands();
                             saveMenu.emplace(root, 0, s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root));
                             continue;
                         }
@@ -6066,7 +6056,6 @@ int s2ne::run_application(int argc, char** argv)
             {
                 auto image = title;
                 menu.draw(image);
-                s2ne::texture_resources.clear_text_commands();
                 auto rendered = saveMenu->try_draw(image, menu);
                 if (!rendered)
                 {
@@ -6087,8 +6076,6 @@ int s2ne::run_application(int argc, char** argv)
             SDL_RenderTexture(renderer, texture, nullptr, nullptr);
             if (s2ne::texture_resources.active())
             {
-                auto text = s2ne::texture_resources.flush_text();
-                if (!text) { s2ne::fatal(text.error()); }
             }
             if (!SDL_RenderPresent(renderer))
             {

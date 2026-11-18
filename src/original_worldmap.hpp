@@ -98,27 +98,31 @@ public:
         if (texture_resources.active())
         {
             auto external = texture_resources.load_image("worldmap", 11);
-            if (!external) { return Result<OriginalWorldmap>::failure(external.error()); }
-            auto archive = OriginalDiscResources(root).try_dat_entry(domain, 7);
-            if (!archive) { return Result<OriginalWorldmap>::failure(archive.error()); }
-            OriginalWorldmap result;
-            result.width_ = unsigned(external.value().width);
-            result.height_ = unsigned(external.value().height);
-            result.palette_.assign(768, 0);
-            result.pixels_.resize(size_t(result.width_) * result.height_);
-            const auto& rgba = external.value();
-            result.external_rgba_ = rgba.pixels;
-            result.towns_ = std::move(towns);
-            result.delay_ = dword(state.globals_4f7cd0, 32);
-            result.current_ = word(state.globals_4f7cd0, 24);
-            result.destination_ = word(state.globals_4f7cd0, 16);
-            if (!result.current_ || result.current_ > word(result.towns_, 0) || !result.destination_ || result.destination_ > word(result.towns_, 0))
+            if (external)
             {
-                return Result<OriginalWorldmap>::failure(make_error("World current/destination town"));
+                auto archive = OriginalDiscResources(root).try_dat_entry(domain, 7);
+                if (archive)
+                {
+                    OriginalWorldmap result;
+                    result.width_ = unsigned(external.value().width);
+                    result.height_ = unsigned(external.value().height);
+                    result.palette_.assign(768, 0);
+                    result.pixels_.resize(size_t(result.width_) * result.height_);
+                    const auto& rgba = external.value();
+                    result.external_rgba_ = rgba.pixels;
+                    result.towns_ = std::move(towns);
+                    result.delay_ = dword(state.globals_4f7cd0, 32);
+                    result.current_ = word(state.globals_4f7cd0, 24);
+                    result.destination_ = word(state.globals_4f7cd0, 16);
+                    if (!result.current_ || result.current_ > word(result.towns_, 0) || !result.destination_ || result.destination_ > word(result.towns_, 0))
+                    {
+                        return Result<OriginalWorldmap>::failure(make_error("World current/destination town"));
+                    }
+                    size_t record = 2 + (result.current_ - 1) * 14;
+                    result.center(word(result.towns_, record + 6), word(result.towns_, record + 8));
+                    return Result<OriginalWorldmap>::success(std::move(result));
+                }
             }
-            size_t record = 2 + (result.current_ - 1) * 14;
-            result.center(word(result.towns_, record + 6), word(result.towns_, record + 8));
-            return Result<OriginalWorldmap>::success(std::move(result));
         }
         auto image = OriginalDiscResources(root).try_dat_entry(domain, 11);
         auto archive = OriginalDiscResources(root).try_dat_entry(domain, 7);

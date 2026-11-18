@@ -395,7 +395,7 @@ public:
         font.draw_original_large(image, font.text_bytes(title_ids.at(mode_)), left_ + 180, top_ + 12, 73, 55);
         auto text = [&](const std::vector<uint8_t>& bytes, int x, int y, unsigned c)
         {
-            font.draw_small(image, bytes, left_ + x, top_ + y, c, true);
+            font.draw_small_fixed_spaces(image, bytes, left_ + x, top_ + y, c, true);
         };
         auto ascii = [](const std::string& s)
         {

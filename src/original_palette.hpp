@@ -173,7 +173,7 @@ public:
         generate(11, 60, 15);
         generate(12, 68, 80);
     }
-    void cycle(std::vector<uint8_t>& image, uint64_t elapsed_ms)
+    void cycle_rect(std::vector<uint8_t>& image, int left, int top, int width, int height, uint64_t elapsed_ms)
     {
         // 472D78 table4EAF48: 3..10 at >16cs, 11..18 and 19..31 at >9cs.
         constexpr std::array<unsigned, 3> starts{ 3, 11, 19 }, counts{ 8, 8, 13 }, periods{ 16, 9, 9 };
@@ -207,21 +207,25 @@ public:
                 rotations.emplace(source[c], starts[i] + (c - starts[i] + counts[i] - cycle_offsets_[i]) % counts[i]);
             }
         }
-        for (size_t p = 0; p < image.size(); p += 4)
+        const int right = std::min(640, left + width);
+        const int bottom = std::min(480, top + height);
+        for (int y = std::max(0, top); y < bottom; ++y)
         {
-            uint32_t rgb = image[p] | uint32_t(image[p + 1]) << 8 | uint32_t(image[p + 2]) << 16;
-            auto match = rotations.find(rgb);
-            if (match == rotations.end())
+            for (int x = std::max(0, left); x < right; ++x)
             {
-                continue;
-            }
-            unsigned color = match->second;
-            for (unsigned k = 0; k < 3; ++k)
-            {
-                image[p + k] = uint8_t(unsigned(palette_[color * 3 + k]) * 255 / 63);
+                const size_t p = (size_t(y) * 640 + x) * 4;
+                uint32_t rgb = image[p] | uint32_t(image[p + 1]) << 8 | uint32_t(image[p + 2]) << 16;
+                auto match = rotations.find(rgb);
+                if (match == rotations.end()) { continue; }
+                unsigned color = match->second;
+                for (unsigned k = 0; k < 3; ++k)
+                {
+                    image[p + k] = uint8_t(unsigned(palette_[color * 3 + k]) * 255 / 63);
+                }
             }
         }
     }
+    void cycle(std::vector<uint8_t>& image, uint64_t elapsed_ms) { cycle_rect(image, 0, 0, 640, 480, elapsed_ms); }
     uint8_t map(unsigned table, unsigned color) const { return maps_.at(table).at(color); }
     void transform(std::vector<uint8_t>& image, int first_row, int row_count, unsigned table) const
     {
@@ -232,14 +236,6 @@ public:
         if (destination.size() != 640 * 480 * 4 || table >= maps_.size())
         {
             return Result<bool>::failure(make_error("Invalid palette effect framebuffer or table"));
-        }
-        if (texture_resources.active())
-        {
-            constexpr std::array<unsigned, 13> colors{ 33, 33, 33, 33, 33, 32, 32, 234, 32, 189, 36, 60, 68 };
-            constexpr std::array<unsigned, 13> amounts{ 0, 10, 20, 30, 40, 60, 50, 65, 25, 60, 15, 15, 80 };
-            const auto color = colors[table];
-            return texture_resources.tint(destination, left, top, width, height,
-                uint8_t(unsigned(palette_[color * 3]) * 255 / 63), uint8_t(unsigned(palette_[color * 3 + 1]) * 255 / 63), uint8_t(unsigned(palette_[color * 3 + 2]) * 255 / 63), amounts[table]);
         }
         auto image = destination;
         std::array<uint32_t, 256> rgba{};

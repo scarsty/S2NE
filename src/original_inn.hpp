@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "original_army_equipment_menu.hpp"
 #include "original_battle_reports.hpp"
 #include "original_combat.hpp"
@@ -6,8 +6,10 @@
 #include "original_save_menu.hpp"
 #include "original_save_store.hpp"
 #include "original_shop_menu.hpp"
+#include "original_town_data.hpp"
 #include "original_worldmap.hpp"
 #include <ctime>
+#include <nlohmann/json.hpp>
 namespace s2ne
 {
 class OriginalInn
@@ -59,6 +61,17 @@ public:
     }
     static Result<std::vector<uint8_t>> try_load_towns(const std::filesystem::path& root)
     {
+        const auto json_path = root / "json" / "towns.json";
+        auto json_towns = try_load_towns_json(root);
+        if (!json_towns)
+        {
+            return Result<std::vector<uint8_t>>::failure(json_towns.error());
+        }
+        if (!json_towns.value().empty())
+        {
+            std::println("Data source towns=JSON path={}", json_path.string());
+            return json_towns;
+        }
         auto pal = read_shared_resource(root / "SUPERSP.PAL"), bin = read_shared_resource(root / "SUPERSP.BIN");
         if (!pal)
         {
@@ -83,6 +96,7 @@ public:
         {
             return Result<std::vector<uint8_t>>::failure(make_error("Invalid original inn BIN4"));
         }
+        std::println("Data source towns=BIN path={}", (root / "SUPERSP.BIN").string());
         return Result<std::vector<uint8_t>>::success({ bin.value().begin() + p, bin.value().begin() + p + n - 14 });
     }
     bool closed() const { return closed_; }

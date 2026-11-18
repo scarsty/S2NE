@@ -185,14 +185,15 @@ public:
         {
             return s2ne::Result<bool>::failure(make_error("Invalid text framebuffer or palette color"));
         }
-        if (texture_resources.active() && texture_resources.small_font_ready() && !indexed)
+        if (texture_resources.small_font_ready() && !indexed)
         {
             const auto utf8 = SimpleCC::big5_to_utf8(text);
             if (!utf8.empty())
             {
                 const auto translated = SimpleCC::enabled() ? SimpleCC::shared().convert(utf8) : utf8;
                 const SDL_Color foreground{ uint8_t(std::min(255u, unsigned(pal.at(color * 3)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 1)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 2)) * 255 / 63)), 255 };
-                return texture_resources.draw_small_text(image, translated, x + (original_padding ? 1 : 0), y + (original_padding ? 1 : 0), foreground);
+                auto rendered = texture_resources.draw_small_text(image, translated, x + (original_padding ? 1 : 0), y + (original_padding ? 1 : 0), foreground);
+                return rendered;
             }
         }
         for (size_t p = 0; p < text.size();)
@@ -313,6 +314,24 @@ public:
             report_error(result.error());
         }
     }
+    void draw_small_fixed_spaces(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, bool original_padding = false) const
+    {
+        for (size_t p = 0; p < text.size();)
+        {
+            if (text[p] == ' ')
+            {
+                x += 8;
+                ++p;
+                continue;
+            }
+            unsigned width = text[p] > 0x80 ? 2 : 1;
+            if (p + width > text.size()) { break; }
+            std::vector<uint8_t> glyph(text.begin() + p, text.begin() + p + width);
+            draw_small(image, glyph, x, y, color, original_padding);
+            x += width == 2 ? 16 : 8;
+            p += width;
+        }
+    }
     s2ne::Result<bool> try_draw_big5_validated(std::vector<uint8_t>& image, const std::vector<uint8_t>& text,
         int x, int y, unsigned color, std::vector<uint8_t>* indexed = nullptr) const
     {
@@ -320,14 +339,15 @@ public:
         {
             return s2ne::Result<bool>::failure(make_error("Invalid text framebuffer or palette color"));
         }
-        if (texture_resources.active() && texture_resources.font_ready() && !indexed)
+        if (texture_resources.font_ready() && !indexed)
         {
             const auto utf8 = SimpleCC::big5_to_utf8(text);
             if (!utf8.empty())
             {
                 const auto translated = SimpleCC::enabled() ? SimpleCC::shared().convert(utf8) : utf8;
                 const SDL_Color foreground{ uint8_t(std::min(255u, unsigned(pal.at(color * 3)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 1)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 2)) * 255 / 63)), 255 };
-                return texture_resources.draw_large_text(image, translated, x, y, foreground);
+                auto rendered = texture_resources.draw_large_text(image, translated, x, y, foreground);
+                return rendered;
             }
         }
         for (size_t p = 0; p < text.size();)
@@ -477,7 +497,7 @@ public:
         {
             return s2ne::Result<bool>::failure(make_error("Invalid text framebuffer or palette color"));
         }
-        if (texture_resources.active() && texture_resources.font_ready() && !indexed)
+        if (texture_resources.font_ready() && !indexed)
         {
             const auto utf8 = SimpleCC::big5_to_utf8(text);
             if (!utf8.empty())
@@ -488,9 +508,18 @@ public:
                 {
                     const SDL_Color shadow_color{ uint8_t(std::min(255u, unsigned(pal.at(*shadow * 3)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(*shadow * 3 + 1)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(*shadow * 3 + 2)) * 255 / 63)), 255 };
                     auto rendered_shadow = texture_resources.draw_large_text(image, translated, x + 1, y + 1, shadow_color);
-                    if (!rendered_shadow) { return rendered_shadow; }
+                    if (rendered_shadow)
+                    {
+                        auto rendered = texture_resources.draw_large_text(image, translated, x, y, foreground);
+                        return rendered;
+                    }
+                    return rendered_shadow;
                 }
-                return texture_resources.draw_large_text(image, translated, x, y, foreground);
+                else
+                {
+                    auto rendered = texture_resources.draw_large_text(image, translated, x, y, foreground);
+                    return rendered;
+                }
             }
         }
         auto output = image;

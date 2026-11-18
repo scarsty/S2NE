@@ -1,9 +1,11 @@
-#pragma once
+﻿#pragma once
 #include "original_events.hpp"
 #include "original_menu.hpp"
 #include "original_script_predicates.hpp"
 #include "original_sprite.hpp"
+#include <fstream>
 #include <functional>
+#include <nlohmann/json.hpp>
 #include <optional>
 
 namespace s2ne
@@ -196,6 +198,24 @@ public:
         stage.id = id;
         stage.next = bin.number(h + 12, 1);
         stage.mode = bin.number(h + 21, 1);
+        const auto json_path = root_ / "json" / ("stage-" + std::to_string(id) + ".json");
+        if (std::filesystem::exists(json_path))
+        {
+            std::ifstream input(json_path, std::ios::binary);
+            if (!input)
+            {
+                return Result<Stage>::failure(make_error("Cannot open stage JSON route: " + json_path.string()));
+            }
+            std::string text(std::istreambuf_iterator<char>(input), {});
+            auto json = nlohmann::json::parse(text, nullptr, false);
+            if (json.is_discarded() || !json.is_object() || !json.contains("route") || !json.at("route").is_object())
+            {
+                return Result<Stage>::failure(make_error("Invalid stage JSON route: " + json_path.string()));
+            }
+            const auto& route = json.at("route");
+            stage.next = route.value("next_stage", stage.next);
+            stage.mode = route.value("mode", stage.mode);
+        }
         unsigned sections = bin.number(h + 25, 1);
         size_t values = data + sections * 4;
         if (values > end)

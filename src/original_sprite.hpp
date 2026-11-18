@@ -68,7 +68,8 @@ inline Result<bool> draw_original_sprite(std::vector<uint8_t>& image, std::span<
                 }
                 int dx = left + int(x++), dy = top + int(y);
                 // Keep the existing raw typed-image index mask distinct from RLE literals.
-                bool skip = !ink && (type || (!(op & 128) && zero == OriginalZeroRun::transparent));
+                // 原版零游程始终表示底图透明，不能覆盖页面下方的已有像素。
+                bool skip = !ink && zero == OriginalZeroRun::transparent && !(op & 128);
                 if (skip || dx < 0 || dx >= 640 || dy < 0 || dy >= 480)
                 {
                     continue;
@@ -117,7 +118,7 @@ inline Result<bool> draw_original_cel(std::vector<uint8_t>& image, std::span<con
     if (image.size() != 640u * 480 * 4 || palette.size() < 768 || (indexed && indexed->size() != 640u * 480)) { return Result<bool>::failure(make_error("Invalid PNG UI framebuffer/palette")); }
     auto output = image;
     auto result = texture_resources.draw_ui(output, id, left, top, palette, indexed);
-    if (!result) { return result; }
+    if (!result) { return draw_original_cel_legacy(image, cel, palette, id, left, top, zero, indexed); }
     image.swap(output);
     (void)cel;
     (void)zero;

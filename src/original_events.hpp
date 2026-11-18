@@ -5,15 +5,19 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <span>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
+#include <windows.h>
 
 namespace s2ne
 {
 class OriginalEvents
 {
+    std::filesystem::path root_;
     SharedBytes bin_, pal_, kinds_, items_;
     std::vector<std::optional<uint8_t>> event_types_;
     size_t events_{};
@@ -48,7 +52,20 @@ public:
         std::vector<uint8_t> name, text;
         int music_before{}, music_after{};
     };
+    struct JsonEventOverride
+    {
+        std::optional<unsigned> type, condition, flag;
+    };
+    std::vector<std::vector<Line>> json_line_overrides_;
+    bool json_stage_loaded_{};
+    std::vector<Line> opening_dialogue_override_, opening_choice_override_;
+    std::vector<JsonEventOverride> json_event_overrides_;
+    bool has_opening_dialogue_override(size_t event) const
+    {
+        return stage == 140 && (event == 0 ? opening_dialogue_override_.size() >= 1 : event == 1 && opening_choice_override_.size() >= 2);
+    }
     unsigned stage{}, first_stage{}, alternate_stage{};
+    unsigned fantasy_stage{};
     unsigned stage_music{};
     std::optional<int32_t> script_route;
     std::optional<int32_t> camera_step_delay;
@@ -906,6 +923,7 @@ public:
             return Result<OriginalEvents>::failure(make_error("Invalid new-game difficulty"));
         }
         OriginalEvents result;
+        result.root_ = root;
         result.difficulty = level;
         for (auto pair : { std::pair{ &result.bin_, "SUPERSP.BIN" }, std::pair{ &result.pal_, "SUPERSP.PAL" }, std::pair{ &result.kinds_, "KINDSP.BIN" }, std::pair{ &result.items_, "ITEMSP.BIN" } })
         {
@@ -1123,6 +1141,11 @@ public:
         }
         auto candidate = *this;
         candidate.load_stage_validated(id);
+        auto json = candidate.try_load_stage_json(id);
+        if (!json)
+        {
+            return Result<bool>::failure(json.error());
+        }
         using std::swap;
         swap(*this, candidate);
         return Result<bool>::success(true);
@@ -1138,6 +1161,10 @@ public:
     void load_stage_validated(unsigned id)
     {
         event_types_.clear();
+        json_line_overrides_.clear();
+        json_event_overrides_.clear();
+        json_stage_loaded_ = false;
+        fantasy_stage = 0;
         stage_adjustment = 0;
         size_t table = entry(1);
         if (!id || id > word(table))
@@ -1525,11 +1552,11 @@ public:
     unsigned type(size_t event) const
     {
         if (event < event_types_.size() && event_types_[event]) { return *event_types_[event]; }
-        return bin_.at(record(event));
+        return event < json_event_overrides_.size() && json_event_overrides_[event].type ? *json_event_overrides_[event].type : bin_.at(record(event));
     }
     unsigned turn(size_t event) const { return word(record(event) + 3); }
-    unsigned flag(size_t event) const { return word(record(event) + 3); }
-    unsigned condition(size_t event) const { return word(record(event) + 1); }
+    unsigned flag(size_t event) const { return event < json_event_overrides_.size() && json_event_overrides_[event].flag ? *json_event_overrides_[event].flag : word(record(event) + 3); }
+    unsigned condition(size_t event) const { return event < json_event_overrides_.size() && json_event_overrides_[event].condition ? *json_event_overrides_[event].condition : word(record(event) + 1); }
     bool flag_trigger(size_t event) const
     {
         unsigned f = flag(event);
@@ -1565,7 +1592,18 @@ public:
         unsigned f = flag(event);
         return type(event) == 9 && condition(event) == 0 && f >= 1 && f <= 80 && flags[f - 1] > 0;
     }
-    unsigned line_count(size_t event) const { return word(record(event) + 18); }
+    unsigned line_count(size_t event) const
+    {
+        if (has_opening_dialogue_override(event))
+        {
+            return unsigned(event == 0 ? opening_dialogue_override_.size() : opening_choice_override_.size());
+        }
+        if (event < json_line_overrides_.size() && !json_line_overrides_[event].empty())
+        {
+            return unsigned(json_line_overrides_[event].size());
+        }
+        return word(record(event) + 18);
+    }
     bool turn_trigger(size_t event, unsigned current_turn) const
     {
         size_t p = record(event);
@@ -1580,6 +1618,23 @@ public:
         if (event >= event_count())
         {
             return invalid();
+        }
+        if (has_opening_dialogue_override(event))
+        {
+            const auto& lines = event == 0 ? opening_dialogue_override_ : opening_choice_override_;
+            if (index >= lines.size())
+            {
+                return invalid();
+            }
+            return Result<Line>::success(lines.at(index));
+        }
+        if (event < json_line_overrides_.size() && !json_line_overrides_[event].empty())
+        {
+            if (index >= json_line_overrides_[event].size())
+            {
+                return invalid();
+            }
+            return Result<Line>::success(json_line_overrides_[event].at(index));
         }
         unsigned count = line_count(event);
         if (index >= count)
@@ -1618,6 +1673,155 @@ public:
         result.text.assign(bin_.begin() + text, bin_.begin() + text + length - 1);
         return Result<Line>::success(std::move(result));
     }
+    Result<bool> try_load_stage_json(unsigned id)
+    {
+        const auto path = root_ / "json" / ("stage-" + std::to_string(id) + ".json");
+        if (!std::filesystem::exists(path))
+        {
+            return Result<bool>::success(false);
+        }
+        static std::unordered_map<std::string, nlohmann::json> parsed_stage_json;
+        const auto key = std::filesystem::weakly_canonical(path).string();
+        auto found = parsed_stage_json.find(key);
+        if (found == parsed_stage_json.end())
+        {
+            std::ifstream input(path, std::ios::binary);
+            if (!input)
+            {
+                return Result<bool>::failure(make_error("Cannot open stage JSON: " + path.string()));
+            }
+            std::string text(std::istreambuf_iterator<char>(input), {});
+            auto parsed = nlohmann::json::parse(text, nullptr, false);
+            found = parsed_stage_json.emplace(key, std::move(parsed)).first;
+        }
+        const auto& json = found->second;
+        if (json.is_discarded() || !json.is_object())
+        {
+            return Result<bool>::failure(make_error("Invalid stage JSON format: " + path.string()));
+        }
+        for (const char* key : { "map_id", "music", "name", "briefing", "objectives", "events" })
+        {
+            if (!json.contains(key)) { return Result<bool>::failure(make_error("Missing stage JSON field '" + std::string(key) + "': " + path.string())); }
+        }
+        if (!json.at("events").is_array())
+        {
+            return Result<bool>::failure(make_error("Invalid stage JSON events: " + path.string()));
+        }
+        if (json.at("events").size() != event_count())
+        {
+            return Result<bool>::failure(make_error("Stage JSON event count mismatch: " + path.string()));
+        }
+        auto read_text = [&](const nlohmann::json& item, const char* key, std::vector<uint8_t>& output) -> bool
+        {
+            if (!item.contains(key) || !item.at(key).is_string())
+            {
+                return false;
+            }
+            const auto utf8 = item.at(key).get<std::string>();
+            if (utf8.empty())
+            {
+                output.clear();
+                return true;
+            }
+            int wide_length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), nullptr, 0);
+            if (wide_length <= 0)
+            {
+                return false;
+            }
+            std::wstring wide(size_t(wide_length), L'\0');
+            if (!MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), wide.data(), wide_length))
+            {
+                return false;
+            }
+            int byte_length = WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide.data(), wide_length, nullptr, 0, nullptr, nullptr);
+            if (byte_length <= 0)
+            {
+                return false;
+            }
+            output.resize(size_t(byte_length));
+            return WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide.data(), wide_length, reinterpret_cast<char*>(output.data()), byte_length, nullptr, nullptr) > 0;
+        };
+        auto read_optional_text = [&](const nlohmann::json& item, const char* key, std::vector<uint8_t>& output) -> bool
+        {
+            if (!item.contains(key))
+            {
+                return true;
+            }
+            return read_text(item, key, output);
+        };
+        std::vector<std::vector<Line>> loaded(event_count());
+        std::vector<JsonEventOverride> event_overrides(event_count());
+        for (size_t event = 0; event < event_count(); ++event)
+        {
+            const auto& source = json.at("events").at(event);
+            if (!source.is_object() || !source.contains("lines"))
+            {
+                continue;
+            }
+            if (source.contains("type"))
+            {
+                if (!source.at("type").is_number_unsigned()) { return Result<bool>::failure(make_error("Invalid stage JSON event type: " + path.string())); }
+                event_overrides[event].type = source.at("type").get<unsigned>();
+            }
+            if (source.contains("condition"))
+            {
+                if (!source.at("condition").is_number_integer()) { return Result<bool>::failure(make_error("Invalid stage JSON event condition: " + path.string())); }
+                event_overrides[event].condition = source.at("condition").get<unsigned>();
+            }
+            if (source.contains("branch_flag"))
+            {
+                if (!source.at("branch_flag").is_number_unsigned()) { return Result<bool>::failure(make_error("Invalid stage JSON branch flag: " + path.string())); }
+                event_overrides[event].flag = source.at("branch_flag").get<unsigned>();
+            }
+            if (!source.at("lines").is_array() || source.at("lines").size() > 64)
+            {
+                return Result<bool>::failure(make_error("Invalid stage JSON event lines: " + path.string()));
+            }
+            for (const auto& item : source.at("lines"))
+            {
+                if (!item.is_object() || !item.contains("speaker"))
+                {
+                    return Result<bool>::failure(make_error("Invalid stage JSON dialogue line: " + path.string()));
+                }
+                Line line{ item.at("speaker").get<int>(), {}, {}, item.value("music_before", 0), item.value("music_after", 0) };
+                if (!read_text(item, "name", line.name) || !read_text(item, "text", line.text))
+                {
+                    return Result<bool>::failure(make_error("Invalid stage JSON dialogue encoding: " + path.string()));
+                }
+                loaded[event].push_back(std::move(line));
+            }
+        }
+        if (!json.at("map_id").is_number_unsigned() || !json.at("music").is_number_unsigned())
+        {
+            return Result<bool>::failure(make_error("Invalid stage JSON header: " + path.string()));
+        }
+        map_id = json.at("map_id").get<unsigned>();
+        stage_music = json.at("music").get<unsigned>();
+        if (json.contains("route") && json.at("route").is_object() && json.at("route").contains("fantasy_stage"))
+        {
+            if (!json.at("route").at("fantasy_stage").is_number_unsigned())
+            {
+                return Result<bool>::failure(make_error("Invalid fantasy stage route: " + path.string()));
+            }
+            fantasy_stage = json.at("route").at("fantasy_stage").get<unsigned>();
+        }
+        if (!read_text(json, "name", stage_name) || !read_text(json, "briefing", briefing))
+        {
+            return Result<bool>::failure(make_error("Invalid stage JSON text: " + path.string()));
+        }
+        if (json.contains("objectives"))
+        {
+            const auto& objectives = json.at("objectives");
+            if (!objectives.is_object() || !objectives.contains("victory") || !objectives.contains("defeat")
+                || !read_text(objectives, "victory", victory_objective) || !read_text(objectives, "defeat", defeat_objective))
+            {
+                return Result<bool>::failure(make_error("Invalid stage JSON objectives: " + path.string()));
+            }
+        }
+        json_line_overrides_ = std::move(loaded);
+        json_stage_loaded_ = true;
+        return Result<bool>::success(true);
+    }
     Line line(size_t event, size_t index) const
     {
         auto result = try_line(event, index);
@@ -1626,6 +1830,83 @@ public:
             fatal(result.error());
         }
         return std::move(result).value();
+    }
+    Result<bool> try_load_opening_dialogue_override(const std::filesystem::path& path)
+    {
+        if (!std::filesystem::exists(path))
+        {
+            opening_dialogue_override_.clear();
+            return Result<bool>::success(false);
+        }
+        std::ifstream input(path, std::ios::binary);
+        if (!input)
+        {
+            return Result<bool>::failure(make_error("Cannot open opening dialogue override: " + path.string()));
+        }
+        std::string text(std::istreambuf_iterator<char>(input), {});
+        auto json = nlohmann::json::parse(text, nullptr, false);
+        if (json.is_discarded() || !json.is_object())
+        {
+            return Result<bool>::failure(make_error("Invalid opening dialogue override format: " + path.string()));
+        }
+        auto load_lines = [&](const nlohmann::json& source, std::vector<Line>& destination) -> Result<bool>
+        {
+            if (!source.is_array())
+            {
+                return Result<bool>::failure(make_error("Missing opening dialogue event lines: " + path.string()));
+            }
+            std::vector<Line> loaded;
+            for (const auto& item : source)
+            {
+                if (!item.is_object() || !item.contains("speaker"))
+                {
+                    return Result<bool>::failure(make_error("Invalid opening dialogue override line: " + path.string()));
+                }
+                Line line{ item.at("speaker").get<int>(), {}, {} };
+                line.music_before = item.value("music_before", 0);
+                line.music_after = item.value("music_after", 0);
+                auto read_text = [&](const char* text_key, const char* bytes_key, std::vector<uint8_t>& output) -> bool
+                {
+                    if (item.contains(text_key) && item.at(text_key).is_string())
+                    {
+                        const auto utf8 = item.at(text_key).get<std::string>();
+                        const int wide_length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), nullptr, 0);
+                        if (wide_length <= 0) { return false; }
+                        std::wstring wide(size_t(wide_length), L'\0');
+                        MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), wide.data(), wide_length);
+                        const int byte_length = WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide.data(), wide_length, nullptr, 0, nullptr, nullptr);
+                        if (byte_length <= 0) { return false; }
+                        output.resize(size_t(byte_length));
+                        return WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide.data(), wide_length, reinterpret_cast<char*>(output.data()), byte_length, nullptr, nullptr) > 0;
+                    }
+                    if (!item.contains(bytes_key) || !item.at(bytes_key).is_array()) { return false; }
+                    for (const auto& byte : item.at(bytes_key))
+                    {
+                        if (!byte.is_number_unsigned() || byte.get<unsigned>() > 255) { return false; }
+                        output.push_back(uint8_t(byte.get<unsigned>()));
+                    }
+                    return true;
+                };
+                if (!read_text("name", "name_bytes", line.name) || !read_text("text", "text_bytes", line.text))
+                {
+                    return Result<bool>::failure(make_error("Invalid opening dialogue text encoding: " + path.string()));
+                }
+                loaded.push_back(std::move(line));
+            }
+            if (loaded.empty() || loaded.size() > 16) { return Result<bool>::failure(make_error("Invalid opening dialogue override line count")); }
+            destination = std::move(loaded);
+            return Result<bool>::success(true);
+        };
+        if (!json.contains("events") || !json.at("events").is_array() || json.at("events").size() < 2 || !json.at("events").at(0).contains("lines") || !json.at("events").at(1).contains("lines"))
+        {
+            return Result<bool>::failure(make_error("Missing opening dialogue event lines: " + path.string()));
+        }
+        auto dialogue = load_lines(json.at("events").at(0).at("lines"), opening_dialogue_override_);
+        if (!dialogue) { return dialogue; }
+        auto choices = load_lines(json.at("events").at(1).at("lines"), opening_choice_override_);
+        if (!choices) { return choices; }
+        if (opening_choice_override_.size() < 2) { return Result<bool>::failure(make_error("Opening dialogue override requires 2..16 choices")); }
+        return Result<bool>::success(true);
     }
     void complete(size_t event)
     {

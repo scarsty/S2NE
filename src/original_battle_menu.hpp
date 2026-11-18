@@ -57,6 +57,7 @@ private:
     std::filesystem::path root_;
     OriginalMenu font_;
     SharedBytes pal_, cel_;
+    OriginalPalette palette_;
     Context context_;
     OriginalSettings::State settings_state_;
     Page page_ = Page::root, confirmation_parent_ = Page::root, operation_parent_ = Page::root;
@@ -152,7 +153,7 @@ private:
         }
         return system_ids.at(row);
     }
-    void draw_page(std::vector<uint8_t>& image, Page page, int selection, bool draw_labels = true) const
+    void draw_page(std::vector<uint8_t>& image, Page page, int selection, bool draw_labels = true, bool draw_pressed = false) const
     {
         if (page == Page::root)
         {
@@ -164,13 +165,16 @@ private:
             if (!draw_labels) { return; }
             for (int row = 0; row < (context_.byte_4f6f4d == 2 ? 6 : 5); ++row)
             {
+                if (draw_pressed && row == selection)
+                {
+                    sprite(image, 195, left_ + 145, top_ + 139 + row * 31, true);
+                }
                 auto bytes = font_.text_bytes(root_ids[row]);
                 font_.draw_original_large(image, bytes, 320 - int(bytes.size()) * 6, top_ + 140 + row * 31, row == selection ? 119 : 233);
             }
         }
         else
         {
-            OriginalPalette(pal_).transform(image, 0, 480, 6);
             sprite(image, page == Page::overview ? 201 : 200, submenu_left(), submenu_top(), true);
             unsigned title = page == Page::overview ? 122 : 127;
             auto bytes = font_.text_bytes(title);
@@ -185,7 +189,7 @@ private:
     }
 
 public:
-    OriginalBattleMenu(const std::filesystem::path& root, Context context, OriginalSettings::State state) : root_(root), font_(root), pal_(read(root / "SUPERSP.PAL")), cel_(read(root / "SUPERSP.CEL")), context_(context), settings_state_(state)
+    OriginalBattleMenu(const std::filesystem::path& root, Context context, OriginalSettings::State state) : root_(root), font_(root), pal_(read(root / "SUPERSP.PAL")), cel_(read(root / "SUPERSP.CEL")), palette_(pal_), context_(context), settings_state_(state)
     {
         pal_.mutable_at(0) = pal_.mutable_at(1) = pal_.mutable_at(2) = 0;
         font_.small_font = state.small_font != 0;
@@ -471,7 +475,14 @@ public:
             return s2ne::Result<std::vector<uint8_t>>::success(battlefield);
         }
         auto image = battlefield;
-        draw_page(image, Page::root, page_ == Page::root ? selected_ : root_selected_, page_ == Page::root);
+        auto dimmed = palette_.try_transform_rect(image, 0, 0, 640, 480, 6);
+        if (!dimmed)
+        {
+            report_error(dimmed.error());
+        }
+        const bool show_root_labels = page_ == Page::root || (page_ == Page::confirmation && confirmation_parent_ == Page::root);
+        draw_page(image, Page::root, page_ == Page::root ? selected_ : root_selected_, show_root_labels,
+            page_ == Page::confirmation && confirmation_parent_ == Page::root);
         const Page* visiblePage;
         if (page_ == Page::confirmation) { visiblePage = &(confirmation_parent_); }
         else if (page_ == Page::operation) { visiblePage = &(operation_parent_); }

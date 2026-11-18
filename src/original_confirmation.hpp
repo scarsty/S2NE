@@ -79,24 +79,6 @@ public:
     s2ne::Result<bool> try_draw(std::vector<uint8_t>& image, const OriginalMenu& font) const
     {
         // 431997 calls 475970 with fill=0: outline the embedded O/X artwork.
-        size_t group = dword(pal_, 816) - 57, p = group + dword(cel_, group + 2 + (197 - 142) * 8);
-        int width = int(word(cel_, p)) + 1, height = int(word(cel_, p + 2)) + 1 - 10;
-        OriginalPalette effects(pal_);
-        if (width > 0 && width <= 630 && height > 0 && height <= 468)
-        {
-            if (x_ < 8)
-            {
-                if (y_ + height + 18 < 479)
-                {
-                    effects.transform_rect(image, 0, y_ + 8 + height, width, 8, 6);
-                }
-            }
-            else
-            {
-                effects.transform_rect(image, x_ - 8, y_ + 8, 8, height, 6);
-                effects.transform_rect(image, x_ - 8, y_ + 8 + height, width, 8, 6);
-            }
-        }
         {
             auto rendered = try_sprite(image, 197, x_, y_);
             if (!rendered)
