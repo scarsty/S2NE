@@ -1,0 +1,252 @@
+﻿{
+    "map_id":  87,
+    "music":  31,
+    "route":  {
+                  "next_stage":  88,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  87
+              },
+    "units":  [
+                  {
+                      "id":  0,
+                      "appearance":  80,
+                      "name":  "戰鬥機甲",
+                      "x":  11,
+                      "y":  33,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  320,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        83,
+                                        144,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  80,
+                      "name":  "戰鬥機甲",
+                      "x":  11,
+                      "y":  45,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  320,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        83,
+                                        144,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  80,
+                      "name":  "戰鬥機甲",
+                      "x":  2,
+                      "y":  49,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  320,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        83,
+                                        144,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  80,
+                      "name":  "戰鬥機甲",
+                      "x":  21,
+                      "y":  61,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  320,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        83,
+                                        144,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  80,
+                      "name":  "戰鬥機甲",
+                      "x":  19,
+                      "y":  52,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  320,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        83,
+                                        144,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  3,
+                                                "y":  77,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  3,
+                                                "y":  79,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  1,
+                                                "y":  75,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  4,
+                                                "y":  79,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  5,
+                             "deployment":  {
+                                                "x":  2,
+                                                "y":  75,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  6,
+                             "deployment":  {
+                                                "x":  2,
+                                                "y":  77,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  3,
+                           "y":  77,
+                           "direction":  2,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  3,
+                           "y":  79,
+                           "direction":  2,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  1,
+                           "y":  75,
+                           "direction":  2,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  4,
+                           "y":  79,
+                           "direction":  2,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  2,
+                           "y":  75,
+                           "direction":  2,
+                           "role_id":  5,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  2,
+                           "y":  77,
+                           "direction":  2,
+                           "role_id":  6,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "機甲守衛",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.殲滅所有的機甲部隊。",
+                       "defeat":  "娜塔莉雅陣亡。"
+                   },
+    "events":  [
+
+               ]
+}

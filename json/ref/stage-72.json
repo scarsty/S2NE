@@ -1,0 +1,420 @@
+﻿{
+    "map_id":  72,
+    "music":  18,
+    "route":  {
+                  "next_stage":  73,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  72
+              },
+    "units":  [
+                  {
+                      "id":  45,
+                      "appearance":  77,
+                      "name":  "黑精靈",
+                      "x":  20,
+                      "y":  32,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  196,
+                      "max_hp":  89,
+                      "equipment":  [
+                                        48,
+                                        106,
+                                        159,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  108,
+                      "name":  "樹妖",
+                      "x":  23,
+                      "y":  30,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  170,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  108,
+                      "name":  "樹妖",
+                      "x":  6,
+                      "y":  38,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  170,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  108,
+                      "name":  "樹妖",
+                      "x":  7,
+                      "y":  69,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  170,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  108,
+                      "name":  "樹妖",
+                      "x":  14,
+                      "y":  18,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  170,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  105,
+                      "name":  "石化蜥蜴",
+                      "x":  20,
+                      "y":  24,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  110,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  105,
+                      "name":  "石化蜥蜴",
+                      "x":  8,
+                      "y":  38,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  110,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  105,
+                      "name":  "石化蜥蜴",
+                      "x":  18,
+                      "y":  48,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  110,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  107,
+                      "name":  "蝙蝠",
+                      "x":  7,
+                      "y":  57,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  85,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  107,
+                      "name":  "蝙蝠",
+                      "x":  11,
+                      "y":  53,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  85,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  107,
+                      "name":  "蝙蝠",
+                      "x":  17,
+                      "y":  5,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  85,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  107,
+                      "name":  "蝙蝠",
+                      "x":  21,
+                      "y":  68,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  85,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  3,
+                                                "y":  21,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  2,
+                                                "y":  23,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  5,
+                                                "y":  22,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  3,
+                                                "y":  25,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  3,
+                           "y":  21,
+                           "direction":  1,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  2,
+                           "y":  23,
+                           "direction":  1,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  5,
+                           "y":  22,
+                           "direction":  1,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  3,
+                           "y":  25,
+                           "direction":  1,
+                           "role_id":  4,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "青色草原",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.清除此地的所有妖物。",
+                       "defeat":  "娜塔莉雅、穆爾或泰普或蘇任何一人陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "青色草原....連這裡也出現了妖怪，看來聖地內一定出事了。"
+                                     },
+                                     {
+                                         "speaker":  2,
+                                         "name":  "穆爾",
+                                         "text":  "這些妖物的行動不成章法，不像是有預謀的行動....倒像是受了驚亂跑。"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "我才不管這些妖物是受到指使還是到處亂跑而已，用力打就對了！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  2,
+                       "completion_flag":  0,
+                       "lines":  [
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "解決啦，妖怪怎麼會是我們的對手。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "可是....妖物群中有黑精靈存在，總覺得事情不太單純。"
+                                     },
+                                     {
+                                         "speaker":  4,
+                                         "name":  "蘇",
+                                         "text":  "....在聖地方向傳來奇怪的氣息，也許我們該加快腳步。"
+                                     },
+                                     {
+                                         "speaker":  2,
+                                         "name":  "穆爾",
+                                         "text":  "嗯，那我們該走小路早點趕去，往旁邊走吧。"
+                                     }
+                                 ]
+                   }
+               ]
+}

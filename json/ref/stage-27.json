@@ -1,0 +1,986 @@
+﻿{
+    "map_id":  27,
+    "music":  2,
+    "route":  {
+                  "next_stage":  46,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  27
+              },
+    "units":  [
+                  {
+                      "id":  1,
+                      "appearance":  91,
+                      "name":  "娜塔莉雅",
+                      "x":  4,
+                      "y":  85,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  398,
+                      "max_hp":  92,
+                      "equipment":  [
+                                        23,
+                                        134,
+                                        153,
+                                        169,
+                                        194,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  2,
+                      "appearance":  19,
+                      "name":  "穆爾",
+                      "x":  4,
+                      "y":  87,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  436,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        176,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  3,
+                      "appearance":  22,
+                      "name":  "泰普",
+                      "x":  4,
+                      "y":  83,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  540,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        66,
+                                        137,
+                                        156,
+                                        179,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  4,
+                      "appearance":  64,
+                      "name":  "蘇",
+                      "x":  5,
+                      "y":  87,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  312,
+                      "max_hp":  176,
+                      "equipment":  [
+                                        37,
+                                        110,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  5,
+                      "appearance":  10,
+                      "name":  "古斯塔夫",
+                      "x":  6,
+                      "y":  87,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  524,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        66,
+                                        137,
+                                        156,
+                                        179,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  6,
+                      "appearance":  54,
+                      "name":  "黛西",
+                      "x":  5,
+                      "y":  85,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  374,
+                      "max_hp":  20,
+                      "equipment":  [
+                                        52,
+                                        122,
+                                        157,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  29,
+                      "appearance":  46,
+                      "name":  "瓦倫婷",
+                      "x":  15,
+                      "y":  56,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  420,
+                      "max_hp":  88,
+                      "equipment":  [
+                                        6,
+                                        121,
+                                        149,
+                                        169,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  47,
+                      "name":  "騎兵隊",
+                      "x":  1,
+                      "y":  84,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  8,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  412,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        84,
+                                        144,
+                                        165,
+                                        183,
+                                        203,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  47,
+                      "name":  "騎兵隊",
+                      "x":  2,
+                      "y":  85,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  8,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  412,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        84,
+                                        144,
+                                        165,
+                                        183,
+                                        203,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  47,
+                      "name":  "騎兵隊",
+                      "x":  3,
+                      "y":  87,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  8,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  412,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        84,
+                                        144,
+                                        165,
+                                        183,
+                                        203,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  47,
+                      "name":  "騎兵隊",
+                      "x":  1,
+                      "y":  88,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  8,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  412,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        84,
+                                        144,
+                                        165,
+                                        183,
+                                        203,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  13,
+                      "name":  "弓弩手",
+                      "x":  8,
+                      "y":  50,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  374,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        58,
+                                        116,
+                                        165,
+                                        183,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  13,
+                      "name":  "弓弩手",
+                      "x":  9,
+                      "y":  47,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  374,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        58,
+                                        116,
+                                        165,
+                                        183,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  13,
+                      "name":  "弓弩手",
+                      "x":  11,
+                      "y":  44,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  374,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        58,
+                                        116,
+                                        165,
+                                        183,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  13,
+                      "name":  "弓弩手",
+                      "x":  12,
+                      "y":  41,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  374,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        58,
+                                        116,
+                                        165,
+                                        183,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  13,
+                      "name":  "弓弩手",
+                      "x":  14,
+                      "y":  38,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  374,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        58,
+                                        116,
+                                        165,
+                                        183,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  38,
+                      "name":  "長槍兵",
+                      "x":  17,
+                      "y":  50,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        84,
+                                        144,
+                                        165,
+                                        183,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  38,
+                      "name":  "長槍兵",
+                      "x":  18,
+                      "y":  51,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        84,
+                                        144,
+                                        165,
+                                        183,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  38,
+                      "name":  "長槍兵",
+                      "x":  19,
+                      "y":  48,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        84,
+                                        144,
+                                        165,
+                                        183,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  38,
+                      "name":  "長槍兵",
+                      "x":  16,
+                      "y":  44,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        84,
+                                        144,
+                                        165,
+                                        183,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  38,
+                      "name":  "長槍兵",
+                      "x":  21,
+                      "y":  53,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        84,
+                                        144,
+                                        165,
+                                        183,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  7,
+                      "name":  "軍醫",
+                      "x":  17,
+                      "y":  43,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  356,
+                      "max_hp":  110,
+                      "equipment":  [
+                                        44,
+                                        117,
+                                        163,
+                                        182,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  7,
+                      "name":  "軍醫",
+                      "x":  20,
+                      "y":  49,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  356,
+                      "max_hp":  110,
+                      "equipment":  [
+                                        44,
+                                        117,
+                                        163,
+                                        182,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  7,
+                      "name":  "軍醫",
+                      "x":  9,
+                      "y":  45,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  356,
+                      "max_hp":  110,
+                      "equipment":  [
+                                        44,
+                                        117,
+                                        163,
+                                        182,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  7,
+                      "name":  "軍醫",
+                      "x":  12,
+                      "y":  39,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  356,
+                      "max_hp":  110,
+                      "equipment":  [
+                                        44,
+                                        117,
+                                        163,
+                                        182,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  72,
+                      "appearance":  22,
+                      "name":  "瘋狂戰士",
+                      "x":  19,
+                      "y":  35,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  790,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        72,
+                                        144,
+                                        165,
+                                        183,
+                                        202,
+                                        238
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  2,
+                                                "y":  78,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  14,
+                             "deployment":  {
+                                                "x":  2,
+                                                "y":  82,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  15,
+                             "deployment":  {
+                                                "x":  1,
+                                                "y":  78,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  13,
+                             "deployment":  {
+                                                "x":  1,
+                                                "y":  84,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  16,
+                             "deployment":  {
+                                                "x":  3,
+                                                "y":  80,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  17,
+                             "deployment":  {
+                                                "x":  2,
+                                                "y":  80,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  6,
+                             "role_id":  18,
+                             "deployment":  {
+                                                "x":  1,
+                                                "y":  80,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  2,
+                           "y":  78,
+                           "direction":  2,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  2,
+                           "y":  82,
+                           "direction":  2,
+                           "role_id":  14,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  1,
+                           "y":  78,
+                           "direction":  2,
+                           "role_id":  15,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  1,
+                           "y":  84,
+                           "direction":  2,
+                           "role_id":  13,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  3,
+                           "y":  80,
+                           "direction":  2,
+                           "role_id":  16,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  2,
+                           "y":  80,
+                           "direction":  2,
+                           "role_id":  17,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  1,
+                           "y":  80,
+                           "direction":  2,
+                           "role_id":  18,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "情報網",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.消滅此地所有的敵兵。",
+                       "defeat":  "白志超或娜塔莉雅或瓦倫婷陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "她不是妳們族內的人或是朋友嗎？"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "不是。難道你們也不認識這個人嗎？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "不認識，這就奇了....。"
+                                     },
+                                     {
+                                         "speaker":  16,
+                                         "name":  "刑天",
+                                         "text":  "先不管這麼多了，救人要緊。"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "對，南方領的敵人就是我們的朋友，先救了再說。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  4
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  72,
+                                         "name":  "瘋狂戰士",
+                                         "text":  "你們這些廢物！到現在還沒有完成任務嗎？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "嘿，來了一個中氣十足的戰士，還不錯嘛。"
+                                     },
+                                     {
+                                         "speaker":  72,
+                                         "name":  "瘋狂戰士",
+                                         "text":  "看我的！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  8
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "後面還有人來了，要小心！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  25,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  29,
+                                            "offset_7":  1,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  2,
+                       "completion_flag":  14,
+                       "condition":  1,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "妳是什麼人？又為何會被夏普的手下追殺。"
+                                     },
+                                     {
+                                         "speaker":  29,
+                                         "name":  "瓦倫婷",
+                                         "text":  "這些人不是夏普的手下，夏普根本不會注意到這些事情....。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "哦？"
+                                     },
+                                     {
+                                         "speaker":  29,
+                                         "name":  "瓦倫婷",
+                                         "text":  "我叫做瓦倫婷，是赤子國派在南方的探子，蒐集在亞修斯周遭的相關情報，像兩位最近的事跡我是很清楚的。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "(慘了，這下子赤子國全知道了。)"
+                                     },
+                                     {
+                                         "speaker":  29,
+                                         "name":  "瓦倫婷",
+                                         "text":  "亞修斯發生政變後，四處城門日夜都禁止通行，防止消息走漏。赤子國、迦納國、奧里國、白特國等派駐在此地的探子都想離城把消息送出去，打破以往假裝不知道對方存在的慣例，買通了西門的守衛趁夜出城....。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "那碰到什麼變故？變成妳被追殺？"
+                                     },
+                                     {
+                                         "speaker":  29,
+                                         "name":  "瓦倫婷",
+                                         "text":  "西門外不到一里處埋伏了克雷布特里的手下，一見面就殺人，在我逃開之前就死傷過半了....。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "妳說克雷布特里在政變時還花費心思專門對付妳們這些情報探子？不太合理吧。"
+                                     },
+                                     {
+                                         "speaker":  29,
+                                         "name":  "瓦倫婷",
+                                         "text":  "事情就是這樣，我沒有必要說謊。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "....不對，妳還隱藏了很多事沒說。事情不會這般簡單。"
+                                     },
+                                     {
+                                         "speaker":  29,
+                                         "name":  "瓦倫婷",
+                                         "text":  "....不錯，我還有一些情報可以告訴你，不過你也得負責派人護送我回赤子國，怎麼樣？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "妳要價太兇了，我們可是剛剛才救妳出來的耶！"
+                                     },
+                                     {
+                                         "speaker":  29,
+                                         "name":  "瓦倫婷",
+                                         "text":  "所以我不會告訴我的上司有關迦納國官方人員秘密出現在南方的實情，這交換條件不算差吧。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "好吧，妳需要多少人保護妳？"
+                                     },
+                                     {
+                                         "speaker":  29,
+                                         "name":  "瓦倫婷",
+                                         "text":  "不多不多，刑天秋月兩位大劍士足矣。"
+                                     },
+                                     {
+                                         "speaker":  14,
+                                         "name":  "飛霜",
+                                         "text":  "(哼，他們兩個的名頭真響啊，不愧威震四海。)"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "我投降了，妳說吧。"
+                                     },
+                                     {
+                                         "speaker":  29,
+                                         "name":  "瓦倫婷",
+                                         "text":  "我們幾國的密探交換過情報，發現一項驚人的事實：根本不存在克雷布特里這個人！"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "什麼！？這句話是什麼意思？"
+                                     },
+                                     {
+                                         "speaker":  29,
+                                         "name":  "瓦倫婷",
+                                         "text":  "沒有他的家鄉資料，沒有查到過認識他的人，在他成為首席事務官之前，他沒有過去！"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "嗯....一個沒有過去或刻意消除過去的人。他還做過些什麼？"
+                                     },
+                                     {
+                                         "speaker":  29,
+                                         "name":  "瓦倫婷",
+                                         "text":  "你想想....妳們奚族和南方領彼此水火不容，是為了些什麼？長期的就不談了，最近的導火線就是奪取提那城附近的礦場。事實上，這件事夏普根本不知情！而這次行動的主使人就是克雷布特里。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "這我就不懂了，以他小丑家臣的身份好好地欺上瞞下，保證可以過得好好的，何必親自主持這種大費周章的雜事呢？"
+                                     },
+                                     {
+                                         "speaker":  29,
+                                         "name":  "瓦倫婷",
+                                         "text":  "這我就不明白了。城內的政變已經結束了，貝洛元帥奪取了政權，而克雷布特里陣前倒戈投效了貝洛，繼續保有他的官職，究竟事態會如何發展，我也不能拿捏，只有先回報了。白志超，可以請刑天秋月兩位劍俠送我一程了吧？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "就如妳所願吧。兩位請代勞這一趟，護送這位「密諜」回赤子國吧。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  16,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  17,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  29,
+                                         "name":  "瓦倫婷",
+                                         "text":  "再見了。"
+                                     }
+                                 ]
+                   }
+               ]
+}

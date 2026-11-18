@@ -1,0 +1,317 @@
+﻿{
+    "map_id":  20,
+    "music":  18,
+    "route":  {
+                  "next_stage":  23,
+                  "alternate_stage":  0,
+                  "mode":  3
+              },
+    "units":  [
+                  {
+                      "id":  1,
+                      "appearance":  89,
+                      "name":  "娜塔莉雅",
+                      "x":  3,
+                      "y":  65,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  300,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        21,
+                                        110,
+                                        160,
+                                        180,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  2,
+                      "appearance":  19,
+                      "name":  "穆爾",
+                      "x":  2,
+                      "y":  64,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  290,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  3,
+                      "appearance":  22,
+                      "name":  "泰普",
+                      "x":  2,
+                      "y":  67,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  372,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        150,
+                                        176,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  4,
+                      "appearance":  53,
+                      "name":  "蘇",
+                      "x":  3,
+                      "y":  67,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  180,
+                      "max_hp":  101,
+                      "equipment":  [
+                                        35,
+                                        107,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  11,
+                                                "y":  51,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  14,
+                             "deployment":  {
+                                                "x":  9,
+                                                "y":  50,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  15,
+                             "deployment":  {
+                                                "x":  11,
+                                                "y":  47,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  13,
+                             "deployment":  {
+                                                "x":  9,
+                                                "y":  46,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  11,
+                           "y":  51,
+                           "direction":  3,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  9,
+                           "y":  50,
+                           "direction":  2,
+                           "role_id":  14,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  11,
+                           "y":  47,
+                           "direction":  0,
+                           "role_id":  15,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  9,
+                           "y":  46,
+                           "direction":  1,
+                           "role_id":  13,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "劫獄前",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.無。",
+                       "defeat":  "白志超陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  15,
+                                         "name":  "艾文",
+                                         "text":  "哇哈哈，還是我們贏了！"
+                                     },
+                                     {
+                                         "speaker":  14,
+                                         "name":  "飛霜",
+                                         "text":  "得意什麼，你剛才還被騎兵追的到處跑呢？"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  8,
+                       "completion_flag":  0,
+                       "condition":  3,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  1,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "白志超....。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  14,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  13,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  11,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  7,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  1,
+                                            "offset_7":  10,
+                                            "offset_9":  54
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  1,
+                                            "offset_7":  2,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "啊哈，妳們也出來了，領主府任由我們進出自如，實在中看不中用。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "先別談這些，我們有朋友被逮，送到牢裡去了。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "我們？"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "對，剛才碰到的小兵說的，你們的朋友也被捉了。我擔心牢裡敵人太多，想找你們一起回頭救人。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "刑天他們失手了....！嗯，事關緊要，我們快走吧。"
+                                     }
+                                 ]
+                   }
+               ]
+}

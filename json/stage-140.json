@@ -5,7 +5,7 @@
     "next_stage": 1,
     "alternate_stage": 0,
     "mode": 3,
-    "fantasy_stage": 200
+    "fantasy_stage": 201
   },
   "units": [
     {
@@ -167,7 +167,7 @@
         {
           "speaker": 42,
           "name": "彥清風",
-          "text": "讓兩位主角合流，走一條未曾寫定的幻想路線。"
+          "text": "第三條路，將由兩位主角共同開拓。"
         }
       ]
     },
@@ -206,8 +206,9 @@
       "branch_flag": 13,
       "branch_value": 3,
       "lines": [
-        { "speaker": 11, "name": "白志超", "text": "這一次，我們不再各走各的路。" },
-        { "speaker": 1, "name": "娜塔莉雅", "text": "就讓兩段旅程在此交會，一起走下去吧。" }
+        { "speaker": 11, "name": "白志超", "text": "我是白志超，先替大家探路。" },
+        { "speaker": 1, "name": "娜塔莉雅", "text": "我是娜塔莉雅，稍後與你會合。" },
+        { "speaker": 11, "name": "白志超", "text": "兩位主角，就從這裡一起出發。" }
       ]
     },
     {

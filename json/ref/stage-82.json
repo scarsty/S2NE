@@ -1,0 +1,499 @@
+﻿{
+    "map_id":  82,
+    "music":  15,
+    "route":  {
+                  "next_stage":  83,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  82
+              },
+    "units":  [
+                  {
+                      "id":  147,
+                      "appearance":  19,
+                      "name":  "祁師傅",
+                      "x":  5,
+                      "y":  17,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  438,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        118,
+                                        149,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  14,
+                      "name":  "賈府保鑣",
+                      "x":  2,
+                      "y":  23,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  210,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        19,
+                                        118,
+                                        149,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  14,
+                      "name":  "賈府保鑣",
+                      "x":  9,
+                      "y":  14,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  210,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        19,
+                                        118,
+                                        149,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  14,
+                      "name":  "賈府保鑣",
+                      "x":  12,
+                      "y":  41,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  210,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        19,
+                                        118,
+                                        149,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  14,
+                      "name":  "賈府保鑣",
+                      "x":  10,
+                      "y":  35,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  210,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        19,
+                                        118,
+                                        149,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  52,
+                      "name":  "幻術師",
+                      "x":  4,
+                      "y":  21,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  159,
+                      "max_hp":  74,
+                      "equipment":  [
+                                        34,
+                                        106,
+                                        159,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  52,
+                      "name":  "幻術師",
+                      "x":  12,
+                      "y":  35,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  159,
+                      "max_hp":  74,
+                      "equipment":  [
+                                        34,
+                                        106,
+                                        159,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  52,
+                      "name":  "幻術師",
+                      "x":  12,
+                      "y":  30,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  159,
+                      "max_hp":  74,
+                      "equipment":  [
+                                        34,
+                                        106,
+                                        159,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  17,
+                      "name":  "巫術士",
+                      "x":  7,
+                      "y":  15,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  161,
+                      "max_hp":  64,
+                      "equipment":  [
+                                        34,
+                                        106,
+                                        159,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  17,
+                      "name":  "巫術士",
+                      "x":  14,
+                      "y":  32,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  161,
+                      "max_hp":  64,
+                      "equipment":  [
+                                        34,
+                                        106,
+                                        159,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  17,
+                      "name":  "巫術士",
+                      "x":  20,
+                      "y":  32,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  161,
+                      "max_hp":  64,
+                      "equipment":  [
+                                        34,
+                                        106,
+                                        159,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  95,
+                      "appearance":  45,
+                      "name":  "賈府保鑣",
+                      "x":  3,
+                      "y":  26,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  247,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        63,
+                                        132,
+                                        152,
+                                        169,
+                                        188,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  45,
+                      "name":  "賈府保鑣",
+                      "x":  17,
+                      "y":  32,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  247,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        63,
+                                        132,
+                                        152,
+                                        169,
+                                        188,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  45,
+                      "name":  "賈府保鑣",
+                      "x":  18,
+                      "y":  28,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  247,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        63,
+                                        132,
+                                        152,
+                                        169,
+                                        188,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  45,
+                      "name":  "賈府保鑣",
+                      "x":  14,
+                      "y":  28,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  247,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        63,
+                                        132,
+                                        152,
+                                        169,
+                                        188,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  21,
+                                                "y":  45,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  21,
+                                                "y":  54,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  20,
+                                                "y":  56,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  19,
+                                                "y":  43,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  5,
+                             "deployment":  {
+                                                "x":  19,
+                                                "y":  52,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  6,
+                             "deployment":  {
+                                                "x":  20,
+                                                "y":  44,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  21,
+                           "y":  45,
+                           "direction":  3,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  21,
+                           "y":  54,
+                           "direction":  3,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  20,
+                           "y":  56,
+                           "direction":  3,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  19,
+                           "y":  43,
+                           "direction":  3,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  19,
+                           "y":  52,
+                           "direction":  3,
+                           "role_id":  5,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  20,
+                           "y":  44,
+                           "direction":  3,
+                           "role_id":  6,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "惡德商人",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.打敗祁師傅。",
+                       "defeat":  "娜塔莉雅陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  95,
+                                         "name":  "賈府保鑣",
+                                         "text":  "什麼人敢擅闖賈府? "
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  13,
+                       "condition":  2,
+                       "role_id":  147,
+                       "lines":  [
+                                     {
+                                         "speaker":  147,
+                                         "name":  "祁師傅",
+                                         "text":  "老夫竟然敗在你們手裡....真不甘心。"
+                                     }
+                                 ]
+                   }
+               ]
+}

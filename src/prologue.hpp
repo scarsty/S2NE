@@ -56,6 +56,7 @@ class Prologue
     mutable int spell_shake_cursor_{ -1 };
     unsigned skill32_target_{};
     std::optional<Battle::Point> skill_area_center_;
+    bool battle_menu_overlay_{};
     std::function<void()> skill94_death_commit_;
     bool skill94_death_presented_{};
     unsigned skill94_death_frame_{};
@@ -4524,6 +4525,7 @@ public:
         }
     }
     void set_checker_mask(bool enabled) { map_.set_checker_mask(enabled); }
+    void set_battle_menu_overlay(bool enabled) { battle_menu_overlay_ = enabled; }
     void sync_movement_contexts()
     {
         events.rebuild_army_modes();
@@ -4628,7 +4630,7 @@ public:
             }
             return;
         }
-        if (choosing() && x >= 149 && y >= 209 && y < 261)
+        if (choosing() && x >= 149 && y >= 209 && y < 209 + (int(events.line_count(event_)) - 1) * 26)
         {
             int row = int(y - 209) / 26;
             if (row != selection_)
@@ -5090,6 +5092,23 @@ public:
                     return Result<bool>::success(true);
                 }
             }
+            if (chosen_ == 3 && events.fantasy_stage)
+            {
+                // 新增路线的分支记录来自 JSON，不能继续使用选择事件自身的对白。
+                for (size_t i = 0; i < events.event_count(); ++i)
+                {
+                    if (events.type(i) == 5 && events.condition(i) == 3 && events.flag(i) == 13)
+                    {
+                        event_ = i;
+                        events.consume_branch(i);
+                        line_ = 0;
+                        phase_ = Phase::branch;
+                        prepare();
+                        return Result<bool>::success(true);
+                    }
+                }
+                return Result<bool>::failure(make_error("Missing JSON fantasy choice branch"));
+            }
             return Result<bool>::failure(make_error("Missing original choice branch"));
         }
         if (phase_ == Phase::briefing)
@@ -5222,6 +5241,11 @@ public:
         }
         else if (phase_ == Phase::branch)
         {
+            if (chosen_ == 3 && events.type(event_) == 5 && events.condition(event_) == 3 && events.fantasy_stage)
+            {
+                phase_ = Phase::flag_dialogue;
+                return Result<bool>::success(true);
+            }
             for (size_t i = 0; i < events.event_count(); ++i)
             {
                 if (events.flag_dialogue_trigger(i))
@@ -5243,7 +5267,7 @@ public:
                 if (!events.fantasy_stage) { return Result<bool>::failure(make_error("Fantasy route target is not configured")); }
                 next_stage = events.fantasy_stage;
             }
-            if (next_stage > 168) { return Result<bool>::failure(make_error("Fantasy route target stage is not exported: " + std::to_string(next_stage))); }
+            if (next_stage > 168 && next_stage < 201) { return Result<bool>::failure(make_error("Fantasy route target stage is not exported: " + std::to_string(next_stage))); }
             events.load_stage(next_stage);
             if (auto request = OriginalCampaign::save_request(OriginalCampaign::SavePoint::before_stage_story, 0, 1))
             {
@@ -5624,7 +5648,7 @@ public:
                         }
                     });
             }
-            if (in_battle() && !battle_->animating_movement() && (battle_->state() == Battle::State::command || battle_->state() == Battle::State::attack_menu))
+            if (!battle_menu_overlay_ && in_battle() && !battle_->animating_movement() && (battle_->state() == Battle::State::command || battle_->state() == Battle::State::attack_menu))
             {
                 // sub_43AA52 uses CEL 143 (4F729C) at the opposite edge of the selected unit.
                 const auto& unit = events.units.at(size_t(battle_->selected()));
@@ -5687,7 +5711,7 @@ public:
                     }
                 }
             }
-            if (in_battle() && !battle_->animating_movement() && (battle_->state() == Battle::State::idle || battle_->state() == Battle::State::movement))
+            if (!battle_menu_overlay_ && in_battle() && !battle_->animating_movement() && (battle_->state() == Battle::State::idle || battle_->state() == Battle::State::movement))
             {
                 int status_unit = battle_->hovered_unit(events.units);
                 if (status_unit >= 0)
@@ -5739,7 +5763,7 @@ public:
                     draw_status_terrain(font, image, unit, panel_y);
                 }
             }
-            if (in_battle() && battle_->state() == Battle::State::finish_confirm && finish_confirmation_)
+            if (!battle_menu_overlay_ && in_battle() && battle_->state() == Battle::State::finish_confirm && finish_confirmation_)
             {
                 const auto& unit = events.units.at(size_t(battle_->selected()));
                 auto [sx, sy] = map_.screen_position(unit.x, unit.y);

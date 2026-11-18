@@ -1,0 +1,392 @@
+﻿{
+    "map_id":  18,
+    "music":  1,
+    "route":  {
+                  "next_stage":  19,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  18
+              },
+    "units":  [
+                  {
+                      "id":  110,
+                      "appearance":  60,
+                      "name":  "巡邏隊隊長",
+                      "x":  6,
+                      "y":  23,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  298,
+                      "max_hp":  50,
+                      "equipment":  [
+                                        54,
+                                        122,
+                                        157,
+                                        178,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  14,
+                      "name":  "巡邏隊下忍",
+                      "x":  8,
+                      "y":  25,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  212,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        19,
+                                        118,
+                                        149,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  14,
+                      "name":  "巡邏隊下忍",
+                      "x":  5,
+                      "y":  20,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  212,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        19,
+                                        118,
+                                        149,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  14,
+                      "name":  "巡邏隊下忍",
+                      "x":  8,
+                      "y":  68,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  212,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        19,
+                                        118,
+                                        149,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  14,
+                      "name":  "巡邏隊下忍",
+                      "x":  3,
+                      "y":  43,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  212,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        19,
+                                        118,
+                                        149,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  16,
+                      "name":  "巡邏隊醫者",
+                      "x":  8,
+                      "y":  20,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  183,
+                      "max_hp":  72,
+                      "equipment":  [
+                                        35,
+                                        107,
+                                        160,
+                                        180,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  16,
+                      "name":  "巡邏隊醫者",
+                      "x":  4,
+                      "y":  62,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  183,
+                      "max_hp":  72,
+                      "equipment":  [
+                                        35,
+                                        107,
+                                        160,
+                                        180,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  16,
+                      "name":  "巡邏隊醫者",
+                      "x":  6,
+                      "y":  40,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  183,
+                      "max_hp":  72,
+                      "equipment":  [
+                                        35,
+                                        107,
+                                        160,
+                                        180,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  53,
+                      "name":  "巡邏隊術士",
+                      "x":  8,
+                      "y":  53,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  154,
+                      "max_hp":  84,
+                      "equipment":  [
+                                        35,
+                                        107,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  53,
+                      "name":  "巡邏隊術士",
+                      "x":  6,
+                      "y":  65,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  154,
+                      "max_hp":  84,
+                      "equipment":  [
+                                        35,
+                                        107,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  53,
+                      "name":  "巡邏隊術士",
+                      "x":  7,
+                      "y":  36,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  154,
+                      "max_hp":  84,
+                      "equipment":  [
+                                        35,
+                                        107,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  4,
+                                                "y":  75,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  14,
+                             "deployment":  {
+                                                "x":  3,
+                                                "y":  76,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  15,
+                             "deployment":  {
+                                                "x":  3,
+                                                "y":  78,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  13,
+                             "deployment":  {
+                                                "x":  4,
+                                                "y":  79,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  4,
+                           "y":  75,
+                           "direction":  2,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  3,
+                           "y":  76,
+                           "direction":  2,
+                           "role_id":  14,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  3,
+                           "y":  78,
+                           "direction":  2,
+                           "role_id":  15,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  4,
+                           "y":  79,
+                           "direction":  2,
+                           "role_id":  13,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "潛入領主府",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.在十五回合內消滅所有敵軍。",
+                       "defeat":  "白志超陣亡或超過時間。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  18,
+                                         "name":  "茱迪",
+                                         "text":  "還是有些鬼靈精沒有被騙走，真是的。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "要速戰速決，不能拖延太久。"
+                                     },
+                                     {
+                                         "speaker":  15,
+                                         "name":  "艾文",
+                                         "text":  "知道了。"
+                                     },
+                                     {
+                                         "speaker":  16,
+                                         "name":  "刑天",
+                                         "text":  "這些小兵不夠看的。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  5,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  15
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "唉，時不我予。"
+                                     }
+                                 ]
+                   }
+               ]
+}

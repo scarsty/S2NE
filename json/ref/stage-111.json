@@ -1,0 +1,1042 @@
+﻿{
+    "map_id":  111,
+    "music":  16,
+    "route":  {
+                  "next_stage":  112,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  111
+              },
+    "units":  [
+                  {
+                      "id":  60,
+                      "appearance":  10,
+                      "name":  "奚族戰士",
+                      "x":  17,
+                      "y":  25,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  420,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        64,
+                                        133,
+                                        152,
+                                        173,
+                                        191,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  10,
+                      "name":  "奚族戰士",
+                      "x":  21,
+                      "y":  33,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  420,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        64,
+                                        133,
+                                        152,
+                                        173,
+                                        191,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  10,
+                      "name":  "奚族戰士",
+                      "x":  21,
+                      "y":  21,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  420,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        64,
+                                        133,
+                                        152,
+                                        173,
+                                        191,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  10,
+                      "name":  "奚族戰士",
+                      "x":  10,
+                      "y":  33,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  420,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        64,
+                                        133,
+                                        152,
+                                        173,
+                                        191,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  10,
+                      "name":  "奚族戰士",
+                      "x":  22,
+                      "y":  17,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  420,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        64,
+                                        133,
+                                        152,
+                                        173,
+                                        191,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  21,
+                      "name":  "奚族法師",
+                      "x":  16,
+                      "y":  23,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  300,
+                      "max_hp":  140,
+                      "equipment":  [
+                                        37,
+                                        109,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  21,
+                      "name":  "奚族法師",
+                      "x":  21,
+                      "y":  28,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  300,
+                      "max_hp":  140,
+                      "equipment":  [
+                                        37,
+                                        109,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  21,
+                      "name":  "奚族法師",
+                      "x":  19,
+                      "y":  19,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  300,
+                      "max_hp":  140,
+                      "equipment":  [
+                                        37,
+                                        109,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  21,
+                      "name":  "奚族法師",
+                      "x":  8,
+                      "y":  35,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  300,
+                      "max_hp":  140,
+                      "equipment":  [
+                                        37,
+                                        109,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  48,
+                      "name":  "奚族弩手",
+                      "x":  19,
+                      "y":  25,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  324,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  48,
+                      "name":  "奚族弩手",
+                      "x":  23,
+                      "y":  26,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  324,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  48,
+                      "name":  "奚族弩手",
+                      "x":  18,
+                      "y":  16,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  324,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  48,
+                      "name":  "奚族弩手",
+                      "x":  20,
+                      "y":  43,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  324,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  121,
+                      "appearance":  71,
+                      "name":  "暹族活屍仙",
+                      "x":  15,
+                      "y":  40,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  670,
+                      "max_hp":  150,
+                      "equipment":  [
+                                        44,
+                                        116,
+                                        161,
+                                        182,
+                                        228,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  45,
+                      "name":  "暹族女戰士",
+                      "x":  11,
+                      "y":  52,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  410,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        64,
+                                        133,
+                                        152,
+                                        173,
+                                        191,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  45,
+                      "name":  "暹族女戰士",
+                      "x":  9,
+                      "y":  60,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  410,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        64,
+                                        133,
+                                        152,
+                                        173,
+                                        191,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  45,
+                      "name":  "暹族女戰士",
+                      "x":  12,
+                      "y":  31,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  410,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        64,
+                                        133,
+                                        152,
+                                        173,
+                                        191,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  45,
+                      "name":  "暹族女戰士",
+                      "x":  17,
+                      "y":  31,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  410,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        71,
+                                        144,
+                                        152,
+                                        173,
+                                        191,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  45,
+                      "name":  "暹族女戰士",
+                      "x":  17,
+                      "y":  36,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  410,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        71,
+                                        144,
+                                        152,
+                                        173,
+                                        191,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  51,
+                      "name":  "暹族妖術士",
+                      "x":  2,
+                      "y":  59,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  298,
+                      "max_hp":  145,
+                      "equipment":  [
+                                        37,
+                                        109,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  51,
+                      "name":  "暹族妖術士",
+                      "x":  7,
+                      "y":  59,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  298,
+                      "max_hp":  145,
+                      "equipment":  [
+                                        37,
+                                        109,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  51,
+                      "name":  "暹族妖術士",
+                      "x":  12,
+                      "y":  37,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  298,
+                      "max_hp":  145,
+                      "equipment":  [
+                                        37,
+                                        109,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  51,
+                      "name":  "暹族妖術士",
+                      "x":  19,
+                      "y":  36,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  298,
+                      "max_hp":  145,
+                      "equipment":  [
+                                        44,
+                                        109,
+                                        160,
+                                        180,
+                                        228,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  51,
+                      "name":  "暹族妖術士",
+                      "x":  19,
+                      "y":  46,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  298,
+                      "max_hp":  145,
+                      "equipment":  [
+                                        44,
+                                        109,
+                                        160,
+                                        180,
+                                        228,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "暹族拳鬥家",
+                      "x":  4,
+                      "y":  61,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  400,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        176,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "暹族拳鬥家",
+                      "x":  8,
+                      "y":  64,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  400,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        176,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "暹族拳鬥家",
+                      "x":  12,
+                      "y":  43,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  400,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        176,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "暹族拳鬥家",
+                      "x":  10,
+                      "y":  39,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  400,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        176,
+                                        228,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "暹族拳鬥家",
+                      "x":  16,
+                      "y":  43,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  400,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        176,
+                                        228,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  54,
+                      "name":  "暹族騎弓手",
+                      "x":  5,
+                      "y":  57,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  348,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  54,
+                      "name":  "暹族騎弓手",
+                      "x":  9,
+                      "y":  48,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  348,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  54,
+                      "name":  "暹族騎弓手",
+                      "x":  15,
+                      "y":  29,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  348,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  54,
+                      "name":  "暹族騎弓手",
+                      "x":  15,
+                      "y":  36,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  348,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        58,
+                                        125,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  54,
+                      "name":  "暹族騎弓手",
+                      "x":  14,
+                      "y":  45,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  348,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        58,
+                                        125,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  2,
+                                                "y":  67,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  1,
+                                                "y":  69,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  1,
+                                                "y":  63,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  1,
+                                                "y":  65,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  5,
+                             "deployment":  {
+                                                "x":  0,
+                                                "y":  69,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  6,
+                             "deployment":  {
+                                                "x":  3,
+                                                "y":  65,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  6,
+                             "role_id":  27,
+                             "deployment":  {
+                                                "x":  3,
+                                                "y":  67,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  7,
+                             "role_id":  35,
+                             "deployment":  {
+                                                "x":  1,
+                                                "y":  67,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  8,
+                             "role_id":  36,
+                             "deployment":  {
+                                                "x":  2,
+                                                "y":  63,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  2,
+                           "y":  67,
+                           "direction":  2,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  1,
+                           "y":  69,
+                           "direction":  2,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  1,
+                           "y":  63,
+                           "direction":  2,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  1,
+                           "y":  65,
+                           "direction":  2,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  0,
+                           "y":  69,
+                           "direction":  2,
+                           "role_id":  5,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  3,
+                           "y":  65,
+                           "direction":  2,
+                           "role_id":  6,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  3,
+                           "y":  67,
+                           "direction":  2,
+                           "role_id":  27,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  1,
+                           "y":  67,
+                           "direction":  2,
+                           "role_id":  35,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  2,
+                           "y":  63,
+                           "direction":  2,
+                           "role_id":  36,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "勇士與鬥士",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.打倒暹族活屍仙。",
+                       "defeat":  "娜塔莉雅陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  36,
+                                         "name":  "羅許",
+                                         "text":  "這....連這座橋也被攻下來了....不過總算趕上了。"
+                                     },
+                                     {
+                                         "speaker":  121,
+                                         "name":  "暹族活屍仙",
+                                         "text":  "娜塔莉雅？妳居然能趕到這裡來？那個作夢想選族長的人果然是個廢物！"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "暹族的長老，請聽我一言，只為了南方領支援武器就破壞兩族間的交好實在不值得，請下令退兵吧。"
+                                     },
+                                     {
+                                         "speaker":  121,
+                                         "name":  "暹族活屍仙",
+                                         "text":  "哈....妳是在癡人說夢話！我們暹族老是被你們給壓在第二，如今有此大好良機出此烏氣，那有可能就此罷手，妳過來領死吧！"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "長老不聽我勸，那只有得罪了！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  0,
+                       "condition":  2,
+                       "role_id":  121,
+                       "lines":  [
+                                     {
+                                         "speaker":  121,
+                                         "name":  "暹族活屍仙",
+                                         "text":  "....我....我....怎會死在凡人手裡....。"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "你早該投胎啦！老巫妖。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  2,
+                       "completion_flag":  0,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "我們要找出提供裝備的地方，不然這件事不容易善了的。"
+                                     },
+                                     {
+                                         "speaker":  36,
+                                         "name":  "羅許",
+                                         "text":  "有誰知道暹族的裝配是從那裡來的？"
+                                     },
+                                     {
+                                         "speaker":  60,
+                                         "name":  "奚族戰士",
+                                         "text":  "剛才聽他們說，是先運到鄰村再分配給各部隊的。"
+                                     },
+                                     {
+                                         "speaker":  4,
+                                         "name":  "蘇",
+                                         "text":  "鄰村？那為何這件事族人一無所知？"
+                                     },
+                                     {
+                                         "speaker":  60,
+                                         "name":  "奚族戰士",
+                                         "text":  "鄰村的村長烏爾里克好像就是暹族的人，我們才毫無所備。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "烏爾里克？原來南方領的武器轉手人是他！難怪這次的行動這樣迅速！"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "哼，那個二流戰士也只能當內奸，這下被我們逮著了！"
+                                     },
+                                     {
+                                         "speaker":  6,
+                                         "name":  "黛西",
+                                         "text":  "既然情況已明，那這次換我們反擊了！"
+                                     }
+                                 ]
+                   }
+               ]
+}

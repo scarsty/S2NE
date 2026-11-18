@@ -1,0 +1,767 @@
+﻿{
+    "map_id":  89,
+    "music":  15,
+    "route":  {
+                  "next_stage":  90,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  89
+              },
+    "units":  [
+                  {
+                      "id":  27,
+                      "appearance":  130,
+                      "name":  "寶兒",
+                      "x":  14,
+                      "y":  22,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  172,
+                      "max_hp":  80,
+                      "equipment":  [
+                                        0,
+                                        98,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  104,
+                      "appearance":  54,
+                      "name":  "騎兵弩手",
+                      "x":  1,
+                      "y":  30,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  270,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        50,
+                                        121,
+                                        151,
+                                        170,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  54,
+                      "name":  "騎兵弩手",
+                      "x":  2,
+                      "y":  32,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  270,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        50,
+                                        121,
+                                        151,
+                                        170,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  54,
+                      "name":  "騎兵弩手",
+                      "x":  2,
+                      "y":  35,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  270,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        50,
+                                        121,
+                                        151,
+                                        170,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  65,
+                      "appearance":  15,
+                      "name":  "拳師",
+                      "x":  8,
+                      "y":  36,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  300,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        118,
+                                        149,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  15,
+                      "name":  "拳師",
+                      "x":  9,
+                      "y":  40,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  300,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        118,
+                                        149,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  15,
+                      "name":  "拳師",
+                      "x":  15,
+                      "y":  37,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  300,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        118,
+                                        149,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  15,
+                      "name":  "拳師",
+                      "x":  12,
+                      "y":  44,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  300,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        118,
+                                        149,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  52,
+                      "name":  "魔幻術士",
+                      "x":  6,
+                      "y":  36,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  224,
+                      "max_hp":  90,
+                      "equipment":  [
+                                        35,
+                                        106,
+                                        159,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  52,
+                      "name":  "魔幻術士",
+                      "x":  6,
+                      "y":  43,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  224,
+                      "max_hp":  90,
+                      "equipment":  [
+                                        35,
+                                        106,
+                                        159,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  52,
+                      "name":  "魔幻術士",
+                      "x":  14,
+                      "y":  37,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  224,
+                      "max_hp":  90,
+                      "equipment":  [
+                                        35,
+                                        106,
+                                        159,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  52,
+                      "name":  "魔幻術士",
+                      "x":  11,
+                      "y":  42,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  224,
+                      "max_hp":  90,
+                      "equipment":  [
+                                        35,
+                                        106,
+                                        159,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  20,
+                                                "y":  48,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  20,
+                                                "y":  50,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  20,
+                                                "y":  46,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  19,
+                                                "y":  50,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  5,
+                             "deployment":  {
+                                                "x":  19,
+                                                "y":  48,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  6,
+                             "deployment":  {
+                                                "x":  21,
+                                                "y":  48,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  20,
+                           "y":  48,
+                           "direction":  3,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  20,
+                           "y":  50,
+                           "direction":  3,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  20,
+                           "y":  46,
+                           "direction":  3,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  19,
+                           "y":  50,
+                           "direction":  3,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  19,
+                           "y":  48,
+                           "direction":  3,
+                           "role_id":  5,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  21,
+                           "y":  48,
+                           "direction":  3,
+                           "role_id":  6,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "孤零的寶兒",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.將此地兵丁全部打敗。",
+                       "defeat":  "娜塔莉雅或寶兒陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  16,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "好了啦，不要再找入口了，我覺得從廚房混進去的計劃已經很好了。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "這件事急不得，多擬幾個計劃保險的多，至少今天還要多看看....。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  13,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  16,
+                                            "offset_5":  188,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  27,
+                                         "music_after":  24,
+                                         "name":  "小女孩",
+                                         "text":  "救命啊....。"
+                                     },
+                                     {
+                                         "speaker":  4,
+                                         "name":  "蘇",
+                                         "text":  "有小女孩的哭聲..？"
+                                     },
+                                     {
+                                         "speaker":  5,
+                                         "name":  "古斯塔夫",
+                                         "text":  "是在喊救命，快過去看看！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  2
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  65,
+                                         "name":  "拳師",
+                                         "text":  "小女孩，你不要怪我，誰叫妳聽到不該聽到的話....。"
+                                     },
+                                     {
+                                         "speaker":  27,
+                                         "name":  "小女孩",
+                                         "text":  "救命啊，大哥哥大姊姊....。"
+                                     },
+                                     {
+                                         "speaker":  65,
+                                         "name":  "拳師",
+                                         "text":  "尋常村民那裡救得了妳，要和妳說再見了！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  2,
+                       "completion_flag":  13
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  27,
+                                            "offset_7":  20,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  27,
+                                            "offset_7":  6,
+                                            "offset_9":  10
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  27,
+                                            "offset_7":  1,
+                                            "offset_9":  10
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  27,
+                                         "name":  "小女孩",
+                                         "text":  "哇....我好怕，我真的沒事嗎？"
+                                     },
+                                     {
+                                         "speaker":  6,
+                                         "name":  "黛西",
+                                         "text":  "小妹妹不要怕，那些兵丁為什麼要抓妳？"
+                                     },
+                                     {
+                                         "speaker":  27,
+                                         "name":  "小女孩",
+                                         "text":  "爺爺....爺爺他被壞人抓走了，爺爺保護寶兒逃走，壞人就把爺爺抓起來了。"
+                                     },
+                                     {
+                                         "speaker":  6,
+                                         "name":  "黛西",
+                                         "text":  "原來妳叫做寶兒啊，那寶兒的爺爺叫什麼名字？"
+                                     },
+                                     {
+                                         "speaker":  27,
+                                         "name":  "寶兒",
+                                         "text":  "寶兒的爺爺叫做歐西德。"
+                                     },
+                                     {
+                                         "speaker":  2,
+                                         "name":  "穆爾",
+                                         "text":  "歐西德？好像有聽過？不太熟悉？"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "沒聽過，誰知道這個小女孩是何方神聖？"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "....寶兒妳的爺爺被關在那裡？"
+                                     },
+                                     {
+                                         "speaker":  27,
+                                         "name":  "寶兒",
+                                         "text":  "就是後面那棟大房子裡，爺爺就在那裡面....。"
+                                     },
+                                     {
+                                         "speaker":  4,
+                                         "name":  "蘇",
+                                         "text":  "她說的是夏普的官邸！"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "....嗯，也許這位歐西德知道一些重要的事情..。"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "娜塔，妳不會是想帶這個小女孩到領主府裡去吧。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  0,
+                       "branch_flag":  13,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "....正在考慮當中。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "決定帶寶兒一起進入領主府。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "根據原訂計劃自行進入領主府。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  14,
+                       "condition":  1,
+                       "branch_flag":  13,
+                       "branch_value":  1,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "寶兒，妳是從那裡逃出來的，我的意思是從那條路跑出來的？"
+                                     },
+                                     {
+                                         "speaker":  27,
+                                         "name":  "寶兒",
+                                         "text":  "有一條臭臭的水溝，我從那邊來的。"
+                                     },
+                                     {
+                                         "speaker":  2,
+                                         "name":  "穆爾",
+                                         "text":  "她說的應該是下水道吧。"
+                                     },
+                                     {
+                                         "speaker":  4,
+                                         "name":  "蘇",
+                                         "text":  "那正好，這樣可以免去強攻進去的危險。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "那就這樣決定了，寶兒妳先跟我們回城裡去準備一下，明天一早就去救妳爺爺。"
+                                     },
+                                     {
+                                         "speaker":  27,
+                                         "name":  "寶兒",
+                                         "text":  "謝謝妳，寶兒喜歡妳們。"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "唉，怎麼讓一個小鬼跟在身旁的，真丟臉。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  15,
+                       "condition":  2,
+                       "branch_flag":  13,
+                       "branch_value":  2,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "好，黛西、夏普妳們兩個留下來陪寶兒，我們其餘四人照原定計劃進入領主府內。"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "喂，娜塔！妳....妳叫我陪一個小女孩？"
+                                     },
+                                     {
+                                         "speaker":  6,
+                                         "name":  "黛西",
+                                         "text":  "怎麼？小女孩不可愛嗎？"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "寶兒，讓妳去冒險太危險了，和叔叔阿姨留在城裡，我們待會就回來。"
+                                     },
+                                     {
+                                         "speaker":  27,
+                                         "name":  "寶兒",
+                                         "text":  "嗯，見到爺爺時，告訴他寶兒沒事了。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "我們會的。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  65
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  63
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  22,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  27,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  7,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  27,
+                                            "offset_7":  999,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  15,
+                                            "offset_5":  3,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  15,
+                                            "offset_5":  6,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  92
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  90
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  16,
+                       "condition":  1,
+                       "required_flags":  [
+                                              66
+                                          ]
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  108
+                   }
+               ]
+}

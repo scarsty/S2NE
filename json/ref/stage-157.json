@@ -1,0 +1,384 @@
+﻿{
+    "map_id":  52,
+    "music":  19,
+    "route":  {
+                  "next_stage":  48,
+                  "alternate_stage":  0,
+                  "mode":  3
+              },
+    "units":  [
+                  {
+                      "id":  10,
+                      "appearance":  97,
+                      "name":  "鱷長老",
+                      "x":  9,
+                      "y":  44,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  640,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        39,
+                                        111,
+                                        164,
+                                        182,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  10,
+                      "name":  "奚族戰士",
+                      "x":  5,
+                      "y":  51,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  480,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        66,
+                                        134,
+                                        155,
+                                        177,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  10,
+                      "name":  "奚族戰士",
+                      "x":  6,
+                      "y":  54,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  480,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        66,
+                                        134,
+                                        155,
+                                        177,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  6,
+                      "appearance":  54,
+                      "name":  "黛西",
+                      "x":  17,
+                      "y":  29,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  236,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        52,
+                                        133,
+                                        151,
+                                        174,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  10,
+                                                "y":  47,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  14,
+                             "deployment":  {
+                                                "x":  8,
+                                                "y":  56,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  15,
+                             "deployment":  {
+                                                "x":  8,
+                                                "y":  52,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  13,
+                             "deployment":  {
+                                                "x":  9,
+                                                "y":  52,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  18,
+                             "deployment":  {
+                                                "x":  6,
+                                                "y":  49,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  10,
+                           "y":  47,
+                           "direction":  3,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  8,
+                           "y":  56,
+                           "direction":  2,
+                           "role_id":  14,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  8,
+                           "y":  52,
+                           "direction":  2,
+                           "role_id":  15,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  9,
+                           "y":  52,
+                           "direction":  2,
+                           "role_id":  13,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  6,
+                           "y":  49,
+                           "direction":  2,
+                           "role_id":  18,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "鱷長老",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.無。",
+                       "defeat":  "白志超陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  10,
+                                         "name":  "鱷長老",
+                                         "text":  "嘿，小伙子真有你的，我老鱷今日命不該絕，那也不假。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "鱷長老，敵人還有可能追來，我們還是早點回到營地比較好。"
+                                     },
+                                     {
+                                         "speaker":  6,
+                                         "name":  "黛西",
+                                         "text":  "長老......。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  10,
+                                            "offset_7":  2,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  11,
+                                            "offset_7":  2,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  7,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  6,
+                                            "offset_7":  11,
+                                            "offset_9":  42
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  6,
+                                         "name":  "黛西",
+                                         "text":  "呼，總算找到你們了，我回去可以交差了。"
+                                     },
+                                     {
+                                         "speaker":  10,
+                                         "name":  "鱷長老",
+                                         "text":  "黛西小娃，什麼事這般十萬火急？"
+                                     },
+                                     {
+                                         "speaker":  6,
+                                         "name":  "黛西",
+                                         "text":  "就在你們去提那城的時候，南方領的軍隊動了，照推測是想先攻取南北兩路的前線據點。這些地方不適合大軍會戰，需要的是強而有力的小隊，所以營寨內派了一些人來找你們，請迦納國的朋友前去防守。"
+                                     },
+                                     {
+                                         "speaker":  10,
+                                         "name":  "鱷長老",
+                                         "text":  "原來不是找我啊，娜塔小妮子也太小看我了。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "....嗯，這兩處地勢如何？敵方兵力？"
+                                     },
+                                     {
+                                         "speaker":  6,
+                                         "name":  "黛西",
+                                         "text":  "北邊是無險可守的森林地帶，敵方派來的兵力較少，而南邊是易守難攻的山丘據點，相對的敵兵實力也較強。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  0,
+                       "branch_flag":  13,
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "這樣嗎？讓我好好想想。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "前往北邊的森林據點延緩敵兵的前進。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "前往南邊的丘陵據點延緩敵兵的前進。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  14,
+                       "condition":  1,
+                       "branch_flag":  13,
+                       "branch_value":  1,
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "北邊吧，無險可守的地方才能看出我們的本事，森林中的敵軍就交由我們來負責吧。"
+                                     },
+                                     {
+                                         "speaker":  6,
+                                         "name":  "黛西",
+                                         "text":  "好的。敵人也許會有援軍抵達，娜塔莉雅姐說最好是採取守勢，以完成任務為第一優先。"
+                                     },
+                                     {
+                                         "speaker":  10,
+                                         "name":  "鱷長老",
+                                         "text":  "快走吧，我知道小子你一定可以辦到的。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  15,
+                       "condition":  2,
+                       "branch_flag":  13,
+                       "branch_value":  2,
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "那些堅強的敵軍就由我們來負責吧，我保證可以讓敵軍吃驚的。"
+                                     },
+                                     {
+                                         "speaker":  6,
+                                         "name":  "黛西",
+                                         "text":  "好的。敵人也許會有飛行部隊參戰，娜塔莉雅姐說最好是採取守勢，以完成任務為第一優先。"
+                                     },
+                                     {
+                                         "speaker":  10,
+                                         "name":  "鱷長老",
+                                         "text":  "快走吧，我知道小子你一定可以辦到的。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  48
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  49
+                   }
+               ]
+}

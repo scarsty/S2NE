@@ -1,0 +1,663 @@
+﻿{
+    "map_id":  102,
+    "music":  27,
+    "route":  {
+                  "next_stage":  106,
+                  "alternate_stage":  135,
+                  "mode":  1,
+                  "interbattle_town_id":  102
+              },
+    "units":  [
+                  {
+                      "id":  39,
+                      "appearance":  32,
+                      "name":  "貝洛元帥",
+                      "x":  19,
+                      "y":  27,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  1000,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        137,
+                                        158,
+                                        179,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  37,
+                      "appearance":  65,
+                      "name":  "西碧拉",
+                      "x":  18,
+                      "y":  29,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  640,
+                      "max_hp":  210,
+                      "equipment":  [
+                                        39,
+                                        112,
+                                        162,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  200,
+                      "appearance":  67,
+                      "name":  "貼身護衛",
+                      "x":  17,
+                      "y":  30,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  440,
+                      "max_hp":  110,
+                      "equipment":  [
+                                        10,
+                                        137,
+                                        156,
+                                        178,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  201,
+                      "appearance":  67,
+                      "name":  "貼身護衛",
+                      "x":  18,
+                      "y":  32,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  440,
+                      "max_hp":  110,
+                      "equipment":  [
+                                        10,
+                                        137,
+                                        156,
+                                        178,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  202,
+                      "appearance":  67,
+                      "name":  "貼身護衛",
+                      "x":  21,
+                      "y":  28,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  440,
+                      "max_hp":  110,
+                      "equipment":  [
+                                        10,
+                                        137,
+                                        156,
+                                        178,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  203,
+                      "appearance":  67,
+                      "name":  "貼身護衛",
+                      "x":  19,
+                      "y":  24,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  440,
+                      "max_hp":  110,
+                      "equipment":  [
+                                        10,
+                                        137,
+                                        156,
+                                        178,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  66,
+                      "name":  "獨角獸騎士",
+                      "x":  19,
+                      "y":  63,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  400,
+                      "max_hp":  32,
+                      "equipment":  [
+                                        80,
+                                        136,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  66,
+                      "name":  "獨角獸騎士",
+                      "x":  20,
+                      "y":  61,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  400,
+                      "max_hp":  32,
+                      "equipment":  [
+                                        80,
+                                        136,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  59,
+                      "name":  "魔法騎士",
+                      "x":  19,
+                      "y":  65,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  340,
+                      "max_hp":  64,
+                      "equipment":  [
+                                        79,
+                                        135,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  59,
+                      "name":  "魔法騎士",
+                      "x":  18,
+                      "y":  59,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  340,
+                      "max_hp":  64,
+                      "equipment":  [
+                                        79,
+                                        135,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  59,
+                      "name":  "魔法騎士",
+                      "x":  20,
+                      "y":  59,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  340,
+                      "max_hp":  64,
+                      "equipment":  [
+                                        79,
+                                        135,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  24,
+                      "name":  "聖騎士",
+                      "x":  17,
+                      "y":  61,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  380,
+                      "max_hp":  48,
+                      "equipment":  [
+                                        80,
+                                        136,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  24,
+                      "name":  "聖騎士",
+                      "x":  19,
+                      "y":  61,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  380,
+                      "max_hp":  48,
+                      "equipment":  [
+                                        80,
+                                        136,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  24,
+                      "name":  "聖騎士",
+                      "x":  19,
+                      "y":  59,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  380,
+                      "max_hp":  48,
+                      "equipment":  [
+                                        80,
+                                        136,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  26,
+                      "name":  "黑騎士",
+                      "x":  18,
+                      "y":  63,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  360,
+                      "max_hp":  54,
+                      "equipment":  [
+                                        79,
+                                        135,
+                                        156,
+                                        177,
+                                        199,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  26,
+                      "name":  "黑騎士",
+                      "x":  18,
+                      "y":  61,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  360,
+                      "max_hp":  54,
+                      "equipment":  [
+                                        79,
+                                        135,
+                                        156,
+                                        177,
+                                        199,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  26,
+                      "name":  "黑騎士",
+                      "x":  20,
+                      "y":  63,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  360,
+                      "max_hp":  54,
+                      "equipment":  [
+                                        79,
+                                        135,
+                                        156,
+                                        177,
+                                        199,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  12,
+                                                "y":  65,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  12,
+                                                "y":  67,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  12,
+                                                "y":  63,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  10,
+                                                "y":  67,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  5,
+                             "deployment":  {
+                                                "x":  11,
+                                                "y":  69,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  6,
+                             "deployment":  {
+                                                "x":  11,
+                                                "y":  67,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  6,
+                             "role_id":  27,
+                             "deployment":  {
+                                                "x":  11,
+                                                "y":  65,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  7,
+                             "role_id":  35,
+                             "deployment":  {
+                                                "x":  13,
+                                                "y":  65,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  12,
+                           "y":  65,
+                           "direction":  2,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  12,
+                           "y":  67,
+                           "direction":  2,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  12,
+                           "y":  63,
+                           "direction":  2,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  10,
+                           "y":  67,
+                           "direction":  2,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  11,
+                           "y":  69,
+                           "direction":  2,
+                           "role_id":  5,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  11,
+                           "y":  67,
+                           "direction":  2,
+                           "role_id":  6,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  11,
+                           "y":  65,
+                           "direction":  2,
+                           "role_id":  27,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  13,
+                           "y":  65,
+                           "direction":  2,
+                           "role_id":  35,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "官道正規軍",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.娜塔莉雅脫離戰場。",
+                       "defeat":  "娜塔莉雅陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  35,
+                                         "name":  "歐西德",
+                                         "text":  "糟了，這是官道巡邏隊的主力，來得如此迅速！"
+                                     },
+                                     {
+                                         "speaker":  27,
+                                         "name":  "寶兒",
+                                         "text":  "我好怕....。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "要打嗎？"
+                                     },
+                                     {
+                                         "speaker":  4,
+                                         "name":  "蘇",
+                                         "text":  "騎兵太多了，打起來很容易傷亡慘重。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "好，先退後再說！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  1,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  4
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  39,
+                                         "name":  "貝洛元帥",
+                                         "text":  "前面這夥人就是常和我們作對的那批人嗎？"
+                                     },
+                                     {
+                                         "speaker":  37,
+                                         "name":  "西碧拉",
+                                         "text":  "是的，就是他們。"
+                                     },
+                                     {
+                                         "speaker":  39,
+                                         "name":  "貝洛元帥",
+                                         "text":  "嗯....奚族的娜塔莉雅！久聞其名，真是意外啊。"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "呸，居然不認得我！"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "不妙，連南方領的軍事統帥貝洛都來了，這裡不能久待了！"
+                                     },
+                                     {
+                                         "speaker":  39,
+                                         "name":  "貝洛元帥",
+                                         "text":  "等我捉到你們，奚族就只好和我乖乖談和了，嘿嘿嘿。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  13,
+                       "condition":  2,
+                       "role_id":  39,
+                       "lines":  [
+                                     {
+                                         "speaker":  39,
+                                         "name":  "貝洛元帥",
+                                         "text":  "奚族的人竟然本事不小？下次要更加小心....。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  11,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  10,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  12,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  10,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   }
+               ]
+}

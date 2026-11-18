@@ -1,0 +1,861 @@
+﻿{
+    "map_id":  51,
+    "music":  34,
+    "route":  {
+                  "next_stage":  129,
+                  "alternate_stage":  0,
+                  "mode":  3
+              },
+    "units":  [
+                  {
+                      "id":  11,
+                      "appearance":  83,
+                      "name":  "志超",
+                      "x":  11,
+                      "y":  21,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  280,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        5,
+                                        120,
+                                        149,
+                                        170,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  14,
+                      "appearance":  61,
+                      "name":  "飛霜",
+                      "x":  7,
+                      "y":  27,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  264,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        19,
+                                        120,
+                                        149,
+                                        170,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  15,
+                      "appearance":  22,
+                      "name":  "艾文",
+                      "x":  8,
+                      "y":  29,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  360,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        62,
+                                        132,
+                                        152,
+                                        169,
+                                        188,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  13,
+                      "appearance":  50,
+                      "name":  "羅莎莉",
+                      "x":  9,
+                      "y":  31,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  222,
+                      "max_hp":  104,
+                      "equipment":  [
+                                        34,
+                                        106,
+                                        148,
+                                        167,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  42,
+                      "appearance":  127,
+                      "name":  "彥清風",
+                      "x":  14,
+                      "y":  58,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  180,
+                      "max_hp":  101,
+                      "equipment":  [
+                                        35,
+                                        107,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  151,
+                      "appearance":  124,
+                      "name":  "伊娃",
+                      "x":  12,
+                      "y":  57,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  180,
+                      "max_hp":  101,
+                      "equipment":  [
+                                        35,
+                                        107,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  85,
+                      "appearance":  35,
+                      "name":  "第二軍團長",
+                      "x":  11,
+                      "y":  26,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  1320,
+                      "max_hp":  154,
+                      "equipment":  [
+                                        26,
+                                        137,
+                                        157,
+                                        179,
+                                        199,
+                                        239
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  22,
+                      "name":  "無敵戰神",
+                      "x":  15,
+                      "y":  30,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  590,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        69,
+                                        138,
+                                        156,
+                                        177,
+                                        192,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  22,
+                      "name":  "無敵戰神",
+                      "x":  16,
+                      "y":  32,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  590,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        69,
+                                        138,
+                                        156,
+                                        177,
+                                        192,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  22,
+                      "name":  "無敵戰神",
+                      "x":  17,
+                      "y":  34,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  590,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        69,
+                                        138,
+                                        156,
+                                        177,
+                                        192,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  22,
+                      "name":  "無敵戰神",
+                      "x":  18,
+                      "y":  36,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  590,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        69,
+                                        138,
+                                        156,
+                                        177,
+                                        192,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  58,
+                      "name":  "劍聖",
+                      "x":  14,
+                      "y":  32,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  480,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        10,
+                                        123,
+                                        157,
+                                        177,
+                                        195,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  58,
+                      "name":  "劍聖",
+                      "x":  15,
+                      "y":  34,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  480,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        10,
+                                        123,
+                                        157,
+                                        177,
+                                        195,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  58,
+                      "name":  "劍聖",
+                      "x":  16,
+                      "y":  36,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  480,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        10,
+                                        123,
+                                        157,
+                                        177,
+                                        195,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  58,
+                      "name":  "劍聖",
+                      "x":  17,
+                      "y":  38,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  480,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        10,
+                                        123,
+                                        157,
+                                        177,
+                                        195,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  68,
+                      "name":  "精靈使",
+                      "x":  19,
+                      "y":  38,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  390,
+                      "max_hp":  186,
+                      "equipment":  [
+                                        40,
+                                        112,
+                                        162,
+                                        182,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  68,
+                      "name":  "精靈使",
+                      "x":  18,
+                      "y":  40,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  390,
+                      "max_hp":  186,
+                      "equipment":  [
+                                        40,
+                                        112,
+                                        162,
+                                        182,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  68,
+                      "name":  "精靈使",
+                      "x":  17,
+                      "y":  42,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  390,
+                      "max_hp":  186,
+                      "equipment":  [
+                                        40,
+                                        112,
+                                        162,
+                                        182,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "武神",
+                      "x":  16,
+                      "y":  40,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  540,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "武神",
+                      "x":  15,
+                      "y":  38,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  540,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "武神",
+                      "x":  14,
+                      "y":  36,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  540,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "武神",
+                      "x":  13,
+                      "y":  34,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  540,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  9,
+                                                "y":  22,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  14,
+                                                "y":  26,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  15,
+                                                "y":  28,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  13,
+                                                "y":  24,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  9,
+                           "y":  22,
+                           "direction":  1,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  14,
+                           "y":  26,
+                           "direction":  0,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  15,
+                           "y":  28,
+                           "direction":  0,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  13,
+                           "y":  24,
+                           "direction":  0,
+                           "role_id":  4,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "休戰儀式",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.無。",
+                       "defeat":  "白志超陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  85,
+                                         "name":  "南方領代表",
+                                         "text":  "我，伊卡伯特代表南方領全體官兵宣誓：將停止對於奚族部落的侵略行為，儘速返回原先居地，對於長官錯誤領導所造成的損失與傷害，將在新王即位後予以賠償，且一切民生物資的管制都將解除，期待能回復兩族間和平的交往。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "我，娜塔莉雅代表奚族部落接受這份休戰協定。奚族同意讓南方領眾將兵返回原地不加攻擊，並遣返戰俘與軍旗等物。奚族很高興南方領諸人能夠醒悟並停止這次的侵略行為，期待未來的南方領政府有更好的回應。"
+                                     },
+                                     {
+                                         "speaker":  15,
+                                         "name":  "艾文",
+                                         "text":  "喂！老大，換你了。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "我？兩族的休戰和我有啥關係？"
+                                     },
+                                     {
+                                         "speaker":  14,
+                                         "name":  "飛霜",
+                                         "text":  "需要一個見證人啊！你身為迦那國任命的官員，又和奚族部落有密切關係，是最恰當的證人了！還不快去致詞？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "咳，嗯....很高興能在此發言....我....。"
+                                     },
+                                     {
+                                         "speaker":  42,
+                                         "name":  "清風",
+                                         "text":  "咦？志超的聲音？志超你在這裡嗎？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "清風！！！糟了！可不能被逮到！我們快溜！！！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  16,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  4,
+                                            "offset_7":  2,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  16,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  11,
+                                            "offset_7":  13,
+                                            "offset_9":  16
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  16,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  13,
+                                            "offset_7":  17,
+                                            "offset_9":  18
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  16,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  14,
+                                            "offset_7":  18,
+                                            "offset_9":  19
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  16,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  15,
+                                            "offset_7":  10,
+                                            "offset_9":  36
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  16,
+                       "completion_flag":  0,
+                       "condition":  3
+                   },
+                   {
+                       "type":  7,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  42,
+                                            "offset_7":  21,
+                                            "offset_9":  44
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  7,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  42,
+                                            "offset_7":  13,
+                                            "offset_9":  28
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  42,
+                                            "offset_7":  2,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  42,
+                                            "offset_7":  3,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  42,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  42,
+                                         "name":  "清風",
+                                         "text":  "奇怪了，剛剛明明聽到聲音的....。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  7,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  151,
+                                            "offset_7":  20,
+                                            "offset_9":  46
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  7,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  151,
+                                            "offset_7":  11,
+                                            "offset_9":  29
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  151,
+                                            "offset_7":  2,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  151,
+                                         "name":  "伊娃",
+                                         "text":  "不會吧，志超人現在應該在迦納國的，不會跑到這裡來的。"
+                                     },
+                                     {
+                                         "speaker":  42,
+                                         "name":  "清風",
+                                         "text":  "難道我真的聽錯了？"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "咳..很高興兩位赤子國的貴賓來到奚族部落，參加這次的休戰儀式，請到城樓上去觀禮吧。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  151,
+                                            "offset_7":  3,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  151,
+                                         "name":  "伊娃",
+                                         "text":  "清風大人....。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  42,
+                                            "offset_7":  3,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  42,
+                                         "name":  "清風",
+                                         "text":  "啊，失禮了，娜塔莉雅小姐，真不好意思。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "不敢。兩位遠來，請入城休息吧。"
+                                     }
+                                 ]
+                   }
+               ]
+}

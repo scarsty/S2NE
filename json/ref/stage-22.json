@@ -1,0 +1,511 @@
+﻿{
+    "map_id":  22,
+    "music":  26,
+    "route":  {
+                  "next_stage":  144,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  22
+              },
+    "units":  [
+                  {
+                      "id":  34,
+                      "appearance":  5,
+                      "name":  "庫庫克",
+                      "x":  19,
+                      "y":  25,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  267,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        21,
+                                        121,
+                                        149,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  124,
+                      "appearance":  74,
+                      "name":  "下水道妖怪",
+                      "x":  17,
+                      "y":  32,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  380,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        76,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  74,
+                      "name":  "下水道妖怪",
+                      "x":  15,
+                      "y":  32,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  380,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        76,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  74,
+                      "name":  "下水道妖怪",
+                      "x":  13,
+                      "y":  36,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  380,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        76,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  74,
+                      "name":  "下水道妖怪",
+                      "x":  11,
+                      "y":  43,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  380,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        76,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  74,
+                      "name":  "下水道妖怪",
+                      "x":  8,
+                      "y":  50,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  380,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        76,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  74,
+                      "name":  "下水道妖怪",
+                      "x":  5,
+                      "y":  51,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  380,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        76,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  74,
+                      "name":  "下水道妖怪",
+                      "x":  3,
+                      "y":  57,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  380,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        76,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  21,
+                                                "y":  18,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  14,
+                             "deployment":  {
+                                                "x":  21,
+                                                "y":  16,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  15,
+                             "deployment":  {
+                                                "x":  25,
+                                                "y":  20,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  13,
+                             "deployment":  {
+                                                "x":  23,
+                                                "y":  22,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  21,
+                           "y":  18,
+                           "direction":  0,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  21,
+                           "y":  16,
+                           "direction":  0,
+                           "role_id":  14,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  25,
+                           "y":  20,
+                           "direction":  0,
+                           "role_id":  15,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  23,
+                           "y":  22,
+                           "direction":  0,
+                           "role_id":  13,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "密盜庫庫克",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.掃除此地的怪獸。",
+                       "defeat":  "白志超陣亡或庫庫克歸西。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  34,
+                                         "name":  "庫庫克",
+                                         "text":  "真糟！"
+                                     },
+                                     {
+                                         "speaker":  34,
+                                         "name":  "庫庫克",
+                                         "text":  "....魚大爺，可以讓我過去嗎？"
+                                     },
+                                     {
+                                         "speaker":  124,
+                                         "name":  "下水道妖怪",
+                                         "text":  "啵潑啵波....。"
+                                     },
+                                     {
+                                         "speaker":  34,
+                                         "name":  "庫庫克",
+                                         "text":  "今天....運氣真不好啊....剛剛才失手，現在又碰上這些不懂王道教化的怪獸....真有愧我三十級盜賊的行頭！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  13,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  34,
+                                            "offset_7":  2,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  34,
+                                         "name":  "庫庫克",
+                                         "text":  "嚇！！！"
+                                     },
+                                     {
+                                         "speaker":  14,
+                                         "name":  "飛霜",
+                                         "text":  "幹什麼！人嚇人會嚇死人的！"
+                                     },
+                                     {
+                                         "speaker":  34,
+                                         "name":  "庫庫克",
+                                         "text":  "不是我！不是我！我剛才沒有去偷東西。"
+                                     },
+                                     {
+                                         "speaker":  14,
+                                         "name":  "飛霜",
+                                         "text":  "你有偷也好，沒偷也罷，都和我沒關係。"
+                                     },
+                                     {
+                                         "speaker":  34,
+                                         "name":  "庫庫克",
+                                         "text":  "那....那妳們難道不是衛兵嗎？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "你看我們的樣子像是衛兵嗎？"
+                                     },
+                                     {
+                                         "speaker":  34,
+                                         "name":  "庫庫克",
+                                         "text":  "哈哈哈！我就知道！上天是不會放棄一個三十級的盜賊的！"
+                                     },
+                                     {
+                                         "speaker":  15,
+                                         "name":  "艾文",
+                                         "text":  ".....這傢伙腦筋是不是有點問題？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "看在他楞頭楞腦的份上，大家活動一下筋骨吧。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  0,
+                       "condition":  2,
+                       "role_id":  34,
+                       "lines":  [
+                                     {
+                                         "speaker":  34,
+                                         "name":  "庫庫克",
+                                         "text":  "天忌英才，我.......。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "這渾小子壞了我們大事。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  2,
+                       "completion_flag":  14,
+                       "condition":  1,
+                       "lines":  [
+                                     {
+                                         "speaker":  34,
+                                         "music_before":  4,
+                                         "name":  "庫庫克",
+                                         "text":  "喲～嘿！大獲全勝！帥氣盜賊庫庫克漂亮出擊！"
+                                     },
+                                     {
+                                         "speaker":  15,
+                                         "name":  "艾文",
+                                         "text":  "拜託！你很誇張耶！你這小子到底是從那裡冒出來的？"
+                                     },
+                                     {
+                                         "speaker":  34,
+                                         "name":  "庫庫克",
+                                         "text":  "啊，說來話長。我帥氣盜賊庫庫克一向是出手不失風，失風不出手的，今天在領主府內縱橫自如，也沒有笨警衛能發覺我，收穫豐富....。"
+                                     },
+                                     {
+                                         "speaker":  14,
+                                         "name":  "飛霜",
+                                         "text":  "別離題了，如果你不失手那裡會逃到這裡來，快說實話！"
+                                     },
+                                     {
+                                         "speaker":  34,
+                                         "name":  "庫庫克",
+                                         "text":  "唉！這就要提到傷心事了。不知道為什麼有人居然闖進了領主府，笨手笨腳地弄得警衛皆知，害得我只好落荒而逃，真是有愧於盜師盜祖啊....。"
+                                     },
+                                     {
+                                         "speaker":  13,
+                                         "name":  "羅莎莉",
+                                         "text":  "啊！"
+                                     },
+                                     {
+                                         "speaker":  14,
+                                         "name":  "飛霜",
+                                         "text":  "原來是這樣....。"
+                                     },
+                                     {
+                                         "speaker":  15,
+                                         "name":  "艾文",
+                                         "text":  "哈，算你倒楣。"
+                                     },
+                                     {
+                                         "speaker":  34,
+                                         "name":  "庫庫克",
+                                         "text":  "你們的態度很可疑喲！....我知道了！你們就是那群笨手笨腳的闖入者！搞砸我一次大買賣！你們要賠我！"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "賠你？怎麼個賠法？"
+                                     },
+                                     {
+                                         "speaker":  34,
+                                         "name":  "庫庫克",
+                                         "text":  "當然是加入你們的隊伍，伺機做買賣啊。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "加入？？？這小子要加入，妳們的意見如何？"
+                                     },
+                                     {
+                                         "speaker":  14,
+                                         "name":  "飛霜",
+                                         "text":  "隨他的便，說不定兩天就嚇跑了。"
+                                     },
+                                     {
+                                         "speaker":  15,
+                                         "name":  "艾文",
+                                         "text":  "這小子蠻機靈的，也許有點用處。"
+                                     },
+                                     {
+                                         "speaker":  13,
+                                         "name":  "羅莎莉",
+                                         "text":  "我沒意見。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "好，那就決定了。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  11,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  -5,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  12,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  -10,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  34,
+                                            "offset_7":  14,
+                                            "offset_9":  10
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   }
+               ]
+}

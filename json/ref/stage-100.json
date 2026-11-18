@@ -1,0 +1,804 @@
+﻿{
+    "map_id":  100,
+    "music":  22,
+    "route":  {
+                  "next_stage":  103,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  100
+              },
+    "units":  [
+                  {
+                      "id":  40,
+                      "appearance":  57,
+                      "name":  "柯莉特",
+                      "x":  13,
+                      "y":  44,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  600,
+                      "max_hp":  20,
+                      "equipment":  [
+                                        66,
+                                        138,
+                                        157,
+                                        178,
+                                        196,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  78,
+                      "appearance":  28,
+                      "name":  "隨軍神官",
+                      "x":  15,
+                      "y":  40,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  390,
+                      "max_hp":  135,
+                      "equipment":  [
+                                        38,
+                                        111,
+                                        163,
+                                        182,
+                                        193,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  76,
+                      "appearance":  26,
+                      "name":  "運金團護衛",
+                      "x":  2,
+                      "y":  14,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  6,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  344,
+                      "max_hp":  48,
+                      "equipment":  [
+                                        78,
+                                        132,
+                                        154,
+                                        173,
+                                        193,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  26,
+                      "name":  "運金團護衛",
+                      "x":  1,
+                      "y":  24,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  6,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  344,
+                      "max_hp":  48,
+                      "equipment":  [
+                                        78,
+                                        132,
+                                        154,
+                                        173,
+                                        193,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  26,
+                      "name":  "運金團護衛",
+                      "x":  1,
+                      "y":  16,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  6,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  344,
+                      "max_hp":  48,
+                      "equipment":  [
+                                        78,
+                                        132,
+                                        154,
+                                        173,
+                                        193,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  26,
+                      "name":  "運金團護衛",
+                      "x":  4,
+                      "y":  10,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  6,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  344,
+                      "max_hp":  48,
+                      "equipment":  [
+                                        78,
+                                        132,
+                                        154,
+                                        173,
+                                        193,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  26,
+                      "name":  "運金團護衛",
+                      "x":  2,
+                      "y":  19,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  6,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  344,
+                      "max_hp":  48,
+                      "equipment":  [
+                                        78,
+                                        132,
+                                        154,
+                                        173,
+                                        193,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  64,
+                      "name":  "運金團護衛",
+                      "x":  17,
+                      "y":  38,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  280,
+                      "max_hp":  132,
+                      "equipment":  [
+                                        38,
+                                        110,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  64,
+                      "name":  "運金團護衛",
+                      "x":  10,
+                      "y":  28,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  280,
+                      "max_hp":  132,
+                      "equipment":  [
+                                        38,
+                                        110,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  64,
+                      "name":  "運金團護衛",
+                      "x":  12,
+                      "y":  30,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  280,
+                      "max_hp":  132,
+                      "equipment":  [
+                                        38,
+                                        110,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  48,
+                      "name":  "運金團護衛",
+                      "x":  13,
+                      "y":  37,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  312,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        52,
+                                        122,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  48,
+                      "name":  "運金團護衛",
+                      "x":  6,
+                      "y":  29,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  312,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        52,
+                                        122,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  48,
+                      "name":  "運金團護衛",
+                      "x":  21,
+                      "y":  39,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  312,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        52,
+                                        122,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  48,
+                      "name":  "運金團護衛",
+                      "x":  8,
+                      "y":  23,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  312,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        52,
+                                        122,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  14,
+                      "name":  "運金團護衛",
+                      "x":  19,
+                      "y":  42,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  360,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        21,
+                                        122,
+                                        149,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  14,
+                      "name":  "運金團護衛",
+                      "x":  15,
+                      "y":  33,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  360,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        21,
+                                        122,
+                                        149,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  14,
+                      "name":  "運金團護衛",
+                      "x":  9,
+                      "y":  34,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  360,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        21,
+                                        122,
+                                        149,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  14,
+                      "name":  "運金團護衛",
+                      "x":  19,
+                      "y":  34,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  360,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        21,
+                                        122,
+                                        149,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  14,
+                      "name":  "運金團護衛",
+                      "x":  10,
+                      "y":  21,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  360,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        21,
+                                        122,
+                                        149,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  20,
+                                                "y":  12,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  22,
+                                                "y":  13,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  21,
+                                                "y":  14,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  23,
+                                                "y":  13,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  5,
+                             "deployment":  {
+                                                "x":  21,
+                                                "y":  9,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  6,
+                             "deployment":  {
+                                                "x":  20,
+                                                "y":  10,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  6,
+                             "role_id":  27,
+                             "deployment":  {
+                                                "x":  21,
+                                                "y":  12,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  7,
+                             "role_id":  35,
+                             "deployment":  {
+                                                "x":  22,
+                                                "y":  11,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  20,
+                           "y":  12,
+                           "direction":  0,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  22,
+                           "y":  13,
+                           "direction":  0,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  21,
+                           "y":  14,
+                           "direction":  0,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  23,
+                           "y":  13,
+                           "direction":  0,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  21,
+                           "y":  9,
+                           "direction":  0,
+                           "role_id":  5,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  20,
+                           "y":  10,
+                           "direction":  0,
+                           "role_id":  6,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  21,
+                           "y":  12,
+                           "direction":  0,
+                           "role_id":  27,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  22,
+                           "y":  11,
+                           "direction":  0,
+                           "role_id":  35,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "草原逐惡",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.消滅所有阻攔的敵軍。",
+                       "defeat":  "娜塔莉雅陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  40,
+                                         "name":  "柯莉特",
+                                         "text":  "....神官大人，這裡就交給你了。"
+                                     },
+                                     {
+                                         "speaker":  78,
+                                         "name":  "隨軍神官",
+                                         "text":  "是，我必定激勵手下消滅所有敵人！"
+                                     },
+                                     {
+                                         "speaker":  40,
+                                         "name":  "柯莉特",
+                                         "text":  "不要說大話，我是命令你遲滯敵軍，不是叫你去殺敵的。記住！完成任務就可以了，不要平白犧牲性命！"
+                                     },
+                                     {
+                                         "speaker":  78,
+                                         "name":  "隨軍神官",
+                                         "text":  "是。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  40,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  40,
+                                         "name":  "柯莉特",
+                                         "text":  "我等你的好消息。"
+                                     },
+                                     {
+                                         "speaker":  78,
+                                         "name":  "隨軍神官",
+                                         "text":  "是的，柯將軍。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  7,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  40,
+                                            "offset_7":  10,
+                                            "offset_9":  49
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  19,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  40,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  10,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  78,
+                                            "offset_7":  0,
+                                            "offset_9":  2
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  78,
+                                         "name":  "隨軍神官",
+                                         "text":  "準備應戰。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  6
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  76,
+                                         "name":  "運金團護衛",
+                                         "text":  "我們來幫忙了！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  2,
+                       "completion_flag":  15,
+                       "lines":  [
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "柯莉特往雙龍城的方向跑了，我們要去追她嗎？"
+                                     },
+                                     {
+                                         "speaker":  2,
+                                         "name":  "穆爾",
+                                         "text":  "還是....照預定計劃往目的地截擊？"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  0,
+                       "branch_flag":  15,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "讓我想想....。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "追擊柯莉特的本隊。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "追擊逃走的支隊。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  16,
+                       "condition":  1,
+                       "branch_flag":  15,
+                       "branch_value":  1,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "讓我們去追擊柯莉特的本隊吧。"
+                                     },
+                                     {
+                                         "speaker":  4,
+                                         "name":  "蘇",
+                                         "text":  "她往雙龍城的方向走了。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "動身吧。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  17,
+                       "condition":  2,
+                       "branch_flag":  15,
+                       "branch_value":  2,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "讓我們去追擊逃走的支隊吧。"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "不去追柯莉特嗎？"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "慢慢來，正使未必就是正主兒。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  103
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  105
+                   }
+               ]
+}

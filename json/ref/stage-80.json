@@ -1,0 +1,698 @@
+﻿{
+    "map_id":  80,
+    "music":  19,
+    "route":  {
+                  "next_stage":  85,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  80
+              },
+    "units":  [
+                  {
+                      "id":  73,
+                      "appearance":  23,
+                      "name":  "顧將軍",
+                      "x":  16,
+                      "y":  17,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  372,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        5,
+                                        122,
+                                        149,
+                                        170,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  56,
+                      "appearance":  15,
+                      "name":  "拳術侍衛",
+                      "x":  15,
+                      "y":  18,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  212,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        102,
+                                        148,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  15,
+                      "name":  "拳術侍衛",
+                      "x":  9,
+                      "y":  35,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  212,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        102,
+                                        148,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  15,
+                      "name":  "拳術侍衛",
+                      "x":  16,
+                      "y":  29,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  212,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        102,
+                                        148,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  15,
+                      "name":  "拳術侍衛",
+                      "x":  18,
+                      "y":  19,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  212,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        102,
+                                        148,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  52,
+                      "name":  "魔幻術士",
+                      "x":  16,
+                      "y":  22,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  168,
+                      "max_hp":  77,
+                      "equipment":  [
+                                        33,
+                                        104,
+                                        159,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  52,
+                      "name":  "魔幻術士",
+                      "x":  7,
+                      "y":  38,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  168,
+                      "max_hp":  77,
+                      "equipment":  [
+                                        33,
+                                        104,
+                                        159,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  52,
+                      "name":  "魔幻術士",
+                      "x":  6,
+                      "y":  27,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  168,
+                      "max_hp":  77,
+                      "equipment":  [
+                                        33,
+                                        104,
+                                        159,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  52,
+                      "name":  "魔幻術士",
+                      "x":  12,
+                      "y":  34,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  168,
+                      "max_hp":  77,
+                      "equipment":  [
+                                        33,
+                                        104,
+                                        159,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  52,
+                      "appearance":  2,
+                      "name":  "礦坑衛兵",
+                      "x":  6,
+                      "y":  36,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  225,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        4,
+                                        120,
+                                        149,
+                                        170,
+                                        185,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  2,
+                      "name":  "礦坑衛兵",
+                      "x":  4,
+                      "y":  25,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  225,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        4,
+                                        120,
+                                        149,
+                                        170,
+                                        185,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  2,
+                      "name":  "礦坑衛兵",
+                      "x":  8,
+                      "y":  29,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  225,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        4,
+                                        120,
+                                        149,
+                                        170,
+                                        185,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  2,
+                      "name":  "礦坑衛兵",
+                      "x":  13,
+                      "y":  26,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  225,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        4,
+                                        120,
+                                        149,
+                                        170,
+                                        185,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  47,
+                      "name":  "礦坑騎兵",
+                      "x":  12,
+                      "y":  50,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  208,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        75,
+                                        130,
+                                        150,
+                                        170,
+                                        187,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  47,
+                      "name":  "礦坑騎兵",
+                      "x":  13,
+                      "y":  51,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  208,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        75,
+                                        130,
+                                        150,
+                                        170,
+                                        187,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  47,
+                      "name":  "礦坑騎兵",
+                      "x":  13,
+                      "y":  54,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  208,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        75,
+                                        130,
+                                        150,
+                                        170,
+                                        187,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  39,
+                      "name":  "礦坑弩手",
+                      "x":  12,
+                      "y":  17,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  182,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        48,
+                                        120,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  39,
+                      "name":  "礦坑弩手",
+                      "x":  8,
+                      "y":  40,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  182,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        48,
+                                        120,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  39,
+                      "name":  "礦坑弩手",
+                      "x":  4,
+                      "y":  30,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  182,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        48,
+                                        120,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  39,
+                      "name":  "礦坑弩手",
+                      "x":  11,
+                      "y":  23,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  182,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        48,
+                                        120,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  2,
+                                                "y":  49,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  1,
+                                                "y":  47,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  1,
+                                                "y":  45,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  1,
+                                                "y":  51,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  5,
+                             "deployment":  {
+                                                "x":  2,
+                                                "y":  51,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  6,
+                             "deployment":  {
+                                                "x":  2,
+                                                "y":  47,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  2,
+                           "y":  49,
+                           "direction":  2,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  1,
+                           "y":  47,
+                           "direction":  2,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  1,
+                           "y":  45,
+                           "direction":  2,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  1,
+                           "y":  51,
+                           "direction":  2,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  2,
+                           "y":  51,
+                           "direction":  2,
+                           "role_id":  5,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  2,
+                           "y":  47,
+                           "direction":  2,
+                           "role_id":  6,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "採石場",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.打倒顧大將軍。",
+                       "defeat":  "娜塔莉雅陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  73,
+                                         "name":  "顧將軍",
+                                         "text":  "唉....為什麼我會被派到這種鬼地方來，我到底得罪誰了。"
+                                     },
+                                     {
+                                         "speaker":  56,
+                                         "name":  "拳術侍衛",
+                                         "text":  "將軍吉星高照，早晚會調回亞修斯城的。"
+                                     },
+                                     {
+                                         "speaker":  73,
+                                         "name":  "顧將軍",
+                                         "text":  "別說了，來到這裡十幾天了，連我都不許進礦坑，這算什麼嘛！"
+                                     },
+                                     {
+                                         "speaker":  56,
+                                         "name":  "拳術侍衛",
+                                         "text":  "將軍負責抵禦外敵，礦坑內的雜事就交給下人去辦吧。"
+                                     },
+                                     {
+                                         "speaker":  73,
+                                         "name":  "顧將軍",
+                                         "text":  "敵人？誰會來攻擊這種三流小礦場？真搞不懂上頭的想法....。"
+                                     },
+                                     {
+                                         "speaker":  52,
+                                         "name":  "礦坑衛兵",
+                                         "text":  "將軍，有可疑人物接近！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  56,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  73,
+                                         "name":  "顧將軍",
+                                         "text":  "真的！？那我有事可以做啦！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  0,
+                       "condition":  2,
+                       "role_id":  73,
+                       "lines":  [
+                                     {
+                                         "speaker":  73,
+                                         "name":  "顧將軍",
+                                         "text":  "哇....我還要回亞修斯享福呢！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  2,
+                       "completion_flag":  14,
+                       "lines":  [
+                                     {
+                                         "speaker":  2,
+                                         "name":  "穆爾",
+                                         "text":  "這種地方居然會配置重兵防守．一定有問題。"
+                                     },
+                                     {
+                                         "speaker":  4,
+                                         "name":  "蘇",
+                                         "text":  "地面下傳來著奇怪的氣息....和聖殿內的感覺很相近....。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "我們下去偵查，大家小心為是。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  11,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  10,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  12,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  10,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   }
+               ]
+}

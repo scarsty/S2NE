@@ -1,0 +1,182 @@
+﻿{
+    "map_id":  26,
+    "music":  18,
+    "route":  {
+                  "next_stage":  98,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  167
+              },
+    "units":  [
+                  {
+                      "id":  35,
+                      "appearance":  34,
+                      "name":  "歐西德",
+                      "x":  16,
+                      "y":  34,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  356,
+                      "max_hp":  148,
+                      "equipment":  [
+                                        43,
+                                        108,
+                                        159,
+                                        180,
+                                        189,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  17,
+                                                "y":  31,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  18,
+                                                "y":  36,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  15,
+                                                "y":  27,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  13,
+                                                "y":  27,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  5,
+                             "deployment":  {
+                                                "x":  16,
+                                                "y":  29,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  6,
+                             "deployment":  {
+                                                "x":  18,
+                                                "y":  33,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  6,
+                             "role_id":  27,
+                             "deployment":  {
+                                                "x":  15,
+                                                "y":  32,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  17,
+                           "y":  31,
+                           "direction":  0,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  18,
+                           "y":  36,
+                           "direction":  3,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  15,
+                           "y":  27,
+                           "direction":  0,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  13,
+                           "y":  27,
+                           "direction":  1,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  16,
+                           "y":  29,
+                           "direction":  0,
+                           "role_id":  5,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  18,
+                           "y":  33,
+                           "direction":  0,
+                           "role_id":  6,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  15,
+                           "y":  32,
+                           "direction":  2,
+                           "role_id":  27,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "賢者歐西德",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.無。",
+                       "defeat":  "娜塔莉雅陣亡。"
+                   },
+    "events":  [
+
+               ]
+}

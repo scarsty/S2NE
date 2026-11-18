@@ -1,0 +1,251 @@
+﻿{
+    "map_id":  71,
+    "music":  26,
+    "route":  {
+                  "next_stage":  74,
+                  "alternate_stage":  0,
+                  "mode":  3
+              },
+    "units":  [
+                  {
+                      "id":  7,
+                      "appearance":  97,
+                      "name":  "大長老",
+                      "x":  6,
+                      "y":  37,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  600,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        37,
+                                        107,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  5,
+                      "appearance":  1,
+                      "name":  "古斯塔夫",
+                      "x":  10,
+                      "y":  38,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  256,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        62,
+                                        129,
+                                        149,
+                                        168,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  6,
+                      "appearance":  54,
+                      "name":  "黛西",
+                      "x":  9,
+                      "y":  36,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  198,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        48,
+                                        129,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  8,
+                                                "y":  41,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  9,
+                                                "y":  41,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  8,
+                                                "y":  43,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  9,
+                                                "y":  43,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  8,
+                           "y":  41,
+                           "direction":  3,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  9,
+                           "y":  41,
+                           "direction":  3,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  8,
+                           "y":  43,
+                           "direction":  3,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  9,
+                           "y":  43,
+                           "direction":  3,
+                           "role_id":  4,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "返回奚族",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.無。",
+                       "defeat":  "娜塔莉雅陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "....事情大致上是這樣的。"
+                                     },
+                                     {
+                                         "speaker":  7,
+                                         "name":  "大長老",
+                                         "text":  "我知道了，這和預言中說的確實有出入，也難怪黑精靈會倉惶失措了。"
+                                     },
+                                     {
+                                         "speaker":  2,
+                                         "name":  "穆爾",
+                                         "text":  "大長老，那預言是在說些什麼呢？"
+                                     },
+                                     {
+                                         "speaker":  7,
+                                         "name":  "大長老",
+                                         "text":  "....預言說的是天外飛靈的故事....講的是在聖地會出現一個不死魔王的傳說....，不過很難理解。現在....有一個任務要交給你們去辦。"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "哦？有任務啊？"
+                                     },
+                                     {
+                                         "speaker":  7,
+                                         "name":  "大長老",
+                                         "text":  "最近南方領挑釁的動作越來越大，一個月前把南邊的礦場沒入，昨天又有消息傳來：南方領打算在提那城募兵，強迫當地我族同胞入伍，擺明了要試探我們應對的底線。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "大長老可是要我們幾個人私下去營救他們？"
+                                     },
+                                     {
+                                         "speaker":  7,
+                                         "name":  "大長老",
+                                         "text":  "哈哈，正是如此。現在派太多人去容易引起衝突，完全不加理會又會縱容南方領侵略的腳步。所以妳們四個和古斯塔夫、黛西一起行動，去幫助提那城裡的同胞，讓入侵者知道我們不是好欺負的。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  22,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  5,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  22,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  6,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  7,
+                                         "name":  "大長老",
+                                         "text":  "去吧，鳥魚獸的孩子們，阻止入侵者的腳步吧。"
+                                     }
+                                 ]
+                   }
+               ]
+}

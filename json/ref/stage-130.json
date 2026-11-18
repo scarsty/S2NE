@@ -1,0 +1,1139 @@
+﻿{
+    "map_id":  130,
+    "music":  32,
+    "route":  {
+                  "next_stage":  0,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  130
+              },
+    "units":  [
+                  {
+                      "id":  20,
+                      "appearance":  94,
+                      "name":  "克雷布特里",
+                      "x":  10,
+                      "y":  45,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  3600,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        14,
+                                        125,
+                                        165,
+                                        183,
+                                        199,
+                                        238
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  120,
+                      "name":  "吸血鬼芬格",
+                      "x":  9,
+                      "y":  15,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  1560,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        140,
+                                        164,
+                                        182,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  122,
+                      "name":  "魔女賽蓮",
+                      "x":  1,
+                      "y":  31,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  1200,
+                      "max_hp":  280,
+                      "equipment":  [
+                                        0,
+                                        115,
+                                        164,
+                                        181,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  76,
+                      "name":  "墮天使烏拉",
+                      "x":  21,
+                      "y":  63,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  1480,
+                      "max_hp":  200,
+                      "equipment":  [
+                                        45,
+                                        115,
+                                        164,
+                                        181,
+                                        199,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  123,
+                      "name":  "巨龍埃爾默",
+                      "x":  1,
+                      "y":  63,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  2000,
+                      "max_hp":  100,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  71,
+                      "name":  "巫妖西蒙",
+                      "x":  18,
+                      "y":  38,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  1320,
+                      "max_hp":  250,
+                      "equipment":  [
+                                        41,
+                                        109,
+                                        162,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  166,
+                      "appearance":  80,
+                      "name":  "傳送裝置",
+                      "x":  11,
+                      "y":  39,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  4000,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  119,
+                      "name":  "鋼鐵巨神",
+                      "x":  13,
+                      "y":  22,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  1000,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        42,
+                                        142,
+                                        155,
+                                        0,
+                                        0,
+                                        230
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  119,
+                      "name":  "鋼鐵巨神",
+                      "x":  5,
+                      "y":  37,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  1000,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        42,
+                                        142,
+                                        155,
+                                        0,
+                                        0,
+                                        230
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  119,
+                      "name":  "鋼鐵巨神",
+                      "x":  5,
+                      "y":  70,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  1000,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        42,
+                                        142,
+                                        155,
+                                        0,
+                                        0,
+                                        230
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  119,
+                      "name":  "鋼鐵巨神",
+                      "x":  18,
+                      "y":  70,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  1000,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        42,
+                                        142,
+                                        155,
+                                        0,
+                                        0,
+                                        230
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  119,
+                      "name":  "鋼鐵巨神",
+                      "x":  21,
+                      "y":  31,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  1000,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        42,
+                                        142,
+                                        155,
+                                        0,
+                                        0,
+                                        230
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  119,
+                      "name":  "鋼鐵巨神",
+                      "x":  9,
+                      "y":  47,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  1000,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        42,
+                                        142,
+                                        155,
+                                        0,
+                                        0,
+                                        230
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  119,
+                      "name":  "鋼鐵巨神",
+                      "x":  13,
+                      "y":  47,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  1000,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        42,
+                                        142,
+                                        155,
+                                        0,
+                                        0,
+                                        230
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  119,
+                      "name":  "鋼鐵巨神",
+                      "x":  13,
+                      "y":  54,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  1000,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        42,
+                                        142,
+                                        155,
+                                        0,
+                                        0,
+                                        230
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  119,
+                      "name":  "鋼鐵巨神",
+                      "x":  10,
+                      "y":  54,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  1000,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        42,
+                                        142,
+                                        155,
+                                        0,
+                                        0,
+                                        230
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  12,
+                                                "y":  83,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  11,
+                                                "y":  80,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  12,
+                                                "y":  80,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  10,
+                                                "y":  83,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  6,
+                             "deployment":  {
+                                                "x":  12,
+                                                "y":  81,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  11,
+                                                "y":  84,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  6,
+                             "role_id":  14,
+                             "deployment":  {
+                                                "x":  13,
+                                                "y":  83,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  7,
+                             "role_id":  34,
+                             "deployment":  {
+                                                "x":  10,
+                                                "y":  81,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  8,
+                             "role_id":  16,
+                             "deployment":  {
+                                                "x":  12,
+                                                "y":  84,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  9,
+                             "role_id":  17,
+                             "deployment":  {
+                                                "x":  10,
+                                                "y":  82,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  12,
+                           "y":  83,
+                           "direction":  3,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  11,
+                           "y":  80,
+                           "direction":  1,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  12,
+                           "y":  80,
+                           "direction":  0,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  10,
+                           "y":  83,
+                           "direction":  2,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  12,
+                           "y":  81,
+                           "direction":  0,
+                           "role_id":  6,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  11,
+                           "y":  84,
+                           "direction":  2,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  13,
+                           "y":  83,
+                           "direction":  2,
+                           "role_id":  14,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  10,
+                           "y":  81,
+                           "direction":  1,
+                           "role_id":  34,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  12,
+                           "y":  84,
+                           "direction":  3,
+                           "role_id":  16,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  10,
+                           "y":  82,
+                           "direction":  3,
+                           "role_id":  17,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "返鄉的遊子",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.打倒克雷布特里。*2.克雷布特里離去。",
+                       "defeat":  "娜塔莉雅或白志超陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "嘿，真是令人興奮啊，連西碧拉都不是你們的對手，那在這個星球上稱王封后應該沒什麼問題吧。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "....克雷布特里，你說的是 @@WA7,00D3D@@在這個星球上@@RWRD@@，難道你不是這個星球的人？"
+                                     },
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "聰明的孩子，我真該選你而不是選擇貝洛、夏普之類的笨蛋。如果不是他們內鬥礙事，我早就不必待在這裡了。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "你究竟是什麼人？是要來侵佔這個世界的嗎？"
+                                     },
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "哈哈哈....實在太好笑了。聽好了：我對你們的世界一點興趣也沒有！@@WA7,00D3D@@我厭惡這個世界！@@RWRD@@我才不屑這裡的任何事物！@@WA7,00D3D@@我要回去！@@RWRD@@"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "你......你不想佔領這個世界？....我弄胡塗了....？"
+                                     },
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "白癡！！！誰在乎這個又小又偏僻的Ｅ級星球啊？大概只有你們這些當地的生物和震旦星機化生物有興趣吧，@@WA7,00D3D@@送給我我都不要！@@RWRD@@"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "就算你對征服這個世界沒有野心，卻無端引起兩國爭戰、死傷無數，這筆賬不和你算要找誰去討？"
+                                     },
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "妳們要和我算帳，倒也算是合情合理，就看妳們有沒有這個本事。妳們有帳要和我算，我又何嘗沒有帳要找人討？這十二年來的異地放逐之苦，在我回去，之後一定要連本帶利討回來！一定要！"
+                                     },
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "呼～好像說得太激動了，不和妳們閒扯了，我要準備回去了。"
+                                     },
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前十五分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  15,
+                       "condition":  2,
+                       "role_id":  20,
+                       "lines":  [
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "唉呦，痛啊～。"
+                                     },
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "傳送目標生理數值混亂超過危險值，傳送程序中止。"
+                                     },
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "等著瞧吧！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  11,
+                       "raw_operands":  {
+                                            "offset_3":  15,
+                                            "offset_5":  10,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  12,
+                       "raw_operands":  {
+                                            "offset_3":  15,
+                                            "offset_5":  15,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  4,
+                       "condition":  6,
+                       "route_stage":  131
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  2
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前十四分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  3
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前十三分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  4
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前十二分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  5
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前十一分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  6
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前十分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  7
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前九分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  8
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前八分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  9
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前七分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  10
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前六分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  11
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前五分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  12
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前四分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  13
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前三分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  14
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前兩分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  15
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在開始計時，倒數前一分鐘。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  16
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "時間到，開始傳送。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  8,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  11,
+                                            "offset_7":  17,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  8,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  20,
+                                            "offset_7":  34,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  8,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  20,
+                                            "offset_7":  66,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  8,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  11,
+                                            "offset_7":  83,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  8,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  3,
+                                            "offset_7":  66,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  8,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  3,
+                                            "offset_7":  34,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  8,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  11,
+                                            "offset_7":  49,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  8,
+                       "completion_flag":  14,
+                       "condition":  4,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  20,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "再見了，科隆多星球，我不會想念這裡的，哈哈哈......。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  6,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  20,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  80,
+                       "condition":  1,
+                       "required_flags":  [
+                                              63
+                                          ]
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  78,
+                       "condition":  3,
+                       "any_flags":  [
+                                         64,
+                                         65
+                                     ]
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  4,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "他走了....被他逃走了....。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "雖然被他逃走了，但是被他引起的戰爭也總算停止了，還是有點收穫的....。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "總是有點未竟全功的感覺....很想知道他為什麼要這樣做....。"
+                                     },
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "傳送完畢，請指示新命令。"
+                                     },
+                                     {
+                                         "speaker":  5,
+                                         "name":  "古斯塔夫",
+                                         "text":  "那個機器在說話耶....！"
+                                     },
+                                     {
+                                         "speaker":  17,
+                                         "name":  "秋月",
+                                         "text":  "嗯....還可以下命令耶，那就可以問些我們的迷惑了。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "那..請告訴我有關@@WA7,00D3D@@克雷布特里的資料@@RWRD@@....可以嗎？"
+                                     },
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "克雷布特里....第三十四億九千六百四十七筆資料，分類：傳送意外的失蹤生命體。請問需要相關資料嗎？"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "越詳盡越好。"
+                                     },
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "....自動關閉的傳送裝置那倒也罷了，最多是失去功能停止這項任務。部份不穩定的傳送裝置依然持續運作，將進入的生命體隨機傳送到銀河系內所有可能的傳送點，或是還原為微分子氣化在虛空之中....。"
+                                     },
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "科隆多星上共有十四個傳送口，在母電腦關閉傳送功能之前隨機傳送來了七個生命體，扣去無法適應此地環境而當場斃命的四個生命體外，有三個個體存活了下來，三個生命體的生物機能都有改變的現象，遠遠地強過了傳送前的初始狀態，這正是我們研究的課題。"
+                                     },
+                                     {
+                                         "speaker":  13,
+                                         "name":  "羅莎莉",
+                                         "text":  "啊，好可怕....。"
+                                     },
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "這三個生命體起先彼此並不相知，各自尋找返回故鄉的方式，而與科隆多人發生了接觸。資料顯示：一個生命體於數年後在絕望中死去；另一個則因緣際會地與科隆多人聯手消滅了此地的黑暗生物，在本地主控電腦的協助下返回居地，卻獨漏另一人的有關行蹤。"
+                                     },
+                                     {
+                                         "speaker":  18,
+                                         "name":  "茱迪",
+                                         "text":  "前面那一段好像是在說孟祈。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "嗯。"
+                                     },
+                                     {
+                                         "speaker":  166,
+                                         "name":  "傳送裝置",
+                                         "text":  "現在我們終於知道克雷布特里就是那行蹤不詳的第三個生命體，本地的研究計劃也可以告一個段落了，接下來是瞭解為何傳送後存活的生命體會更加茁壯，還有返回後的生命體有何異狀，改變是否能持續....報告完畢。"
+                                     },
+                                     {
+                                         "speaker":  14,
+                                         "name":  "飛霜",
+                                         "text":  "啊～有聽沒有懂，它在講什麼啊？"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "不管了，此地能恢復平靜，我已經心滿意足了。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "對極了，這些事都已經不重要了，讓我們回去吧。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "嗯。"
+                                     }
+                                 ]
+                   }
+               ]
+}

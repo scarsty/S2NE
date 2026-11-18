@@ -229,3 +229,10 @@ SDL资源实验（2026-11-16）：已按用户授权生成`out/textures-sdl`简�
 
 - External mode now routes menu/settings/confirmation/growth/ANI/prologue frame uploads through the texture resource manager; legacy mode remains unchanged. Release x64 and clang-format checks pass.
 - A direct map-sprite replacement was rejected and removed because converting edited PNG output back into the indexed world buffer would corrupt original occlusion/shadow semantics. Map/unit/spell direct draw commands remain the next migration boundary.
+# Current battle-menu regression status
+
+- The native right-click battlefield menu path is restricted again to the original stable `idle` battle state. Opening the menu sets an explicit prologue overlay flag, so the battlefield renderer does not draw the personal command/status overlays beneath the menu.
+- Closing the menu and a menu draw failure both clear that flag. The Release x64 build and clang-format validation pass.
+- `OriginalBattleMenu` no longer reports the palette transform error every frame when the texture framebuffer is not indexed; it preserves the battlefield image instead. This prevents the prior fatal/error flood, but does not yet reproduce the original indexed-palette translucency in texture mode.
+- No claim is made that the translucent personal battle-option backing or the complete original UI reproduction is finished.
+

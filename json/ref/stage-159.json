@@ -1,0 +1,106 @@
+﻿{
+    "map_id":  51,
+    "music":  11,
+    "route":  {
+                  "next_stage":  59,
+                  "alternate_stage":  0,
+                  "mode":  3
+              },
+    "units":  [
+
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  9,
+                                                "y":  22,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  7,
+                                                "y":  27,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  8,
+                                                "y":  29,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  9,
+                                                "y":  31,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  9,
+                           "y":  22,
+                           "direction":  1,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  7,
+                           "y":  27,
+                           "direction":  2,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  8,
+                           "y":  29,
+                           "direction":  2,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  9,
+                           "y":  31,
+                           "direction":  2,
+                           "role_id":  4,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "休戰儀式",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.無。",
+                       "defeat":  "白志超陣亡。"
+                   },
+    "events":  [
+
+               ]
+}

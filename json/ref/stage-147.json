@@ -1,0 +1,53 @@
+﻿{
+    "map_id":  14,
+    "music":  18,
+    "route":  {
+                  "next_stage":  16,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  147
+              },
+    "units":  [
+
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  14,
+                                                "y":  22,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  14,
+                           "y":  22,
+                           "direction":  0,
+                           "role_id":  11,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "庫庫克",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.無。",
+                       "defeat":  "白志超陣亡。"
+                   },
+    "events":  [
+
+               ]
+}

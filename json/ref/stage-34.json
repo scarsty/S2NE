@@ -1,0 +1,1245 @@
+﻿{
+    "map_id":  34,
+    "music":  8,
+    "route":  {
+                  "next_stage":  26,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  34
+              },
+    "units":  [
+                  {
+                      "id":  85,
+                      "appearance":  35,
+                      "name":  "防衛指揮官",
+                      "x":  11,
+                      "y":  48,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  500,
+                      "max_hp":  70,
+                      "equipment":  [
+                                        10,
+                                        137,
+                                        157,
+                                        178,
+                                        195,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  125,
+                      "appearance":  122,
+                      "name":  "戰船指揮官",
+                      "x":  7,
+                      "y":  68,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  399,
+                      "max_hp":  164,
+                      "equipment":  [
+                                        0,
+                                        111,
+                                        160,
+                                        181,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  96,
+                      "appearance":  46,
+                      "name":  "海岸防衛隊",
+                      "x":  19,
+                      "y":  61,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  308,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        8,
+                                        122,
+                                        156,
+                                        178,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  46,
+                      "name":  "海岸防衛隊",
+                      "x":  10,
+                      "y":  43,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  308,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        8,
+                                        122,
+                                        156,
+                                        178,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  46,
+                      "name":  "海岸防衛隊",
+                      "x":  12,
+                      "y":  26,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  308,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        8,
+                                        122,
+                                        156,
+                                        178,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  46,
+                      "name":  "海岸防衛隊",
+                      "x":  18,
+                      "y":  38,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  308,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        8,
+                                        122,
+                                        156,
+                                        178,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  46,
+                      "name":  "海岸防衛隊",
+                      "x":  12,
+                      "y":  43,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  308,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        8,
+                                        122,
+                                        156,
+                                        178,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  16,
+                      "name":  "海岸防衛隊",
+                      "x":  17,
+                      "y":  61,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  286,
+                      "max_hp":  130,
+                      "equipment":  [
+                                        37,
+                                        109,
+                                        163,
+                                        180,
+                                        193,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  16,
+                      "name":  "海岸防衛隊",
+                      "x":  10,
+                      "y":  46,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  286,
+                      "max_hp":  130,
+                      "equipment":  [
+                                        37,
+                                        109,
+                                        163,
+                                        180,
+                                        193,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  16,
+                      "name":  "海岸防衛隊",
+                      "x":  15,
+                      "y":  32,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  286,
+                      "max_hp":  130,
+                      "equipment":  [
+                                        37,
+                                        109,
+                                        163,
+                                        180,
+                                        193,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  16,
+                      "name":  "海岸防衛隊",
+                      "x":  14,
+                      "y":  48,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  286,
+                      "max_hp":  130,
+                      "equipment":  [
+                                        37,
+                                        109,
+                                        163,
+                                        180,
+                                        193,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  25,
+                      "name":  "海岸防衛隊",
+                      "x":  19,
+                      "y":  65,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  52,
+                      "equipment":  [
+                                        53,
+                                        122,
+                                        156,
+                                        178,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  25,
+                      "name":  "海岸防衛隊",
+                      "x":  8,
+                      "y":  43,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  52,
+                      "equipment":  [
+                                        53,
+                                        122,
+                                        156,
+                                        178,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  25,
+                      "name":  "海岸防衛隊",
+                      "x":  3,
+                      "y":  32,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  52,
+                      "equipment":  [
+                                        53,
+                                        122,
+                                        156,
+                                        178,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  25,
+                      "name":  "海岸防衛隊",
+                      "x":  9,
+                      "y":  20,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  52,
+                      "equipment":  [
+                                        53,
+                                        122,
+                                        156,
+                                        178,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  25,
+                      "name":  "海岸防衛隊",
+                      "x":  21,
+                      "y":  44,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  52,
+                      "equipment":  [
+                                        53,
+                                        122,
+                                        156,
+                                        178,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  123,
+                      "appearance":  73,
+                      "name":  "海員",
+                      "x":  7,
+                      "y":  63,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  440,
+                      "max_hp":  12,
+                      "equipment":  [
+                                        20,
+                                        134,
+                                        147,
+                                        173,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  73,
+                      "name":  "海員",
+                      "x":  9,
+                      "y":  66,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  440,
+                      "max_hp":  12,
+                      "equipment":  [
+                                        20,
+                                        134,
+                                        147,
+                                        173,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  73,
+                      "name":  "海員",
+                      "x":  13,
+                      "y":  74,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  440,
+                      "max_hp":  12,
+                      "equipment":  [
+                                        20,
+                                        134,
+                                        147,
+                                        173,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  73,
+                      "name":  "海員",
+                      "x":  5,
+                      "y":  54,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  440,
+                      "max_hp":  12,
+                      "equipment":  [
+                                        20,
+                                        134,
+                                        147,
+                                        173,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  116,
+                      "appearance":  66,
+                      "name":  "官道巡邏隊",
+                      "x":  13,
+                      "y":  15,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  8,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  400,
+                      "max_hp":  32,
+                      "equipment":  [
+                                        80,
+                                        136,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  66,
+                      "name":  "官道巡邏隊",
+                      "x":  10,
+                      "y":  14,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  8,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  400,
+                      "max_hp":  32,
+                      "equipment":  [
+                                        80,
+                                        136,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  66,
+                      "name":  "官道巡邏隊",
+                      "x":  22,
+                      "y":  40,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  8,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  400,
+                      "max_hp":  32,
+                      "equipment":  [
+                                        80,
+                                        136,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  66,
+                      "name":  "官道巡邏隊",
+                      "x":  20,
+                      "y":  33,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  8,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  400,
+                      "max_hp":  32,
+                      "equipment":  [
+                                        80,
+                                        136,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  24,
+                      "name":  "官道巡邏隊",
+                      "x":  21,
+                      "y":  31,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  8,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  380,
+                      "max_hp":  48,
+                      "equipment":  [
+                                        80,
+                                        136,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  24,
+                      "name":  "官道巡邏隊",
+                      "x":  15,
+                      "y":  16,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  8,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  380,
+                      "max_hp":  48,
+                      "equipment":  [
+                                        80,
+                                        136,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  24,
+                      "name":  "官道巡邏隊",
+                      "x":  12,
+                      "y":  15,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  8,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  380,
+                      "max_hp":  48,
+                      "equipment":  [
+                                        80,
+                                        136,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  24,
+                      "name":  "官道巡邏隊",
+                      "x":  11,
+                      "y":  17,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  8,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  380,
+                      "max_hp":  48,
+                      "equipment":  [
+                                        80,
+                                        136,
+                                        156,
+                                        177,
+                                        197,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  13,
+                                                "y":  18,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  14,
+                             "deployment":  {
+                                                "x":  21,
+                                                "y":  32,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  15,
+                             "deployment":  {
+                                                "x":  14,
+                                                "y":  16,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  13,
+                             "deployment":  {
+                                                "x":  22,
+                                                "y":  34,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  16,
+                             "deployment":  {
+                                                "x":  14,
+                                                "y":  18,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  17,
+                             "deployment":  {
+                                                "x":  13,
+                                                "y":  16,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  6,
+                             "role_id":  18,
+                             "deployment":  {
+                                                "x":  21,
+                                                "y":  34,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  7,
+                             "role_id":  34,
+                             "deployment":  {
+                                                "x":  22,
+                                                "y":  32,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  13,
+                           "y":  18,
+                           "direction":  0,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  21,
+                           "y":  32,
+                           "direction":  0,
+                           "role_id":  14,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  14,
+                           "y":  16,
+                           "direction":  0,
+                           "role_id":  15,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  22,
+                           "y":  34,
+                           "direction":  0,
+                           "role_id":  13,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  14,
+                           "y":  18,
+                           "direction":  0,
+                           "role_id":  16,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  13,
+                           "y":  16,
+                           "direction":  0,
+                           "role_id":  17,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  21,
+                           "y":  34,
+                           "direction":  0,
+                           "role_id":  18,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  22,
+                           "y":  32,
+                           "direction":  0,
+                           "role_id":  34,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "港都喋血",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.我方抵達紅旗處佔領武器貨船。",
+                       "defeat":  "白志超陣亡或是超過三十回合。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  21,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   }
+                   },
+                   {
+                       "type":  13,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  21,
+                                            "offset_5":  171,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  85,
+                                         "name":  "防衛指揮官",
+                                         "text":  "敵人已經到了，各部隊就戰鬥位置！"
+                                     },
+                                     {
+                                         "speaker":  96,
+                                         "name":  "海岸防衛隊",
+                                         "text":  "得令！"
+                                     },
+                                     {
+                                         "speaker":  125,
+                                         "name":  "戰船指揮官",
+                                         "text":  "殺光所有附近的遊民，不許消息外洩！"
+                                     },
+                                     {
+                                         "speaker":  123,
+                                         "name":  "海員",
+                                         "text":  "是！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  8
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  116,
+                                         "name":  "獨角獸騎士",
+                                         "text":  "運輸船尚未落入敵手，全軍突擊！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  13,
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "大功告成！這下子南方領沒有兵器可用了！"
+                                     },
+                                     {
+                                         "speaker":  18,
+                                         "name":  "茱迪",
+                                         "text":  "我們這裡的任務算是達成了，不知道娜塔莉雅那邊進行得如何？"
+                                     },
+                                     {
+                                         "speaker":  15,
+                                         "name":  "艾文",
+                                         "text":  "我們早點回亞修斯吧，看看最新的發展狀況。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  18
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  0,
+                       "branch_flag":  13,
+                       "lines":  [
+                                     {
+                                         "speaker":  13,
+                                         "name":  "羅莎莉",
+                                         "text":  "等等，在回去之前是不是該把這些奇怪的武器給帶走？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "毀掉全部的武器。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "取用部份的兵器，其餘銷毀。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "取用部份的兵器，其餘交給村民看管。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "不拿走任何兵器，全部交給村民看管。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  22,
+                       "condition":  1,
+                       "branch_flag":  13,
+                       "branch_value":  1,
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "兵刃是不祥之物，還是全毀了免得又生後患。"
+                                     },
+                                     {
+                                         "speaker":  16,
+                                         "name":  "刑天",
+                                         "text":  "真是可惜啊，如此利刃要全部毀去....。"
+                                     },
+                                     {
+                                         "speaker":  17,
+                                         "name":  "秋月",
+                                         "text":  "總比留下來為禍世人要好得多，動手吧。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  12,
+                       "raw_operands":  {
+                                            "offset_3":  22,
+                                            "offset_5":  10,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  8,
+                       "raw_operands":  {
+                                            "offset_3":  22,
+                                            "offset_5":  600,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "一次難得的經驗啊....。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  14,
+                       "condition":  2,
+                       "branch_flag":  13,
+                       "branch_value":  2,
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "留幾件順手的武器，其餘的全毀了吧。"
+                                     },
+                                     {
+                                         "speaker":  14,
+                                         "name":  "飛霜",
+                                         "text":  "可惜啊、可惜啊，如果能全部帶走就好了....。"
+                                     },
+                                     {
+                                         "speaker":  34,
+                                         "name":  "庫庫克",
+                                         "text":  "大姐別疼惜了，有我庫庫克在，這種機會多得是。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "快動手吧。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  11,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  5,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  12,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  5,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  8,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  200,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "一次難得的經驗啊....。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  15,
+                       "condition":  3,
+                       "branch_flag":  13,
+                       "branch_value":  3,
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "留幾件順手的武器，其餘的拿給村民保管吧，如果村民受到侵犯還可以靠這些兵器抵禦。"
+                                     },
+                                     {
+                                         "speaker":  17,
+                                         "name":  "秋月",
+                                         "text":  "你對村民的用意是善意的，可是南方領倘若知道兵器落在村民手裡，恐怕害處要更大。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "我也不是不知這層道理，村民如果機警些，也許會交出這些兵器來自保。"
+                                     },
+                                     {
+                                         "speaker":  17,
+                                         "name":  "秋月",
+                                         "text":  "這事件就看村人處理的本事了。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  11,
+                       "raw_operands":  {
+                                            "offset_3":  15,
+                                            "offset_5":  10,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  16,
+                       "condition":  4,
+                       "branch_flag":  13,
+                       "branch_value":  4,
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "把所有的武器留在這裡，讓村民來保管。"
+                                     },
+                                     {
+                                         "speaker":  15,
+                                         "name":  "艾文",
+                                         "text":  "為什麼？這些東西是我們血戰奪得的，如此太便宜了南方領。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "南方領的駐兵可能在一怒之下找這裡的村民報仇的，沒有武器怎麼抵擋呢？要交出去我也管不了。"
+                                     },
+                                     {
+                                         "speaker":  15,
+                                         "name":  "艾文",
+                                         "text":  "？？？"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  11,
+                       "raw_operands":  {
+                                            "offset_3":  16,
+                                            "offset_5":  15,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  12,
+                       "raw_operands":  {
+                                            "offset_3":  16,
+                                            "offset_5":  15,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  17,
+                       "condition":  3,
+                       "any_flags":  [
+                                         14,
+                                         15
+                                     ]
+                   },
+                   {
+                       "type":  10,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  17,
+                                            "offset_5":  11,
+                                            "offset_7":  169,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  10,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  17,
+                                            "offset_5":  25,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  10,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  17,
+                                            "offset_5":  41,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  10,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  17,
+                                            "offset_5":  69,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  10,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  17,
+                                            "offset_5":  56,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  10,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  17,
+                                            "offset_5":  82,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  45
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  40
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  19,
+                       "condition":  1,
+                       "required_flags":  [
+                                              18,
+                                              42
+                                          ]
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  20,
+                       "condition":  1,
+                       "required_flags":  [
+                                              18,
+                                              43
+                                          ]
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  4,
+                       "condition":  6,
+                       "route_stage":  45
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  4,
+                       "condition":  6,
+                       "route_stage":  26
+                   }
+               ]
+}

@@ -1,0 +1,840 @@
+﻿{
+    "map_id":  19,
+    "music":  6,
+    "route":  {
+                  "next_stage":  21,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  19
+              },
+    "units":  [
+                  {
+                      "id":  1,
+                      "appearance":  89,
+                      "name":  "娜塔莉雅",
+                      "x":  9,
+                      "y":  68,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  300,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        21,
+                                        110,
+                                        160,
+                                        180,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  2,
+                      "appearance":  19,
+                      "name":  "穆爾",
+                      "x":  8,
+                      "y":  68,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  290,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  5,
+                      "appearance":  10,
+                      "name":  "古斯塔夫",
+                      "x":  9,
+                      "y":  66,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  360,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        63,
+                                        133,
+                                        152,
+                                        169,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  4,
+                      "appearance":  53,
+                      "name":  "蘇",
+                      "x":  10,
+                      "y":  67,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  180,
+                      "max_hp":  101,
+                      "equipment":  [
+                                        35,
+                                        107,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  138,
+                      "appearance":  111,
+                      "name":  "僵屍王",
+                      "x":  11,
+                      "y":  21,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  640,
+                      "max_hp":  137,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  9,
+                      "y":  22,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  9,
+                      "y":  26,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  11,
+                      "y":  28,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  10,
+                      "y":  25,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  12,
+                      "y":  23,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  5,
+                      "y":  71,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  7,
+                      "y":  73,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  6,
+                      "y":  74,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  4,
+                      "y":  74,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  4,
+                      "y":  77,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  1,
+                      "y":  77,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  3,
+                      "y":  36,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  4,
+                      "y":  41,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  2,
+                      "y":  41,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  110,
+                      "name":  "僵屍",
+                      "x":  4,
+                      "y":  45,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  7,
+                                                "y":  32,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  14,
+                             "deployment":  {
+                                                "x":  7,
+                                                "y":  30,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  15,
+                             "deployment":  {
+                                                "x":  6,
+                                                "y":  32,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  13,
+                             "deployment":  {
+                                                "x":  8,
+                                                "y":  32,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  7,
+                           "y":  32,
+                           "direction":  2,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  7,
+                           "y":  30,
+                           "direction":  2,
+                           "role_id":  14,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  6,
+                           "y":  32,
+                           "direction":  2,
+                           "role_id":  15,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  8,
+                           "y":  32,
+                           "direction":  2,
+                           "role_id":  13,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "兩隻老鼠",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.打倒僵屍王。",
+                       "defeat":  "白志超陣亡或娜塔莉雅陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  13,
+                                         "name":  "羅莎莉",
+                                         "text":  "怪....怪物！"
+                                     },
+                                     {
+                                         "speaker":  14,
+                                         "name":  "飛霜",
+                                         "text":  "這是什麼鬼東西！真要命。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "先往後退吧，不要正面衝突。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  2
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "啊！上次見過的奚族女孩，真是人生何處不相逢啊！"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "嗯，你是迦納國的劍客，白志超先生。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "看來我們的處境很類似嘛。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "....先解決怪物再說，如何？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "就這麼辦！"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "那先收拾下面的怪物。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  25,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  1,
+                                            "offset_7":  1,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  25,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  2,
+                                            "offset_7":  1,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  25,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  5,
+                                            "offset_7":  1,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  25,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  4,
+                                            "offset_7":  1,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  2,
+                       "completion_flag":  14,
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "music_before":  5,
+                                         "name":  "志超",
+                                         "text":  "原來....妳們來亞修斯的目的和我們一樣嘛。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "是啊，一切盡在不言中。那麼....接下來你們還打算各走各的嗎？還是....合作一下？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "說明一下怎麼個合作法吧？"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "這樓上就是事務官的辦公室了，裡面有一份南方領的「軍事計畫書」，夠清楚了吧。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  0,
+                       "branch_flag":  14,
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "....我瞭解了，讓我想想....。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "和奚族聯手一起攻進事務官的辦公室。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "先離開此地，會同隊友再作打算。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  15,
+                       "condition":  1,
+                       "branch_flag":  14,
+                       "branch_value":  1,
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "有意思，就讓我們聯手吧，南方領的人一定會吃驚的，呵呵呵....。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "同意了嗎？那我們動作要快，在領主府調集眾兵前完成任務。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  15,
+                                            "offset_5":  1,
+                                            "offset_7":  8,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  15,
+                                            "offset_5":  1,
+                                            "offset_7":  11,
+                                            "offset_9":  55
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  15,
+                                            "offset_5":  11,
+                                            "offset_7":  1,
+                                            "offset_9":  60
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  16,
+                       "condition":  2,
+                       "branch_flag":  14,
+                       "branch_value":  2,
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "嗯....我打算先離開此地會同隊友再來，如此保險得多。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "這樣太保守了，時間拖久了事務處會聚集更多的守衛，對我們沒好處的。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "人多好辦事，還是穩著點較好，現在可是身陷險地耶。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "隨你吧，祝你們成功脫離此地。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "那也祝你們任務成功。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  16,
+                                            "offset_5":  1,
+                                            "offset_7":  5,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  16,
+                                            "offset_5":  1,
+                                            "offset_7":  11,
+                                            "offset_9":  55
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  16,
+                                            "offset_5":  11,
+                                            "offset_7":  1,
+                                            "offset_9":  60
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  21
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  22
+                   }
+               ]
+}

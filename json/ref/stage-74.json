@@ -1,0 +1,680 @@
+﻿{
+    "map_id":  74,
+    "music":  18,
+    "route":  {
+                  "next_stage":  75,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  74
+              },
+    "units":  [
+                  {
+                      "id":  0,
+                      "appearance":  47,
+                      "name":  "玫瑰騎士",
+                      "x":  18,
+                      "y":  16,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  244,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        75,
+                                        130,
+                                        150,
+                                        170,
+                                        187,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  43,
+                      "name":  "術士",
+                      "x":  10,
+                      "y":  28,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  100,
+                      "max_hp":  60,
+                      "equipment":  [
+                                        32,
+                                        99,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  43,
+                      "name":  "術士",
+                      "x":  3,
+                      "y":  41,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  100,
+                      "max_hp":  60,
+                      "equipment":  [
+                                        32,
+                                        99,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  43,
+                      "name":  "術士",
+                      "x":  5,
+                      "y":  24,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  100,
+                      "max_hp":  60,
+                      "equipment":  [
+                                        32,
+                                        99,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  43,
+                      "name":  "術士",
+                      "x":  24,
+                      "y":  28,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  100,
+                      "max_hp":  60,
+                      "equipment":  [
+                                        32,
+                                        99,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  43,
+                      "name":  "術士",
+                      "x":  8,
+                      "y":  9,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  100,
+                      "max_hp":  60,
+                      "equipment":  [
+                                        32,
+                                        99,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "步弓手",
+                      "x":  11,
+                      "y":  27,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  122,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        47,
+                                        128,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "步弓手",
+                      "x":  5,
+                      "y":  42,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  122,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        47,
+                                        128,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "步弓手",
+                      "x":  4,
+                      "y":  26,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  122,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        47,
+                                        128,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "步弓手",
+                      "x":  23,
+                      "y":  28,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  122,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        47,
+                                        128,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "步弓手",
+                      "x":  6,
+                      "y":  13,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  122,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        47,
+                                        128,
+                                        149,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  52,
+                      "appearance":  2,
+                      "name":  "警衛",
+                      "x":  12,
+                      "y":  30,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  143,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        3,
+                                        129,
+                                        150,
+                                        169,
+                                        187,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  2,
+                      "name":  "警衛",
+                      "x":  3,
+                      "y":  39,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  143,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        3,
+                                        129,
+                                        150,
+                                        169,
+                                        187,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  2,
+                      "name":  "警衛",
+                      "x":  5,
+                      "y":  26,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  143,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        3,
+                                        129,
+                                        150,
+                                        169,
+                                        187,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  2,
+                      "name":  "警衛",
+                      "x":  24,
+                      "y":  30,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  143,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        3,
+                                        129,
+                                        150,
+                                        169,
+                                        187,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  2,
+                      "name":  "警衛",
+                      "x":  8,
+                      "y":  15,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  143,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        3,
+                                        129,
+                                        150,
+                                        169,
+                                        187,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  20,
+                                                "y":  44,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  21,
+                                                "y":  44,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  19,
+                                                "y":  48,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  20,
+                                                "y":  46,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  5,
+                             "deployment":  {
+                                                "x":  20,
+                                                "y":  49,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  6,
+                             "deployment":  {
+                                                "x":  19,
+                                                "y":  46,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  20,
+                           "y":  44,
+                           "direction":  3,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  21,
+                           "y":  44,
+                           "direction":  3,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  19,
+                           "y":  48,
+                           "direction":  3,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  20,
+                           "y":  46,
+                           "direction":  3,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  20,
+                           "y":  49,
+                           "direction":  3,
+                           "role_id":  5,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  19,
+                           "y":  46,
+                           "direction":  3,
+                           "role_id":  6,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "邊城提那",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.清除這個區域的守兵。",
+                       "defeat":  "娜塔莉雅陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  52,
+                                         "name":  "警衛",
+                                         "text":  "站住！"
+                                     },
+                                     {
+                                         "speaker":  52,
+                                         "name":  "警衛",
+                                         "text":  "這裡是禁區立刻離開！否則格殺勿論！"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "動手了！"
+                                     },
+                                     {
+                                         "speaker":  52,
+                                         "name":  "警衛",
+                                         "text":  "有入侵者！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  2,
+                       "completion_flag":  13,
+                       "lines":  [
+                                     {
+                                         "speaker":  5,
+                                         "name":  "古斯塔夫",
+                                         "text":  "小兵都解決了，接下來呢？"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "當然是殺進募兵所，大幹一場啦！"
+                                     },
+                                     {
+                                         "speaker":  2,
+                                         "name":  "穆爾",
+                                         "text":  "不急吧，這樣拚太真刀真槍了，把守兵騙走就好了。"
+                                     },
+                                     {
+                                         "speaker":  6,
+                                         "name":  "黛西",
+                                         "text":  "我沒意見，就看娜塔怎麼說？"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  0,
+                       "branch_flag":  13,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "營救平民考慮所使用的戰略是....。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "照泰普說的，殺進募兵營挫盡敵方銳氣！"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "照穆爾說的，聲東擊西騙的敵方團團轉！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  14,
+                       "condition":  1,
+                       "branch_flag":  13,
+                       "branch_value":  1,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "這裡的守兵不算很強，不必弄巧了，直接殺進去救出平民就算完成任務了。"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "對對對，不用客氣，我來做先鋒吧。"
+                                     },
+                                     {
+                                         "speaker":  6,
+                                         "name":  "黛西",
+                                         "text":  "真是急性子啊，唉。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  6,
+                                            "offset_7":  3,
+                                            "offset_9":  -5
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  3,
+                                            "offset_7":  1,
+                                            "offset_9":  10
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  15,
+                       "condition":  2,
+                       "branch_flag":  13,
+                       "branch_value":  2,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "這次的目的是解救平民，沒有必要造成額外死傷，讓我們使些小計把駐兵騙走吧。"
+                                     },
+                                     {
+                                         "speaker":  2,
+                                         "name":  "穆爾",
+                                         "text":  "那麼....最顯明的地方就是城門口了。"
+                                     },
+                                     {
+                                         "speaker":  5,
+                                         "name":  "古斯塔夫",
+                                         "text":  "等到大隊人馬趕到城門時發覺什麼事也沒發生，一定會覺得很奇怪。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "不錯，現在去實行計劃吧。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  15,
+                                            "offset_5":  2,
+                                            "offset_7":  1,
+                                            "offset_9":  5
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  15,
+                                            "offset_5":  5,
+                                            "offset_7":  1,
+                                            "offset_9":  5
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  75
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  76
+                   }
+               ]
+}

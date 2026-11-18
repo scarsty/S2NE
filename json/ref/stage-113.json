@@ -1,0 +1,813 @@
+﻿{
+    "map_id":  113,
+    "music":  31,
+    "route":  {
+                  "next_stage":  114,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  113
+              },
+    "units":  [
+                  {
+                      "id":  11,
+                      "appearance":  86,
+                      "name":  "志超",
+                      "x":  3,
+                      "y":  55,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  410,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        8,
+                                        122,
+                                        157,
+                                        177,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  14,
+                      "appearance":  61,
+                      "name":  "飛霜",
+                      "x":  2,
+                      "y":  59,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  420,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        22,
+                                        122,
+                                        157,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  15,
+                      "appearance":  22,
+                      "name":  "艾文",
+                      "x":  1,
+                      "y":  51,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  540,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        66,
+                                        134,
+                                        156,
+                                        179,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  13,
+                      "appearance":  50,
+                      "name":  "羅莎莉",
+                      "x":  1,
+                      "y":  53,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  370,
+                      "max_hp":  162,
+                      "equipment":  [
+                                        37,
+                                        110,
+                                        160,
+                                        180,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  16,
+                      "appearance":  126,
+                      "name":  "刑天",
+                      "x":  2,
+                      "y":  53,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  430,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        8,
+                                        122,
+                                        157,
+                                        177,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  17,
+                      "appearance":  125,
+                      "name":  "秋月",
+                      "x":  1,
+                      "y":  55,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  398,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        8,
+                                        122,
+                                        157,
+                                        177,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第四軍團",
+                      "x":  18,
+                      "y":  68,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  358,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        122,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第四軍團",
+                      "x":  22,
+                      "y":  64,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  358,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        122,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第四軍團",
+                      "x":  5,
+                      "y":  46,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  358,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        122,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第四軍團",
+                      "x":  6,
+                      "y":  34,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  358,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        122,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第四軍團",
+                      "x":  11,
+                      "y":  20,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  358,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        122,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第四軍團",
+                      "x":  21,
+                      "y":  40,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  358,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        122,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第四軍團",
+                      "x":  18,
+                      "y":  31,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  358,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        122,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第四軍團",
+                      "x":  16,
+                      "y":  38,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  358,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        122,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "第四軍團",
+                      "x":  19,
+                      "y":  70,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  400,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        78,
+                                        133,
+                                        152,
+                                        173,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "第四軍團",
+                      "x":  21,
+                      "y":  61,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  400,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        78,
+                                        133,
+                                        152,
+                                        173,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "第四軍團",
+                      "x":  2,
+                      "y":  45,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  400,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        78,
+                                        133,
+                                        152,
+                                        173,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "第四軍團",
+                      "x":  5,
+                      "y":  30,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  400,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        78,
+                                        133,
+                                        152,
+                                        173,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "第四軍團",
+                      "x":  9,
+                      "y":  18,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  400,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        78,
+                                        133,
+                                        152,
+                                        173,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "第四軍團",
+                      "x":  15,
+                      "y":  26,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  400,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        78,
+                                        133,
+                                        152,
+                                        173,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "第四軍團",
+                      "x":  19,
+                      "y":  35,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  400,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        78,
+                                        133,
+                                        152,
+                                        173,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  55,
+                      "name":  "第四軍團",
+                      "x":  20,
+                      "y":  66,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  390,
+                      "max_hp":  80,
+                      "equipment":  [
+                                        7,
+                                        122,
+                                        149,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  55,
+                      "name":  "第四軍團",
+                      "x":  2,
+                      "y":  33,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  390,
+                      "max_hp":  80,
+                      "equipment":  [
+                                        7,
+                                        122,
+                                        149,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  55,
+                      "name":  "第四軍團",
+                      "x":  23,
+                      "y":  42,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  390,
+                      "max_hp":  80,
+                      "equipment":  [
+                                        7,
+                                        122,
+                                        149,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  55,
+                      "name":  "第四軍團",
+                      "x":  13,
+                      "y":  26,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  390,
+                      "max_hp":  80,
+                      "equipment":  [
+                                        7,
+                                        122,
+                                        149,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  84,
+                      "appearance":  34,
+                      "name":  "第四軍團長",
+                      "x":  16,
+                      "y":  29,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  624,
+                      "max_hp":  166,
+                      "equipment":  [
+                                        39,
+                                        111,
+                                        163,
+                                        180,
+                                        197,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  16,
+                                                "y":  77,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  15,
+                                                "y":  77,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  15,
+                                                "y":  73,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  17,
+                                                "y":  77,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  5,
+                             "deployment":  {
+                                                "x":  14,
+                                                "y":  73,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  6,
+                             "deployment":  {
+                                                "x":  14,
+                                                "y":  75,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  6,
+                             "role_id":  27,
+                             "deployment":  {
+                                                "x":  16,
+                                                "y":  75,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  7,
+                             "role_id":  35,
+                             "deployment":  {
+                                                "x":  15,
+                                                "y":  75,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  16,
+                           "y":  77,
+                           "direction":  2,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  15,
+                           "y":  77,
+                           "direction":  2,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  15,
+                           "y":  73,
+                           "direction":  2,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  17,
+                           "y":  77,
+                           "direction":  2,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  14,
+                           "y":  73,
+                           "direction":  2,
+                           "role_id":  5,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  14,
+                           "y":  75,
+                           "direction":  2,
+                           "role_id":  6,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  16,
+                           "y":  75,
+                           "direction":  2,
+                           "role_id":  27,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  15,
+                           "y":  75,
+                           "direction":  2,
+                           "role_id":  35,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "城內混戰",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.打倒第四軍團長。",
+                       "defeat":  "娜塔莉雅陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  84,
+                                         "name":  "第四軍團長",
+                                         "text":  "現在內城全面封鎖，有任何人敢妄入者，殺無赦！"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "衝進去嘍？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "別客氣，一塊上吧。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  0,
+                       "condition":  2,
+                       "role_id":  84,
+                       "lines":  [
+                                     {
+                                         "speaker":  84,
+                                         "name":  "第四軍團長",
+                                         "text":  "元帥，我有虧職守....。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  2,
+                       "completion_flag":  0,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "我們快進城去！"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "內城很大的，要往那裡去呢？"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "軍械庫！到那邊找情報就對了！"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "有道理，真有妳的！"
+                                     }
+                                 ]
+                   }
+               ]
+}

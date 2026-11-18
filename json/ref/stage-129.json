@@ -1,0 +1,677 @@
+﻿{
+    "map_id":  129,
+    "music":  28,
+    "route":  {
+                  "next_stage":  130,
+                  "alternate_stage":  133,
+                  "mode":  1,
+                  "interbattle_town_id":  129
+              },
+    "units":  [
+                  {
+                      "id":  11,
+                      "appearance":  86,
+                      "name":  "志超",
+                      "x":  1,
+                      "y":  83,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  540,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        9,
+                                        124,
+                                        157,
+                                        177,
+                                        193,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  15,
+                      "appearance":  22,
+                      "name":  "艾文",
+                      "x":  1,
+                      "y":  85,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  682,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        68,
+                                        137,
+                                        156,
+                                        179,
+                                        194,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  13,
+                      "appearance":  62,
+                      "name":  "羅莎莉",
+                      "x":  3,
+                      "y":  87,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  450,
+                      "max_hp":  220,
+                      "equipment":  [
+                                        38,
+                                        111,
+                                        163,
+                                        180,
+                                        193,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  18,
+                      "appearance":  60,
+                      "name":  "茱迪",
+                      "x":  1,
+                      "y":  87,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  480,
+                      "max_hp":  54,
+                      "equipment":  [
+                                        54,
+                                        124,
+                                        157,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  17,
+                      "appearance":  125,
+                      "name":  "秋月",
+                      "x":  2,
+                      "y":  87,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  536,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        13,
+                                        124,
+                                        157,
+                                        177,
+                                        195,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  16,
+                      "appearance":  126,
+                      "name":  "刑天",
+                      "x":  2,
+                      "y":  85,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  554,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        12,
+                                        124,
+                                        157,
+                                        177,
+                                        195,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  37,
+                      "appearance":  65,
+                      "name":  "西碧拉",
+                      "x":  7,
+                      "y":  52,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  1280,
+                      "max_hp":  280,
+                      "equipment":  [
+                                        44,
+                                        117,
+                                        164,
+                                        182,
+                                        0,
+                                        216
+                                    ]
+                  },
+                  {
+                      "id":  20,
+                      "appearance":  94,
+                      "name":  "克雷布特里",
+                      "x":  5,
+                      "y":  49,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  840,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        14,
+                                        125,
+                                        165,
+                                        183,
+                                        199,
+                                        237
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  80,
+                      "name":  "機械警衛",
+                      "x":  1,
+                      "y":  64,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  720,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        83,
+                                        140,
+                                        0,
+                                        0,
+                                        244,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  80,
+                      "name":  "機械警衛",
+                      "x":  13,
+                      "y":  37,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  720,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        83,
+                                        140,
+                                        0,
+                                        245,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  80,
+                      "name":  "機械警衛",
+                      "x":  26,
+                      "y":  58,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  720,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        83,
+                                        140,
+                                        246,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  80,
+                      "name":  "機械警衛",
+                      "x":  15,
+                      "y":  66,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  720,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        83,
+                                        140,
+                                        246,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  80,
+                      "name":  "機械警衛",
+                      "x":  14,
+                      "y":  68,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  720,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        83,
+                                        140,
+                                        0,
+                                        245,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  80,
+                      "name":  "機械警衛",
+                      "x":  10,
+                      "y":  57,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  720,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        83,
+                                        140,
+                                        0,
+                                        0,
+                                        244,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  77,
+                      "name":  "黑精靈",
+                      "x":  10,
+                      "y":  43,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  490,
+                      "max_hp":  169,
+                      "equipment":  [
+                                        58,
+                                        117,
+                                        164,
+                                        181,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  77,
+                      "name":  "黑精靈",
+                      "x":  3,
+                      "y":  57,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  490,
+                      "max_hp":  169,
+                      "equipment":  [
+                                        58,
+                                        117,
+                                        164,
+                                        181,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  77,
+                      "name":  "黑精靈",
+                      "x":  16,
+                      "y":  38,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  490,
+                      "max_hp":  169,
+                      "equipment":  [
+                                        58,
+                                        117,
+                                        164,
+                                        181,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  77,
+                      "name":  "黑精靈",
+                      "x":  14,
+                      "y":  66,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  490,
+                      "max_hp":  169,
+                      "equipment":  [
+                                        58,
+                                        117,
+                                        164,
+                                        181,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  77,
+                      "name":  "黑精靈",
+                      "x":  15,
+                      "y":  68,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  490,
+                      "max_hp":  169,
+                      "equipment":  [
+                                        58,
+                                        117,
+                                        164,
+                                        181,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  77,
+                      "name":  "黑精靈",
+                      "x":  19,
+                      "y":  58,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  490,
+                      "max_hp":  169,
+                      "equipment":  [
+                                        58,
+                                        117,
+                                        164,
+                                        181,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  22,
+                                                "y":  83,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  23,
+                                                "y":  88,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  24,
+                                                "y":  86,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  22,
+                                                "y":  88,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  5,
+                             "deployment":  {
+                                                "x":  25,
+                                                "y":  84,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  6,
+                             "deployment":  {
+                                                "x":  23,
+                                                "y":  86,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  6,
+                             "role_id":  35,
+                             "deployment":  {
+                                                "x":  24,
+                                                "y":  84,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  22,
+                           "y":  83,
+                           "direction":  3,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  23,
+                           "y":  88,
+                           "direction":  3,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  24,
+                           "y":  86,
+                           "direction":  3,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  22,
+                           "y":  88,
+                           "direction":  3,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  25,
+                           "y":  84,
+                           "direction":  3,
+                           "role_id":  5,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  23,
+                           "y":  86,
+                           "direction":  3,
+                           "role_id":  6,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  24,
+                           "y":  84,
+                           "direction":  3,
+                           "role_id":  35,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "奚族聖地",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.打敗大魔導師西碧拉。",
+                       "defeat":  "娜塔莉雅或白志超陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "呵呵呵，歡迎各位，在我即將返鄉的日子裡，還能見到各位一面，真是有緣啊。"
+                                     },
+                                     {
+                                         "speaker":  15,
+                                         "name":  "艾文",
+                                         "text":  "你在胡說些什麼？"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "討厭的酸秀才，看我一斧頭把你劈了！"
+                                     },
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "愚蠢的人啊，我不屬於你們，也不屬於這個世界。算了....我說這麼多幹嘛，反正一切順利，我就快要回家了....。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "克雷布特里！告訴我，南方領之所以攻打奚族，是因為@@WA7,00D4D@@你@@RWRD@@的關係嗎？"
+                                     },
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "那又如何？貝洛也好，夏普也罷。當我告訴他們最新進武器的製作方法時，他們那裡能不起征伐的念頭？於是只要我說奚族的礦場有所需的原料，妳們的礦場就有麻煩了，然後我再說這裡能提供更棒更好的原料時，妳們兩邊能不打起來嗎？哈哈哈....而我也順順利利地來到這裡，這一切不是很完美嗎？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "既然你才是整個事件的元兇，那準備為所做的事情付出代價吧！"
+                                     },
+                                     {
+                                         "speaker":  20,
+                                         "music_after":  29,
+                                         "name":  "克雷布特里",
+                                         "text":  "這可不行，我還有事要辦，就讓西碧拉陪你們玩玩吧。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  2
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "恕我不敬之罪，要先告辭了，各位請安心和我的手下們玩玩吧，保證沒有援軍，哈哈哈。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  6,
+                       "completion_flag":  0,
+                       "condition":  3,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  20,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   }
+               ]
+}

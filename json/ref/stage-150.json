@@ -1,0 +1,238 @@
+﻿{
+    "map_id":  27,
+    "music":  9,
+    "route":  {
+                  "next_stage":  46,
+                  "alternate_stage":  0,
+                  "mode":  3
+              },
+    "units":  [
+
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  18,
+                                                "y":  50,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  14,
+                             "deployment":  {
+                                                "x":  17,
+                                                "y":  49,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  15,
+                             "deployment":  {
+                                                "x":  18,
+                                                "y":  52,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  13,
+                             "deployment":  {
+                                                "x":  16,
+                                                "y":  49,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  16,
+                             "deployment":  {
+                                                "x":  15,
+                                                "y":  57,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  17,
+                             "deployment":  {
+                                                "x":  14,
+                                                "y":  55,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  6,
+                             "role_id":  18,
+                             "deployment":  {
+                                                "x":  17,
+                                                "y":  47,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  7,
+                             "role_id":  31,
+                             "deployment":  {
+                                                "x":  19,
+                                                "y":  50,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  18,
+                           "y":  50,
+                           "direction":  0,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  17,
+                           "y":  49,
+                           "direction":  0,
+                           "role_id":  14,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  18,
+                           "y":  52,
+                           "direction":  0,
+                           "role_id":  15,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  16,
+                           "y":  49,
+                           "direction":  0,
+                           "role_id":  13,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  15,
+                           "y":  57,
+                           "direction":  2,
+                           "role_id":  16,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  14,
+                           "y":  55,
+                           "direction":  2,
+                           "role_id":  17,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  17,
+                           "y":  47,
+                           "direction":  0,
+                           "role_id":  18,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  19,
+                           "y":  50,
+                           "direction":  0,
+                           "role_id":  31,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "離去",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.無。",
+                       "defeat":  "白志超陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "....這裡情況混亂，事情隨時可能會有大變化，為了保持和迦納本土的連絡，就請倆位回國通報一趟。"
+                                     },
+                                     {
+                                         "speaker":  16,
+                                         "name":  "刑天",
+                                         "text":  "嗯，這件事就交給我們去辦吧。倒是你們身處敵境，要多加警覺才是。"
+                                     },
+                                     {
+                                         "speaker":  17,
+                                         "name":  "秋月",
+                                         "text":  "我們會儘快趕回來的。"
+                                     },
+                                     {
+                                         "speaker":  18,
+                                         "name":  "茱迪",
+                                         "text":  "快走吧，免得城門又被下令封閉，還要一番功夫才能離境，就耽誤到時間了。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  16,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  17,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "....但願雨過天青，不要節外生枝才好....。"
+                                     }
+                                 ]
+                   }
+               ]
+}

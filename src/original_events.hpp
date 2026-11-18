@@ -25,6 +25,7 @@ class OriginalEvents
     size_t combat_config_{};
     unsigned word(size_t p) const { return bin_.at(p) | (unsigned(bin_.at(p + 1)) << 8); }
     unsigned dword(size_t p) const { return word(p) | (word(p + 2) << 16); }
+    static unsigned custom_stage_base(unsigned id) { return id >= 201 ? id - 200 : id; }
     size_t entry(unsigned id) const
     {
         size_t p = 848 + (id - 1) * 8;
@@ -158,7 +159,8 @@ public:
     };
     std::vector<DeploymentSlot> deployment_slots() const
     {
-        size_t h = entry(1) + 2 + (stage - 1) * 30, data = entry(1) + dword(h), characters = data + dword(h + 26);
+        const unsigned source_id = custom_stage_base(stage);
+        size_t h = entry(1) + 2 + (source_id - 1) * 30, data = entry(1) + dword(h), characters = data + dword(h + 26);
         std::vector<DeploymentSlot> result;
         for (unsigned i = 0; i < bin_.at(h + 8); ++i)
         {
@@ -365,7 +367,8 @@ public:
     int stage_adjustment{};
     Result<bool> try_adjust_battle_entry_stats()
     {
-        size_t header = entry(1) + 2 + (stage - 1) * 30;
+        const unsigned source_id = custom_stage_base(stage);
+        size_t header = entry(1) + 2 + (source_id - 1) * 30;
         if (bin_.at(header + 21) == 3)
         {
             return Result<bool>::success(false);
@@ -1026,6 +1029,7 @@ public:
     }
     Result<bool> try_load_stage(unsigned id)
     {
+        const unsigned source_id = custom_stage_base(id);
         ResourceReader bin(bin_), pal(pal_), kinds(kinds_), items(items_);
         unsigned raw = pal.number(848, 4);
         if (!pal)
@@ -1038,11 +1042,11 @@ public:
         }
         size_t table = raw - 11;
         unsigned count = bin.number(table);
-        if (!id || id > count)
+        if (!source_id || source_id > count)
         {
             return Result<bool>::failure(make_error("Invalid original stage ID"));
         }
-        size_t header = table + 2 + size_t(id - 1) * 30;
+        size_t header = table + 2 + size_t(source_id - 1) * 30;
         if (!bin.extent(header, 30))
         {
             return Result<bool>::failure(bin.error());
@@ -1160,6 +1164,7 @@ public:
     }
     void load_stage_validated(unsigned id)
     {
+        const unsigned source_id = custom_stage_base(id);
         event_types_.clear();
         json_line_overrides_.clear();
         json_event_overrides_.clear();
@@ -1167,11 +1172,11 @@ public:
         fantasy_stage = 0;
         stage_adjustment = 0;
         size_t table = entry(1);
-        if (!id || id > word(table))
+        if (!source_id || source_id > word(table))
         {
             fatal("Invalid original stage ID");
         }
-        size_t header = table + 2 + (id - 1) * 30;
+        size_t header = table + 2 + (source_id - 1) * 30;
         size_t data = table + dword(header);
         size_t end = data + dword(header + 4);
         if (end > bin_.size() || end < data)
@@ -1676,6 +1681,10 @@ public:
     Result<bool> try_load_stage_json(unsigned id)
     {
         const auto path = root_ / "json" / ("stage-" + std::to_string(id) + ".json");
+        if (id != 140 && id < 201)
+        {
+            return Result<bool>::success(false);
+        }
         if (!std::filesystem::exists(path))
         {
             return Result<bool>::success(false);
@@ -1819,6 +1828,7 @@ public:
             }
         }
         json_line_overrides_ = std::move(loaded);
+        json_event_overrides_ = std::move(event_overrides);
         json_stage_loaded_ = true;
         return Result<bool>::success(true);
     }

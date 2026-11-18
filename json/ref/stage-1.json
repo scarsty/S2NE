@@ -1,769 +1,773 @@
-{
-  "map_id": 1,
-  "music": 1,
-  "route": {
-    "next_stage": 2,
-    "alternate_stage": 0,
-    "mode": 1,
-    "interbattle_town_id": 1
-  },
-  "units": [
-    {
-      "id": 16,
-      "appearance": 126,
-      "name": "刑天",
-      "x": 1,
-      "y": 20,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 5,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 200,
-      "max_hp": 0,
-      "equipment": [
-        4,
-        120,
-        149,
-        168,
-        186,
-        0
-      ]
-    },
-    {
-      "id": 64,
-      "appearance": 14,
-      "name": "盜賊頭子",
-      "x": 4,
-      "y": 36,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 8,
-      "hp": 164,
-      "max_hp": 0,
-      "equipment": [
-        17,
-        102,
-        148,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 5,
-      "y": 37,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 104,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 6,
-      "y": 36,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 104,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 40,
-      "name": "飛賊",
-      "x": 2,
-      "y": 35,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 92,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 40,
-      "name": "飛賊",
-      "x": 4,
-      "y": 31,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 92,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 55,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 11,
-      "y": 37,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 104,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 13,
-      "y": 40,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 104,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 8,
-      "y": 39,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 104,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 10,
-      "y": 36,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 104,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 40,
-      "name": "飛賊",
-      "x": 10,
-      "y": 40,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 92,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 40,
-      "name": "飛賊",
-      "x": 11,
-      "y": 35,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 92,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 40,
-      "name": "飛賊",
-      "x": 16,
-      "y": 40,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 92,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 90,
-      "appearance": 40,
-      "name": "飛賊",
-      "x": 5,
-      "y": 14,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 4,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 112,
-      "max_hp": 0,
-      "equipment": [
-        17,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 40,
-      "name": "飛賊",
-      "x": 6,
-      "y": 12,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 4,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 106,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 4,
-      "y": 16,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 4,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 125,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 3,
-      "y": 13,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 4,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 125,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 5,
-      "name": "盜賊",
-      "x": 6,
-      "y": 20,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 4,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 125,
-      "max_hp": 0,
-      "equipment": [
-        16,
-        101,
-        148,
-        168,
-        0,
-        0
-      ]
-    }
-  ],
-  "player_party": [
-    {
-      "slot": 0,
-      "role_id": 11,
-      "deployment": {
-        "x": 13,
-        "y": 21,
-        "direction": 0
-      },
-      "mandatory_role": false,
-      "source": "save.group[0].units"
-    },
-    {
-      "slot": 1,
-      "role_id": 14,
-      "deployment": {
-        "x": 14,
-        "y": 23,
-        "direction": 0
-      },
-      "mandatory_role": false,
-      "source": "save.group[0].units"
-    },
-    {
-      "slot": 2,
-      "role_id": 15,
-      "deployment": {
-        "x": 13,
-        "y": 23,
-        "direction": 0
-      },
-      "mandatory_role": false,
-      "source": "save.group[0].units"
-    },
-    {
-      "slot": 3,
-      "role_id": 13,
-      "deployment": {
-        "x": 13,
-        "y": 25,
-        "direction": 0
-      },
-      "mandatory_role": false,
-      "source": "save.group[0].units"
-    },
-    {
-      "slot": 4,
-      "role_id": 12,
-      "deployment": {
-        "x": 12,
-        "y": 23,
-        "direction": 0
-      },
-      "mandatory_role": false,
-      "source": "save.group[0].units"
-    }
-  ],
-  "deployment": [
-    {
-      "x": 13,
-      "y": 21,
-      "direction": 0,
-      "role_id": 11,
-      "fixed": false
-    },
-    {
-      "x": 14,
-      "y": 23,
-      "direction": 0,
-      "role_id": 14,
-      "fixed": false
-    },
-    {
-      "x": 13,
-      "y": 23,
-      "direction": 0,
-      "role_id": 15,
-      "fixed": false
-    },
-    {
-      "x": 13,
-      "y": 25,
-      "direction": 0,
-      "role_id": 13,
-      "fixed": false
-    },
-    {
-      "x": 12,
-      "y": 23,
-      "direction": 0,
-      "role_id": 12,
-      "fixed": false
-    }
-  ],
-  "deployment_rules": {
-    "mandatory_role_ids": [],
-    "source": "original deployment flow; not inferred from fixed slot flag"
-  },
-  "objects": [],
-  "name": "第一神劍",
-  "briefing": "聽完簡報後一行人扮作商旅從王城側門離開，目的是不引人注目，以免為赤子國或南方領得知消息；駐守城門的監官將領也沒有懷疑，眾人高高興興地出了城門，來到城郊。或許是隊伍裝扮得太像了，連盜賊都相信隊伍是商旅....。",
-  "objectives": {
-    "victory": "1.擊退盜賊團。",
-    "defeat": "白志超陣亡。"
-  },
-  "events": [
-    {
-      "type": 1,
-      "completion_flag": 13,
-      "trigger": {
-        "kind": "turn",
-        "turn": 1
-      },
-      "lines": [
-        {
-          "speaker": 64,
-          "name": "盜賊頭子",
-          "text": "站住！"
-        },
-        {
-          "speaker": 12,
-          "name": "南巡使",
-          "text": "盜賊團？糟了，這下子弄巧成拙了。"
-        },
-        {
-          "speaker": 64,
-          "name": "盜賊頭子",
-          "text": "前面的，把財物留下一半，你們就可以安全離開了。老實一點，不要耍花樣。"
-        },
-        {
-          "speaker": 15,
-          "name": "艾文",
-          "text": "大爺，您弄錯了，小的等人不是商旅....。"
-        },
-        {
-          "speaker": 64,
-          "name": "盜賊頭子",
-          "text": "少來這一套！你大爺我幹這一行數十年鮮有看錯的，再和我討價還價就連你小命都不留！還不趕緊把財物交出來？"
-        },
-        {
-          "speaker": 12,
-          "name": "南巡使",
-          "text": "現在怎麼辦？"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "老實說，這次的任務多半只是護送而已，乏味地很，現在機會難得....。"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "喂！賊老大，我們決定了。"
-        },
-        {
-          "speaker": 64,
-          "name": "盜賊頭子",
-          "text": "喔，那好，只要你們把財物放下，我們不會傷人性命的。"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "哈哈哈，別搞錯了，我是說：『我決定要你的命了！』。"
-        },
-        {
-          "speaker": 64,
-          "name": "盜賊頭子",
-          "text": "....小子，你死定了！上。"
-        },
-        {
-          "speaker": 55,
-          "name": "盜賊",
-          "text": "居然敢惹惱我們三哥，小子你要糟了！"
-        },
-        {
-          "speaker": 12,
-          "name": "南巡使",
-          "text": "何必打這一仗呢？讓巡邏隊注意到了，我們也麻煩，真是....。"
-        },
-        {
-          "speaker": 14,
-          "name": "飛霜",
-          "text": "那就動作快些，把這些小毛賊打發了。"
-        }
-      ]
-    },
-    {
-      "type": 1,
-      "completion_flag": 0,
-      "trigger": {
-        "kind": "turn",
-        "turn": 4
-      },
-      "lines": [
-        {
-          "speaker": 90,
-          "music_before": 3,
-          "name": "飛賊",
-          "text": "三哥，我們來幫忙了。"
-        },
-        {
-          "speaker": 64,
-          "name": "盜賊頭子",
-          "text": "來得好，這幾個商旅蠻硬的，小心應戰。"
-        },
-        {
-          "speaker": 90,
-          "name": "飛賊",
-          "text": "知道了，我們不會輕敵的。"
-        }
-      ]
-    },
-    {
-      "type": 1,
-      "completion_flag": 0,
-      "trigger": {
-        "kind": "turn",
-        "turn": 5
-      },
-      "lines": [
-        {
-          "speaker": 16,
-          "music_before": 13,
-          "name": "刑天",
-          "text": "好久不見，白老弟別來無恙？"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "我說大劍客啊，沒看到我正在忙嗎？快來幫忙掃清這些毛賊吧。"
-        },
-        {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "唉，也罷，時至今日寶劍只能飲盜賊血，越來越差勁了。"
-        },
-        {
-          "speaker": 14,
-          "name": "飛霜",
-          "text": "刑天大人，別懷古幽思了，再晚點來連盜賊都沒得砍了。"
-        },
-        {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "也罷！我來了。"
-        },
-        {
-          "speaker": 64,
-          "name": "盜賊頭子",
-          "text": "....別唬人了，這傢伙怎麼可能是刑天？....騙人的。"
-        }
-      ]
-    },
-    {
-      "type": 3,
-      "completion_flag": 14,
-      "condition": 2,
-      "role_id": 90,
-      "lines": [
-        {
-          "speaker": 90,
-          "name": "飛賊",
-          "text": "哇....。"
-        }
-      ]
-    },
-    {
-      "type": 9,
-      "completion_flag": 0,
-      "condition": 1,
-      "required_flags": [
-        13,
-        14
-      ],
-      "lines": [
-        {
-          "speaker": 64,
-          "name": "盜賊頭子",
-          "text": "看來不太妙啊....。"
-        }
-      ]
-    },
-    {
-      "type": 3,
-      "completion_flag": 15,
-      "condition": 2,
-      "role_id": 64,
-      "lines": [
-        {
-          "speaker": 64,
-          "name": "盜賊頭子",
-          "text": "那....那有這麼強的商旅啊....。"
-        }
-      ]
-    },
-    {
-      "type": 9,
-      "completion_flag": 0,
-      "condition": 2,
-      "required_flags": [
-        13
-      ]
-    },
-    {
-      "type": 3,
-      "completion_flag": 0,
-      "condition": 3,
-      "victim_role_id": 64,
-      "killer_role_id": 16,
-      "lines": [
-        {
-          "speaker": 64,
-          "name": "盜賊頭子",
-          "text": "你真的是刑天嗎？"
-        },
-        {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "如假包換！"
-        }
-      ]
-    },
-    {
-      "type": 2,
-      "completion_flag": 0,
-      "condition": 1,
-      "lines": [
-        {
-          "speaker": 16,
-          "music_before": 7,
-          "name": "刑天",
-          "text": "這些毛賊真是瞎了眼，居然把你們當成是一般的商旅，徒然送命。"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "這就別提了。秋月呢？"
-        },
-        {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "她最近作客茱迪家中，有事嗎？"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "這次所接的任務是前往南方領，我想多找幾個幫手，以免在異地吃虧，我想你們也閒很久了吧。"
-        },
-        {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "正是。我想不但秋月會同意，茱迪也會有興趣的。"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "那我們先往鏡湖的方向去吧。"
-        }
-      ]
-    }
-  ]
+﻿{
+    "map_id":  1,
+    "music":  1,
+    "route":  {
+                  "next_stage":  2,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  1
+              },
+    "units":  [
+                  {
+                      "id":  16,
+                      "appearance":  126,
+                      "name":  "刑天",
+                      "x":  1,
+                      "y":  20,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  5,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  200,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        4,
+                                        120,
+                                        149,
+                                        168,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  64,
+                      "appearance":  14,
+                      "name":  "盜賊頭子",
+                      "x":  4,
+                      "y":  36,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  164,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        17,
+                                        102,
+                                        148,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  5,
+                      "name":  "盜賊",
+                      "x":  5,
+                      "y":  37,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  104,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  5,
+                      "name":  "盜賊",
+                      "x":  6,
+                      "y":  36,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  104,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  40,
+                      "name":  "飛賊",
+                      "x":  2,
+                      "y":  35,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  92,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  40,
+                      "name":  "飛賊",
+                      "x":  4,
+                      "y":  31,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  92,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  55,
+                      "appearance":  5,
+                      "name":  "盜賊",
+                      "x":  11,
+                      "y":  37,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  104,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  5,
+                      "name":  "盜賊",
+                      "x":  13,
+                      "y":  40,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  104,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  5,
+                      "name":  "盜賊",
+                      "x":  8,
+                      "y":  39,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  104,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  5,
+                      "name":  "盜賊",
+                      "x":  10,
+                      "y":  36,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  104,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  40,
+                      "name":  "飛賊",
+                      "x":  10,
+                      "y":  40,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  92,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  40,
+                      "name":  "飛賊",
+                      "x":  11,
+                      "y":  35,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  92,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  40,
+                      "name":  "飛賊",
+                      "x":  16,
+                      "y":  40,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  92,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  90,
+                      "appearance":  40,
+                      "name":  "飛賊",
+                      "x":  5,
+                      "y":  14,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  112,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        17,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  40,
+                      "name":  "飛賊",
+                      "x":  6,
+                      "y":  12,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  106,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  5,
+                      "name":  "盜賊",
+                      "x":  4,
+                      "y":  16,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  125,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  5,
+                      "name":  "盜賊",
+                      "x":  3,
+                      "y":  13,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  125,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  5,
+                      "name":  "盜賊",
+                      "x":  6,
+                      "y":  20,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  125,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        16,
+                                        101,
+                                        148,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  13,
+                                                "y":  21,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  14,
+                             "deployment":  {
+                                                "x":  14,
+                                                "y":  23,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  15,
+                             "deployment":  {
+                                                "x":  13,
+                                                "y":  23,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  13,
+                             "deployment":  {
+                                                "x":  13,
+                                                "y":  25,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  12,
+                             "deployment":  {
+                                                "x":  12,
+                                                "y":  23,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  13,
+                           "y":  21,
+                           "direction":  0,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  14,
+                           "y":  23,
+                           "direction":  0,
+                           "role_id":  14,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  13,
+                           "y":  23,
+                           "direction":  0,
+                           "role_id":  15,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  13,
+                           "y":  25,
+                           "direction":  0,
+                           "role_id":  13,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  12,
+                           "y":  23,
+                           "direction":  0,
+                           "role_id":  12,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "第一神劍",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.擊退盜賊團。",
+                       "defeat":  "白志超陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  64,
+                                         "name":  "盜賊頭子",
+                                         "text":  "站住！"
+                                     },
+                                     {
+                                         "speaker":  12,
+                                         "name":  "南巡使",
+                                         "text":  "盜賊團？糟了，這下子弄巧成拙了。"
+                                     },
+                                     {
+                                         "speaker":  64,
+                                         "name":  "盜賊頭子",
+                                         "text":  "前面的，把財物留下一半，你們就可以安全離開了。老實一點，不要耍花樣。"
+                                     },
+                                     {
+                                         "speaker":  15,
+                                         "name":  "艾文",
+                                         "text":  "大爺，您弄錯了，小的等人不是商旅....。"
+                                     },
+                                     {
+                                         "speaker":  64,
+                                         "name":  "盜賊頭子",
+                                         "text":  "少來這一套！你大爺我幹這一行數十年鮮有看錯的，再和我討價還價就連你小命都不留！還不趕緊把財物交出來？"
+                                     },
+                                     {
+                                         "speaker":  12,
+                                         "name":  "南巡使",
+                                         "text":  "現在怎麼辦？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "老實說，這次的任務多半只是護送而已，乏味地很，現在機會難得....。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "喂！賊老大，我們決定了。"
+                                     },
+                                     {
+                                         "speaker":  64,
+                                         "name":  "盜賊頭子",
+                                         "text":  "喔，那好，只要你們把財物放下，我們不會傷人性命的。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "哈哈哈，別搞錯了，我是說：『我決定要你的命了！』。"
+                                     },
+                                     {
+                                         "speaker":  64,
+                                         "name":  "盜賊頭子",
+                                         "text":  "....小子，你死定了！上。"
+                                     },
+                                     {
+                                         "speaker":  55,
+                                         "name":  "盜賊",
+                                         "text":  "居然敢惹惱我們三哥，小子你要糟了！"
+                                     },
+                                     {
+                                         "speaker":  12,
+                                         "name":  "南巡使",
+                                         "text":  "何必打這一仗呢？讓巡邏隊注意到了，我們也麻煩，真是....。"
+                                     },
+                                     {
+                                         "speaker":  14,
+                                         "name":  "飛霜",
+                                         "text":  "那就動作快些，把這些小毛賊打發了。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  4
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  90,
+                                         "music_before":  3,
+                                         "name":  "飛賊",
+                                         "text":  "三哥，我們來幫忙了。"
+                                     },
+                                     {
+                                         "speaker":  64,
+                                         "name":  "盜賊頭子",
+                                         "text":  "來得好，這幾個商旅蠻硬的，小心應戰。"
+                                     },
+                                     {
+                                         "speaker":  90,
+                                         "name":  "飛賊",
+                                         "text":  "知道了，我們不會輕敵的。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  5
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  16,
+                                         "music_before":  13,
+                                         "name":  "刑天",
+                                         "text":  "好久不見，白老弟別來無恙？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "我說大劍客啊，沒看到我正在忙嗎？快來幫忙掃清這些毛賊吧。"
+                                     },
+                                     {
+                                         "speaker":  16,
+                                         "name":  "刑天",
+                                         "text":  "唉，也罷，時至今日寶劍只能飲盜賊血，越來越差勁了。"
+                                     },
+                                     {
+                                         "speaker":  14,
+                                         "name":  "飛霜",
+                                         "text":  "刑天大人，別懷古幽思了，再晚點來連盜賊都沒得砍了。"
+                                     },
+                                     {
+                                         "speaker":  16,
+                                         "name":  "刑天",
+                                         "text":  "也罷！我來了。"
+                                     },
+                                     {
+                                         "speaker":  64,
+                                         "name":  "盜賊頭子",
+                                         "text":  "....別唬人了，這傢伙怎麼可能是刑天？....騙人的。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  14,
+                       "condition":  2,
+                       "role_id":  90,
+                       "lines":  [
+                                     {
+                                         "speaker":  90,
+                                         "name":  "飛賊",
+                                         "text":  "哇....。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "required_flags":  [
+                                              13,
+                                              14
+                                          ],
+                       "lines":  [
+                                     {
+                                         "speaker":  64,
+                                         "name":  "盜賊頭子",
+                                         "text":  "看來不太妙啊....。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  15,
+                       "condition":  2,
+                       "role_id":  64,
+                       "lines":  [
+                                     {
+                                         "speaker":  64,
+                                         "name":  "盜賊頭子",
+                                         "text":  "那....那有這麼強的商旅啊....。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  2,
+                       "required_flags":  [
+                                              13
+                                          ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  0,
+                       "condition":  3,
+                       "victim_role_id":  64,
+                       "killer_role_id":  16,
+                       "lines":  [
+                                     {
+                                         "speaker":  64,
+                                         "name":  "盜賊頭子",
+                                         "text":  "你真的是刑天嗎？"
+                                     },
+                                     {
+                                         "speaker":  16,
+                                         "name":  "刑天",
+                                         "text":  "如假包換！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  2,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "lines":  [
+                                     {
+                                         "speaker":  16,
+                                         "music_before":  7,
+                                         "name":  "刑天",
+                                         "text":  "這些毛賊真是瞎了眼，居然把你們當成是一般的商旅，徒然送命。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "這就別提了。秋月呢？"
+                                     },
+                                     {
+                                         "speaker":  16,
+                                         "name":  "刑天",
+                                         "text":  "她最近作客茱迪家中，有事嗎？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "這次所接的任務是前往南方領，我想多找幾個幫手，以免在異地吃虧，我想你們也閒很久了吧。"
+                                     },
+                                     {
+                                         "speaker":  16,
+                                         "name":  "刑天",
+                                         "text":  "正是。我想不但秋月會同意，茱迪也會有興趣的。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "那我們先往鏡湖的方向去吧。"
+                                     }
+                                 ]
+                   }
+               ]
 }

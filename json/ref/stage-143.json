@@ -1,0 +1,399 @@
+﻿{
+    "map_id":  15,
+    "music":  7,
+    "route":  {
+                  "next_stage":  16,
+                  "alternate_stage":  0,
+                  "mode":  3
+              },
+    "units":  [
+                  {
+                      "id":  22,
+                      "appearance":  133,
+                      "name":  "奧帕兒",
+                      "x":  18,
+                      "y":  49,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  112,
+                      "max_hp":  48,
+                      "equipment":  [
+                                        37,
+                                        110,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  74,
+                      "appearance":  24,
+                      "name":  "護衛隊長",
+                      "x":  18,
+                      "y":  52,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  354,
+                      "max_hp":  32,
+                      "equipment":  [
+                                        80,
+                                        136,
+                                        157,
+                                        178,
+                                        197,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  16,
+                                                "y":  47,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  14,
+                             "deployment":  {
+                                                "x":  17,
+                                                "y":  45,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  15,
+                             "deployment":  {
+                                                "x":  15,
+                                                "y":  49,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  13,
+                             "deployment":  {
+                                                "x":  16,
+                                                "y":  45,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  12,
+                             "deployment":  {
+                                                "x":  15,
+                                                "y":  47,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  16,
+                             "deployment":  {
+                                                "x":  14,
+                                                "y":  49,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  6,
+                             "role_id":  17,
+                             "deployment":  {
+                                                "x":  15,
+                                                "y":  45,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  7,
+                             "role_id":  18,
+                             "deployment":  {
+                                                "x":  14,
+                                                "y":  47,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  16,
+                           "y":  47,
+                           "direction":  1,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  17,
+                           "y":  45,
+                           "direction":  1,
+                           "role_id":  14,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  15,
+                           "y":  49,
+                           "direction":  1,
+                           "role_id":  15,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  16,
+                           "y":  45,
+                           "direction":  1,
+                           "role_id":  13,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  15,
+                           "y":  47,
+                           "direction":  1,
+                           "role_id":  12,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  14,
+                           "y":  49,
+                           "direction":  1,
+                           "role_id":  16,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  15,
+                           "y":  45,
+                           "direction":  1,
+                           "role_id":  17,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  14,
+                           "y":  47,
+                           "direction":  1,
+                           "role_id":  18,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "奧帕兒",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.無。",
+                       "defeat":  "白志超陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  22,
+                                         "name":  "奧帕兒",
+                                         "text":  "太謝謝你們了，還沒有請教各位壯士高名？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "壯士？喔....妳太過獎了，我是白志超，他們是我的伙伴。"
+                                     },
+                                     {
+                                         "speaker":  22,
+                                         "name":  "奧帕兒",
+                                         "text":  "那還沒請教各位壯士來自何處，我好像還沒見過國內有如此勇士。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "呃....我們是來自北邊的....旅行者，和商隊一起來的。"
+                                     },
+                                     {
+                                         "speaker":  22,
+                                         "name":  "奧帕兒",
+                                         "text":  "原來是遠方來的客人啊，那真不該失了禮數，那白先生打算往亞修斯一行嗎？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "嗯..是有這個打算。小姐您的芳名還沒請教呢？"
+                                     },
+                                     {
+                                         "speaker":  22,
+                                         "name":  "奧帕兒",
+                                         "text":  "哎....真是的，瞧我只顧得說，連名字都忘了講。我是奧帕兒，爹爹現任此地行政長官。剛才提到亞修斯城就是想邀請各位壯士到我家一遊，好款待諸位英雄的救命之恩....。"
+                                     },
+                                     {
+                                         "speaker":  74,
+                                         "name":  "護衛隊長",
+                                         "text":  "小姐....請少說一些....。"
+                                     },
+                                     {
+                                         "speaker":  12,
+                                         "name":  "南巡使",
+                                         "text":  "..喂....她就是領主的女兒耶，我們可不能暴露了身份....。"
+                                     },
+                                     {
+                                         "speaker":  22,
+                                         "name":  "奧帕兒",
+                                         "text":  "白先生....？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "當然....當然，奧帕兒小姐，我們也正好打算要去亞修斯城，有妳們作伴路上一定更加有趣。"
+                                     },
+                                     {
+                                         "speaker":  22,
+                                         "name":  "奧帕兒",
+                                         "text":  "白先生答應了？太好了，亞修斯城離此地約有兩天路程，讓我為各位恩人做嚮導吧。"
+                                     },
+                                     {
+                                         "speaker":  74,
+                                         "name":  "護衛隊長",
+                                         "text":  "小姐既然決定了，請容我去打理行李。"
+                                     },
+                                     {
+                                         "speaker":  22,
+                                         "name":  "奧帕兒",
+                                         "text":  "啊....我蒐集的香料....。對不起，失禮了，我還有事要處理，先告辭了。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  6,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  22,
+                                            "offset_7":  74,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  12,
+                                         "name":  "南巡使",
+                                         "text":  "白老大，你想清楚了嗎？對方可是領主的女兒耶，我們不必深入虎穴吧？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "那有什麼不好？這樣省去多少力氣，直接就到亞修斯了。"
+                                     },
+                                     {
+                                         "speaker":  12,
+                                         "name":  "南巡使",
+                                         "text":  "可是太冒險了吧....。"
+                                     },
+                                     {
+                                         "speaker":  16,
+                                         "name":  "刑天",
+                                         "text":  "這樣吧，等會奧帕兒回來，你告訴她我們有部份人還有雜事，先行離去。你依然赴她的約，我和秋月、茱迪、南巡使從另一路趕往亞修斯，一路是明，一路是暗，任何一邊有事都可以互相照應。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "....嗯，就這麼辦。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  12,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  16,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  17,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  18,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  8,
+                       "completion_flag":  43,
+                       "condition":  8,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  0,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   }
+               ]
+}

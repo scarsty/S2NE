@@ -1,0 +1,961 @@
+﻿{
+    "map_id":  77,
+    "music":  18,
+    "route":  {
+                  "next_stage":  78,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  77
+              },
+    "units":  [
+                  {
+                      "id":  0,
+                      "appearance":  131,
+                      "name":  "奚族平民",
+                      "x":  20,
+                      "y":  13,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  90,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        97,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  131,
+                      "name":  "奚族平民",
+                      "x":  21,
+                      "y":  16,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  90,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        97,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  131,
+                      "name":  "奚族平民",
+                      "x":  22,
+                      "y":  17,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  90,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        97,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  131,
+                      "name":  "奚族平民",
+                      "x":  23,
+                      "y":  19,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  90,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        97,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  131,
+                      "name":  "奚族平民",
+                      "x":  22,
+                      "y":  19,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  90,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        97,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  131,
+                      "name":  "奚族平民",
+                      "x":  22,
+                      "y":  21,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  90,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        97,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  131,
+                      "name":  "奚族平民",
+                      "x":  20,
+                      "y":  21,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  90,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        97,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  131,
+                      "name":  "奚族平民",
+                      "x":  20,
+                      "y":  23,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  90,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        97,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  131,
+                      "name":  "奚族平民",
+                      "x":  19,
+                      "y":  24,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  90,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        97,
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  63,
+                      "name":  "邪惡女巫",
+                      "x":  3,
+                      "y":  45,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  231,
+                      "max_hp":  91,
+                      "equipment":  [
+                                        34,
+                                        104,
+                                        159,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  44,
+                      "name":  "小巫女",
+                      "x":  4,
+                      "y":  40,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  119,
+                      "max_hp":  69,
+                      "equipment":  [
+                                        33,
+                                        103,
+                                        159,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  44,
+                      "name":  "小巫女",
+                      "x":  6,
+                      "y":  44,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  119,
+                      "max_hp":  69,
+                      "equipment":  [
+                                        33,
+                                        103,
+                                        159,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  44,
+                      "name":  "小巫女",
+                      "x":  3,
+                      "y":  48,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  119,
+                      "max_hp":  69,
+                      "equipment":  [
+                                        33,
+                                        103,
+                                        159,
+                                        167,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "提那城警衛",
+                      "x":  14,
+                      "y":  11,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  167,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        74,
+                                        129,
+                                        149,
+                                        168,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "提那城警衛",
+                      "x":  14,
+                      "y":  14,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  167,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        74,
+                                        129,
+                                        149,
+                                        168,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "提那城警衛",
+                      "x":  1,
+                      "y":  29,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  167,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        74,
+                                        129,
+                                        149,
+                                        168,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "提那城警衛",
+                      "x":  3,
+                      "y":  32,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  167,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        74,
+                                        129,
+                                        149,
+                                        168,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "提那城警衛",
+                      "x":  12,
+                      "y":  49,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  167,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        74,
+                                        129,
+                                        149,
+                                        168,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "提那城警衛",
+                      "x":  23,
+                      "y":  19,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  167,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        74,
+                                        129,
+                                        149,
+                                        168,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "提那城警衛",
+                      "x":  22,
+                      "y":  16,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  167,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        74,
+                                        129,
+                                        149,
+                                        168,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "提那城警衛",
+                      "x":  14,
+                      "y":  11,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  7,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  167,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        74,
+                                        129,
+                                        149,
+                                        168,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  3,
+                      "name":  "提那城警衛",
+                      "x":  13,
+                      "y":  16,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  7,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  167,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        74,
+                                        129,
+                                        149,
+                                        168,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  37,
+                      "name":  "女劍士",
+                      "x":  12,
+                      "y":  13,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  144,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        3,
+                                        128,
+                                        149,
+                                        168,
+                                        185,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  37,
+                      "name":  "女劍士",
+                      "x":  12,
+                      "y":  16,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  144,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        3,
+                                        128,
+                                        149,
+                                        168,
+                                        185,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  37,
+                      "name":  "女劍士",
+                      "x":  1,
+                      "y":  32,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  144,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        3,
+                                        128,
+                                        149,
+                                        168,
+                                        185,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  37,
+                      "name":  "女劍士",
+                      "x":  11,
+                      "y":  50,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  144,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        3,
+                                        128,
+                                        149,
+                                        168,
+                                        185,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  37,
+                      "name":  "女劍士",
+                      "x":  22,
+                      "y":  17,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  144,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        3,
+                                        128,
+                                        149,
+                                        168,
+                                        185,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  37,
+                      "name":  "女劍士",
+                      "x":  21,
+                      "y":  19,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  144,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        3,
+                                        128,
+                                        149,
+                                        168,
+                                        185,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  37,
+                      "name":  "女劍士",
+                      "x":  14,
+                      "y":  13,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  7,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  144,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        3,
+                                        128,
+                                        149,
+                                        168,
+                                        185,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  37,
+                      "name":  "女劍士",
+                      "x":  12,
+                      "y":  13,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  7,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  144,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        3,
+                                        128,
+                                        149,
+                                        168,
+                                        185,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  6,
+                      "name":  "拳術學徒",
+                      "x":  24,
+                      "y":  48,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  5,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  175,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        102,
+                                        147,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  6,
+                      "name":  "拳術學徒",
+                      "x":  23,
+                      "y":  50,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  5,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  175,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        102,
+                                        147,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  6,
+                      "name":  "拳術學徒",
+                      "x":  23,
+                      "y":  48,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  5,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  175,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        102,
+                                        147,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  6,
+                      "name":  "拳術學徒",
+                      "x":  23,
+                      "y":  46,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  5,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  175,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        102,
+                                        147,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  6,
+                      "name":  "拳術學徒",
+                      "x":  21,
+                      "y":  46,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  5,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  175,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        102,
+                                        147,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  17,
+                                                "y":  27,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  18,
+                                                "y":  27,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  19,
+                                                "y":  27,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  16,
+                                                "y":  27,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  5,
+                             "deployment":  {
+                                                "x":  18,
+                                                "y":  25,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  6,
+                             "deployment":  {
+                                                "x":  17,
+                                                "y":  29,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  17,
+                           "y":  27,
+                           "direction":  0,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  18,
+                           "y":  27,
+                           "direction":  0,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  19,
+                           "y":  27,
+                           "direction":  0,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  16,
+                           "y":  27,
+                           "direction":  0,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  18,
+                           "y":  25,
+                           "direction":  0,
+                           "role_id":  5,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  17,
+                           "y":  29,
+                           "direction":  0,
+                           "role_id":  6,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "撤退保護戰",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.娜塔莉雅抵達小河西岸的脫離點。",
+                       "defeat":  "娜塔莉雅陣亡或奚族平民全滅。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "警衛可能會隨時會追上來，我們要快點攻下小橋！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  2,
+                       "completion_flag":  13,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "快點！往這裡走！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  11,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  10,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  12,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  10,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   }
+               ]
+}

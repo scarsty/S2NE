@@ -20,6 +20,7 @@ class OriginalCampaign
     OriginalMenu font_;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
+    static unsigned custom_stage_base(unsigned id) { return id >= 201 ? id - 200 : id; }
     size_t table() const { return dword(pal_, 848) - 11; }
     s2ne::Result<size_t> try_header(unsigned stage) const
     {
@@ -167,6 +168,7 @@ public:
     }
     Result<Stage> try_stage(unsigned id) const
     {
+        const unsigned source_id = custom_stage_base(id);
         ResourceReader pal(pal_), bin(bin_);
         unsigned raw = pal.number(848, 4);
         if (!pal)
@@ -179,11 +181,11 @@ public:
         }
         size_t table = raw - 11;
         unsigned count = bin.number(table);
-        if (!id || id > count)
+        if (!source_id || source_id > count)
         {
             return Result<Stage>::failure(make_error("Invalid campaign stage"));
         }
-        size_t h = table + 2 + size_t(id - 1) * 30;
+        size_t h = table + 2 + size_t(source_id - 1) * 30;
         if (!bin.extent(h, 30))
         {
             return Result<Stage>::failure(bin.error());

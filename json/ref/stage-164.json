@@ -1,0 +1,472 @@
+﻿{
+    "map_id":  26,
+    "music":  24,
+    "route":  {
+                  "next_stage":  98,
+                  "alternate_stage":  0,
+                  "mode":  3
+              },
+    "units":  [
+                  {
+                      "id":  11,
+                      "appearance":  85,
+                      "name":  "志超",
+                      "x":  11,
+                      "y":  27,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  280,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        5,
+                                        120,
+                                        149,
+                                        170,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  14,
+                      "appearance":  61,
+                      "name":  "飛霜",
+                      "x":  12,
+                      "y":  24,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  264,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        19,
+                                        120,
+                                        149,
+                                        170,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  15,
+                      "appearance":  22,
+                      "name":  "艾文",
+                      "x":  9,
+                      "y":  29,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  360,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        62,
+                                        132,
+                                        152,
+                                        169,
+                                        188,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  13,
+                      "appearance":  62,
+                      "name":  "羅莎莉",
+                      "x":  11,
+                      "y":  23,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  222,
+                      "max_hp":  104,
+                      "equipment":  [
+                                        34,
+                                        106,
+                                        148,
+                                        167,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  16,
+                      "appearance":  126,
+                      "name":  "刑天",
+                      "x":  12,
+                      "y":  25,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  300,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        5,
+                                        120,
+                                        149,
+                                        170,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  17,
+                      "appearance":  125,
+                      "name":  "秋月",
+                      "x":  10,
+                      "y":  29,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  276,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        5,
+                                        120,
+                                        149,
+                                        170,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  18,
+                      "appearance":  60,
+                      "name":  "茱迪",
+                      "x":  12,
+                      "y":  26,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  240,
+                      "max_hp":  20,
+                      "equipment":  [
+                                        49,
+                                        120,
+                                        150,
+                                        170,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  11,
+                                                "y":  28,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  10,
+                                                "y":  24,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  3,
+                             "deployment":  {
+                                                "x":  10,
+                                                "y":  23,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  9,
+                                                "y":  26,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  5,
+                             "deployment":  {
+                                                "x":  9,
+                                                "y":  25,
+                                                "direction":  1
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  6,
+                             "deployment":  {
+                                                "x":  9,
+                                                "y":  28,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  6,
+                             "role_id":  27,
+                             "deployment":  {
+                                                "x":  8,
+                                                "y":  27,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  11,
+                           "y":  28,
+                           "direction":  3,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  10,
+                           "y":  24,
+                           "direction":  1,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  10,
+                           "y":  23,
+                           "direction":  1,
+                           "role_id":  3,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  9,
+                           "y":  26,
+                           "direction":  1,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  9,
+                           "y":  25,
+                           "direction":  1,
+                           "role_id":  5,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  9,
+                           "y":  28,
+                           "direction":  2,
+                           "role_id":  6,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  8,
+                           "y":  27,
+                           "direction":  2,
+                           "role_id":  27,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "合作的對策",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.無。",
+                       "defeat":  "娜塔莉雅陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  15,
+                                         "name":  "艾文",
+                                         "text":  "這是我們剛才拿到的東西。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "咦？這份文件是....南方領的@@WA7,00D6D@@軍事計畫書@@RWRD@@！"
+                                     },
+                                     {
+                                         "speaker":  18,
+                                         "name":  "茱迪",
+                                         "text":  "裡面說些什麼？"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "大致上的意思是南方領準備一筆資金，雇用赤子國附近的傭兵集團、與海外買進大量的武器兩個計劃同時進行....事成之後就要發動侵略戰爭了。"
+                                     },
+                                     {
+                                         "speaker":  2,
+                                         "name":  "穆爾",
+                                         "text":  "人員加上裝備，好狠毒的計劃，現在我族的戰力本來就稍遜於南方領，如果讓他們計劃成功了，恐怕....恐怕有滅族之虞！"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "這件事牽連甚大，要及早準備，最好是現在就要採取行動！"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "對，這件事不能拖，也許負責這兩件任務的人已經出城了。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "既然不能留在城裡，不如出城去追擊那兩隻南方領的特遣隊，把這次南方領出兵前的準備工作都給破壞吧。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  0,
+                       "branch_flag":  13,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "我也有這個意思，不如現在決定一下吧。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "隊伍往赤子國追擊運金團。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "隊伍往軍港攔截軍事裝備。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  14,
+                       "condition":  1,
+                       "branch_flag":  13,
+                       "branch_value":  1,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "赤子國的傭兵....嗯，這一路就讓我們來負責吧。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "那往軍港攔截一事就交給我吧。事成之後，我們約在亞修斯城西見面交換情報，再做打算。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "再好不過了，祝妳們能順利完成任務。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "你們也是，再見。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "下回見。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  5,
+                       "completion_flag":  15,
+                       "condition":  2,
+                       "branch_flag":  13,
+                       "branch_value":  2,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "奧爾登軍港嗎？還沒去過呢，這一路就交給我們吧。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "那往赤子國追擊運金團一事就歸我吧。事成之後，我們約在亞修斯城西見面交換情報，再做打算。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "那就說定了，祝妳們能順利完成任務。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "你們也是，再見。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "下回見。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  52
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  51
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  100
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  0,
+                       "condition":  6,
+                       "route_stage":  98
+                   }
+               ]
+}

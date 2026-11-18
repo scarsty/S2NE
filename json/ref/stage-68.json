@@ -1,0 +1,89 @@
+﻿{
+    "map_id":  26,
+    "music":  1,
+    "route":  {
+                  "next_stage":  2,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  68
+              },
+    "units":  [
+
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  13,
+                                                "y":  21,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  14,
+                             "deployment":  {
+                                                "x":  14,
+                                                "y":  23,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  15,
+                             "deployment":  {
+                                                "x":  13,
+                                                "y":  23,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  13,
+                           "y":  21,
+                           "direction":  0,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  14,
+                           "y":  23,
+                           "direction":  0,
+                           "role_id":  14,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  13,
+                           "y":  23,
+                           "direction":  0,
+                           "role_id":  15,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "未拼場景關",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.無。",
+                       "defeat":  "白志超陣亡。"
+                   },
+    "events":  [
+
+               ]
+}

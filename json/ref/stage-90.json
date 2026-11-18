@@ -1,0 +1,704 @@
+﻿{
+    "map_id":  90,
+    "music":  18,
+    "route":  {
+                  "next_stage":  91,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  90
+              },
+    "units":  [
+                  {
+                      "id":  11,
+                      "appearance":  83,
+                      "name":  "志超",
+                      "x":  9,
+                      "y":  36,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  340,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        6,
+                                        121,
+                                        149,
+                                        170,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  14,
+                      "appearance":  61,
+                      "name":  "飛霜",
+                      "x":  8,
+                      "y":  36,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  336,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        20,
+                                        121,
+                                        149,
+                                        170,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  15,
+                      "appearance":  22,
+                      "name":  "艾文",
+                      "x":  9,
+                      "y":  38,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  410,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        64,
+                                        132,
+                                        152,
+                                        169,
+                                        188,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  13,
+                      "appearance":  50,
+                      "name":  "羅莎莉",
+                      "x":  8,
+                      "y":  38,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  282,
+                      "max_hp":  128,
+                      "equipment":  [
+                                        35,
+                                        107,
+                                        148,
+                                        167,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  19,
+                      "appearance":  93,
+                      "name":  "夏普",
+                      "x":  14,
+                      "y":  32,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  800,
+                      "max_hp":  96,
+                      "equipment":  [
+                                        83,
+                                        116,
+                                        158,
+                                        173,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  20,
+                      "appearance":  94,
+                      "name":  "克雷布特里",
+                      "x":  11,
+                      "y":  30,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  480,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        14,
+                                        116,
+                                        157,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  21,
+                      "appearance":  35,
+                      "name":  "蘭瑟姆",
+                      "x":  17,
+                      "y":  42,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  740,
+                      "max_hp":  60,
+                      "equipment":  [
+                                        10,
+                                        137,
+                                        157,
+                                        178,
+                                        195,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  40,
+                      "appearance":  57,
+                      "name":  "柯莉特",
+                      "x":  15,
+                      "y":  36,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  600,
+                      "max_hp":  20,
+                      "equipment":  [
+                                        66,
+                                        138,
+                                        157,
+                                        178,
+                                        196,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  23,
+                      "name":  "宮庭劍師",
+                      "x":  17,
+                      "y":  55,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  276,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        6,
+                                        121,
+                                        149,
+                                        170,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  23,
+                      "name":  "宮庭劍師",
+                      "x":  15,
+                      "y":  59,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  276,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        6,
+                                        121,
+                                        149,
+                                        170,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  23,
+                      "name":  "宮庭劍師",
+                      "x":  3,
+                      "y":  27,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  276,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        6,
+                                        121,
+                                        149,
+                                        170,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  23,
+                      "name":  "宮庭劍師",
+                      "x":  2,
+                      "y":  30,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  276,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        6,
+                                        121,
+                                        149,
+                                        170,
+                                        186,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  65,
+                      "name":  "宮庭法師",
+                      "x":  14,
+                      "y":  55,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  228,
+                      "max_hp":  96,
+                      "equipment":  [
+                                        36,
+                                        107,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  65,
+                      "name":  "宮庭法師",
+                      "x":  15,
+                      "y":  53,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  228,
+                      "max_hp":  96,
+                      "equipment":  [
+                                        36,
+                                        107,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  65,
+                      "name":  "宮庭法師",
+                      "x":  0,
+                      "y":  27,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  228,
+                      "max_hp":  96,
+                      "equipment":  [
+                                        36,
+                                        107,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  65,
+                      "name":  "宮庭法師",
+                      "x":  2,
+                      "y":  24,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  228,
+                      "max_hp":  96,
+                      "equipment":  [
+                                        36,
+                                        107,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  61,
+                      "name":  "宮庭殺手",
+                      "x":  2,
+                      "y":  42,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  3,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  264,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        20,
+                                        121,
+                                        149,
+                                        170,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  61,
+                      "name":  "宮庭殺手",
+                      "x":  3,
+                      "y":  45,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  3,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  264,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        20,
+                                        121,
+                                        149,
+                                        170,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  61,
+                      "name":  "宮庭殺手",
+                      "x":  4,
+                      "y":  47,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  3,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  264,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        20,
+                                        121,
+                                        149,
+                                        170,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  61,
+                      "name":  "宮庭殺手",
+                      "x":  5,
+                      "y":  49,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  3,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  264,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        20,
+                                        121,
+                                        149,
+                                        170,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  1,
+                             "deployment":  {
+                                                "x":  18,
+                                                "y":  61,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  2,
+                             "deployment":  {
+                                                "x":  19,
+                                                "y":  59,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  4,
+                             "deployment":  {
+                                                "x":  17,
+                                                "y":  63,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  5,
+                             "deployment":  {
+                                                "x":  19,
+                                                "y":  63,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  18,
+                           "y":  61,
+                           "direction":  3,
+                           "role_id":  1,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  19,
+                           "y":  59,
+                           "direction":  3,
+                           "role_id":  2,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  17,
+                           "y":  63,
+                           "direction":  3,
+                           "role_id":  4,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  19,
+                           "y":  63,
+                           "direction":  3,
+                           "role_id":  5,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "殺之宴",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.娜塔莉雅抵達脫離點。",
+                       "defeat":  "娜塔莉雅或白志超陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  0,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "夏普！識得我族的圖騰嗎！"
+                                     },
+                                     {
+                                         "speaker":  19,
+                                         "name":  "夏普",
+                                         "text":  "奚族的人！今天混進來的刺客還真不少啊。"
+                                     },
+                                     {
+                                         "speaker":  40,
+                                         "name":  "柯莉特",
+                                         "text":  "來多少都一樣！違背南方領利益的都得死！"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "夏普！回答我，你為何派兵強佔我村莊與礦場！虐殺我老幼！"
+                                     },
+                                     {
+                                         "speaker":  19,
+                                         "name":  "夏普",
+                                         "text":  "少囉唆了，我還要去參加晚宴呢，沒時間回答妳這些無中生有的鬼話。"
+                                     },
+                                     {
+                                         "speaker":  5,
+                                         "name":  "古斯塔夫",
+                                         "text":  "和這種獨裁者沒什麼好說的，殺了他為族人報仇！"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "陌生的朋友們，不要戀戰，先離開再說。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "....好的。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  2
+                                   }
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  11,
+                                            "offset_7":  30,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  1,
+                                            "offset_7":  11,
+                                            "offset_9":  55
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  11,
+                                            "offset_7":  1,
+                                            "offset_9":  60
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  2
+                                   }
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  25,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  11,
+                                            "offset_7":  6,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  25,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  13,
+                                            "offset_7":  6,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  25,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  14,
+                                            "offset_7":  6,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  25,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  15,
+                                            "offset_7":  6,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  2,
+                       "completion_flag":  66,
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "走吧，不要再戰了。"
+                                     }
+                                 ]
+                   }
+               ]
+}

@@ -1,0 +1,1238 @@
+﻿{
+    "map_id":  42,
+    "music":  3,
+    "route":  {
+                  "next_stage":  150,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  42
+              },
+    "units":  [
+                  {
+                      "id":  19,
+                      "appearance":  93,
+                      "name":  "夏普",
+                      "x":  6,
+                      "y":  19,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  800,
+                      "max_hp":  96,
+                      "equipment":  [
+                                        83,
+                                        116,
+                                        158,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  21,
+                      "appearance":  35,
+                      "name":  "蘭瑟姆",
+                      "x":  5,
+                      "y":  21,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  774,
+                      "max_hp":  64,
+                      "equipment":  [
+                                        10,
+                                        137,
+                                        157,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  1,
+                      "name":  "領主府侍衛",
+                      "x":  7,
+                      "y":  63,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  398,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        65,
+                                        132,
+                                        152,
+                                        173,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  1,
+                      "name":  "領主府侍衛",
+                      "x":  7,
+                      "y":  61,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  398,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        65,
+                                        132,
+                                        152,
+                                        173,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  1,
+                      "name":  "領主府侍衛",
+                      "x":  6,
+                      "y":  60,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  398,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        65,
+                                        132,
+                                        152,
+                                        173,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  39,
+                      "appearance":  32,
+                      "name":  "貝洛元帥",
+                      "x":  13,
+                      "y":  33,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  1280,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        137,
+                                        158,
+                                        179,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  20,
+                      "appearance":  94,
+                      "name":  "克雷布特里",
+                      "x":  13,
+                      "y":  32,
+                      "direction":  1,
+                      "animation_action":  4,
+                      "first_turn":  0,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  560,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        7,
+                                        139,
+                                        157,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  201,
+                      "appearance":  135,
+                      "name":  "克雷布特里",
+                      "x":  7,
+                      "y":  19,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  560,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        7,
+                                        139,
+                                        157,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  200,
+                      "appearance":  67,
+                      "name":  "貼身護衛",
+                      "x":  12,
+                      "y":  34,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  600,
+                      "max_hp":  136,
+                      "equipment":  [
+                                        10,
+                                        137,
+                                        156,
+                                        178,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  67,
+                      "name":  "貼身護衛",
+                      "x":  13,
+                      "y":  37,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  600,
+                      "max_hp":  136,
+                      "equipment":  [
+                                        10,
+                                        137,
+                                        156,
+                                        178,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  67,
+                      "name":  "貼身護衛",
+                      "x":  15,
+                      "y":  34,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  600,
+                      "max_hp":  136,
+                      "equipment":  [
+                                        10,
+                                        137,
+                                        156,
+                                        178,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  67,
+                      "name":  "貼身護衛",
+                      "x":  13,
+                      "y":  31,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  600,
+                      "max_hp":  136,
+                      "equipment":  [
+                                        10,
+                                        137,
+                                        156,
+                                        178,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  78,
+                      "appearance":  28,
+                      "name":  "第一軍團長",
+                      "x":  16,
+                      "y":  38,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  8,
+                      "hp":  780,
+                      "max_hp":  190,
+                      "equipment":  [
+                                        38,
+                                        111,
+                                        163,
+                                        180,
+                                        198,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  56,
+                      "name":  "第一軍團",
+                      "x":  14,
+                      "y":  26,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  396,
+                      "max_hp":  124,
+                      "equipment":  [
+                                        37,
+                                        108,
+                                        160,
+                                        180,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  56,
+                      "name":  "第一軍團",
+                      "x":  12,
+                      "y":  29,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  396,
+                      "max_hp":  124,
+                      "equipment":  [
+                                        37,
+                                        108,
+                                        160,
+                                        180,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  56,
+                      "name":  "第一軍團",
+                      "x":  11,
+                      "y":  32,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  396,
+                      "max_hp":  124,
+                      "equipment":  [
+                                        37,
+                                        108,
+                                        160,
+                                        180,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  56,
+                      "name":  "第一軍團",
+                      "x":  15,
+                      "y":  40,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  396,
+                      "max_hp":  124,
+                      "equipment":  [
+                                        37,
+                                        108,
+                                        160,
+                                        180,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  56,
+                      "name":  "第一軍團",
+                      "x":  16,
+                      "y":  40,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  396,
+                      "max_hp":  124,
+                      "equipment":  [
+                                        37,
+                                        108,
+                                        160,
+                                        180,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  56,
+                      "name":  "第一軍團",
+                      "x":  17,
+                      "y":  37,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  396,
+                      "max_hp":  124,
+                      "equipment":  [
+                                        37,
+                                        108,
+                                        160,
+                                        180,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  56,
+                      "name":  "第一軍團",
+                      "x":  8,
+                      "y":  34,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  396,
+                      "max_hp":  124,
+                      "equipment":  [
+                                        37,
+                                        108,
+                                        160,
+                                        180,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  56,
+                      "name":  "第一軍團",
+                      "x":  26,
+                      "y":  22,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  3,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  396,
+                      "max_hp":  124,
+                      "equipment":  [
+                                        37,
+                                        108,
+                                        160,
+                                        180,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  56,
+                      "name":  "第一軍團",
+                      "x":  27,
+                      "y":  24,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  3,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  396,
+                      "max_hp":  124,
+                      "equipment":  [
+                                        37,
+                                        108,
+                                        160,
+                                        180,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  56,
+                      "name":  "第一軍團",
+                      "x":  26,
+                      "y":  26,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  3,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  396,
+                      "max_hp":  124,
+                      "equipment":  [
+                                        37,
+                                        108,
+                                        160,
+                                        180,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  56,
+                      "name":  "第一軍團",
+                      "x":  25,
+                      "y":  24,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  3,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  396,
+                      "max_hp":  124,
+                      "equipment":  [
+                                        37,
+                                        108,
+                                        160,
+                                        180,
+                                        197,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第一軍團",
+                      "x":  13,
+                      "y":  46,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第一軍團",
+                      "x":  15,
+                      "y":  50,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第一軍團",
+                      "x":  13,
+                      "y":  52,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第一軍團",
+                      "x":  12,
+                      "y":  50,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第一軍團",
+                      "x":  12,
+                      "y":  55,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第一軍團",
+                      "x":  10,
+                      "y":  51,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第一軍團",
+                      "x":  3,
+                      "y":  72,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第一軍團",
+                      "x":  2,
+                      "y":  70,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第一軍團",
+                      "x":  3,
+                      "y":  68,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  4,
+                      "name":  "第一軍團",
+                      "x":  4,
+                      "y":  70,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  4,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  418,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  4,
+                                                "y":  68,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  15,
+                             "deployment":  {
+                                                "x":  4,
+                                                "y":  70,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  13,
+                             "deployment":  {
+                                                "x":  5,
+                                                "y":  70,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  16,
+                             "deployment":  {
+                                                "x":  4,
+                                                "y":  72,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  17,
+                             "deployment":  {
+                                                "x":  3,
+                                                "y":  66,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  18,
+                             "deployment":  {
+                                                "x":  2,
+                                                "y":  68,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  6,
+                             "role_id":  31,
+                             "deployment":  {
+                                                "x":  3,
+                                                "y":  68,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  7,
+                             "role_id":  22,
+                             "deployment":  {
+                                                "x":  3,
+                                                "y":  70,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  4,
+                           "y":  68,
+                           "direction":  2,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  4,
+                           "y":  70,
+                           "direction":  2,
+                           "role_id":  15,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  5,
+                           "y":  70,
+                           "direction":  2,
+                           "role_id":  13,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  4,
+                           "y":  72,
+                           "direction":  2,
+                           "role_id":  16,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  3,
+                           "y":  66,
+                           "direction":  2,
+                           "role_id":  17,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  2,
+                           "y":  68,
+                           "direction":  2,
+                           "role_id":  18,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  3,
+                           "y":  68,
+                           "direction":  2,
+                           "role_id":  31,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  3,
+                           "y":  70,
+                           "direction":  2,
+                           "role_id":  22,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "小丑獻媚",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.打敗貝洛本人。*2.撤離戰場。",
+                       "defeat":  "白志超陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  17,
+                                         "name":  "秋月",
+                                         "text":  "我們來遲了。"
+                                     },
+                                     {
+                                         "speaker":  15,
+                                         "name":  "艾文",
+                                         "text":  "等等，你們看....。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  7,
+                       "completion_flag":  48,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  201,
+                                            "offset_7":  13,
+                                            "offset_9":  32
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  6,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  201,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  6,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  20,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "慢著慢著，我知道所有財產的帳目明細和私產的隱藏地點，饒我一命吧。"
+                                     },
+                                     {
+                                         "speaker":  39,
+                                         "name":  "貝洛元帥",
+                                         "text":  "哼！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  10,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  20,
+                                            "offset_7":  4,
+                                            "offset_9":  2
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  20,
+                                            "offset_7":  1,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "我還知道新式武器防具的製造地點與方法，還..還有夏普的行政令符所在，你會用到我的。"
+                                     },
+                                     {
+                                         "speaker":  39,
+                                         "name":  "貝洛元帥",
+                                         "text":  "....哼，就饒你一條小命又何妨？"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  10,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  20,
+                                            "offset_7":  4,
+                                            "offset_9":  2
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  20,
+                                            "offset_7":  1,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "多謝大元帥！多謝大元帥！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  7,
+                       "completion_flag":  0,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  20,
+                                            "offset_7":  13,
+                                            "offset_9":  34
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  12,
+                       "completion_flag":  0,
+                       "condition":  16,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  20,
+                                            "offset_7":  3,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  22,
+                                         "name":  "奧帕兒",
+                                         "text":  "克雷布特里！你這個齷齪小人！"
+                                     },
+                                     {
+                                         "speaker":  19,
+                                         "name":  "夏普",
+                                         "text":  "奧..奧帕兒，我的乖女兒。"
+                                     },
+                                     {
+                                         "speaker":  22,
+                                         "name":  "奧帕兒",
+                                         "text":  "爹爹，別擔心，我立刻就過去救您了！"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "......。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  0,
+                       "condition":  3,
+                       "victim_role_id":  19,
+                       "killer_role_id":  20,
+                       "lines":  [
+                                     {
+                                         "speaker":  19,
+                                         "name":  "夏普",
+                                         "text":  "你這個叛徒！"
+                                     },
+                                     {
+                                         "speaker":  20,
+                                         "name":  "克雷布特里",
+                                         "text":  "是你不識時務！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  0,
+                       "condition":  2,
+                       "role_id":  21,
+                       "lines":  [
+                                     {
+                                         "speaker":  21,
+                                         "name":  "蘭瑟姆",
+                                         "text":  "領主，我盡力了....。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  14,
+                       "condition":  2,
+                       "role_id":  19,
+                       "lines":  [
+                                     {
+                                         "speaker":  19,
+                                         "name":  "夏普",
+                                         "text":  "奧帕兒，快逃，快逃....。"
+                                     },
+                                     {
+                                         "speaker":  22,
+                                         "name":  "奧帕兒",
+                                         "text":  "爹爹～！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  13,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  187,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  39,
+                                         "name":  "貝洛元帥",
+                                         "text":  "夏普，這幾年來辛苦你替我打下來的天下，我會好好善用的。另外你應該不會在意我把一些事情推到你頭上吧，反正你都已經死了，哈哈哈。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  15,
+                       "condition":  2,
+                       "role_id":  39,
+                       "lines":  [
+                                     {
+                                         "speaker":  39,
+                                         "name":  "貝洛元帥",
+                                         "text":  "太大意了，下次你不會這麼好運了。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "這可不是運氣，這是實力。"
+                                     },
+                                     {
+                                         "speaker":  39,
+                                         "name":  "貝洛元帥",
+                                         "text":  "哼，今天就先放過你，下次用千軍萬馬輾死你！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  11,
+                       "raw_operands":  {
+                                            "offset_3":  15,
+                                            "offset_5":  10,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  12,
+                       "raw_operands":  {
+                                            "offset_3":  15,
+                                            "offset_5":  10,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  7
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  11
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  1,
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "戰況不利，大家準備撤退。"
+                                     }
+                                 ]
+                   }
+               ]
+}

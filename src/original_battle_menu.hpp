@@ -476,10 +476,7 @@ public:
         }
         auto image = battlefield;
         auto dimmed = palette_.try_transform_rect(image, 0, 0, 640, 480, 6);
-        if (!dimmed)
-        {
-            report_error(dimmed.error());
-        }
+        if (!dimmed) { image = battlefield; }
         const bool show_root_labels = page_ == Page::root || (page_ == Page::confirmation && confirmation_parent_ == Page::root);
         draw_page(image, Page::root, page_ == Page::root ? selected_ : root_selected_, show_root_labels,
             page_ == Page::confirmation && confirmation_parent_ == Page::root);

@@ -1,0 +1,731 @@
+﻿{
+    "map_id":  23,
+    "music":  19,
+    "route":  {
+                  "next_stage":  146,
+                  "alternate_stage":  0,
+                  "mode":  1,
+                  "interbattle_town_id":  23
+              },
+    "units":  [
+                  {
+                      "id":  1,
+                      "appearance":  89,
+                      "name":  "娜塔莉雅",
+                      "x":  2,
+                      "y":  38,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  316,
+                      "max_hp":  74,
+                      "equipment":  [
+                                        35,
+                                        110,
+                                        160,
+                                        180,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  2,
+                      "appearance":  19,
+                      "name":  "穆爾",
+                      "x":  1,
+                      "y":  40,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  330,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  5,
+                      "appearance":  10,
+                      "name":  "古斯塔夫",
+                      "x":  1,
+                      "y":  38,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  420,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        63,
+                                        133,
+                                        152,
+                                        169,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  4,
+                      "appearance":  64,
+                      "name":  "蘇",
+                      "x":  2,
+                      "y":  40,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  284,
+                      "max_hp":  158,
+                      "equipment":  [
+                                        35,
+                                        110,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  3,
+                      "appearance":  22,
+                      "name":  "泰普",
+                      "x":  17,
+                      "y":  39,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  494,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        35,
+                                        107,
+                                        159,
+                                        167,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  6,
+                      "appearance":  54,
+                      "name":  "黛西",
+                      "x":  17,
+                      "y":  36,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  332,
+                      "max_hp":  20,
+                      "equipment":  [
+                                        52,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  16,
+                      "appearance":  126,
+                      "name":  "刑天",
+                      "x":  2,
+                      "y":  22,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  380,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        6,
+                                        121,
+                                        149,
+                                        169,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  17,
+                      "appearance":  125,
+                      "name":  "秋月",
+                      "x":  1,
+                      "y":  26,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  356,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        6,
+                                        121,
+                                        149,
+                                        169,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  18,
+                      "appearance":  60,
+                      "name":  "茱迪",
+                      "x":  2,
+                      "y":  27,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  326,
+                      "max_hp":  20,
+                      "equipment":  [
+                                        52,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  26,
+                      "appearance":  77,
+                      "name":  "典獄長",
+                      "x":  22,
+                      "y":  51,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  3,
+                      "hp":  364,
+                      "max_hp":  144,
+                      "equipment":  [
+                                        51,
+                                        121,
+                                        150,
+                                        168,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "獄卒",
+                      "x":  22,
+                      "y":  55,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "獄卒",
+                      "x":  20,
+                      "y":  42,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "獄卒",
+                      "x":  18,
+                      "y":  48,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "獄卒",
+                      "x":  18,
+                      "y":  53,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "獄卒",
+                      "x":  20,
+                      "y":  58,
+                      "direction":  3,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "獄卒",
+                      "x":  4,
+                      "y":  30,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "獄卒",
+                      "x":  13,
+                      "y":  43,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "獄卒",
+                      "x":  7,
+                      "y":  28,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "獄卒",
+                      "x":  10,
+                      "y":  38,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  0,
+                      "appearance":  29,
+                      "name":  "獄卒",
+                      "x":  4,
+                      "y":  36,
+                      "direction":  0,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  2,
+                      "hp":  306,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        177,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  16,
+                                                "y":  54,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  14,
+                             "deployment":  {
+                                                "x":  16,
+                                                "y":  56,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  15,
+                             "deployment":  {
+                                                "x":  15,
+                                                "y":  54,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  13,
+                             "deployment":  {
+                                                "x":  15,
+                                                "y":  56,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  34,
+                             "deployment":  {
+                                                "x":  14,
+                                                "y":  56,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  16,
+                           "y":  54,
+                           "direction":  2,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  16,
+                           "y":  56,
+                           "direction":  2,
+                           "role_id":  14,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  15,
+                           "y":  54,
+                           "direction":  2,
+                           "role_id":  15,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  15,
+                           "y":  56,
+                           "direction":  2,
+                           "role_id":  13,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  14,
+                           "y":  56,
+                           "direction":  2,
+                           "role_id":  34,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "獄府黑牢",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.取得獄門鑰匙。",
+                       "defeat":  "白志超或娜塔莉雅陣亡或任何一名待救援隊友陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   },
+                       "lines":  [
+                                     {
+                                         "speaker":  26,
+                                         "name":  "典獄長",
+                                         "text":  "小心！有侵入者！"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "是這裡嗎？"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "動作要快！速戰速決！"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  3,
+                       "completion_flag":  14,
+                       "condition":  2,
+                       "role_id":  26,
+                       "lines":  [
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "太好了，鑰匙到手了。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  7,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  16,
+                                            "offset_7":  999,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  7,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  17,
+                                            "offset_7":  999,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  7,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  18,
+                                            "offset_7":  999,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "泰普、黛西，你們沒事吧。"
+                                     },
+                                     {
+                                         "speaker":  3,
+                                         "name":  "泰普",
+                                         "text":  "沒事啦，只是臉丟大了。"
+                                     },
+                                     {
+                                         "speaker":  6,
+                                         "name":  "黛西",
+                                         "text":  "妳們來得真快，我們才剛被送進來呢。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "哈，你們兩個和茱迪被送進這間黑牢，這下豈不是有失顏面？"
+                                     },
+                                     {
+                                         "speaker":  16,
+                                         "name":  "刑天",
+                                         "text":  "別提了，這次臉可丟大了。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "那南巡使呢？"
+                                     },
+                                     {
+                                         "speaker":  17,
+                                         "name":  "秋月",
+                                         "text":  "被南方領的人帶走了，看樣子身份是暴露了。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "現在沒時間管他了，我們先離開這個地方吧。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  1,
+                                            "offset_7":  3,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  2,
+                                            "offset_7":  3,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  4,
+                                            "offset_7":  3,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  14,
+                       "completion_flag":  0,
+                       "condition":  1,
+                       "raw_operands":  {
+                                            "offset_3":  14,
+                                            "offset_5":  5,
+                                            "offset_7":  3,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed"
+                   },
+                   {
+                       "type":  9,
+                       "completion_flag":  4
+                   }
+               ]
+}

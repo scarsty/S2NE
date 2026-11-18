@@ -877,6 +877,7 @@ int s2ne::run_application(int argc, char** argv)
                 {
                     s2ne::report_error(rendered.error());
                     battleMenu.reset();
+                    prologue->set_battle_menu_overlay(false);
                 }
             }
             if (battleReports)
@@ -5333,6 +5334,7 @@ int s2ne::run_application(int argc, char** argv)
                         settingsState = battleMenu->settings_state();
                         prologue->set_small_font(settingsState.small_font != 0);
                         battleMenu.reset();
+                        prologue->set_battle_menu_overlay(false);
                         if (*code == 3)
                         {
                             prologue->end_battle_turn();
@@ -5357,7 +5359,7 @@ int s2ne::run_application(int argc, char** argv)
                         bool click = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT;
                         float x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x;
                         float y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y;
-                        if (prologue->in_battle() && event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT && !prologue->computer_actions())
+                        if (prologue->in_battle() && event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT && !prologue->computer_actions() && prologue->battle_state() == s2ne::Battle::State::idle)
                         {
                             auto stopped = stopEffects();    // 原431DE8入口停止效果音，并非所有模态窗口都停止。
                             if (!stopped) { s2ne::report_error(stopped.error()); }
@@ -5368,6 +5370,7 @@ int s2ne::run_application(int argc, char** argv)
                                     return slot.occupied();
                                 });
                             battleMenu.emplace(root, context, settingsState);
+                            prologue->set_battle_menu_overlay(true);
                             showPrologue();
                             continue;
                         }

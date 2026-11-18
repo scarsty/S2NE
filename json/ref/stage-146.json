@@ -1,0 +1,439 @@
+﻿{
+    "map_id":  26,
+    "music":  34,
+    "route":  {
+                  "next_stage":  25,
+                  "alternate_stage":  0,
+                  "mode":  3
+              },
+    "units":  [
+                  {
+                      "id":  1,
+                      "appearance":  89,
+                      "name":  "娜塔莉雅",
+                      "x":  10,
+                      "y":  24,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  316,
+                      "max_hp":  74,
+                      "equipment":  [
+                                        35,
+                                        110,
+                                        160,
+                                        180,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  2,
+                      "appearance":  19,
+                      "name":  "穆爾",
+                      "x":  10,
+                      "y":  23,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  330,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        0,
+                                        119,
+                                        149,
+                                        171,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  5,
+                      "appearance":  10,
+                      "name":  "古斯塔夫",
+                      "x":  9,
+                      "y":  26,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  420,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        63,
+                                        133,
+                                        152,
+                                        169,
+                                        190,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  4,
+                      "appearance":  64,
+                      "name":  "蘇",
+                      "x":  9,
+                      "y":  25,
+                      "direction":  1,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  284,
+                      "max_hp":  158,
+                      "equipment":  [
+                                        35,
+                                        110,
+                                        160,
+                                        180,
+                                        0,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  3,
+                      "appearance":  22,
+                      "name":  "泰普",
+                      "x":  9,
+                      "y":  28,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  494,
+                      "max_hp":  0,
+                      "equipment":  [
+                                        35,
+                                        107,
+                                        159,
+                                        167,
+                                        189,
+                                        0
+                                    ]
+                  },
+                  {
+                      "id":  6,
+                      "appearance":  54,
+                      "name":  "黛西",
+                      "x":  8,
+                      "y":  27,
+                      "direction":  2,
+                      "animation_action":  0,
+                      "first_turn":  1,
+                      "last_turn":  0,
+                      "behavior":  1,
+                      "hp":  332,
+                      "max_hp":  20,
+                      "equipment":  [
+                                        52,
+                                        121,
+                                        151,
+                                        169,
+                                        0,
+                                        0
+                                    ]
+                  }
+              ],
+    "player_party":  [
+                         {
+                             "slot":  0,
+                             "role_id":  11,
+                             "deployment":  {
+                                                "x":  11,
+                                                "y":  27,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  1,
+                             "role_id":  14,
+                             "deployment":  {
+                                                "x":  12,
+                                                "y":  24,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  2,
+                             "role_id":  15,
+                             "deployment":  {
+                                                "x":  9,
+                                                "y":  29,
+                                                "direction":  2
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  3,
+                             "role_id":  13,
+                             "deployment":  {
+                                                "x":  11,
+                                                "y":  23,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  4,
+                             "role_id":  34,
+                             "deployment":  {
+                                                "x":  12,
+                                                "y":  25,
+                                                "direction":  0
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  5,
+                             "role_id":  16,
+                             "deployment":  {
+                                                "x":  10,
+                                                "y":  29,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  6,
+                             "role_id":  17,
+                             "deployment":  {
+                                                "x":  12,
+                                                "y":  26,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         },
+                         {
+                             "slot":  7,
+                             "role_id":  18,
+                             "deployment":  {
+                                                "x":  11,
+                                                "y":  28,
+                                                "direction":  3
+                                            },
+                             "mandatory_role":  false,
+                             "source":  "save.group[0].units"
+                         }
+                     ],
+    "deployment":  [
+                       {
+                           "x":  11,
+                           "y":  27,
+                           "direction":  3,
+                           "role_id":  11,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  12,
+                           "y":  24,
+                           "direction":  0,
+                           "role_id":  14,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  9,
+                           "y":  29,
+                           "direction":  2,
+                           "role_id":  15,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  11,
+                           "y":  23,
+                           "direction":  0,
+                           "role_id":  13,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  12,
+                           "y":  25,
+                           "direction":  0,
+                           "role_id":  34,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  10,
+                           "y":  29,
+                           "direction":  3,
+                           "role_id":  16,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  12,
+                           "y":  26,
+                           "direction":  3,
+                           "role_id":  17,
+                           "fixed":  false
+                       },
+                       {
+                           "x":  11,
+                           "y":  28,
+                           "direction":  3,
+                           "role_id":  18,
+                           "fixed":  false
+                       }
+                   ],
+    "deployment_rules":  {
+                             "mandatory_role_ids":  [
+
+                                                    ],
+                             "source":  "original deployment flow; not inferred from fixed slot flag"
+                         },
+    "objects":  [
+
+                ],
+    "name":  "軍事計劃",
+    "briefing":  "",
+    "objectives":  {
+                       "victory":  "1.無。",
+                       "defeat":  "白志超陣亡。"
+                   },
+    "events":  [
+                   {
+                       "type":  1,
+                       "completion_flag":  13,
+                       "trigger":  {
+                                       "kind":  "turn",
+                                       "turn":  1
+                                   }
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  2,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  34,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  34,
+                                         "name":  "庫庫克",
+                                         "text":  "這是我們剛才拿到的東西。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "咦？這份文件是....南方領的@@WA7,00D6D@@軍事計畫書@@RWRD@@！"
+                                     },
+                                     {
+                                         "speaker":  18,
+                                         "name":  "茱迪",
+                                         "text":  "裡面說些什麼？"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "大致上的意思是南方領準備一筆資金，雇用赤子國附近的傭兵集團、與海外買進大量的武器兩個計劃同時進行....事成之後就要發動侵略戰爭了。"
+                                     },
+                                     {
+                                         "speaker":  2,
+                                         "name":  "穆爾",
+                                         "text":  "人員加上裝備，好狠毒的計劃，現在我族的戰力本來就稍遜於南方領，如果讓他們計劃成功了，恐怕....恐怕有滅族之虞！"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "這件事牽連甚大，要及早準備，最好是有地方可以詳談。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "我族在城中有個據點，就先到那裡去吧。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "好的。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "跟我來。"
+                                     }
+                                 ]
+                   },
+                   {
+                       "type":  11,
+                       "completion_flag":  0,
+                       "condition":  3,
+                       "raw_operands":  {
+                                            "offset_3":  13,
+                                            "offset_5":  34,
+                                            "offset_7":  0,
+                                            "offset_9":  0
+                                        },
+                       "raw_operands_semantics":  "unconfirmed",
+                       "lines":  [
+                                     {
+                                         "speaker":  16,
+                                         "name":  "刑天",
+                                         "text":  "你們怎麼會碰在一起的？"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "說來好玩，娜塔莉雅和我們是在領主府裡頭碰上的，還一起去教訓了克雷布特里一頓，拿到一份文件....。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "咦？這份文件是....南方領的@@WA7,00D6D@@軍事計畫書@@RWRD@@！"
+                                     },
+                                     {
+                                         "speaker":  18,
+                                         "name":  "茱迪",
+                                         "text":  "裡面說些什麼？"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "大致上的意思是南方領準備一筆資金，雇用赤子國附近的傭兵集團、與海外買進大量的武器兩個計劃同時進行....事成之後就要發動侵略戰爭了。"
+                                     },
+                                     {
+                                         "speaker":  2,
+                                         "name":  "穆爾",
+                                         "text":  "人員加上裝備，好狠毒的計劃，現在我族的戰力本來就稍遜於南方領，如果讓他們計劃成功了，恐怕....恐怕有滅族之虞！"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "這件事牽連甚大，要及早準備，最好是有地方可以詳談。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "我族在城中有個據點，就先到那裡去吧。"
+                                     },
+                                     {
+                                         "speaker":  11,
+                                         "name":  "志超",
+                                         "text":  "好的。"
+                                     },
+                                     {
+                                         "speaker":  1,
+                                         "name":  "娜塔莉雅",
+                                         "text":  "跟我來。"
+                                     }
+                                 ]
+                   }
+               ]
+}
