@@ -3,6 +3,7 @@
 #include "original_menu.hpp"
 #include "original_script_predicates.hpp"
 #include "original_sprite.hpp"
+#include "original_stage_route.hpp"
 #include <fstream>
 #include <functional>
 #include <nlohmann/json.hpp>
@@ -20,10 +21,6 @@ class OriginalCampaign
     OriginalMenu font_;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static unsigned custom_stage_base(unsigned id)
-    {
-        return id < 201 ? id : id - 200;
-    }
     size_t table() const { return dword(pal_, 848) - 11; }
     s2ne::Result<size_t> try_header(unsigned stage) const
     {
@@ -201,7 +198,7 @@ public:
             stage.mode = route.at("mode").get<unsigned>();
             return Result<Stage>::success(std::move(stage));
         }
-        const unsigned source_id = custom_stage_base(id);
+        const unsigned source_id = original_stage_id(id);
         ResourceReader pal(pal_), bin(bin_);
         unsigned raw = pal.number(848, 4);
         if (!pal)

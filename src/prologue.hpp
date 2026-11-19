@@ -326,7 +326,7 @@ class Prologue
                         map_.camera_x = physical_death_camera_->first;
                         map_.camera_y = physical_death_camera_->second;
                     }
-                    map_.set_event_flags(events.flags);
+                    sync_event_flags();
                     skill94_death_commit_ = {};
                     physical_departure_.reset();
                     map_.cancel_teleport_arrival();
@@ -397,7 +397,7 @@ class Prologue
         campaign_blocked
     };
     Phase synchronous_death_phase_ = Phase::battle;
-    std::optional<OriginalCampaign> campaign_;
+    mutable std::optional<OriginalCampaign> campaign_;
     std::optional<OriginalInterbattle> interbattle_;
     bool deployment_requested_{};
     bool deployment_completed_{};
@@ -423,6 +423,15 @@ private:
     std::function<bool(OriginalEvents&, const OriginalCampaign::Settlement&)> campaign_reward_adapter_;
     std::function<OriginalInterbattle::Result(OriginalInterbattle::Request)> interbattle_adapter_;
     bool campaign_settled_{};
+    OriginalCampaign& campaign() const
+    {
+        if (!campaign_)
+        {
+            campaign_.emplace(root_);
+        }
+        return *campaign_;
+    }
+    void sync_event_flags() { map_.set_event_flags(events.flags); }
     unsigned intro_elapsed_ = 0;
     bool presentation_driven_ = false;
     OriginalBannerPresentation banner_presentation_;
@@ -538,7 +547,7 @@ private:
             }
             std::string disappearanceError;
             // 后继旗标可重建地图；先同步再准备455048位图，避免下帧清空活动位图。
-            map_.set_event_flags(events.flags);
+            sync_event_flags();
             auto pose = events.units;
             auto& visualRole = pose.at(size_t(role - events.units.begin()));
             // 455048脚本显式指定已死亡角色仍使用原位图，不能把展示预备态发布回军表。
@@ -662,7 +671,7 @@ private:
     bool restored_story_pending_{};
     std::optional<Phase> scripted_battle_return_;
     Phase campaign_choice_return_{ Phase::battle };
-    bool story_stage() const { return events.stage != 140 && OriginalCampaign(root_).stage(events.stage).mode == 3; }
+    bool story_stage() const { return events.stage != 140 && campaign().stage(events.stage).mode == 3; }
     void dispatch_story(bool starting_battle_script = false)
     {
         if (scripted_battle_return_ && !starting_battle_script)
@@ -1108,7 +1117,7 @@ private:
         }
         OriginalEvents source = events;
         source.load_stage(events.stage);
-        story_route_ = OriginalCampaign::completed_story_route(source, events, OriginalCampaign(root_).stage(events.stage).next);
+        story_route_ = OriginalCampaign::completed_story_route(source, events, campaign().stage(events.stage).next);
         if (story_route_)
         {
             phase_ = Phase::story_ready;
@@ -1328,7 +1337,7 @@ private:
         page_ = 0;
         revealed_glyphs_ = 0;
         text_elapsed_ = 0;
-        map_.set_event_flags(events.flags);
+        sync_event_flags();
         return Result<bool>::success(true);
     }
     void rollback_synchronous_death()
@@ -1374,7 +1383,7 @@ private:
         }
         phase_ = Phase::battle;
         battle_->lock_skill94_death(false);
-        map_.set_event_flags(events.flags);
+        sync_event_flags();
         if (physical_death_baseline_) { battle_->rollback_physical_exchange(events.units); }
     }
     bool prepare()
@@ -2470,7 +2479,7 @@ public:
     }
     Result<bool> try_restore_campaign_story(OriginalEvents restored)
     {
-        if (OriginalCampaign(root_).stage(restored.stage).mode != 3)
+        if (campaign().stage(restored.stage).mode != 3)
         {
             return Result<bool>::failure(make_error("Not an original story stage"));
         }
@@ -4115,7 +4124,7 @@ public:
             dispatch_story();
             return Result<bool>::success(true);
         }
-        map_.set_event_flags(events.flags);
+        sync_event_flags();
         animation_elapsed_ += milliseconds;
         if (!presentation_driven_) { idle_clock_.presented(); }
         idle_clock_.tick(milliseconds);
@@ -4786,7 +4795,7 @@ public:
         connect_combat_progression();
         // Flag changes reload the old map; do not give it the new map's chains.
         map_.set_dynamic_object_chains({});
-        map_.set_event_flags(events.flags);
+        sync_event_flags();
         map_.set_dynamic_object_chains(events.dynamic_object_chains);
         map_.load(events.map_id);
         for (unsigned y = 0; y < map_.height * 2; ++y)
@@ -4965,7 +4974,7 @@ public:
             {
                 return Result<bool>::success(true);
             }
-            auto stage = campaign_->stage(events.stage);
+            auto stage = campaign().stage(events.stage);
             size_t count = 0;
             while (count < events.units.size() && events.units[count].behavior != 2 && events.units[count].behavior != 3 && events.units[count].behavior != 8)
             {
@@ -5043,7 +5052,7 @@ public:
                     autosave_requests_.push_back(*request);
                 }
                 map_.set_dynamic_object_chains(events.dynamic_object_chains);
-                map_.set_event_flags(events.flags);
+                sync_event_flags();
                 map_.load(events.map_id);
                 map_.center(events.units.front().x, events.units.front().y);
                 phase_ = Phase::briefing;
@@ -5286,7 +5295,7 @@ public:
                 autosave_requests_.push_back(*request);
             }
             map_.set_dynamic_object_chains(events.dynamic_object_chains);
-            map_.set_event_flags(events.flags);
+            sync_event_flags();
             map_.load(events.map_id);
             map_.center(events.units.front().x, events.units.front().y);
             phase_ = Phase::briefing;
@@ -5443,7 +5452,7 @@ public:
         }
         if (phase_ == Phase::campaign_rewards)
         {
-            campaign_->render_rewards(image, campaign_->stage(events.stage), events.units);
+            campaign().render_rewards(image, campaign().stage(events.stage), events.units);
             return image;
         }
         if (phase_ == Phase::story_animation || phase_ == Phase::story_movement || phase_ == Phase::story_disappearance || phase_ == Phase::story_wait)

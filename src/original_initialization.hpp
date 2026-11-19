@@ -2,6 +2,7 @@
 #include "original_campaign.hpp"
 #include "original_promotion_transaction.hpp"
 #include "original_save_bridge.hpp"
+#include "original_stage_route.hpp"
 
 namespace s2ne
 {
@@ -11,10 +12,6 @@ class OriginalInitialization
     std::filesystem::path root_;
     SharedBytes bin_, pal_, prg_;
     std::vector<uint8_t> items_;
-    static unsigned custom_stage_base(unsigned id)
-    {
-        return id < 201 ? id : id - 200;
-    }
     static unsigned get(const std::vector<uint8_t>& b, size_t p, unsigned n = 2)
     {
         unsigned v = 0;
@@ -477,7 +474,7 @@ public:
         unit = std::move(state.unit);
         if (source.group && game_mode != 1)
         {
-            const size_t stage = entry(1) + 2 + size_t(custom_stage_base(events.stage) - 1) * 30;
+            const size_t stage = entry(1) + 2 + size_t(original_stage_id(events.stage) - 1) * 30;
             if (bin_.at(stage + 21) != 3)
             {
                 size_t config = entry(10);
@@ -567,7 +564,7 @@ public:
     }
     Result<std::vector<Source>> try_sources(unsigned stage) const
     {
-        const unsigned source_stage = custom_stage_base(stage);
+        const unsigned source_stage = original_stage_id(stage);
         ResourceReader pal(pal_), bin(bin_);
         unsigned raw = pal.number(848, 4);
         if (!pal)
@@ -1041,7 +1038,7 @@ public:
         put(raw.settings_4f7cf0, 12, setup.effects);
         put(raw.settings_4f7cf0, 16, setup.speech);
         std::copy(setup.switches.begin(), setup.switches.end(), raw.settings_4f7cf0.begin() + 20);
-        const unsigned source_stage = custom_stage_base(stage);
+        const unsigned source_stage = original_stage_id(stage);
         size_t table = entry(1), h = table + 2 + (source_stage - 1) * 30, data = table + get(bin_, h, 4);
         put(raw.globals_4f7cd0, 8, stage);
         put(raw.globals_4f7cd0, 12, 1);
@@ -1159,14 +1156,14 @@ public:
         size_t prior = 0;
         unsigned direct = 0, next = 0;
         bool authorized = false;
+        auto restored = OriginalSaveBridge::try_restore(root, settled);
+        if (!restored)
+        {
+            return Result<OriginalSave::State>::failure(restored.error());
+        }
+        auto completed = std::move(restored).value().events;
         if (custom_previous)
         {
-            auto restored = OriginalSaveBridge::try_restore(root, settled);
-            if (!restored)
-            {
-                return Result<OriginalSave::State>::failure(restored.error());
-            }
-            auto completed = std::move(restored).value().events;
             authorized = OriginalCampaign(root).selected_route(completed) == deployed.stage;
         }
         else
@@ -1179,12 +1176,6 @@ public:
         {
             OriginalEvents original(root, deployed.difficulty);
             original.load_stage(previous);
-            auto restored = OriginalSaveBridge::try_restore(root, settled);
-            if (!restored)
-            {
-                return Result<OriginalSave::State>::failure(restored.error());
-            }
-            auto completed = std::move(restored).value().events;
             unsigned selected = OriginalCampaign(root).selected_route(completed);
             if (selected)
             {
@@ -1195,19 +1186,13 @@ public:
         {
             OriginalEvents original(root, deployed.difficulty);
             original.load_stage(previous);
-            auto restored = OriginalSaveBridge::try_restore(root, settled);
-            if (!restored)
-            {
-                return Result<OriginalSave::State>::failure(restored.error());
-            }
-            auto completed = std::move(restored).value().events;
             authorized = OriginalCampaign::completed_story_route(original, completed, direct) == deployed.stage;
         }
         if (!authorized)
         {
             return Result<OriginalSave::State>::failure(make_error("Transition not authorized by original stage header/event"));
         }
-        unsigned target_mode = custom_target ? OriginalCampaign(root).stage(deployed.stage).mode : bin_.at(table + 2 + (custom_stage_base(deployed.stage) - 1) * 30 + 21);
+        unsigned target_mode = custom_target ? OriginalCampaign(root).stage(deployed.stage).mode : bin_.at(table + 2 + (original_stage_id(deployed.stage) - 1) * 30 + 21);
         if (target_mode != 1 && target_mode != 3)
         {
             return Result<OriginalSave::State>::failure(make_error("Original intermediary stage requires separate scripted entry"));
@@ -1264,7 +1249,7 @@ public:
         raw.flags_4f7d10 = deployed.flags;
         raw.event_states = deployed.save_event_states();
         OriginalSaveBridge::put(raw.globals_4f7cd0, 4, 0, 4);
-        size_t h = table + 2 + (custom_stage_base(deployed.stage) - 1) * 30, data = table + get(bin_, h, 4);
+        size_t h = table + 2 + (original_stage_id(deployed.stage) - 1) * 30, data = table + get(bin_, h, 4);
         OriginalSaveBridge::put(raw.globals_4f7cd0, 8, deployed.stage, 4);
         OriginalSaveBridge::put(raw.globals_4f7cd0, 12, 1, 4);
         OriginalSaveBridge::put(raw.globals_4f7cd0, 16, bin_.at(h + 12), 4);

@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "original_combat.hpp"
+#include "original_stage_route.hpp"
 #include "resource_result.hpp"
 #include <array>
 #include <cstdint>
@@ -28,10 +29,6 @@ class OriginalEvents
     size_t combat_config_{};
     unsigned word(size_t p) const { return bin_.at(p) | (unsigned(bin_.at(p + 1)) << 8); }
     unsigned dword(size_t p) const { return word(p) | (word(p + 2) << 16); }
-    static unsigned custom_stage_base(unsigned id)
-    {
-        return id < 201 ? id : id - 200;
-    }
     size_t entry(unsigned id) const
     {
         size_t p = 848 + (id - 1) * 8;
@@ -171,7 +168,7 @@ public:
         {
             return json_deployment_slots_;
         }
-        const unsigned source_id = custom_stage_base(stage);
+        const unsigned source_id = original_stage_id(stage);
         size_t h = entry(1) + 2 + (source_id - 1) * 30, data = entry(1) + dword(h), characters = data + dword(h + 26);
         std::vector<DeploymentSlot> result;
         for (unsigned i = 0; i < bin_.at(h + 8); ++i)
@@ -379,7 +376,7 @@ public:
     int stage_adjustment{};
     Result<bool> try_adjust_battle_entry_stats()
     {
-        const unsigned source_id = custom_stage_base(stage);
+        const unsigned source_id = original_stage_id(stage);
         size_t header = entry(1) + 2 + (source_id - 1) * 30;
         if (bin_.at(header + 21) == 3)
         {
@@ -1058,7 +1055,7 @@ public:
             swap(*this, candidate);
             return Result<bool>::success(true);
         }
-        const unsigned source_id = custom_stage_base(id);
+        const unsigned source_id = original_stage_id(id);
         ResourceReader bin(bin_), pal(pal_), kinds(kinds_), items(items_);
         unsigned raw = pal.number(848, 4);
         if (!pal)
@@ -1193,7 +1190,7 @@ public:
     }
     void load_stage_validated(unsigned id)
     {
-        const unsigned source_id = custom_stage_base(id);
+        const unsigned source_id = original_stage_id(id);
         event_types_.clear();
         json_event_turns_.clear();
         json_event_flags_.clear();
