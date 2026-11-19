@@ -1,428 +1,450 @@
 {
-  "map_id": 30,
-  "music": 12,
+  "map_id": 80,
+  "music": 19,
   "route": {
-    "next_stage": 281,
+    "interbattle_town_id": 80,
+    "next_stage": 211,
     "alternate_stage": 0,
     "mode": 1,
-    "interbattle_town_id": 30,
-    "fantasy_stage": 281
+    "fantasy_stage": 211
   },
   "units": [
     {
-      "id": 40,
-      "appearance": 57,
-      "name": "柯莉特",
-      "x": 2,
-      "y": 61,
-      "direction": 2,
+      "id": 73,
+      "appearance": 23,
+      "name": "顧將軍",
+      "x": 16,
+      "y": 17,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 3,
-      "hp": 600,
-      "max_hp": 20,
+      "hp": 372,
+      "max_hp": 0,
       "equipment": [
-        66,
-        138,
-        157,
-        178,
-        196,
+        5,
+        122,
+        149,
+        170,
+        189,
         0
       ]
     },
     {
-      "id": 78,
-      "appearance": 28,
-      "name": "隨軍神官",
-      "x": 4,
-      "y": 59,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 8,
-      "hp": 370,
-      "max_hp": 135,
-      "equipment": [
-        38,
-        111,
-        163,
-        182,
-        193,
-        0
-      ]
-    },
-    {
-      "id": 200,
-      "appearance": 26,
-      "name": "運金團護衛",
-      "x": 1,
-      "y": 57,
-      "direction": 0,
+      "id": 56,
+      "appearance": 15,
+      "name": "拳術侍衛",
+      "x": 15,
+      "y": 18,
+      "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 350,
+      "hp": 212,
       "max_hp": 0,
       "equipment": [
-        20,
-        132,
-        150,
         0,
-        190,
-        0
-      ]
-    },
-    {
-      "id": 201,
-      "appearance": 26,
-      "name": "運金團護衛",
-      "x": 2,
-      "y": 55,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 350,
-      "max_hp": 0,
-      "equipment": [
-        20,
-        132,
-        150,
+        102,
+        148,
+        167,
         0,
-        190,
-        0
-      ]
-    },
-    {
-      "id": 202,
-      "appearance": 26,
-      "name": "運金團護衛",
-      "x": 4,
-      "y": 56,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 350,
-      "max_hp": 0,
-      "equipment": [
-        20,
-        132,
-        150,
-        0,
-        190,
-        0
-      ]
-    },
-    {
-      "id": 203,
-      "appearance": 26,
-      "name": "運金團護衛",
-      "x": 5,
-      "y": 62,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 350,
-      "max_hp": 0,
-      "equipment": [
-        20,
-        132,
-        150,
-        0,
-        190,
-        0
-      ]
-    },
-    {
-      "id": 204,
-      "appearance": 26,
-      "name": "運金團護衛",
-      "x": 6,
-      "y": 62,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 350,
-      "max_hp": 0,
-      "equipment": [
-        20,
-        132,
-        150,
-        0,
-        190,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 64,
-      "name": "運金團護衛",
+      "appearance": 15,
+      "name": "拳術侍衛",
+      "x": 9,
+      "y": 35,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 212,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        102,
+        148,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 15,
+      "name": "拳術侍衛",
+      "x": 16,
+      "y": 29,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 212,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        102,
+        148,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 15,
+      "name": "拳術侍衛",
+      "x": 18,
+      "y": 19,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 212,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        102,
+        148,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 52,
+      "name": "魔幻術士",
+      "x": 16,
+      "y": 22,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 168,
+      "max_hp": 77,
+      "equipment": [
+        33,
+        104,
+        159,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 52,
+      "name": "魔幻術士",
       "x": 7,
-      "y": 52,
-      "direction": 2,
+      "y": 38,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 280,
-      "max_hp": 132,
+      "hp": 168,
+      "max_hp": 77,
       "equipment": [
-        38,
-        110,
-        160,
-        180,
+        33,
+        104,
+        159,
+        167,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 64,
-      "name": "運金團護衛",
-      "x": 1,
-      "y": 51,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 280,
-      "max_hp": 132,
-      "equipment": [
-        38,
-        110,
-        160,
-        180,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 64,
-      "name": "運金團護衛",
-      "x": 8,
-      "y": 62,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 280,
-      "max_hp": 132,
-      "equipment": [
-        38,
-        110,
-        160,
-        180,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 48,
-      "name": "運金團護衛",
-      "x": 2,
-      "y": 49,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 312,
-      "max_hp": 0,
-      "equipment": [
-        52,
-        122,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 48,
-      "name": "運金團護衛",
-      "x": 3,
-      "y": 55,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 312,
-      "max_hp": 0,
-      "equipment": [
-        52,
-        122,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 48,
-      "name": "運金團護衛",
+      "appearance": 52,
+      "name": "魔幻術士",
       "x": 6,
-      "y": 61,
-      "direction": 2,
+      "y": 27,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 312,
-      "max_hp": 0,
+      "hp": 168,
+      "max_hp": 77,
       "equipment": [
-        52,
-        122,
-        151,
-        169,
+        33,
+        104,
+        159,
+        167,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 48,
-      "name": "運金團護衛",
-      "x": 5,
-      "y": 55,
-      "direction": 2,
+      "appearance": 52,
+      "name": "魔幻術士",
+      "x": 12,
+      "y": 34,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 312,
-      "max_hp": 0,
+      "hp": 168,
+      "max_hp": 77,
       "equipment": [
-        52,
-        122,
-        151,
-        169,
+        33,
+        104,
+        159,
+        167,
         0,
         0
       ]
     },
     {
-      "id": 0,
-      "appearance": 14,
-      "name": "運金團護衛",
+      "id": 52,
+      "appearance": 2,
+      "name": "礦坑衛兵",
       "x": 6,
-      "y": 49,
-      "direction": 2,
+      "y": 36,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 360,
+      "hp": 225,
       "max_hp": 0,
       "equipment": [
-        21,
-        122,
+        4,
+        120,
         149,
-        169,
-        0,
+        170,
+        185,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 14,
-      "name": "運金團護衛",
-      "x": 8,
-      "y": 54,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 360,
-      "max_hp": 0,
-      "equipment": [
-        21,
-        122,
-        149,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 14,
-      "name": "運金團護衛",
+      "appearance": 2,
+      "name": "礦坑衛兵",
       "x": 4,
-      "y": 49,
-      "direction": 2,
+      "y": 25,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 360,
+      "hp": 225,
       "max_hp": 0,
       "equipment": [
-        21,
-        122,
+        4,
+        120,
         149,
-        169,
-        0,
+        170,
+        185,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 14,
-      "name": "運金團護衛",
-      "x": 10,
-      "y": 59,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 360,
-      "max_hp": 0,
-      "equipment": [
-        21,
-        122,
-        149,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 14,
-      "name": "運金團護衛",
+      "appearance": 2,
+      "name": "礦坑衛兵",
       "x": 8,
-      "y": 60,
-      "direction": 2,
+      "y": 29,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 360,
+      "hp": 225,
       "max_hp": 0,
       "equipment": [
-        21,
-        122,
+        4,
+        120,
         149,
-        169,
+        170,
+        185,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 2,
+      "name": "礦坑衛兵",
+      "x": 13,
+      "y": 26,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 225,
+      "max_hp": 0,
+      "equipment": [
+        4,
+        120,
+        149,
+        170,
+        185,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 47,
+      "name": "礦坑騎兵",
+      "x": 12,
+      "y": 50,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 208,
+      "max_hp": 0,
+      "equipment": [
+        75,
+        130,
+        150,
+        170,
+        187,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 47,
+      "name": "礦坑騎兵",
+      "x": 13,
+      "y": 51,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 208,
+      "max_hp": 0,
+      "equipment": [
+        75,
+        130,
+        150,
+        170,
+        187,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 47,
+      "name": "礦坑騎兵",
+      "x": 13,
+      "y": 54,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 208,
+      "max_hp": 0,
+      "equipment": [
+        75,
+        130,
+        150,
+        170,
+        187,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 39,
+      "name": "礦坑弩手",
+      "x": 12,
+      "y": 17,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 182,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        120,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 39,
+      "name": "礦坑弩手",
+      "x": 8,
+      "y": 40,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 182,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        120,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 39,
+      "name": "礦坑弩手",
+      "x": 4,
+      "y": 30,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 182,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        120,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 39,
+      "name": "礦坑弩手",
+      "x": 11,
+      "y": 23,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 182,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        120,
+        149,
+        168,
         0,
         0
       ]
@@ -433,9 +455,9 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 17,
-        "y": 31,
-        "direction": 0
+        "x": 2,
+        "y": 49,
+        "direction": 2
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -444,9 +466,9 @@
       "slot": 1,
       "role_id": 1,
       "deployment": {
-        "x": 17,
-        "y": 28,
-        "direction": 0
+        "x": 1,
+        "y": 47,
+        "direction": 2
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -455,9 +477,9 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 17,
-        "y": 34,
-        "direction": 0
+        "x": 1,
+        "y": 45,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -466,9 +488,9 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 17,
-        "y": 26,
-        "direction": 0
+        "x": 1,
+        "y": 51,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -477,9 +499,9 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 16,
-        "y": 31,
-        "direction": 0
+        "x": 2,
+        "y": 51,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -488,9 +510,9 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 18,
-        "y": 29,
-        "direction": 0
+        "x": 2,
+        "y": 47,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -499,9 +521,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 17,
-        "y": 29,
-        "direction": 0
+        "x": 1,
+        "y": 49,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -510,9 +532,9 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 15,
-        "y": 30,
-        "direction": 0
+        "x": 2,
+        "y": 48,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -520,86 +542,86 @@
   ],
   "deployment": [
     {
-      "x": 17,
-      "y": 31,
-      "direction": 0,
+      "x": 2,
+      "y": 49,
+      "direction": 2,
       "role_id": 11,
       "fixed": true
     },
     {
-      "x": 17,
-      "y": 28,
-      "direction": 0,
+      "x": 1,
+      "y": 47,
+      "direction": 2,
       "role_id": 1,
       "fixed": true
     },
     {
-      "x": 17,
-      "y": 34,
-      "direction": 0,
+      "x": 1,
+      "y": 45,
+      "direction": 2,
       "role_id": 14,
       "fixed": false
     },
     {
-      "x": 17,
-      "y": 26,
-      "direction": 0,
+      "x": 1,
+      "y": 51,
+      "direction": 2,
       "role_id": 15,
       "fixed": false
     },
     {
-      "x": 16,
-      "y": 31,
-      "direction": 0,
+      "x": 2,
+      "y": 51,
+      "direction": 2,
       "role_id": 13,
       "fixed": false
     },
     {
-      "x": 18,
-      "y": 29,
-      "direction": 0,
+      "x": 2,
+      "y": 47,
+      "direction": 2,
       "role_id": 2,
       "fixed": false
     },
     {
-      "x": 17,
-      "y": 29,
-      "direction": 0,
-      "role_id": 3,
-      "fixed": false
-    },
-    {
-      "x": 15,
-      "y": 30,
-      "direction": 0,
-      "role_id": 4,
-      "fixed": false
-    },
-    {
-      "x": 16,
-      "y": 28,
-      "direction": 0,
+      "x": 1,
+      "y": 49,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 17,
-      "y": 30,
-      "direction": 0,
+      "x": 2,
+      "y": 48,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 17,
-      "y": 32,
-      "direction": 0,
+      "x": 2,
+      "y": 50,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 18,
-      "y": 31,
-      "direction": 0,
+      "x": 3,
+      "y": 49,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 1,
+      "y": 48,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 1,
+      "y": 50,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     }
@@ -610,11 +632,11 @@
       1
     ],
     "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
-    "strength_score": 8508.0,
-    "base_stage": 30
+    "base_stage": 80,
+    "strength_score": 0
   },
   "objects": [],
-  "name": "追擊柯莉特",
+  "name": "採石場",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",
@@ -630,132 +652,113 @@
       },
       "lines": [
         {
-          "speaker": 40,
-          "name": "柯莉特",
-          "text": "....神官大人，這裡就交給你了。"
+          "speaker": 73,
+          "name": "顧將軍",
+          "text": "唉....為什麼我會被派到這種鬼地方來，我到底得罪誰了。"
         },
         {
-          "speaker": 78,
-          "name": "隨軍神官",
-          "text": "是，我必定激勵手下消滅所有敵人！"
+          "speaker": 56,
+          "name": "拳術侍衛",
+          "text": "將軍吉星高照，早晚會調回亞修斯城的。"
         },
         {
-          "speaker": 40,
-          "name": "柯莉特",
-          "text": "不要說大話，我是命令你遲滯敵軍，不是叫你去殺敵的。記住！完成任務就可以了，不要平白犧牲性命！"
+          "speaker": 73,
+          "name": "顧將軍",
+          "text": "別說了，來到這裡十幾天了，連我都不許進礦坑，這算什麼嘛！"
         },
         {
-          "speaker": 78,
-          "name": "隨軍神官",
-          "text": "是。"
+          "speaker": 56,
+          "name": "拳術侍衛",
+          "text": "將軍負責抵禦外敵，礦坑內的雜事就交給下人去辦吧。"
+        },
+        {
+          "speaker": 73,
+          "name": "顧將軍",
+          "text": "敵人？誰會來攻擊這種三流小礦場？真搞不懂上頭的想法....。"
+        },
+        {
+          "speaker": 52,
+          "name": "礦坑衛兵",
+          "text": "將軍，有可疑人物接近！"
         }
       ]
     },
     {
       "type": 12,
       "completion_flag": 0,
-      "condition": 10,
+      "condition": 16,
       "raw_operands": {
         "offset_3": 13,
-        "offset_5": 40,
+        "offset_5": 56,
         "offset_7": 0,
         "offset_9": 0
       },
       "raw_operands_semantics": "unconfirmed",
       "lines": [
         {
-          "speaker": 40,
-          "name": "柯莉特",
-          "text": "出發！"
+          "speaker": 73,
+          "name": "顧將軍",
+          "text": "真的！？那我有事可以做啦！"
         }
       ]
     },
     {
-      "type": 7,
+      "type": 3,
       "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 40,
-        "offset_7": 0,
-        "offset_9": 65
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 12,
-      "completion_flag": 0,
-      "condition": 19,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 40,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 6,
-      "completion_flag": 0,
-      "condition": 1,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 200,
-        "offset_7": 201,
-        "offset_9": 202
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 6,
-      "completion_flag": 14,
-      "condition": 1,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 203,
-        "offset_7": 204,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 12,
-      "completion_flag": 0,
-      "condition": 10,
-      "raw_operands": {
-        "offset_3": 14,
-        "offset_5": 78,
-        "offset_7": 0,
-        "offset_9": 2
-      },
-      "raw_operands_semantics": "unconfirmed",
+      "condition": 2,
+      "role_id": 73,
       "lines": [
         {
-          "speaker": 78,
-          "name": "隨軍神官",
-          "text": "準備應戰。"
+          "speaker": 73,
+          "name": "顧將軍",
+          "text": "哇....我還要回亞修斯享福呢！"
         }
       ]
     },
     {
       "type": 2,
-      "completion_flag": 0,
+      "completion_flag": 14,
       "lines": [
         {
-          "speaker": 13,
-          "name": "羅莎莉",
-          "text": "這神官....沒必要在無援軍的情況下拚命啊。"
+          "speaker": 2,
+          "name": "穆爾",
+          "text": "這種地方居然會配置重兵防守．一定有問題。"
         },
         {
-          "speaker": 15,
-          "name": "艾文",
-          "text": "神官的腦筋大多有問題，自己不想活了也不會想到別人可以求活。"
+          "speaker": 4,
+          "name": "蘇",
+          "text": "地面下傳來著奇怪的氣息....和聖殿內的感覺很相近....。"
         },
         {
-          "speaker": 11,
-          "name": "志超",
-          "text": "有時間發牢騷，不如我們早點追上敵軍吧。"
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "我們下去偵查，大家小心為是。"
         }
       ]
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 11,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 10,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 12,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 10,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
     }
   ]
 }

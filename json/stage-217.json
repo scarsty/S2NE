@@ -1,119 +1,317 @@
 {
-  "map_id": 18,
-  "music": 1,
+  "map_id": 17,
+  "music": 19,
   "route": {
-    "next_stage": 218,
+    "interbattle_town_id": 17,
+    "next_stage": 287,
     "alternate_stage": 0,
     "mode": 1,
-    "interbattle_town_id": 18,
-    "fantasy_stage": 218
+    "fantasy_stage": 287
   },
   "units": [
     {
-      "id": 110,
-      "appearance": 60,
-      "name": "巡邏隊隊長",
-      "x": 6,
-      "y": 23,
+      "id": 1,
+      "appearance": 89,
+      "name": "娜塔莉雅",
+      "x": 20,
+      "y": 33,
       "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 300,
+      "max_hp": 68,
+      "equipment": [
+        21,
+        110,
+        160,
+        180,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 2,
+      "appearance": 19,
+      "name": "穆爾",
+      "x": 19,
+      "y": 31,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 290,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        119,
+        149,
+        171,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 5,
+      "appearance": 10,
+      "name": "古斯塔夫",
+      "x": 19,
+      "y": 35,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 360,
+      "max_hp": 0,
+      "equipment": [
+        63,
+        133,
+        152,
+        169,
+        190,
+        0
+      ]
+    },
+    {
+      "id": 4,
+      "appearance": 53,
+      "name": "蘇",
+      "x": 20,
+      "y": 31,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 180,
+      "max_hp": 101,
+      "equipment": [
+        35,
+        107,
+        160,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 40,
+      "appearance": 57,
+      "name": "柯莉特",
+      "x": 20,
+      "y": 32,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 8,
       "last_turn": 0,
       "behavior": 8,
-      "hp": 298,
-      "max_hp": 50,
+      "hp": 600,
+      "max_hp": 20,
       "equipment": [
-        54,
-        122,
+        66,
+        138,
         157,
         178,
+        196,
+        0
+      ]
+    },
+    {
+      "id": 84,
+      "appearance": 34,
+      "name": "宮庭大魔道",
+      "x": 2,
+      "y": 36,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 3,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 400,
+      "max_hp": 156,
+      "equipment": [
+        39,
+        112,
+        164,
+        182,
+        195,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 63,
+      "name": "護衛法師",
+      "x": 2,
+      "y": 34,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 3,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 235,
+      "max_hp": 120,
+      "equipment": [
+        39,
+        109,
+        161,
+        182,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 14,
-      "name": "巡邏隊下忍",
-      "x": 8,
-      "y": 25,
-      "direction": 0,
+      "appearance": 63,
+      "name": "護衛法師",
+      "x": 1,
+      "y": 36,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 3,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 235,
+      "max_hp": 120,
+      "equipment": [
+        39,
+        109,
+        161,
+        182,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 11,
+      "name": "宮庭衛兵",
+      "x": 14,
+      "y": 43,
+      "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 212,
+      "hp": 252,
       "max_hp": 0,
       "equipment": [
-        19,
-        118,
+        6,
+        121,
         149,
-        169,
-        0,
+        177,
+        189,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 14,
-      "name": "巡邏隊下忍",
-      "x": 5,
-      "y": 20,
-      "direction": 0,
+      "appearance": 11,
+      "name": "宮庭衛兵",
+      "x": 17,
+      "y": 50,
+      "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 212,
+      "hp": 252,
       "max_hp": 0,
       "equipment": [
-        19,
-        118,
+        6,
+        121,
         149,
-        169,
-        0,
+        177,
+        189,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 14,
-      "name": "巡邏隊下忍",
-      "x": 8,
-      "y": 68,
-      "direction": 0,
+      "appearance": 11,
+      "name": "宮庭衛兵",
+      "x": 18,
+      "y": 52,
+      "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 212,
+      "hp": 252,
       "max_hp": 0,
       "equipment": [
-        19,
-        118,
+        6,
+        121,
         149,
-        169,
-        0,
+        177,
+        189,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 14,
-      "name": "巡邏隊下忍",
-      "x": 3,
+      "appearance": 11,
+      "name": "宮庭衛兵",
+      "x": 9,
       "y": 43,
       "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 212,
+      "hp": 252,
       "max_hp": 0,
       "equipment": [
-        19,
-        118,
+        6,
+        121,
         149,
+        177,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 11,
+      "name": "宮庭衛兵",
+      "x": 6,
+      "y": 51,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 252,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        177,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 13,
+      "name": "宮庭衛兵",
+      "x": 14,
+      "y": 46,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 221,
+      "max_hp": 0,
+      "equipment": [
+        50,
+        121,
+        151,
         169,
         0,
         0
@@ -121,132 +319,176 @@
     },
     {
       "id": 0,
-      "appearance": 16,
-      "name": "巡邏隊醫者",
-      "x": 8,
-      "y": 20,
-      "direction": 0,
+      "appearance": 13,
+      "name": "宮庭衛兵",
+      "x": 12,
+      "y": 48,
+      "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 183,
-      "max_hp": 72,
+      "hp": 221,
+      "max_hp": 0,
       "equipment": [
-        35,
-        107,
-        160,
-        180,
-        189,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 16,
-      "name": "巡邏隊醫者",
-      "x": 4,
-      "y": 62,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 183,
-      "max_hp": 72,
-      "equipment": [
-        35,
-        107,
-        160,
-        180,
-        189,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 16,
-      "name": "巡邏隊醫者",
-      "x": 6,
-      "y": 40,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 183,
-      "max_hp": 72,
-      "equipment": [
-        35,
-        107,
-        160,
-        180,
-        189,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 53,
-      "name": "巡邏隊術士",
-      "x": 8,
-      "y": 53,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 154,
-      "max_hp": 84,
-      "equipment": [
-        35,
-        107,
-        160,
-        180,
+        50,
+        121,
+        151,
+        169,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 53,
-      "name": "巡邏隊術士",
-      "x": 6,
-      "y": 65,
-      "direction": 0,
+      "appearance": 13,
+      "name": "宮庭衛兵",
+      "x": 15,
+      "y": 56,
+      "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 154,
-      "max_hp": 84,
+      "hp": 221,
+      "max_hp": 0,
       "equipment": [
-        35,
-        107,
-        160,
-        180,
+        50,
+        121,
+        151,
+        169,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 53,
-      "name": "巡邏隊術士",
+      "appearance": 13,
+      "name": "宮庭衛兵",
       "x": 7,
-      "y": 36,
-      "direction": 0,
+      "y": 41,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 154,
-      "max_hp": 84,
+      "hp": 221,
+      "max_hp": 0,
       "equipment": [
-        35,
-        107,
-        160,
-        180,
+        50,
+        121,
+        151,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 13,
+      "name": "宮庭衛兵",
+      "x": 5,
+      "y": 47,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 221,
+      "max_hp": 0,
+      "equipment": [
+        50,
+        121,
+        151,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 11,
+      "name": "宮庭衛兵",
+      "x": 1,
+      "y": 42,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 3,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 252,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        177,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 11,
+      "name": "宮庭衛兵",
+      "x": 5,
+      "y": 34,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 3,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 252,
+      "max_hp": 0,
+      "equipment": [
+        6,
+        121,
+        149,
+        177,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 13,
+      "name": "宮庭衛兵",
+      "x": 2,
+      "y": 40,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 3,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 221,
+      "max_hp": 0,
+      "equipment": [
+        50,
+        121,
+        151,
+        169,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 13,
+      "name": "宮庭衛兵",
+      "x": 4,
+      "y": 36,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 3,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 221,
+      "max_hp": 0,
+      "equipment": [
+        50,
+        121,
+        151,
+        169,
         0,
         0
       ]
@@ -257,9 +499,9 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 4,
-        "y": 75,
-        "direction": 2
+        "x": 22,
+        "y": 36,
+        "direction": 0
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -268,9 +510,9 @@
       "slot": 1,
       "role_id": 1,
       "deployment": {
-        "x": 3,
-        "y": 76,
-        "direction": 2
+        "x": 23,
+        "y": 38,
+        "direction": 0
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -279,9 +521,9 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 3,
-        "y": 78,
-        "direction": 2
+        "x": 22,
+        "y": 38,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -290,9 +532,9 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 4,
-        "y": 79,
-        "direction": 2
+        "x": 22,
+        "y": 41,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -301,9 +543,9 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 3,
-        "y": 75,
-        "direction": 2
+        "x": 21,
+        "y": 36,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -312,9 +554,9 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 4,
-        "y": 74,
-        "direction": 2
+        "x": 22,
+        "y": 35,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -323,9 +565,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 4,
-        "y": 76,
-        "direction": 2
+        "x": 22,
+        "y": 37,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -334,9 +576,9 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 5,
-        "y": 75,
-        "direction": 2
+        "x": 23,
+        "y": 36,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -344,86 +586,86 @@
   ],
   "deployment": [
     {
-      "x": 4,
-      "y": 75,
-      "direction": 2,
+      "x": 22,
+      "y": 36,
+      "direction": 0,
       "role_id": 11,
       "fixed": true
     },
     {
-      "x": 3,
-      "y": 76,
-      "direction": 2,
+      "x": 23,
+      "y": 38,
+      "direction": 0,
       "role_id": 1,
       "fixed": true
     },
     {
-      "x": 3,
-      "y": 78,
-      "direction": 2,
+      "x": 22,
+      "y": 38,
+      "direction": 0,
       "role_id": 14,
       "fixed": false
     },
     {
-      "x": 4,
-      "y": 79,
-      "direction": 2,
+      "x": 22,
+      "y": 41,
+      "direction": 0,
       "role_id": 15,
       "fixed": false
     },
     {
-      "x": 3,
-      "y": 75,
-      "direction": 2,
+      "x": 21,
+      "y": 36,
+      "direction": 0,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 4,
-      "y": 74,
-      "direction": 2,
+      "x": 22,
+      "y": 35,
+      "direction": 0,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 4,
-      "y": 76,
-      "direction": 2,
+      "x": 22,
+      "y": 37,
+      "direction": 0,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 5,
-      "y": 75,
-      "direction": 2,
+      "x": 23,
+      "y": 36,
+      "direction": 0,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 2,
-      "y": 75,
-      "direction": 2,
+      "x": 20,
+      "y": 36,
+      "direction": 0,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 3,
-      "y": 74,
-      "direction": 2,
+      "x": 21,
+      "y": 35,
+      "direction": 0,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 2,
-      "y": 77,
-      "direction": 2,
+      "x": 21,
+      "y": 37,
+      "direction": 0,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 4,
-      "y": 73,
-      "direction": 2,
+      "x": 22,
+      "y": 34,
+      "direction": 0,
       "role_id": 0,
       "fixed": false
     }
@@ -434,11 +676,11 @@
       1
     ],
     "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
-    "strength_score": 3257.0,
-    "base_stage": 18
+    "base_stage": 17,
+    "strength_score": 0
   },
   "objects": [],
-  "name": "潛入領主府",
+  "name": "奚族刺客",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",
@@ -454,41 +696,186 @@
       },
       "lines": [
         {
-          "speaker": 18,
-          "name": "茱迪",
-          "text": "還是有些鬼靈精沒有被騙走，真是的。"
+          "speaker": 11,
+          "name": "志超",
+          "text": "這下麻煩惹大了！奚族的領頭，我們一起殺出去吧！"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "....好，我們各自負責一路吧。不過....。"
         },
         {
           "speaker": 11,
           "name": "志超",
-          "text": "要速戰速決，不能拖延太久。"
+          "text": "不過怎樣？"
         },
         {
-          "speaker": 15,
-          "name": "艾文",
-          "text": "知道了。"
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "我的名字叫做@@WA7,00D30@@娜塔莉雅@@RWRD@@，以後請你記住了。"
         },
         {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "這些小兵不夠看的。"
+          "speaker": 11,
+          "name": "志超",
+          "text": "唉....一本正經的女人，我記著就是。"
         }
       ]
     },
     {
       "type": 1,
-      "completion_flag": 5,
+      "completion_flag": 0,
       "trigger": {
         "kind": "turn",
-        "turn": 15
+        "turn": 3
       },
       "lines": [
         {
+          "speaker": 84,
+          "name": "宮廷大魔道",
+          "text": "哼....就是你們啊！衛兵們還不快上？"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "快點動手，時間拖久了對我們不利！"
+        },
+        {
           "speaker": 11,
           "name": "志超",
-          "text": "唉，時不我予。"
+          "text": "....好吧，老大。"
         }
       ]
+    },
+    {
+      "type": 1,
+      "completion_flag": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 8
+      },
+      "lines": [
+        {
+          "speaker": 40,
+          "name": "柯莉特",
+          "text": "你們還沒走啊，哈哈哈，好極了！"
+        },
+        {
+          "speaker": 84,
+          "name": "宮廷大魔道",
+          "text": "柯....柯將軍，這裡交給我來就可以了。"
+        },
+        {
+          "speaker": 40,
+          "name": "柯莉特",
+          "text": "你要是辦得成，早在我來之前就拿下他們了。所以....還是交給我吧。"
+        }
+      ]
+    },
+    {
+      "type": 3,
+      "completion_flag": 13,
+      "condition": 2,
+      "role_id": 84,
+      "lines": [
+        {
+          "speaker": 84,
+          "name": "宮廷大魔道",
+          "text": "......。"
+        }
+      ]
+    },
+    {
+      "type": 8,
+      "completion_flag": 11,
+      "condition": 2,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 1,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 1,
+          "music_after": 1,
+          "name": "娜塔莉雅",
+          "text": "原來各位的身手竟然如此精妙，剛才是我失禮了。請問諸位是來自何處？又為何得罪夏普那奸人？"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "我們是來自北邊的....旅遊商人。才剛進宮就被伏擊，我們自己也莫名其妙，不知道那裡得罪了夏普。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "旅遊商人？好吧，我知道了。不知先生尊姓？"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "我叫白志超，這些朋友都是生意上的夥伴們。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "很好..那現在敵人已除，白先生可以自便了。"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "啊，妳是說我們要各走各路嗎？這可傷腦筋。"
+        }
+      ]
+    },
+    {
+      "type": 14,
+      "completion_flag": 0,
+      "condition": 1,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 1,
+        "offset_7": 5,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 14,
+      "completion_flag": 0,
+      "condition": 1,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 1,
+        "offset_7": 8,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 14,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 11,
+        "offset_7": 1,
+        "offset_9": 5
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 9,
+      "completion_flag": 4,
+      "condition": 6,
+      "route_stage": 20
+    },
+    {
+      "type": 9,
+      "completion_flag": 4,
+      "condition": 6,
+      "route_stage": 21
     }
   ]
 }

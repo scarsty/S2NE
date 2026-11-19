@@ -22,15 +22,7 @@ class OriginalCampaign
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     static unsigned custom_stage_base(unsigned id)
     {
-        if (id < 201) { return id; }
-        static constexpr std::array<unsigned, 112> route_order = {
-            162, 66, 67, 68, 69, 70, 19, 93, 84, 87, 73, 26, 15, 72, 71, 86, 18, 22, 1, 74, 3, 6, 89, 97,
-            40, 2, 64, 65, 4, 23, 95, 8, 96, 11, 82, 9, 7, 45, 109, 5, 75, 38, 35, 12, 79, 85, 78, 80,
-            29, 99, 20, 25, 105, 63, 13, 28, 76, 17, 91, 10, 81, 77, 21, 94, 98, 24, 32, 101, 31, 16, 90,
-            108, 52, 46, 92, 112, 36, 39, 100, 30, 103, 33, 102, 41, 57, 58, 88, 27, 107, 111, 43, 59, 55,
-            110, 37, 14, 83, 104, 34, 106, 44, 47, 49, 48, 42, 56, 50, 53, 60, 62, 54, 61
-        };
-        return route_order.at(id - 201);
+        return id < 201 ? id : id - 200;
     }
     size_t table() const { return dword(pal_, 848) - 11; }
     s2ne::Result<size_t> try_header(unsigned stage) const
@@ -530,7 +522,7 @@ public:
     {
         // 420DC3写入4F7CE0后，后续旗标可能已被消耗；优先使用事务保存的路由。
         if (completed.script_route && *completed.script_route > 0) { return unsigned(*completed.script_route); }
-        OriginalEvents source(root_, completed.difficulty);
+        OriginalEvents source = completed;
         source.load_stage(completed.stage);
         unsigned route = completed_story_route(source, completed);
         return route ? route : stage(completed.stage).next;

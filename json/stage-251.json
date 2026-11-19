@@ -1,363 +1,99 @@
 {
-  "map_id": 20,
+  "map_id": 51,
   "music": 9,
   "route": {
+    "interbattle_town_id": 51,
     "next_stage": 252,
     "alternate_stage": 0,
     "mode": 1,
-    "interbattle_town_id": 20,
     "fantasy_stage": 252
   },
   "units": [
     {
-      "id": 109,
-      "appearance": 59,
-      "name": "魔法騎士",
-      "x": 7,
-      "y": 63,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 3,
-      "hp": 341,
-      "max_hp": 47,
-      "equipment": [
-        79,
-        136,
-        157,
-        178,
-        0,
-        0
-      ]
-    },
-    {
       "id": 0,
-      "appearance": 54,
-      "name": "騎弓手",
-      "x": 1,
-      "y": 62,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 240,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        133,
-        151,
-        174,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 54,
-      "name": "騎弓手",
-      "x": 3,
-      "y": 64,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 240,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        133,
-        151,
-        174,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 54,
-      "name": "騎弓手",
-      "x": 11,
-      "y": 66,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 240,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        133,
-        151,
-        174,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 54,
-      "name": "騎弓手",
-      "x": 15,
-      "y": 61,
+      "appearance": 10,
+      "name": "奚族戰士",
+      "x": 20,
+      "y": 44,
       "direction": 3,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 240,
+      "behavior": 1,
+      "hp": 480,
       "max_hp": 0,
       "equipment": [
-        51,
-        133,
-        151,
-        174,
-        0,
+        66,
+        134,
+        155,
+        177,
+        190,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 54,
-      "name": "騎弓手",
-      "x": 5,
-      "y": 65,
-      "direction": 2,
+      "appearance": 10,
+      "name": "奚族戰士",
+      "x": 19,
+      "y": 46,
+      "direction": 3,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 240,
+      "behavior": 1,
+      "hp": 480,
       "max_hp": 0,
       "equipment": [
-        51,
-        133,
-        151,
-        174,
-        0,
+        66,
+        134,
+        155,
+        177,
+        190,
         0
       ]
     },
     {
-      "id": 0,
-      "appearance": 12,
-      "name": "重騎兵",
-      "x": 3,
-      "y": 56,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 294,
-      "max_hp": 0,
-      "equipment": [
-        79,
-        135,
-        157,
-        178,
-        197,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 12,
-      "name": "重騎兵",
-      "x": 5,
-      "y": 59,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 294,
-      "max_hp": 0,
-      "equipment": [
-        79,
-        135,
-        157,
-        178,
-        197,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 12,
-      "name": "重騎兵",
-      "x": 9,
-      "y": 65,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 294,
-      "max_hp": 0,
-      "equipment": [
-        79,
-        135,
-        157,
-        178,
-        197,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 12,
-      "name": "重騎兵",
+      "id": 19,
+      "appearance": 93,
+      "name": "夏普",
       "x": 16,
-      "y": 56,
-      "direction": 3,
+      "y": 38,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 294,
+      "behavior": 1,
+      "hp": 840,
       "max_hp": 0,
       "equipment": [
-        79,
-        135,
-        157,
-        178,
-        197,
-        0
+        14,
+        125,
+        165,
+        183,
+        199,
+        237
       ]
     },
     {
-      "id": 0,
-      "appearance": 12,
-      "name": "重騎兵",
-      "x": 9,
-      "y": 67,
-      "direction": 2,
+      "id": 22,
+      "appearance": 133,
+      "name": "奧帕兒",
+      "x": 17,
+      "y": 36,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 294,
-      "max_hp": 0,
+      "behavior": 1,
+      "hp": 480,
+      "max_hp": 200,
       "equipment": [
-        79,
-        135,
-        157,
-        178,
-        197,
-        0
-      ]
-    },
-    {
-      "id": 75,
-      "appearance": 25,
-      "name": "影子弩手",
-      "x": 9,
-      "y": 25,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 0,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 328,
-      "max_hp": 58,
-      "equipment": [
-        53,
-        122,
-        157,
-        178,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 200,
-      "appearance": 25,
-      "name": "影子弩手",
-      "x": 10,
-      "y": 25,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 0,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 328,
-      "max_hp": 58,
-      "equipment": [
-        53,
-        122,
-        157,
-        178,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 201,
-      "appearance": 25,
-      "name": "影子弩手",
-      "x": 13,
-      "y": 30,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 0,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 328,
-      "max_hp": 58,
-      "equipment": [
-        53,
-        122,
-        157,
-        178,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 202,
-      "appearance": 25,
-      "name": "影子弩手",
-      "x": 7,
-      "y": 30,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 0,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 328,
-      "max_hp": 58,
-      "equipment": [
-        53,
-        122,
-        157,
-        178,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 203,
-      "appearance": 25,
-      "name": "影子弩手",
-      "x": 1,
-      "y": 39,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 0,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 328,
-      "max_hp": 58,
-      "equipment": [
-        53,
-        122,
-        157,
-        178,
-        0,
+        89,
+        114,
+        163,
+        181,
+        198,
         0
       ]
     }
@@ -367,284 +103,369 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 12,
-        "y": 37,
-        "direction": 0
+        "x": 20,
+        "y": 46,
+        "direction": 3
       },
-      "mandatory_role": true,
-      "source": "original stage-1/stage-71 roster"
+      "mandatory_role": false,
+      "source": "save.group[0].units"
     },
     {
       "slot": 1,
-      "role_id": 1,
+      "role_id": 14,
       "deployment": {
-        "x": 14,
-        "y": 36,
-        "direction": 0
+        "x": 21,
+        "y": 42,
+        "direction": 3
       },
-      "mandatory_role": true,
-      "source": "original stage-1/stage-71 roster"
+      "mandatory_role": false,
+      "source": "save.group[0].units"
     },
     {
       "slot": 2,
-      "role_id": 14,
+      "role_id": 15,
       "deployment": {
-        "x": 12,
-        "y": 32,
-        "direction": 0
+        "x": 21,
+        "y": 44,
+        "direction": 3
       },
       "mandatory_role": false,
-      "source": "original stage-1/stage-71 roster"
+      "source": "save.group[0].units"
     },
     {
       "slot": 3,
-      "role_id": 15,
+      "role_id": 13,
       "deployment": {
-        "x": 13,
-        "y": 33,
-        "direction": 0
+        "x": 22,
+        "y": 44,
+        "direction": 3
       },
       "mandatory_role": false,
-      "source": "original stage-1/stage-71 roster"
+      "source": "save.group[0].units"
     },
     {
       "slot": 4,
-      "role_id": 13,
+      "role_id": 18,
       "deployment": {
-        "x": 11,
-        "y": 37,
-        "direction": 0
+        "x": 21,
+        "y": 46,
+        "direction": 3
       },
       "mandatory_role": false,
-      "source": "original stage-1/stage-71 roster"
+      "source": "save.group[0].units"
     },
     {
       "slot": 5,
-      "role_id": 2,
+      "role_id": 31,
       "deployment": {
-        "x": 12,
-        "y": 36,
-        "direction": 0
+        "x": 20,
+        "y": 48,
+        "direction": 3
       },
       "mandatory_role": false,
-      "source": "original stage-1/stage-71 roster"
-    },
-    {
-      "slot": 6,
-      "role_id": 3,
-      "deployment": {
-        "x": 12,
-        "y": 38,
-        "direction": 0
-      },
-      "mandatory_role": false,
-      "source": "original stage-1/stage-71 roster"
-    },
-    {
-      "slot": 7,
-      "role_id": 4,
-      "deployment": {
-        "x": 13,
-        "y": 37,
-        "direction": 0
-      },
-      "mandatory_role": false,
-      "source": "original stage-1/stage-71 roster"
+      "source": "save.group[0].units"
     }
   ],
   "deployment": [
     {
-      "x": 12,
-      "y": 37,
-      "direction": 0,
+      "x": 20,
+      "y": 46,
+      "direction": 3,
       "role_id": 11,
-      "fixed": true
+      "fixed": false
     },
     {
-      "x": 14,
-      "y": 36,
-      "direction": 0,
-      "role_id": 1,
-      "fixed": true
-    },
-    {
-      "x": 12,
-      "y": 32,
-      "direction": 0,
+      "x": 21,
+      "y": 42,
+      "direction": 3,
       "role_id": 14,
       "fixed": false
     },
     {
-      "x": 13,
-      "y": 33,
-      "direction": 0,
+      "x": 21,
+      "y": 44,
+      "direction": 3,
       "role_id": 15,
       "fixed": false
     },
     {
-      "x": 11,
-      "y": 37,
-      "direction": 0,
-      "role_id": 0,
+      "x": 22,
+      "y": 44,
+      "direction": 3,
+      "role_id": 13,
       "fixed": false
     },
     {
-      "x": 12,
-      "y": 36,
-      "direction": 0,
-      "role_id": 0,
+      "x": 21,
+      "y": 46,
+      "direction": 3,
+      "role_id": 18,
       "fixed": false
     },
     {
-      "x": 12,
-      "y": 38,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 13,
-      "y": 37,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 10,
-      "y": 37,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 11,
-      "y": 36,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 11,
-      "y": 38,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 12,
-      "y": 35,
-      "direction": 0,
-      "role_id": 0,
+      "x": 20,
+      "y": 48,
+      "direction": 3,
+      "role_id": 31,
       "fixed": false
     }
   ],
   "deployment_rules": {
-    "mandatory_role_ids": [
-      11,
-      1
-    ],
-    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
-    "strength_score": 6251.0,
-    "base_stage": 20
+    "mandatory_role_ids": [],
+    "source": "original deployment flow; not inferred from fixed slot flag",
+    "base_stage": 51,
+    "strength_score": 0
   },
   "objects": [],
-  "name": "側門突圍",
+  "name": "流竄的霸王",
   "briefing": "",
   "objectives": {
-    "victory": "消滅所有敵軍。",
-    "defeat": "白志超或娜塔莉雅陣亡。"
+    "victory": "1.夏普離去或返回大營。",
+    "defeat": "白志超陣亡。"
   },
   "events": [
     {
       "type": 1,
-      "completion_flag": 0,
+      "completion_flag": 13,
       "trigger": {
         "kind": "turn",
         "turn": 1
       },
       "lines": [
         {
-          "speaker": 15,
-          "name": "艾文",
-          "text": "沒有天天過年的，我早就知道不會沒有敵人的。"
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "志超！"
         },
         {
-          "speaker": 14,
-          "name": "飛霜",
-          "text": "是啊，那想必你也早就有應付的法子囉？"
-        },
-        {
-          "speaker": 15,
-          "name": "艾文",
-          "text": "反正我們不衝出去，騎兵也拿我們沒辦法。"
-        },
-        {
-          "speaker": 14,
-          "name": "飛霜",
-          "text": "別鬼扯了！對方是配有弓弩的騎兵，就算我們不肯出去也是照樣要挨打的。"
-        },
-        {
-          "speaker": 13,
-          "name": "羅莎莉",
-          "text": "那我們該怎麼辦。"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "守住橋樑，各個擊破！"
+          "speaker": 19,
+          "name": "夏普",
+          "text": "啊....是你們。"
         }
       ]
     },
     {
-      "type": 1,
-      "completion_flag": 13,
-      "trigger": {
-        "kind": "turn",
-        "turn": 10
-      }
+      "type": 9,
+      "completion_flag": 0,
+      "lines": [
+        {
+          "speaker": 31,
+          "name": "米蘭黛",
+          "text": "夏普，這次你還有什麼話說？"
+        },
+        {
+          "speaker": 19,
+          "name": "夏普",
+          "text": "....來吧，妳要報仇就過來吧。"
+        },
+        {
+          "speaker": 31,
+          "name": "米蘭黛",
+          "text": "我不打算殺你，我只要把你帶回去公審就可以了。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "志超，再給我爹爹多一次機會吧。"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "奧帕兒，你父親對不起米蘭黛一家人是事實，我不能幫忙。"
+        },
+        {
+          "speaker": 31,
+          "name": "米蘭黛",
+          "text": "夏普，跟我回去認罪吧。"
+        }
+      ]
     },
     {
-      "type": 13,
+      "type": 9,
+      "completion_flag": 4,
+      "condition": 4,
+      "any_flags": [
+        13
+      ]
+    },
+    {
+      "type": 9,
       "completion_flag": 14,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 5,
-        "offset_7": 2,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
+      "lines": [
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "....夏普，你不該逃跑的，自己做的事該自己負責。"
+        },
+        {
+          "speaker": 19,
+          "name": "夏普",
+          "text": "你....非要逼我走上絕路嗎？"
+        }
+      ]
     },
     {
-      "type": 6,
+      "type": 5,
       "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 14,
-        "offset_5": 75,
-        "offset_7": 200,
-        "offset_9": 201
-      },
-      "raw_operands_semantics": "unconfirmed"
+      "branch_flag": 14,
+      "lines": [
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "志超，再給我爹爹多一次機會吧。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "放夏普一馬。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "將夏普帶回去。"
+        }
+      ]
     },
     {
-      "type": 6,
+      "type": 5,
+      "completion_flag": 15,
+      "condition": 1,
+      "branch_flag": 14,
+      "branch_value": 1,
+      "lines": [
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "罷了，就當作我沒看見吧，妳們快走吧。"
+        },
+        {
+          "speaker": 19,
+          "name": "夏普",
+          "text": "你....你真的要放我走？"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "志超，謝謝你，我會感激你的。"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "別提了，妳們快走吧。"
+        },
+        {
+          "speaker": 19,
+          "name": "夏普",
+          "text": "等一下，我還有一件事要告訴你。"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "咦？"
+        },
+        {
+          "speaker": 19,
+          "name": "夏普",
+          "text": "小心克雷布特里，他才是握有力量的人。我接受了他提供的武器、技術，才會犯下這些錯誤....。不知道為什麼，他處心積慮地想要攻下奚族的聖地，為了這個目的他願意付出任何代價。小心！小心！克雷布特里身上裝配了@@WA7,00D5D@@打不死的物品@@RWRD@@，如果不先毀去這個東西，你們是殺不死他的。"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "克雷布特里？你沒有推卸責任吧？"
+        },
+        {
+          "speaker": 19,
+          "name": "夏普",
+          "text": "不要小看克雷布特里！他擁有最先進的知識，這次的戰爭對他來說根本不重要，他唯一的目的只是要進入@@WA7,00D4D@@奚族的聖地@@RWRD@@。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "我記得有一個魔術可以摧毀物品，也許你們該準備一下。"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "....好吧，我會記得的。"
+        }
+      ]
+    },
+    {
+      "type": 12,
       "completion_flag": 0,
+      "condition": 16,
       "raw_operands": {
-        "offset_3": 14,
-        "offset_5": 202,
-        "offset_7": 203,
+        "offset_3": 15,
+        "offset_5": 22,
+        "offset_7": 0,
         "offset_9": 0
       },
       "raw_operands_semantics": "unconfirmed",
       "lines": [
         {
-          "speaker": 75,
-          "name": "影子弩手",
-          "text": "....事情就交給我們來解決吧！"
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "志超....再見。爹爹，我們走吧。"
+        }
+      ]
+    },
+    {
+      "type": 6,
+      "completion_flag": 4,
+      "condition": 3,
+      "raw_operands": {
+        "offset_3": 15,
+        "offset_5": 22,
+        "offset_7": 19,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 5,
+      "completion_flag": 16,
+      "condition": 2,
+      "branch_flag": 14,
+      "branch_value": 2,
+      "lines": [
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "....奧帕兒，你父親的罪行不是我一個人可以寬恕的，我必須要帶他回去。"
+        }
+      ]
+    },
+    {
+      "type": 12,
+      "completion_flag": 4,
+      "condition": 16,
+      "raw_operands": {
+        "offset_3": 16,
+        "offset_5": 19,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed",
+      "lines": [
+        {
+          "speaker": 19,
+          "name": "夏普",
+          "text": "......奧帕兒。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "志超....我求你不要這樣做，他是我唯一的爹爹啊....。"
         },
         {
           "speaker": 11,
           "name": "志超",
-          "text": "還有伏兵！！！"
+          "text": "不成....把夏普帶回去。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "不！為什麼是這樣....。"
         }
       ]
     }

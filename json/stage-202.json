@@ -1,21 +1,440 @@
 {
-  "map_id": 26,
-  "music": 1,
+  "map_id": 2,
+  "music": 2,
   "route": {
-    "next_stage": 203,
+    "interbattle_town_id": 2,
+    "next_stage": 272,
     "alternate_stage": 0,
     "mode": 1,
-    "interbattle_town_id": 66,
-    "fantasy_stage": 203
+    "fantasy_stage": 272
   },
-  "units": [],
+  "units": [
+    {
+      "id": 99,
+      "appearance": 49,
+      "name": "盜賊首領",
+      "x": 2,
+      "y": 41,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 3,
+      "hp": 186,
+      "max_hp": 0,
+      "equipment": [
+        18,
+        102,
+        149,
+        171,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 55,
+      "appearance": 5,
+      "name": "盜賊",
+      "x": 3,
+      "y": 27,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 125,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        101,
+        148,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 5,
+      "name": "盜賊",
+      "x": 4,
+      "y": 23,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 125,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        101,
+        148,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 5,
+      "name": "盜賊",
+      "x": 6,
+      "y": 27,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 125,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        101,
+        148,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 5,
+      "name": "盜賊",
+      "x": 9,
+      "y": 39,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 125,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        101,
+        148,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 5,
+      "name": "盜賊",
+      "x": 10,
+      "y": 41,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 125,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        101,
+        148,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 5,
+      "name": "盜賊",
+      "x": 6,
+      "y": 33,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 125,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        101,
+        148,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 40,
+      "name": "飛賊",
+      "x": 0,
+      "y": 39,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        101,
+        148,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 40,
+      "name": "飛賊",
+      "x": 5,
+      "y": 37,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        101,
+        148,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 40,
+      "name": "飛賊",
+      "x": 5,
+      "y": 42,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        101,
+        148,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 40,
+      "name": "飛賊",
+      "x": 7,
+      "y": 31,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        101,
+        148,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 40,
+      "name": "飛賊",
+      "x": 4,
+      "y": 27,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        101,
+        148,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 40,
+      "name": "飛賊",
+      "x": 7,
+      "y": 41,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        101,
+        148,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 40,
+      "name": "飛賊",
+      "x": 3,
+      "y": 34,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 0,
+      "equipment": [
+        17,
+        101,
+        148,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 54,
+      "appearance": 4,
+      "name": "弓弩手",
+      "x": 2,
+      "y": 25,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 5,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 124,
+      "max_hp": 0,
+      "equipment": [
+        47,
+        127,
+        149,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 4,
+      "name": "弓弩手",
+      "x": 2,
+      "y": 20,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 5,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 124,
+      "max_hp": 0,
+      "equipment": [
+        47,
+        127,
+        149,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 4,
+      "name": "弓弩手",
+      "x": 3,
+      "y": 18,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 5,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 124,
+      "max_hp": 0,
+      "equipment": [
+        47,
+        127,
+        149,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 4,
+      "name": "弓弩手",
+      "x": 1,
+      "y": 17,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 5,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 124,
+      "max_hp": 0,
+      "equipment": [
+        47,
+        127,
+        149,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 4,
+      "name": "弓弩手",
+      "x": 1,
+      "y": 21,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 5,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 124,
+      "max_hp": 0,
+      "equipment": [
+        47,
+        127,
+        149,
+        167,
+        0,
+        0
+      ]
+    }
+  ],
   "player_party": [
     {
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 13,
-        "y": 21,
+        "x": 15,
+        "y": 35,
         "direction": 0
       },
       "mandatory_role": true,
@@ -26,7 +445,7 @@
       "role_id": 1,
       "deployment": {
         "x": 14,
-        "y": 23,
+        "y": 35,
         "direction": 0
       },
       "mandatory_role": true,
@@ -36,8 +455,8 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 13,
-        "y": 23,
+        "x": 14,
+        "y": 33,
         "direction": 0
       },
       "mandatory_role": false,
@@ -47,8 +466,8 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 12,
-        "y": 21,
+        "x": 15,
+        "y": 31,
         "direction": 0
       },
       "mandatory_role": false,
@@ -58,8 +477,8 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 13,
-        "y": 20,
+        "x": 15,
+        "y": 33,
         "direction": 0
       },
       "mandatory_role": false,
@@ -69,8 +488,8 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 13,
-        "y": 22,
+        "x": 15,
+        "y": 37,
         "direction": 0
       },
       "mandatory_role": false,
@@ -80,8 +499,8 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 14,
-        "y": 21,
+        "x": 13,
+        "y": 35,
         "direction": 0
       },
       "mandatory_role": false,
@@ -91,8 +510,8 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 11,
-        "y": 21,
+        "x": 15,
+        "y": 34,
         "direction": 0
       },
       "mandatory_role": false,
@@ -101,85 +520,85 @@
   ],
   "deployment": [
     {
-      "x": 13,
-      "y": 21,
+      "x": 15,
+      "y": 35,
       "direction": 0,
       "role_id": 11,
       "fixed": true
     },
     {
       "x": 14,
-      "y": 23,
+      "y": 35,
       "direction": 0,
       "role_id": 1,
       "fixed": true
     },
     {
-      "x": 13,
-      "y": 23,
+      "x": 14,
+      "y": 33,
       "direction": 0,
       "role_id": 14,
       "fixed": false
     },
     {
+      "x": 15,
+      "y": 31,
+      "direction": 0,
+      "role_id": 15,
+      "fixed": false
+    },
+    {
+      "x": 15,
+      "y": 33,
+      "direction": 0,
+      "role_id": 13,
+      "fixed": false
+    },
+    {
+      "x": 15,
+      "y": 37,
+      "direction": 0,
+      "role_id": 2,
+      "fixed": false
+    },
+    {
+      "x": 13,
+      "y": 35,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 15,
+      "y": 34,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 15,
+      "y": 36,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 16,
+      "y": 35,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
       "x": 12,
-      "y": 21,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 13,
-      "y": 20,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 13,
-      "y": 22,
+      "y": 35,
       "direction": 0,
       "role_id": 0,
       "fixed": false
     },
     {
       "x": 14,
-      "y": 21,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 11,
-      "y": 21,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 12,
-      "y": 20,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 12,
-      "y": 22,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 13,
-      "y": 19,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 14,
-      "y": 25,
+      "y": 34,
       "direction": 0,
       "role_id": 0,
       "fixed": false
@@ -191,15 +610,130 @@
       1
     ],
     "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
-    "strength_score": 0.0,
-    "base_stage": 66
+    "base_stage": 2,
+    "strength_score": 0
   },
   "objects": [],
-  "name": "未拼場景關",
+  "name": "攔路虎",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",
     "defeat": "白志超或娜塔莉雅陣亡。"
   },
-  "events": []
+  "events": [
+    {
+      "type": 1,
+      "completion_flag": 13,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      },
+      "lines": [
+        {
+          "speaker": 99,
+          "name": "盜賊首領",
+          "text": "是他們嗎？"
+        },
+        {
+          "speaker": 55,
+          "name": "盜賊",
+          "text": "沒錯，二姐，就是他們殺了三哥。"
+        },
+        {
+          "speaker": 99,
+          "name": "盜賊首領",
+          "text": "連我們寨上的兄弟都敢動，通通殺了，一個不留。"
+        },
+        {
+          "speaker": 55,
+          "name": "盜賊",
+          "text": "可是二姐....這夥人強的很，還有那前帝國的舊將刑天....。"
+        },
+        {
+          "speaker": 99,
+          "name": "盜賊首領",
+          "text": "我自有主意，你們全上便是。"
+        },
+        {
+          "speaker": 55,
+          "name": "盜賊",
+          "text": "是的，二姐。"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "反正我也還沒過癮，妳們是自找麻煩。"
+        }
+      ]
+    },
+    {
+      "type": 3,
+      "completion_flag": 14,
+      "condition": 2,
+      "role_id": 99,
+      "lines": [
+        {
+          "speaker": 99,
+          "name": "盜賊首領",
+          "text": "...."
+        }
+      ]
+    },
+    {
+      "type": 9,
+      "completion_flag": 0,
+      "condition": 1,
+      "required_flags": [
+        13
+      ],
+      "lines": [
+        {
+          "speaker": 99,
+          "name": "盜賊首領",
+          "text": "可恨啊....我的弓弩手還不來。"
+        }
+      ]
+    },
+    {
+      "type": 3,
+      "completion_flag": 0,
+      "condition": 2,
+      "role_id": 54,
+      "lines": [
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "妳的弓弩隊也不怎麼樣嘛。"
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "completion_flag": 15,
+      "trigger": {
+        "kind": "turn",
+        "turn": 5
+      },
+      "lines": [
+        {
+          "speaker": 54,
+          "name": "弓弩手",
+          "text": "二姐，我們來了。"
+        },
+        {
+          "speaker": 99,
+          "name": "盜賊首領",
+          "text": "加把勁！給我射死他們！"
+        }
+      ]
+    },
+    {
+      "type": 9,
+      "completion_flag": 0,
+      "condition": 2,
+      "required_flags": [
+        13
+      ]
+    }
+  ]
 }

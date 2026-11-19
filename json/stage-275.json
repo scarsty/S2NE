@@ -1,384 +1,472 @@
 {
-  "map_id": 92,
-  "music": 21,
+  "map_id": 75,
+  "music": 18,
   "route": {
-    "next_stage": 276,
+    "interbattle_town_id": 75,
+    "next_stage": 206,
     "alternate_stage": 0,
     "mode": 1,
-    "interbattle_town_id": 92,
-    "fantasy_stage": 276
+    "fantasy_stage": 206
   },
   "units": [
     {
-      "id": 124,
-      "appearance": 74,
-      "name": "下水道妖怪",
-      "x": 27,
-      "y": 54,
-      "direction": 3,
+      "id": 65,
+      "appearance": 19,
+      "name": "護衛武師",
+      "x": 9,
+      "y": 14,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 390,
+      "behavior": 3,
+      "hp": 300,
       "max_hp": 0,
       "equipment": [
-        76,
         0,
-        0,
-        0,
+        128,
+        149,
+        168,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 74,
-      "name": "下水道妖怪",
-      "x": 24,
-      "y": 62,
-      "direction": 3,
+      "appearance": 12,
+      "name": "巡邏騎兵",
+      "x": 22,
+      "y": 14,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 390,
+      "hp": 158,
       "max_hp": 0,
       "equipment": [
-        76,
-        0,
-        0,
-        0,
-        0,
+        74,
+        129,
+        149,
+        168,
+        186,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 74,
-      "name": "下水道妖怪",
-      "x": 15,
-      "y": 59,
-      "direction": 3,
+      "appearance": 12,
+      "name": "巡邏騎兵",
+      "x": 20,
+      "y": 15,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 390,
+      "hp": 158,
       "max_hp": 0,
       "equipment": [
-        76,
-        0,
-        0,
-        0,
-        0,
+        74,
+        129,
+        149,
+        168,
+        186,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 74,
-      "name": "下水道妖怪",
-      "x": 23,
-      "y": 72,
+      "appearance": 12,
+      "name": "巡邏騎兵",
+      "x": 1,
+      "y": 36,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 158,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        149,
+        168,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 12,
+      "name": "巡邏騎兵",
+      "x": 2,
+      "y": 38,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 158,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        149,
+        168,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 39,
+      "name": "弓箭手",
+      "x": 9,
+      "y": 45,
       "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 390,
+      "hp": 124,
       "max_hp": 0,
       "equipment": [
-        76,
-        0,
-        0,
-        0,
+        47,
+        128,
+        149,
+        168,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 74,
-      "name": "下水道妖怪",
-      "x": 16,
-      "y": 69,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 390,
-      "max_hp": 0,
-      "equipment": [
-        76,
-        0,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 74,
-      "name": "下水道妖怪",
-      "x": 25,
-      "y": 80,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 390,
-      "max_hp": 0,
-      "equipment": [
-        76,
-        0,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 74,
-      "name": "下水道妖怪",
-      "x": 10,
-      "y": 21,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 7,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 390,
-      "max_hp": 0,
-      "equipment": [
-        76,
-        0,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 74,
-      "name": "下水道妖怪",
-      "x": 6,
+      "appearance": 39,
+      "name": "弓箭手",
+      "x": 11,
       "y": 27,
       "direction": 1,
       "animation_action": 0,
-      "first_turn": 7,
+      "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 390,
+      "hp": 124,
       "max_hp": 0,
       "equipment": [
-        76,
-        0,
-        0,
-        0,
+        47,
+        128,
+        149,
+        168,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 74,
-      "name": "下水道妖怪",
-      "x": 4,
-      "y": 36,
+      "appearance": 39,
+      "name": "弓箭手",
+      "x": 11,
+      "y": 15,
       "direction": 1,
       "animation_action": 0,
-      "first_turn": 7,
+      "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 390,
+      "hp": 124,
       "max_hp": 0,
       "equipment": [
-        76,
-        0,
-        0,
-        0,
+        47,
+        128,
+        149,
+        168,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 78,
-      "name": "下水道妖怪",
-      "x": 28,
-      "y": 56,
-      "direction": 3,
+      "appearance": 39,
+      "name": "弓箭手",
+      "x": 5,
+      "y": 24,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 299,
-      "max_hp": 80,
+      "hp": 124,
+      "max_hp": 0,
       "equipment": [
-        0,
-        0,
-        0,
-        0,
+        47,
+        128,
+        149,
+        168,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 78,
-      "name": "下水道妖怪",
-      "x": 26,
-      "y": 66,
-      "direction": 3,
+      "appearance": 39,
+      "name": "弓箭手",
+      "x": 6,
+      "y": 16,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 299,
-      "max_hp": 80,
+      "hp": 124,
+      "max_hp": 0,
       "equipment": [
-        0,
-        0,
-        0,
-        0,
+        47,
+        128,
+        149,
+        168,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 78,
-      "name": "下水道妖怪",
-      "x": 17,
-      "y": 62,
-      "direction": 3,
+      "appearance": 11,
+      "name": "銀劍士",
+      "x": 10,
+      "y": 47,
+      "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 299,
-      "max_hp": 80,
+      "hp": 138,
+      "max_hp": 0,
       "equipment": [
-        0,
-        0,
-        0,
-        0,
-        0,
+        3,
+        128,
+        149,
+        168,
+        185,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 78,
-      "name": "下水道妖怪",
-      "x": 21,
-      "y": 73,
-      "direction": 3,
+      "appearance": 11,
+      "name": "銀劍士",
+      "x": 14,
+      "y": 32,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 299,
-      "max_hp": 80,
+      "hp": 138,
+      "max_hp": 0,
       "equipment": [
-        0,
-        0,
-        0,
-        0,
-        0,
+        3,
+        128,
+        149,
+        168,
+        185,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 78,
-      "name": "下水道妖怪",
-      "x": 23,
-      "y": 83,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 299,
-      "max_hp": 80,
-      "equipment": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 78,
-      "name": "下水道妖怪",
+      "appearance": 11,
+      "name": "銀劍士",
       "x": 9,
       "y": 19,
       "direction": 1,
       "animation_action": 0,
-      "first_turn": 7,
+      "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 299,
-      "max_hp": 80,
+      "hp": 138,
+      "max_hp": 0,
       "equipment": [
-        0,
-        0,
-        0,
-        0,
-        0,
+        3,
+        128,
+        149,
+        168,
+        185,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 78,
-      "name": "下水道妖怪",
-      "x": 5,
-      "y": 24,
+      "appearance": 11,
+      "name": "銀劍士",
+      "x": 15,
+      "y": 21,
       "direction": 1,
       "animation_action": 0,
-      "first_turn": 7,
+      "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 299,
-      "max_hp": 80,
+      "hp": 138,
+      "max_hp": 0,
       "equipment": [
-        0,
-        0,
-        0,
-        0,
+        3,
+        128,
+        149,
+        168,
+        185,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 11,
+      "name": "銀劍士",
+      "x": 10,
+      "y": 12,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 138,
+      "max_hp": 0,
+      "equipment": [
+        3,
+        128,
+        149,
+        168,
+        185,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 41,
+      "name": "修女",
+      "x": 9,
+      "y": 47,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 62,
+      "equipment": [
+        32,
+        99,
+        149,
+        168,
+        185,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 41,
+      "name": "修女",
+      "x": 12,
+      "y": 30,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 62,
+      "equipment": [
+        32,
+        99,
+        149,
+        168,
+        185,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 41,
+      "name": "修女",
+      "x": 10,
+      "y": 15,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 62,
+      "equipment": [
+        32,
+        99,
+        149,
+        168,
+        185,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 41,
+      "name": "修女",
+      "x": 6,
+      "y": 26,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 106,
+      "max_hp": 62,
+      "equipment": [
+        32,
+        99,
+        149,
+        168,
+        185,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 49,
+      "name": "奪命殺手",
+      "x": 8,
+      "y": 48,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 160,
+      "max_hp": 0,
+      "equipment": [
+        18,
+        100,
+        149,
+        168,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 78,
-      "name": "下水道妖怪",
-      "x": 2,
-      "y": 32,
-      "direction": 0,
+      "appearance": 49,
+      "name": "奪命殺手",
+      "x": 11,
+      "y": 18,
+      "direction": 1,
       "animation_action": 0,
-      "first_turn": 7,
+      "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 299,
-      "max_hp": 80,
+      "hp": 160,
+      "max_hp": 0,
       "equipment": [
-        0,
-        0,
-        0,
-        0,
+        18,
+        100,
+        149,
+        168,
         0,
         0
       ]
@@ -389,9 +477,9 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 6,
-        "y": 27,
-        "direction": 1
+        "x": 19,
+        "y": 47,
+        "direction": 3
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -400,9 +488,9 @@
       "slot": 1,
       "role_id": 1,
       "deployment": {
-        "x": 3,
-        "y": 34,
-        "direction": 1
+        "x": 20,
+        "y": 43,
+        "direction": 3
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -411,9 +499,9 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 9,
-        "y": 20,
-        "direction": 1
+        "x": 18,
+        "y": 47,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -422,9 +510,9 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 5,
-        "y": 26,
-        "direction": 1
+        "x": 20,
+        "y": 45,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -433,9 +521,9 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 9,
-        "y": 17,
-        "direction": 1
+        "x": 20,
+        "y": 47,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -444,9 +532,9 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 4,
-        "y": 34,
-        "direction": 1
+        "x": 19,
+        "y": 45,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -455,9 +543,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 5,
-        "y": 23,
-        "direction": 1
+        "x": 19,
+        "y": 43,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -466,9 +554,9 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 5,
-        "y": 27,
-        "direction": 1
+        "x": 19,
+        "y": 46,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -476,86 +564,86 @@
   ],
   "deployment": [
     {
-      "x": 6,
-      "y": 27,
-      "direction": 1,
+      "x": 19,
+      "y": 47,
+      "direction": 3,
       "role_id": 11,
       "fixed": true
     },
     {
-      "x": 3,
-      "y": 34,
-      "direction": 1,
+      "x": 20,
+      "y": 43,
+      "direction": 3,
       "role_id": 1,
       "fixed": true
     },
     {
-      "x": 9,
-      "y": 20,
-      "direction": 1,
+      "x": 18,
+      "y": 47,
+      "direction": 3,
       "role_id": 14,
       "fixed": false
     },
     {
-      "x": 5,
-      "y": 26,
-      "direction": 1,
+      "x": 20,
+      "y": 45,
+      "direction": 3,
       "role_id": 15,
       "fixed": false
     },
     {
-      "x": 9,
-      "y": 17,
-      "direction": 1,
+      "x": 20,
+      "y": 47,
+      "direction": 3,
       "role_id": 13,
       "fixed": false
     },
     {
-      "x": 4,
-      "y": 34,
-      "direction": 1,
+      "x": 19,
+      "y": 45,
+      "direction": 3,
       "role_id": 2,
       "fixed": false
     },
     {
-      "x": 5,
-      "y": 23,
-      "direction": 1,
-      "role_id": 3,
-      "fixed": false
-    },
-    {
-      "x": 5,
-      "y": 27,
-      "direction": 1,
+      "x": 19,
+      "y": 43,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 6,
-      "y": 26,
-      "direction": 1,
+      "x": 19,
+      "y": 46,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 6,
-      "y": 28,
-      "direction": 1,
+      "x": 19,
+      "y": 48,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 7,
-      "y": 27,
-      "direction": 1,
+      "x": 21,
+      "y": 43,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 4,
-      "y": 27,
-      "direction": 1,
+      "x": 17,
+      "y": 47,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 18,
+      "y": 46,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     }
@@ -566,11 +654,11 @@
       1
     ],
     "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
-    "strength_score": 7602.0,
-    "base_stage": 92
+    "base_stage": 75,
+    "strength_score": 0
   },
   "objects": [],
-  "name": "秘密通道",
+  "name": "驅離守衛",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",
@@ -588,58 +676,72 @@
         {
           "speaker": 3,
           "name": "泰普",
-          "text": "嘩！這是什麼地方？小女孩妳居然有辦法跑出來....。"
-        },
-        {
-          "speaker": 124,
-          "name": "下水道妖怪",
-          "text": "嘎....嘎....。"
-        },
-        {
-          "speaker": 6,
-          "name": "黛西",
-          "text": "魚人？這裡是怪物的巢穴？"
+          "text": "嘿嘿....敵人好多....真好。"
         },
         {
           "speaker": 1,
           "name": "娜塔莉雅",
-          "text": "寶兒的運氣還不錯，剛才魚怪居然都沒發現。"
+          "text": "敵人不少，我們不要分散了，先打敗一個方向的敵軍，免得受困。"
         },
         {
-          "speaker": 27,
-          "name": "寶兒",
-          "text": "我....我剛才根本不敢發出聲音。"
+          "speaker": 6,
+          "name": "黛西",
+          "text": "好的。"
         },
         {
-          "speaker": 5,
-          "name": "古斯塔夫",
-          "text": "喔....原來是我們太大聲了。"
-        },
-        {
-          "speaker": 4,
-          "name": "蘇",
-          "text": "我看到出口了，往右下邊前進吧。"
+          "speaker": 65,
+          "name": "護衛武師",
+          "text": "瞧瞧你們有多少本事，竟然有膽子來到這裡硬闖！"
         }
       ]
-    },
-    {
-      "type": 9,
-      "completion_flag": 0,
-      "condition": 6,
-      "route_stage": 136
     },
     {
       "type": 3,
       "completion_flag": 0,
       "condition": 2,
-      "role_id": 27,
+      "role_id": 69,
       "lines": [
         {
-          "speaker": 27,
-          "name": "寶兒",
-          "text": "哇....爺爺....姐姐....。"
+          "speaker": 65,
+          "name": "護衛武師",
+          "text": "強....好強....。"
         }
       ]
+    },
+    {
+      "type": 2,
+      "completion_flag": 13,
+      "lines": [
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "可以進去救人了。"
+        }
+      ]
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 11,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 15,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 11,
+      "completion_flag": 0,
+      "condition": 12,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 10,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
     }
   ]
 }

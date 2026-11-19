@@ -1,671 +1,99 @@
 {
-  "map_id": 41,
-  "music": 8,
+  "map_id": 84,
+  "music": 34,
   "route": {
-    "next_stage": 285,
+    "interbattle_town_id": 84,
+    "next_stage": 215,
     "alternate_stage": 0,
     "mode": 1,
-    "interbattle_town_id": 41,
-    "fantasy_stage": 285
+    "fantasy_stage": 215
   },
   "units": [
     {
-      "id": 0,
-      "appearance": 39,
-      "name": "領主府侍衛",
-      "x": 20,
-      "y": 42,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 316,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        121,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 39,
-      "name": "領主府侍衛",
-      "x": 16,
+      "id": 122,
+      "appearance": 72,
+      "name": "丑善",
+      "x": 2,
       "y": 44,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 316,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        121,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 39,
-      "name": "領主府侍衛",
-      "x": 17,
-      "y": 31,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 316,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        121,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 39,
-      "name": "領主府侍衛",
-      "x": 13,
-      "y": 23,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 316,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        121,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 39,
-      "name": "領主府侍衛",
-      "x": 10,
-      "y": 20,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 316,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        121,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 1,
-      "name": "領主府侍衛",
-      "x": 17,
-      "y": 47,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 388,
-      "max_hp": 0,
-      "equipment": [
-        65,
-        132,
-        152,
-        173,
-        190,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 1,
-      "name": "領主府侍衛",
-      "x": 18,
-      "y": 44,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 388,
-      "max_hp": 0,
-      "equipment": [
-        65,
-        132,
-        152,
-        173,
-        190,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 1,
-      "name": "領主府侍衛",
-      "x": 21,
-      "y": 61,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 388,
-      "max_hp": 0,
-      "equipment": [
-        65,
-        132,
-        152,
-        173,
-        190,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 1,
-      "name": "領主府侍衛",
-      "x": 8,
-      "y": 22,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 388,
-      "max_hp": 0,
-      "equipment": [
-        65,
-        132,
-        152,
-        173,
-        190,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 1,
-      "name": "領主府侍衛",
-      "x": 9,
-      "y": 24,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 388,
-      "max_hp": 0,
-      "equipment": [
-        65,
-        132,
-        152,
-        173,
-        190,
-        0
-      ]
-    },
-    {
-      "id": 119,
-      "appearance": 69,
-      "name": "領主府總管",
-      "x": 14,
-      "y": 27,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 488,
-      "max_hp": 166,
-      "equipment": [
-        37,
-        109,
-        162,
-        180,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 4,
-      "name": "第四軍團",
-      "x": 14,
-      "y": 59,
-      "direction": 2,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 358,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        121,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 4,
-      "name": "第四軍團",
-      "x": 6,
-      "y": 39,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 358,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        121,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 4,
-      "name": "第四軍團",
-      "x": 5,
-      "y": 28,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 358,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        121,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 4,
-      "name": "第四軍團",
-      "x": 11,
-      "y": 48,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 358,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        121,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 4,
-      "name": "第四軍團",
-      "x": 5,
-      "y": 35,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 358,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        121,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 4,
-      "name": "第四軍團",
-      "x": 5,
-      "y": 53,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 358,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        121,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 4,
-      "name": "第四軍團",
-      "x": 8,
-      "y": 45,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 358,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        121,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 4,
-      "name": "第四軍團",
-      "x": 8,
-      "y": 50,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 358,
-      "max_hp": 0,
-      "equipment": [
-        51,
-        121,
-        151,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "第四軍團",
-      "x": 14,
-      "y": 49,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 400,
-      "max_hp": 0,
-      "equipment": [
-        78,
-        132,
-        152,
-        173,
-        189,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "第四軍團",
-      "x": 14,
-      "y": 54,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 400,
-      "max_hp": 0,
-      "equipment": [
-        78,
-        132,
-        152,
-        173,
-        189,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "第四軍團",
-      "x": 7,
-      "y": 56,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 400,
-      "max_hp": 0,
-      "equipment": [
-        78,
-        132,
-        152,
-        173,
-        189,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "第四軍團",
-      "x": 15,
-      "y": 66,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 400,
-      "max_hp": 0,
-      "equipment": [
-        78,
-        132,
-        152,
-        173,
-        189,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "第四軍團",
-      "x": 5,
-      "y": 31,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 400,
-      "max_hp": 0,
-      "equipment": [
-        78,
-        132,
-        152,
-        173,
-        189,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "第四軍團",
-      "x": 8,
-      "y": 35,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 400,
-      "max_hp": 0,
-      "equipment": [
-        78,
-        132,
-        152,
-        173,
-        189,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 55,
-      "name": "第四軍團",
-      "x": 12,
-      "y": 56,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 390,
+      "hp": 396,
       "max_hp": 80,
       "equipment": [
-        7,
-        121,
-        149,
-        169,
+        0,
+        117,
+        148,
+        178,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 55,
-      "name": "第四軍團",
-      "x": 4,
-      "y": 32,
+      "appearance": 72,
+      "name": "丑惡",
+      "x": 3,
+      "y": 64,
       "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 390,
+      "hp": 396,
       "max_hp": 80,
       "equipment": [
-        7,
-        121,
-        149,
-        169,
+        0,
+        117,
+        148,
+        178,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 55,
-      "name": "第四軍團",
-      "x": 6,
-      "y": 53,
-      "direction": 0,
+      "appearance": 72,
+      "name": "丑黑",
+      "x": 1,
+      "y": 38,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 390,
+      "hp": 396,
       "max_hp": 80,
       "equipment": [
-        7,
-        121,
-        149,
-        169,
+        0,
+        117,
+        148,
+        178,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 55,
-      "name": "第四軍團",
-      "x": 9,
-      "y": 49,
+      "appearance": 72,
+      "name": "丑白",
+      "x": 1,
+      "y": 70,
       "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 390,
+      "hp": 396,
       "max_hp": 80,
       "equipment": [
-        7,
-        121,
-        149,
-        169,
         0,
-        0
-      ]
-    },
-    {
-      "id": 84,
-      "appearance": 34,
-      "name": "第四軍團長",
-      "x": 13,
-      "y": 61,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 3,
-      "hp": 624,
-      "max_hp": 164,
-      "equipment": [
-        38,
-        109,
-        163,
-        180,
-        197,
+        117,
+        148,
+        178,
+        0,
         0
       ]
     }
@@ -675,9 +103,9 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 3,
-        "y": 62,
-        "direction": 2
+        "x": 19,
+        "y": 52,
+        "direction": 0
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -686,9 +114,9 @@
       "slot": 1,
       "role_id": 1,
       "deployment": {
-        "x": 1,
-        "y": 62,
-        "direction": 2
+        "x": 19,
+        "y": 48,
+        "direction": 0
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -697,9 +125,9 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 1,
-        "y": 60,
-        "direction": 2
+        "x": 19,
+        "y": 50,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -708,9 +136,9 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 3,
-        "y": 60,
-        "direction": 2
+        "x": 18,
+        "y": 50,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -719,9 +147,9 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 2,
-        "y": 62,
-        "direction": 2
+        "x": 20,
+        "y": 50,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -730,9 +158,9 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 1,
-        "y": 64,
-        "direction": 2
+        "x": 20,
+        "y": 52,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -741,9 +169,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 2,
-        "y": 64,
-        "direction": 2
+        "x": 18,
+        "y": 52,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -752,9 +180,9 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 2,
-        "y": 66,
-        "direction": 2
+        "x": 19,
+        "y": 51,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -762,86 +190,86 @@
   ],
   "deployment": [
     {
-      "x": 3,
-      "y": 62,
-      "direction": 2,
+      "x": 19,
+      "y": 52,
+      "direction": 0,
       "role_id": 11,
       "fixed": true
     },
     {
-      "x": 1,
-      "y": 62,
-      "direction": 2,
+      "x": 19,
+      "y": 48,
+      "direction": 0,
       "role_id": 1,
       "fixed": true
     },
     {
-      "x": 1,
-      "y": 60,
-      "direction": 2,
+      "x": 19,
+      "y": 50,
+      "direction": 0,
       "role_id": 14,
       "fixed": false
     },
     {
-      "x": 3,
-      "y": 60,
-      "direction": 2,
+      "x": 18,
+      "y": 50,
+      "direction": 0,
       "role_id": 15,
       "fixed": false
     },
     {
-      "x": 2,
-      "y": 62,
-      "direction": 2,
+      "x": 20,
+      "y": 50,
+      "direction": 0,
       "role_id": 13,
       "fixed": false
     },
     {
-      "x": 1,
-      "y": 64,
-      "direction": 2,
+      "x": 20,
+      "y": 52,
+      "direction": 0,
       "role_id": 2,
       "fixed": false
     },
     {
-      "x": 2,
-      "y": 64,
-      "direction": 2,
-      "role_id": 3,
-      "fixed": false
-    },
-    {
-      "x": 2,
-      "y": 66,
-      "direction": 2,
-      "role_id": 4,
-      "fixed": false
-    },
-    {
-      "x": 2,
-      "y": 60,
-      "direction": 2,
+      "x": 18,
+      "y": 52,
+      "direction": 0,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 3,
-      "y": 61,
-      "direction": 2,
+      "x": 19,
+      "y": 51,
+      "direction": 0,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 3,
-      "y": 63,
-      "direction": 2,
+      "x": 19,
+      "y": 53,
+      "direction": 0,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 4,
-      "y": 62,
-      "direction": 2,
+      "x": 20,
+      "y": 48,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 17,
+      "y": 52,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 18,
+      "y": 51,
+      "direction": 0,
       "role_id": 0,
       "fixed": false
     }
@@ -852,11 +280,11 @@
       1
     ],
     "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
-    "strength_score": 9348.0,
-    "base_stage": 41
+    "base_stage": 84,
+    "strength_score": 0
   },
   "objects": [],
-  "name": "命運分歧點",
+  "name": "丑子軍團",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",
@@ -865,350 +293,124 @@
   "events": [
     {
       "type": 1,
-      "completion_flag": 13,
+      "completion_flag": 0,
       "trigger": {
         "kind": "turn",
         "turn": 1
       },
       "lines": [
         {
-          "speaker": 22,
-          "name": "奧帕兒",
-          "text": "還來的及嗎？"
+          "speaker": 122,
+          "name": "丑善",
+          "text": "奚族的人嗎？"
         },
         {
-          "speaker": 15,
-          "name": "艾文",
-          "text": "兩邊還在激戰中，看樣子還有機會。"
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "正是。"
         },
         {
-          "speaker": 22,
-          "name": "奧帕兒",
-          "text": "志超！總管快撐不住了，我們快去幫她吧！"
+          "speaker": 122,
+          "name": "丑惡",
+          "text": "我們奉命來收拾妳們！不用問原因了。"
+        },
+        {
+          "speaker": 3,
+          "name": "泰普",
+          "text": "哼，先試試你的本事再說吧，好笑的小丑！"
         }
       ]
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 2,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 31,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed",
-      "lines": [
-        {
-          "speaker": 31,
-          "name": "米蘭黛",
-          "text": "夏普這個人無情寡義，何必要救他，我們大可以兩不相幫，讓兩邊自相殘殺完再進入內城。"
-        },
-        {
-          "speaker": 18,
-          "name": "茱迪",
-          "text": "或者可以考慮一下直接往內城衝，不必打這一場混戰。"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "真是傷腦筋耶？我該聽誰的？"
-        }
-      ]
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 3,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 31,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed",
-      "lines": [
-        {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "夏普這個人無情寡義，何必要救他，我們大可以兩不相幫，讓兩邊自相殘殺完再進入內城。"
-        },
-        {
-          "speaker": 18,
-          "name": "茱迪",
-          "text": "或者可以考慮一下直接往內城衝，不必打這一場混戰。"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "真是傷腦筋耶？我該聽誰的？"
-        }
-      ]
-    },
-    {
-      "type": 3,
-      "completion_flag": 17,
-      "condition": 2,
-      "role_id": 84,
-      "lines": [
-        {
-          "speaker": 84,
-          "name": "第四軍團長",
-          "text": "元帥，我對不起你....。"
-        },
-        {
-          "speaker": 22,
-          "name": "奧帕兒",
-          "text": "我們快進城去！"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "....現在莫名其妙地幫了夏普的忙，不知是吉是凶，唉。"
-        }
-      ]
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 11,
-      "raw_operands": {
-        "offset_3": 17,
-        "offset_5": -10,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 12,
-      "raw_operands": {
-        "offset_3": 17,
-        "offset_5": -10,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 14,
-      "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 17,
-        "offset_5": 31,
-        "offset_7": 11,
-        "offset_9": -5
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 14,
-      "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 17,
-        "offset_5": 22,
-        "offset_7": 11,
-        "offset_9": 15
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 3,
-      "completion_flag": 7,
-      "condition": 2,
-      "role_id": 119,
-      "lines": [
-        {
-          "speaker": 119,
-          "name": "領主府總管",
-          "text": "小姐....。"
-        },
-        {
-          "speaker": 22,
-          "name": "奧帕兒",
-          "text": "志超！志超！你為什麼不救她！我恨你！"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "......。"
-        },
-        {
-          "speaker": 84,
-          "name": "第四軍團長",
-          "text": "敵將已經伏誅，現在進城去鏟除元兇，推舉元帥為王！進城！"
-        }
-      ]
-    },
-    {
-      "type": 9,
-      "completion_flag": 11,
-      "lines": [
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "我們跟進城去看看吧。"
-        }
-      ]
-    },
-    {
-      "type": 9,
-      "completion_flag": 15
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 11,
-      "raw_operands": {
-        "offset_3": 15,
-        "offset_5": 5,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 12,
-      "raw_operands": {
-        "offset_3": 15,
-        "offset_5": 5,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 14,
-      "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 15,
-        "offset_5": 22,
-        "offset_7": 11,
-        "offset_9": -10
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 14,
-      "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 15,
-        "offset_5": 31,
-        "offset_7": 11,
-        "offset_9": 15
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 12,
-      "completion_flag": 0,
-      "condition": 1,
-      "raw_operands": {
-        "offset_3": 15,
-        "offset_5": 22,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 12,
-      "completion_flag": 0,
-      "condition": 1,
-      "raw_operands": {
-        "offset_3": 15,
-        "offset_5": 32,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 9,
-      "completion_flag": 4,
-      "condition": 6,
-      "route_stage": 44
     },
     {
       "type": 2,
-      "completion_flag": 16,
-      "condition": 2,
+      "completion_flag": 0,
       "lines": [
         {
-          "speaker": 11,
-          "name": "志超",
-          "text": "真抱歉，妳們兩邊慢慢玩吧，我們先進城了。"
+          "speaker": 2,
+          "name": "穆爾",
+          "text": "是誰派你們來的....？"
+        },
+        {
+          "speaker": 122,
+          "name": "丑善",
+          "text": "......。"
+        },
+        {
+          "speaker": 6,
+          "name": "黛西",
+          "text": "是夏普嗎？"
+        },
+        {
+          "speaker": 122,
+          "name": "丑善",
+          "text": "......。"
+        },
+        {
+          "speaker": 4,
+          "name": "蘇",
+          "text": "讓我來吧，看著我。"
+        },
+        {
+          "speaker": 4,
+          "name": "蘇",
+          "text": "如果不是夏普，是貝洛將軍還是克雷布特里？"
+        },
+        {
+          "speaker": 122,
+          "name": "丑善",
+          "text": "..是克雷布特里大人。"
+        },
+        {
+          "speaker": 4,
+          "name": "蘇",
+          "text": "為什麼？"
+        },
+        {
+          "speaker": 122,
+          "name": "丑善",
+          "text": "大人....大人不希望妳們干擾到他的計劃....。"
+        },
+        {
+          "speaker": 4,
+          "name": "蘇",
+          "text": "什麼計劃？"
+        },
+        {
+          "speaker": 122,
+          "name": "丑善",
+          "text": "我們也不知道。"
+        },
+        {
+          "speaker": 4,
+          "name": "蘇",
+          "text": "那你們來此之前還辦過那些事？"
+        },
+        {
+          "speaker": 122,
+          "name": "丑善",
+          "text": "我們....我們去襲擊了夏普的女兒....奧帕兒。"
+        },
+        {
+          "speaker": 4,
+          "name": "蘇",
+          "text": "為什麼？"
+        },
+        {
+          "speaker": 122,
+          "name": "丑善",
+          "text": "這樣夏普會認為是妳們幹的，才能夠引起衝突....。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "！！！"
+        },
+        {
+          "speaker": 4,
+          "name": "蘇",
+          "text": "好了，忘了這回事吧。"
         }
       ]
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 11,
-      "raw_operands": {
-        "offset_3": 16,
-        "offset_5": 5,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 12,
-      "raw_operands": {
-        "offset_3": 16,
-        "offset_5": 5,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 14,
-      "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 15,
-        "offset_5": 22,
-        "offset_7": 11,
-        "offset_9": 5
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 14,
-      "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 15,
-        "offset_5": 31,
-        "offset_7": 11,
-        "offset_9": 3
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 9,
-      "raw_operands": {
-        "offset_3": 16,
-        "offset_5": 250,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 9,
-      "completion_flag": 0,
-      "condition": 6,
-      "route_stage": 43
     }
   ]
 }

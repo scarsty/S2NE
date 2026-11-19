@@ -1,385 +1,341 @@
 {
-  "map_id": 33,
-  "music": 11,
+  "map_id": 82,
+  "music": 15,
   "route": {
-    "next_stage": 283,
+    "interbattle_town_id": 82,
+    "next_stage": 213,
     "alternate_stage": 0,
     "mode": 1,
-    "interbattle_town_id": 33,
-    "fantasy_stage": 283
+    "fantasy_stage": 213
   },
   "units": [
     {
-      "id": 39,
-      "appearance": 32,
-      "name": "貝洛元帥",
-      "x": 19,
-      "y": 27,
-      "direction": 0,
+      "id": 147,
+      "appearance": 19,
+      "name": "祁師傅",
+      "x": 5,
+      "y": 17,
+      "direction": 1,
       "animation_action": 0,
-      "first_turn": 4,
+      "first_turn": 1,
       "last_turn": 0,
       "behavior": 3,
-      "hp": 1000,
+      "hp": 438,
       "max_hp": 0,
       "equipment": [
         0,
-        137,
-        158,
-        179,
+        118,
+        149,
+        171,
         0,
         0
       ]
     },
     {
-      "id": 37,
-      "appearance": 65,
-      "name": "西碧拉",
-      "x": 18,
-      "y": 29,
-      "direction": 0,
+      "id": 0,
+      "appearance": 14,
+      "name": "賈府保鑣",
+      "x": 2,
+      "y": 23,
+      "direction": 1,
       "animation_action": 0,
-      "first_turn": 4,
+      "first_turn": 1,
       "last_turn": 0,
-      "behavior": 3,
-      "hp": 640,
-      "max_hp": 210,
+      "behavior": 2,
+      "hp": 210,
+      "max_hp": 0,
       "equipment": [
-        39,
-        112,
-        162,
-        180,
+        19,
+        118,
+        149,
+        171,
         0,
         0
       ]
     },
     {
-      "id": 200,
-      "appearance": 67,
-      "name": "貼身護衛",
-      "x": 17,
+      "id": 0,
+      "appearance": 14,
+      "name": "賈府保鑣",
+      "x": 9,
+      "y": 14,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 210,
+      "max_hp": 0,
+      "equipment": [
+        19,
+        118,
+        149,
+        171,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 14,
+      "name": "賈府保鑣",
+      "x": 12,
+      "y": 41,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 210,
+      "max_hp": 0,
+      "equipment": [
+        19,
+        118,
+        149,
+        171,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 14,
+      "name": "賈府保鑣",
+      "x": 10,
+      "y": 35,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 210,
+      "max_hp": 0,
+      "equipment": [
+        19,
+        118,
+        149,
+        171,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 52,
+      "name": "幻術師",
+      "x": 4,
+      "y": 21,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 159,
+      "max_hp": 74,
+      "equipment": [
+        34,
+        106,
+        159,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 52,
+      "name": "幻術師",
+      "x": 12,
+      "y": 35,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 159,
+      "max_hp": 74,
+      "equipment": [
+        34,
+        106,
+        159,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 52,
+      "name": "幻術師",
+      "x": 12,
       "y": 30,
-      "direction": 0,
+      "direction": 1,
       "animation_action": 0,
-      "first_turn": 4,
+      "first_turn": 1,
       "last_turn": 0,
-      "behavior": 8,
-      "hp": 440,
-      "max_hp": 110,
+      "behavior": 2,
+      "hp": 159,
+      "max_hp": 74,
       "equipment": [
-        10,
-        137,
-        156,
-        178,
-        197,
+        34,
+        106,
+        159,
+        167,
+        0,
         0
       ]
     },
     {
-      "id": 201,
-      "appearance": 67,
-      "name": "貼身護衛",
-      "x": 18,
+      "id": 0,
+      "appearance": 17,
+      "name": "巫術士",
+      "x": 7,
+      "y": 15,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 161,
+      "max_hp": 64,
+      "equipment": [
+        34,
+        106,
+        159,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 17,
+      "name": "巫術士",
+      "x": 14,
       "y": 32,
-      "direction": 0,
+      "direction": 1,
       "animation_action": 0,
-      "first_turn": 4,
+      "first_turn": 1,
       "last_turn": 0,
-      "behavior": 8,
-      "hp": 440,
-      "max_hp": 110,
+      "behavior": 2,
+      "hp": 161,
+      "max_hp": 64,
       "equipment": [
-        10,
-        137,
-        156,
-        178,
-        197,
+        34,
+        106,
+        159,
+        167,
+        0,
         0
       ]
     },
     {
-      "id": 202,
-      "appearance": 67,
-      "name": "貼身護衛",
-      "x": 21,
+      "id": 0,
+      "appearance": 17,
+      "name": "巫術士",
+      "x": 20,
+      "y": 32,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 161,
+      "max_hp": 64,
+      "equipment": [
+        34,
+        106,
+        159,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 95,
+      "appearance": 45,
+      "name": "賈府保鑣",
+      "x": 3,
+      "y": 26,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 247,
+      "max_hp": 0,
+      "equipment": [
+        63,
+        132,
+        152,
+        169,
+        188,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "賈府保鑣",
+      "x": 17,
+      "y": 32,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 247,
+      "max_hp": 0,
+      "equipment": [
+        63,
+        132,
+        152,
+        169,
+        188,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "賈府保鑣",
+      "x": 18,
       "y": 28,
       "direction": 0,
       "animation_action": 0,
-      "first_turn": 4,
-      "last_turn": 0,
-      "behavior": 8,
-      "hp": 440,
-      "max_hp": 110,
-      "equipment": [
-        10,
-        137,
-        156,
-        178,
-        197,
-        0
-      ]
-    },
-    {
-      "id": 203,
-      "appearance": 67,
-      "name": "貼身護衛",
-      "x": 19,
-      "y": 24,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 4,
-      "last_turn": 0,
-      "behavior": 8,
-      "hp": 440,
-      "max_hp": 110,
-      "equipment": [
-        10,
-        137,
-        156,
-        178,
-        197,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 66,
-      "name": "獨角獸騎士",
-      "x": 19,
-      "y": 63,
-      "direction": 0,
-      "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 8,
-      "hp": 400,
-      "max_hp": 32,
+      "behavior": 2,
+      "hp": 247,
+      "max_hp": 0,
       "equipment": [
-        80,
-        136,
-        156,
-        177,
-        197,
+        63,
+        132,
+        152,
+        169,
+        188,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 66,
-      "name": "獨角獸騎士",
-      "x": 20,
-      "y": 61,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 8,
-      "hp": 400,
-      "max_hp": 32,
-      "equipment": [
-        80,
-        136,
-        156,
-        177,
-        197,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 59,
-      "name": "魔法騎士",
-      "x": 19,
-      "y": 65,
-      "direction": 0,
+      "appearance": 45,
+      "name": "賈府保鑣",
+      "x": 14,
+      "y": 28,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 340,
-      "max_hp": 64,
+      "hp": 247,
+      "max_hp": 0,
       "equipment": [
-        79,
-        135,
-        156,
-        177,
-        197,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 59,
-      "name": "魔法騎士",
-      "x": 18,
-      "y": 59,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 340,
-      "max_hp": 64,
-      "equipment": [
-        79,
-        135,
-        156,
-        177,
-        197,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 59,
-      "name": "魔法騎士",
-      "x": 20,
-      "y": 59,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 340,
-      "max_hp": 64,
-      "equipment": [
-        79,
-        135,
-        156,
-        177,
-        197,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 24,
-      "name": "聖騎士",
-      "x": 17,
-      "y": 61,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 380,
-      "max_hp": 48,
-      "equipment": [
-        80,
-        136,
-        156,
-        177,
-        197,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 24,
-      "name": "聖騎士",
-      "x": 19,
-      "y": 61,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 380,
-      "max_hp": 48,
-      "equipment": [
-        80,
-        136,
-        156,
-        177,
-        197,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 24,
-      "name": "聖騎士",
-      "x": 19,
-      "y": 59,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 380,
-      "max_hp": 48,
-      "equipment": [
-        80,
-        136,
-        156,
-        177,
-        197,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 26,
-      "name": "黑騎士",
-      "x": 18,
-      "y": 63,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 360,
-      "max_hp": 54,
-      "equipment": [
-        79,
-        135,
-        156,
-        177,
-        199,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 26,
-      "name": "黑騎士",
-      "x": 18,
-      "y": 61,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 360,
-      "max_hp": 54,
-      "equipment": [
-        79,
-        135,
-        156,
-        177,
-        199,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 26,
-      "name": "黑騎士",
-      "x": 20,
-      "y": 63,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 360,
-      "max_hp": 54,
-      "equipment": [
-        79,
-        135,
-        156,
-        177,
-        199,
+        63,
+        132,
+        152,
+        169,
+        188,
         0
       ]
     }
@@ -389,9 +345,9 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 12,
-        "y": 65,
-        "direction": 2
+        "x": 21,
+        "y": 45,
+        "direction": 3
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -400,9 +356,9 @@
       "slot": 1,
       "role_id": 1,
       "deployment": {
-        "x": 12,
-        "y": 67,
-        "direction": 2
+        "x": 21,
+        "y": 54,
+        "direction": 3
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -411,9 +367,9 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 12,
-        "y": 63,
-        "direction": 2
+        "x": 20,
+        "y": 56,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -422,9 +378,9 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 10,
-        "y": 67,
-        "direction": 2
+        "x": 19,
+        "y": 43,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -433,9 +389,9 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 11,
-        "y": 69,
-        "direction": 2
+        "x": 19,
+        "y": 52,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -444,9 +400,9 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 11,
-        "y": 67,
-        "direction": 2
+        "x": 20,
+        "y": 44,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -455,9 +411,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 11,
-        "y": 65,
-        "direction": 2
+        "x": 20,
+        "y": 45,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -466,9 +422,9 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 13,
-        "y": 65,
-        "direction": 2
+        "x": 21,
+        "y": 44,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -476,86 +432,86 @@
   ],
   "deployment": [
     {
-      "x": 12,
-      "y": 65,
-      "direction": 2,
+      "x": 21,
+      "y": 45,
+      "direction": 3,
       "role_id": 11,
       "fixed": true
     },
     {
-      "x": 12,
-      "y": 67,
-      "direction": 2,
+      "x": 21,
+      "y": 54,
+      "direction": 3,
       "role_id": 1,
       "fixed": true
     },
     {
-      "x": 12,
-      "y": 63,
-      "direction": 2,
+      "x": 20,
+      "y": 56,
+      "direction": 3,
       "role_id": 14,
       "fixed": false
     },
     {
-      "x": 10,
-      "y": 67,
-      "direction": 2,
+      "x": 19,
+      "y": 43,
+      "direction": 3,
       "role_id": 15,
       "fixed": false
     },
     {
-      "x": 11,
-      "y": 69,
-      "direction": 2,
+      "x": 19,
+      "y": 52,
+      "direction": 3,
       "role_id": 13,
       "fixed": false
     },
     {
-      "x": 11,
-      "y": 67,
-      "direction": 2,
+      "x": 20,
+      "y": 44,
+      "direction": 3,
       "role_id": 2,
       "fixed": false
     },
     {
-      "x": 11,
-      "y": 65,
-      "direction": 2,
-      "role_id": 3,
-      "fixed": false
-    },
-    {
-      "x": 13,
-      "y": 65,
-      "direction": 2,
-      "role_id": 4,
-      "fixed": false
-    },
-    {
-      "x": 11,
-      "y": 63,
-      "direction": 2,
+      "x": 20,
+      "y": 45,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 12,
-      "y": 64,
-      "direction": 2,
+      "x": 21,
+      "y": 44,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 12,
-      "y": 66,
-      "direction": 2,
+      "x": 21,
+      "y": 46,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 13,
-      "y": 67,
-      "direction": 2,
+      "x": 22,
+      "y": 45,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 19,
+      "y": 45,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 20,
+      "y": 53,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     }
@@ -566,11 +522,11 @@
       1
     ],
     "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
-    "strength_score": 9140.0,
-    "base_stage": 33
+    "base_stage": 82,
+    "strength_score": 0
   },
   "objects": [],
-  "name": "官道巡弋者",
+  "name": "惡德商人",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",
@@ -586,69 +542,9 @@
       },
       "lines": [
         {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "糟了，這是官道巡邏隊的主力，來得如此迅速！"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "要打嗎？"
-        },
-        {
-          "speaker": 15,
-          "name": "艾文",
-          "text": "騎兵太多了，打起來很容易傷亡慘重。"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "好，先退後再說！"
-        }
-      ]
-    },
-    {
-      "type": 1,
-      "completion_flag": 1,
-      "trigger": {
-        "kind": "turn",
-        "turn": 4
-      },
-      "lines": [
-        {
-          "speaker": 39,
-          "name": "貝洛元帥",
-          "text": "前面這夥人就是常和我們作對的那批人嗎？"
-        },
-        {
-          "speaker": 37,
-          "name": "西碧拉",
-          "text": "是的，就是他們。"
-        },
-        {
-          "speaker": 39,
-          "name": "貝洛元帥",
-          "text": "嗯....刑天、秋月，原來你們是迦納國派來的，真是意外啊。"
-        },
-        {
-          "speaker": 14,
-          "name": "飛霜",
-          "text": "喂，老大，這傢伙居然不認得你！(還有連我也不認識！！！)"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "不妙，連南方領的軍事統帥貝洛都來了，這裡不能久待了！"
-        },
-        {
-          "speaker": 39,
-          "name": "貝洛元帥",
-          "text": "等我捉到你們，迦納國就無計可施了，嘿嘿嘿。"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "快走，動作要快！"
+          "speaker": 95,
+          "name": "賈府保鑣",
+          "text": "什麼人敢擅闖賈府? "
         }
       ]
     },
@@ -656,38 +552,14 @@
       "type": 3,
       "completion_flag": 13,
       "condition": 2,
-      "role_id": 39,
+      "role_id": 147,
       "lines": [
         {
-          "speaker": 39,
-          "name": "貝洛元帥",
-          "text": "真是意外啊....下此我得小心點。"
+          "speaker": 147,
+          "name": "祁師傅",
+          "text": "老夫竟然敗在你們手裡....真不甘心。"
         }
       ]
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 11,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 10,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 12,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 10,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
     }
   ]
 }

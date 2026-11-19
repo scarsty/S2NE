@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <mutex>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <span>
@@ -29,15 +30,7 @@ class OriginalEvents
     unsigned dword(size_t p) const { return word(p) | (word(p + 2) << 16); }
     static unsigned custom_stage_base(unsigned id)
     {
-        if (id < 201) { return id; }
-        static constexpr std::array<unsigned, 112> route_order = {
-            162, 66, 67, 68, 69, 70, 19, 93, 84, 87, 73, 26, 15, 72, 71, 86, 18, 22, 1, 74, 3, 6, 89, 97,
-            40, 2, 64, 65, 4, 23, 95, 8, 96, 11, 82, 9, 7, 45, 109, 5, 75, 38, 35, 12, 79, 85, 78, 80,
-            29, 99, 20, 25, 105, 63, 13, 28, 76, 17, 91, 10, 81, 77, 21, 94, 98, 24, 32, 101, 31, 16, 90,
-            108, 52, 46, 92, 112, 36, 39, 100, 30, 103, 33, 102, 41, 57, 58, 88, 27, 107, 111, 43, 59, 55,
-            110, 37, 14, 83, 104, 34, 106, 44, 47, 49, 48, 42, 56, 50, 53, 60, 62, 54, 61
-        };
-        return route_order.at(id - 201);
+        return id < 201 ? id : id - 200;
     }
     size_t entry(unsigned id) const
     {
@@ -1772,8 +1765,10 @@ public:
         {
             return Result<bool>::success(false);
         }
+        static std::mutex parsed_stage_json_mutex;
         static std::unordered_map<std::string, nlohmann::json> parsed_stage_json;
         const auto key = std::filesystem::weakly_canonical(path).string();
+        std::lock_guard lock(parsed_stage_json_mutex);
         auto found = parsed_stage_json.find(key);
         if (found == parsed_stage_json.end())
         {
@@ -1785,8 +1780,8 @@ public:
             std::string text(std::istreambuf_iterator<char>(input), {});
             auto parsed = nlohmann::json::parse(text, nullptr, false);
             found = parsed_stage_json.emplace(key, std::move(parsed)).first;
+            std::println(stderr, "JSON stage parsed: stage={} path={}", id, path.string());
         }
-        std::print(stderr, "JSON stage loaded: stage={} path={}\n", id, path.string());
         const auto& json = found->second;
         if (json.is_discarded() || !json.is_object())
         {
@@ -1900,7 +1895,8 @@ public:
                 target.last_turn = source.at("last_turn").get<int>();
                 target.behavior = source.at("behavior").get<int>();
                 target.hp = source.at("hp").get<int>();
-                if (source.contains("max_hp")) { target.max_hp = source.at("max_hp").get<int>(); }
+                target.max_hp = source.value("max_hp", target.hp);
+                if (target.max_hp <= 0) { target.max_hp = target.hp; }
                 if (!source.contains("direction") || !source.at("direction").is_number_integer() || source.at("direction").get<int>() < 0
                     || !source.contains("animation_action") || !source.at("animation_action").is_number_integer() || source.at("animation_action").get<int>() < 0)
                 {
@@ -2096,6 +2092,18 @@ public:
         }
         map_id = json.at("map_id").get<unsigned>();
         stage_music = json.at("music").get<unsigned>();
+        if (json.contains("route") && json.at("route").is_object())
+        {
+            const auto& route = json.at("route");
+            if (route.contains("next_stage") && route.at("next_stage").is_number_unsigned())
+            {
+                first_stage = route.at("next_stage").get<unsigned>();
+            }
+            if (route.contains("alternate_stage") && route.at("alternate_stage").is_number_unsigned())
+            {
+                alternate_stage = route.at("alternate_stage").get<unsigned>();
+            }
+        }
         if (json.contains("route") && json.at("route").is_object() && json.at("route").contains("interbattle_town_id")
             && json.at("route").at("interbattle_town_id").is_number_unsigned())
         {

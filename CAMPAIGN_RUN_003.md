@@ -7,7 +7,7 @@
 - 201–312 共112个逻辑阶段，按原始底座敌方单位数量与HP计算的可审计分数升序排列；分数为 `敌方数量 × 100 + 敌方HP总和`，同分按原始stage编号排序。
 - 每个逻辑阶段的地图、敌军、事件、目标文本均由对应 `json/ref/stage-*.json` 重建；运行时 `original_events`、`original_campaign`、`original_initialization` 使用同一底座映射。
 - 每关 JSON 固定12个部署槽。已有原始部署点全部保留，不足部分从首回合原始到场坐标或已有部署坐标按相邻六边形扩展；扩展槽在 `deployment_rules.source` 中标明，不能视为原资源原生槽位。
-- 双主角队伍顺序固定为 `11,1,14,15,13,2,3,4`。白志超 `11` 与娜塔莉雅 `1` 都标记为 mandatory，并由运行时自动占用前两个部署槽且不可取消。
+- 双主角队伍顺序固定为攻略交错后的 `11,1,14,15,13,2,3,4`：白志超线基础进度的 `11,14,15,13` 与娜塔莉雅线四人 `1,2,3,4` 交错拼接，娜塔莉雅 `1` 明确位于第二位。该顺序由 `try_fresh()` 创建存档军表时直接写入，不能只依赖 JSON 的显示顺序。白志超 `11` 与娜塔莉雅 `1` 都标记为 mandatory，并由运行时自动占用前两个部署槽且不可取消。
 - 所有阶段目标统一为全灭，失败条件为白志超或娜塔莉雅阵亡；原始事件数组保留，单线流程不保留可选分支跳转。
 
 ## 验证边界
@@ -52,5 +52,18 @@
 - 同次证据显示 stdout 大量重复 `Data source towns=JSON shop path=...`；已移除旅馆／商店数据源的无条件 stdout 输出，并将音频设备枚举限制在诊断模式且送 stderr，Release 构建通过。后续需用新构建重跑确认日志量下降，再继续定位第 9 回合 AI 行动。
 - 2026-11-19 重新构建后，stage 140 的重复数据源输出已移除，201 入场简报和真实目标均可读取；短时回归在第 12 个请求等待电脑行动超过 10 秒后按硬超时停止，状态为 `stage=201`、`phase=9`、`computer_actions=true`、`ai_skill_pending=false`、无移动／战斗反馈。由此排除本次现场是 AI 技能视觉锁死，但普通自动行动规划／执行仍未在可接受时间内完成。
 - 本次短时回归未取得胜利、奖励、存档重载或下一关证据；不能宣称第一关完成。回归证据目录已清理，Release 可执行文件保留。
+- 2026-11-19 用户复现补充：第三路线 JSON 的敌方单位曾写入 `max_hp=0`，导致战斗反馈按零上限裁剪伤害；现装载时对零／缺失值回退到当前 `hp`。同批发现原路线 transition 只读 BIN 的 `first_stage/alternate_stage`，而 JSON route 未同步写回，现已补齐 `next_stage/alternate_stage` 路由字段；未支持 transition 改为带 stage/phase/event 的 blocker，避免静默错误推进。Release 重建成功。
+- 同次复核确认 stage 140 的第二条原路线实际目标为 `stage=71`（第一条为 1，第三条为 201）；此前 JSON／ref JSON 错写为 0，已同步改为 71。stage 201 的两名敌方零 `max_hp` 不再影响运行时实际最大 HP，Release 产物存在且路由 JSON 装载检查通过。
+- 2026-11-19 原路线卡点复核：stage 140 的两个 `type=9` 开场事件缺少 `branch_flag=13`，JSON 覆盖层因此无法触发选择后的路线对白，最终落入未支持 transition；已在实际 JSON 与 ref JSON 同步补齐。另完成异常输出集中化：业务 `Error` 不再携带／打印栈，只有 `main.cpp` 最外层未捕获异常打印一次标准库 `std::stacktrace`；运行时参数、abort、terminate 和 Debug CRT 钩子不再重复打印栈。JSON 成功加载日志已移除；FluidSynth 仅保留错误级别 stderr，ANI/结局仍会按原资源表调用 MIDI 回调，不能视为全曲目都是 MP3。
 
 本文件不记录自动通关结论；流程003仍未验收。
+
+- 2026-11-19 重复加载修复：确认 OriginalEvents 的三个实例分别承担可变的 flags/units/事件状态，不能直接共用同一状态对象；其基础资源（BIN/PAL/KINDS/ITEMS）本已由共享资源缓存复用。此前删除成功日志只是隐藏证据，已改为 stage JSON 进程级静态缓存加互斥锁，并仅在首次实际解析时输出 JSON stage parsed；后续实例命中同一规范化路径不会重新解析。路由判定 OriginalCampaign::selected_route 与 Prologue 初始化改为复制现有 OriginalEvents 后重载 stage，避免额外构造基础资源上下文。clang-format dry-run 与 Release x64 构建通过。
+
+- 2026-11-19 CLI 路线回归：使用 Release --stdio --headless-speed，通过受限 skip_opening 仅跳过 53+658 帧真实开场动画，然后执行 new_game、setup_confirm、原对白推进和实际 story_choose。未修复前第一项在 stage=140 phase=2 event=2、第二项在 stage=140 phase=2 event=3 进入 campaign_blocked，stderr 为 Unsupported original prologue event transition。根因是 stage 140 的分支对白完成后清除了 route flag，通用 phase=branch 路径没有继续调度两个原版 type=9 收尾事件。现已按 stage 140 原事件顺序补充分支后的 route dialogue 调度；回归结果第一项进入 stage=1、第二项进入 stage=71，均处于下一关 prologue，未进入 blocked。第三项路径未改动。
+
+- 2026-11-19 第三路线第一关胜利条件修复：stage 201 JSON 明确为 mode=1、敌军为 id=51/54，玩家队伍随后追加在同一 units 容器。原 dispatch_campaign 用遇到第一个 behavior=2/3/8 后把后续所有单位归入 enemies，导致玩家单位被混入敌军列表；即使两个敌人死亡，mode=1 的 absent(enemies,0) 仍为 false，任务不结束。现改为逐单位调用 OriginalEvents::Unit::hostile() 分类，保持行为1盟友与行为2/3/8/9/10敌军的真实判定。Release x64 构建与 clang-format dry-run 通过。
+- 调用栈说明：此前每个 Result<Error> 创建时捕获 std::stacktrace，目的原本是定位错误调用来源，但会让普通可恢复的协议校验、资源失败、状态拒绝都付出栈捕获成本并打印完整栈，造成大量噪声和 Debug 卡顿；本轮没有恢复这种逐业务错误栈。当前保留 main.cpp 顶层未捕获异常的一次标准库栈输出，运行时 abort/purecall/terminate/CRT 参数错误保留一行明确错误，真正未捕获异常仍可定位。
+
+- 2026-11-19 队伍顺序修复：原 try_fresh() 先批量追加白志超线 11,14,15,13，再批量追加娜塔莉雅线 1,2,3,4，导致运行时存档军表实际为 11,14,15,13,1,2,3,4；第三路线 JSON 中的 player_party 顺序不能覆盖该军表顺序。现按攻略交错顺序直接创建为 11,1,14,15,13,2,3,4，因此娜塔莉雅在第二位；Release x64 构建与 clang-format dry-run 通过。尚未据此宣称第三路线第一关完整实战通关。
+- 2026-11-19 本轮修复：第三线战斗结算未设置 `OriginalCampaign::Runtime.mode`，导致 JSON 的 `mode=1` 全灭规则没有执行，现由当前 stage 的 JSON/BIN 模式写入 runtime。另修复自定义 stage 转场仍按原版 BIN 阶段范围校验的问题，并将 stage-140 的娜塔莉雅路线 `alternate_stage` 恢复为 71。Release x64 构建与 clang-format dry-run 通过；尚未冒称完整实战通关。

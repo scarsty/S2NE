@@ -17,9 +17,11 @@ int main(int argc, char** argv)
     } catch (const std::exception& error)
     {
         std::print(stderr, "S2NE: uncaught std::exception: {}\n", error.what());
+        s2ne::print_stack(s2ne::capture_stack());
         return s2ne::report_unexpected_exception();
     } catch (...)
     {
+        s2ne::print_stack(s2ne::capture_stack());
         return s2ne::report_unexpected_exception();
     }
 }

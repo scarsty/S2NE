@@ -1,780 +1,142 @@
 {
-  "map_id": 77,
-  "music": 18,
+  "map_id": 62,
+  "music": 2,
   "route": {
+    "interbattle_town_id": 0,
     "next_stage": 263,
     "alternate_stage": 0,
     "mode": 1,
-    "interbattle_town_id": 77,
     "fantasy_stage": 263
   },
   "units": [
     {
-      "id": 0,
-      "appearance": 131,
-      "name": "奚族平民",
-      "x": 20,
-      "y": 13,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 90,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 131,
-      "name": "奚族平民",
-      "x": 21,
-      "y": 16,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 90,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 131,
-      "name": "奚族平民",
-      "x": 22,
-      "y": 17,
+      "id": 156,
+      "appearance": 26,
+      "name": "大魔頭",
+      "x": 15,
+      "y": 33,
       "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 90,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 131,
-      "name": "奚族平民",
-      "x": 23,
-      "y": 19,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 90,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 131,
-      "name": "奚族平民",
-      "x": 22,
-      "y": 19,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 90,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 131,
-      "name": "奚族平民",
-      "x": 22,
-      "y": 21,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 90,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 131,
-      "name": "奚族平民",
-      "x": 20,
-      "y": 21,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 90,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 131,
-      "name": "奚族平民",
-      "x": 20,
-      "y": 23,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 90,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 131,
-      "name": "奚族平民",
-      "x": 19,
-      "y": 24,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 90,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 63,
-      "name": "邪惡女巫",
-      "x": 3,
-      "y": 45,
-      "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 3,
-      "hp": 231,
-      "max_hp": 91,
+      "hp": 6000,
+      "max_hp": 0,
       "equipment": [
-        34,
-        104,
-        159,
-        180,
+        85,
+        126,
         0,
-        0
+        0,
+        0,
+        230
       ]
     },
     {
-      "id": 0,
-      "appearance": 44,
-      "name": "小巫女",
-      "x": 4,
-      "y": 40,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 119,
-      "max_hp": 69,
-      "equipment": [
-        33,
-        103,
-        159,
-        167,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 44,
-      "name": "小巫女",
-      "x": 6,
+      "id": 158,
+      "appearance": 31,
+      "name": "程式魔頭",
+      "x": 21,
       "y": 44,
-      "direction": 2,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 119,
-      "max_hp": 69,
+      "behavior": 3,
+      "hp": 3600,
+      "max_hp": 450,
       "equipment": [
-        33,
-        103,
-        159,
-        167,
+        45,
+        126,
         0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 44,
-      "name": "小巫女",
-      "x": 3,
-      "y": 48,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 119,
-      "max_hp": 69,
-      "equipment": [
-        33,
-        103,
-        159,
-        167,
         0,
-        0
+        0,
+        238
       ]
     },
     {
-      "id": 0,
-      "appearance": 3,
-      "name": "提那城警衛",
-      "x": 14,
-      "y": 11,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 167,
-      "max_hp": 0,
-      "equipment": [
-        74,
-        129,
-        149,
-        168,
-        186,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "提那城警衛",
-      "x": 14,
-      "y": 14,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 167,
-      "max_hp": 0,
-      "equipment": [
-        74,
-        129,
-        149,
-        168,
-        186,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "提那城警衛",
-      "x": 1,
-      "y": 29,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 167,
-      "max_hp": 0,
-      "equipment": [
-        74,
-        129,
-        149,
-        168,
-        186,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "提那城警衛",
-      "x": 3,
-      "y": 32,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 167,
-      "max_hp": 0,
-      "equipment": [
-        74,
-        129,
-        149,
-        168,
-        186,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "提那城警衛",
-      "x": 12,
-      "y": 49,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 167,
-      "max_hp": 0,
-      "equipment": [
-        74,
-        129,
-        149,
-        168,
-        186,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "提那城警衛",
-      "x": 23,
-      "y": 19,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 4,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 167,
-      "max_hp": 0,
-      "equipment": [
-        74,
-        129,
-        149,
-        168,
-        186,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "提那城警衛",
-      "x": 22,
-      "y": 16,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 4,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 167,
-      "max_hp": 0,
-      "equipment": [
-        74,
-        129,
-        149,
-        168,
-        186,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "提那城警衛",
-      "x": 14,
-      "y": 11,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 7,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 167,
-      "max_hp": 0,
-      "equipment": [
-        74,
-        129,
-        149,
-        168,
-        186,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "提那城警衛",
-      "x": 13,
-      "y": 16,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 7,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 167,
-      "max_hp": 0,
-      "equipment": [
-        74,
-        129,
-        149,
-        168,
-        186,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 37,
-      "name": "女劍士",
-      "x": 12,
-      "y": 13,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 144,
-      "max_hp": 0,
-      "equipment": [
-        3,
-        128,
-        149,
-        168,
-        185,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 37,
-      "name": "女劍士",
-      "x": 12,
-      "y": 16,
+      "id": 159,
+      "appearance": 77,
+      "name": "企劃魔頭",
+      "x": 7,
+      "y": 36,
       "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 144,
-      "max_hp": 0,
+      "behavior": 3,
+      "hp": 4500,
+      "max_hp": 500,
       "equipment": [
-        3,
-        128,
-        149,
-        168,
-        185,
-        0
+        59,
+        126,
+        0,
+        0,
+        0,
+        239
       ]
     },
     {
-      "id": 0,
-      "appearance": 37,
-      "name": "女劍士",
-      "x": 1,
-      "y": 32,
-      "direction": 2,
+      "id": 157,
+      "appearance": 23,
+      "name": "效果魔頭",
+      "x": 25,
+      "y": 79,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 144,
+      "behavior": 3,
+      "hp": 5600,
       "max_hp": 0,
       "equipment": [
-        3,
-        128,
-        149,
-        168,
-        185,
-        0
+        15,
+        126,
+        0,
+        0,
+        0,
+        240
       ]
     },
     {
-      "id": 0,
-      "appearance": 37,
-      "name": "女劍士",
-      "x": 11,
-      "y": 50,
-      "direction": 2,
+      "id": 155,
+      "appearance": 118,
+      "name": "造型魔頭",
+      "x": 15,
+      "y": 59,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 144,
-      "max_hp": 0,
+      "behavior": 3,
+      "hp": 5000,
+      "max_hp": 300,
       "equipment": [
-        3,
-        128,
-        149,
-        168,
-        185,
-        0
+        28,
+        126,
+        0,
+        0,
+        0,
+        243
       ]
     },
     {
-      "id": 0,
-      "appearance": 37,
-      "name": "女劍士",
-      "x": 22,
-      "y": 17,
+      "id": 149,
+      "appearance": 131,
+      "name": "插花魔頭",
+      "x": 16,
+      "y": 42,
       "direction": 0,
       "animation_action": 0,
-      "first_turn": 4,
+      "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 144,
+      "behavior": 3,
+      "hp": 999,
       "max_hp": 0,
       "equipment": [
-        3,
-        128,
-        149,
-        168,
-        185,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 37,
-      "name": "女劍士",
-      "x": 21,
-      "y": 19,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 4,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 144,
-      "max_hp": 0,
-      "equipment": [
-        3,
-        128,
-        149,
-        168,
-        185,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 37,
-      "name": "女劍士",
-      "x": 14,
-      "y": 13,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 7,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 144,
-      "max_hp": 0,
-      "equipment": [
-        3,
-        128,
-        149,
-        168,
-        185,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 37,
-      "name": "女劍士",
-      "x": 12,
-      "y": 13,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 7,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 144,
-      "max_hp": 0,
-      "equipment": [
-        3,
-        128,
-        149,
-        168,
-        185,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 6,
-      "name": "拳術學徒",
-      "x": 24,
-      "y": 48,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 5,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 175,
-      "max_hp": 0,
-      "equipment": [
+        83,
+        126,
         0,
-        102,
-        147,
-        171,
         0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 6,
-      "name": "拳術學徒",
-      "x": 23,
-      "y": 50,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 5,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 175,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        102,
-        147,
-        171,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 6,
-      "name": "拳術學徒",
-      "x": 23,
-      "y": 48,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 5,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 175,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        102,
-        147,
-        171,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 6,
-      "name": "拳術學徒",
-      "x": 23,
-      "y": 46,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 5,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 175,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        102,
-        147,
-        171,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 6,
-      "name": "拳術學徒",
-      "x": 21,
-      "y": 46,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 5,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 175,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        102,
-        147,
-        171,
         0,
         0
       ]
@@ -785,9 +147,9 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 17,
-        "y": 27,
-        "direction": 0
+        "x": 4,
+        "y": 82,
+        "direction": 2
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -796,9 +158,9 @@
       "slot": 1,
       "role_id": 1,
       "deployment": {
-        "x": 18,
-        "y": 27,
-        "direction": 0
+        "x": 3,
+        "y": 82,
+        "direction": 2
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -807,9 +169,9 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 19,
-        "y": 27,
-        "direction": 0
+        "x": 2,
+        "y": 82,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -818,9 +180,9 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 16,
-        "y": 27,
-        "direction": 0
+        "x": 3,
+        "y": 80,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -829,9 +191,9 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 18,
-        "y": 25,
-        "direction": 0
+        "x": 2,
+        "y": 84,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -840,9 +202,9 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 17,
-        "y": 29,
-        "direction": 0
+        "x": 4,
+        "y": 84,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -851,9 +213,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 15,
-        "y": 27,
-        "direction": 0
+        "x": 1,
+        "y": 82,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -862,9 +224,9 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 17,
-        "y": 26,
-        "direction": 0
+        "x": 3,
+        "y": 84,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -872,86 +234,86 @@
   ],
   "deployment": [
     {
-      "x": 17,
-      "y": 27,
-      "direction": 0,
+      "x": 4,
+      "y": 82,
+      "direction": 2,
       "role_id": 11,
       "fixed": true
     },
     {
-      "x": 18,
-      "y": 27,
-      "direction": 0,
+      "x": 3,
+      "y": 82,
+      "direction": 2,
       "role_id": 1,
       "fixed": true
     },
     {
-      "x": 19,
-      "y": 27,
-      "direction": 0,
+      "x": 2,
+      "y": 82,
+      "direction": 2,
       "role_id": 14,
       "fixed": false
     },
     {
-      "x": 16,
-      "y": 27,
-      "direction": 0,
+      "x": 3,
+      "y": 80,
+      "direction": 2,
       "role_id": 15,
       "fixed": false
     },
     {
-      "x": 18,
-      "y": 25,
-      "direction": 0,
+      "x": 2,
+      "y": 84,
+      "direction": 2,
       "role_id": 13,
       "fixed": false
     },
     {
-      "x": 17,
-      "y": 29,
-      "direction": 0,
+      "x": 4,
+      "y": 84,
+      "direction": 2,
       "role_id": 2,
       "fixed": false
     },
     {
-      "x": 15,
-      "y": 27,
-      "direction": 0,
+      "x": 1,
+      "y": 82,
+      "direction": 2,
+      "role_id": 3,
+      "fixed": false
+    },
+    {
+      "x": 3,
+      "y": 84,
+      "direction": 2,
+      "role_id": 4,
+      "fixed": false
+    },
+    {
+      "x": 2,
+      "y": 80,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 17,
-      "y": 26,
-      "direction": 0,
+      "x": 4,
+      "y": 81,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 17,
-      "y": 28,
-      "direction": 0,
+      "x": 4,
+      "y": 83,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 20,
-      "y": 27,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 14,
-      "y": 27,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 16,
-      "y": 26,
-      "direction": 0,
+      "x": 5,
+      "y": 82,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     }
@@ -962,11 +324,11 @@
       1
     ],
     "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
-    "strength_score": 6718.0,
-    "base_stage": 77
+    "base_stage": 62,
+    "strength_score": 0
   },
   "objects": [],
-  "name": "撤退保護戰",
+  "name": "瘋人院",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",
@@ -982,46 +344,145 @@
       },
       "lines": [
         {
-          "speaker": 1,
-          "name": "娜塔莉雅",
-          "text": "警衛可能會隨時會追上來，我們要快點攻下小橋！"
+          "speaker": 155,
+          "name": "造型魔頭",
+          "text": "....報告，又有無聊的玩家上門挑戰了。"
+        },
+        {
+          "speaker": 157,
+          "name": "效果魔頭",
+          "text": "煩不煩啊，每次都來打擾進度，真是找碴！"
+        },
+        {
+          "speaker": 156,
+          "name": "大魔頭",
+          "text": "....上次還搶走我的棒棒糖，這次絕不能輕饒這些臭玩家！"
+        },
+        {
+          "speaker": 158,
+          "name": "程式魔頭",
+          "text": "贊成，我要痛扁這些沒事愛找隱關的傢伙！"
+        },
+        {
+          "speaker": 159,
+          "name": "企劃魔頭",
+          "text": "這次我們可是變得難纏多喔，嘿嘿嘿....。"
+        },
+        {
+          "speaker": 149,
+          "name": "插花魔頭",
+          "text": "預告....預告....新遊戲@@WA7,00D3D@@古文明霸王傳@@RWRD@@即將在七月上市，敬請期待....。"
+        },
+        {
+          "speaker": 157,
+          "name": "效果魔頭",
+          "text": "喂，另一組的，沒事不要來插花....。"
+        },
+        {
+          "speaker": 155,
+          "name": "造型魔頭",
+          "text": "對嘛，快回去趕進度！"
+        }
+      ]
+    },
+    {
+      "type": 3,
+      "completion_flag": 0,
+      "condition": 2,
+      "role_id": 155,
+      "lines": [
+        {
+          "speaker": 155,
+          "name": "造型魔頭",
+          "text": "什麼？這樣還會輸....？"
+        }
+      ]
+    },
+    {
+      "type": 3,
+      "completion_flag": 0,
+      "condition": 2,
+      "role_id": 157,
+      "lines": [
+        {
+          "speaker": 157,
+          "name": "效果魔頭",
+          "text": "....升天了....升天了....。"
+        }
+      ]
+    },
+    {
+      "type": 3,
+      "completion_flag": 0,
+      "condition": 2,
+      "role_id": 156,
+      "lines": [
+        {
+          "speaker": 156,
+          "name": "大魔頭",
+          "text": "哇....連法寶都被炸掉了！"
+        }
+      ]
+    },
+    {
+      "type": 3,
+      "completion_flag": 0,
+      "condition": 2,
+      "role_id": 158,
+      "lines": [
+        {
+          "speaker": 158,
+          "name": "程式魔頭",
+          "text": "又輸了，下次要改成不死身！"
+        }
+      ]
+    },
+    {
+      "type": 3,
+      "completion_flag": 0,
+      "condition": 2,
+      "role_id": 159,
+      "lines": [
+        {
+          "speaker": 159,
+          "name": "企劃魔頭",
+          "text": "怎麼還會這樣....你沒有用ＦＰＥ吧？"
+        }
+      ]
+    },
+    {
+      "type": 3,
+      "completion_flag": 0,
+      "condition": 2,
+      "role_id": 149,
+      "lines": [
+        {
+          "speaker": 149,
+          "name": "插花魔頭",
+          "text": "....別亂打，我只是來做廣告的....。"
         }
       ]
     },
     {
       "type": 2,
-      "completion_flag": 13,
+      "completion_flag": 0,
       "lines": [
         {
-          "speaker": 1,
-          "name": "娜塔莉雅",
-          "text": "快點！往這裡走！"
+          "speaker": 156,
+          "name": "大魔頭",
+          "text": "最近的玩家越來越犀利了耶....。"
+        },
+        {
+          "speaker": 158,
+          "name": "程式魔頭",
+          "text": "每次出場都被扁，好像自找罪受！"
+        },
+        {
+          "speaker": 159,
+          "name": "企劃魔頭",
+          "text": "下次要設３２種特殊能力！！！等著瞧吧！"
         }
       ]
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 11,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 10,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 12,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 10,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
     }
   ]
 }

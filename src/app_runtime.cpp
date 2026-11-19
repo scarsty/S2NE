@@ -277,7 +277,7 @@ int s2ne::run_application(int argc, char** argv)
         }
         std::vector<uint8_t> rgba(640 * 480 * 4);
         size_t clip = 0;
-        bool running = true, paused = false, inMenu = false, inSetup = false;
+        bool running = true, paused = true, inMenu = false, inSetup = false;
         std::optional<s2ne::OriginalAniAudio> aniAudio;
         unsigned aniFrame = 1;
         auto stopEffects = [&]() -> s2ne::Result<bool>
@@ -326,6 +326,7 @@ int s2ne::run_application(int argc, char** argv)
             }
             else if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
         };
+        showMenu();
         std::unique_ptr<s2ne::Prologue> prologue;
         std::optional<s2ne::OriginalSettings> settings;
         std::optional<s2ne::OriginalBattleMenu> battleMenu;
@@ -2124,6 +2125,15 @@ int s2ne::run_application(int argc, char** argv)
                             response["completed_steps"] = 0;
                             stdioTransaction = response;
                             continue;
+                        }
+                        else if (command == "skip_opening")
+                        {
+                            if (!stdio || prologue) { throw std::runtime_error("opening skip requires the original opening screen"); }
+                            if (!inMenu)
+                            {
+                                clip = clips.size();
+                                showMenu();
+                            }
                         }
                         else if (command == "new_game")
                         {

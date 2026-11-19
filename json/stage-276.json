@@ -1,363 +1,517 @@
 {
-  "map_id": 112,
-  "music": 32,
+  "map_id": 76,
+  "music": 6,
   "route": {
-    "next_stage": 277,
+    "interbattle_town_id": 76,
+    "next_stage": 207,
     "alternate_stage": 0,
     "mode": 1,
-    "interbattle_town_id": 112,
-    "fantasy_stage": 277
+    "fantasy_stage": 207
   },
   "units": [
     {
-      "id": 126,
-      "appearance": 76,
-      "name": "暹族靈長老",
-      "x": 14,
-      "y": 15,
-      "direction": 0,
+      "id": 110,
+      "appearance": 60,
+      "name": "弓兵統領",
+      "x": 1,
+      "y": 71,
+      "direction": 2,
       "animation_action": 0,
-      "first_turn": 1,
+      "first_turn": 8,
       "last_turn": 0,
       "behavior": 3,
-      "hp": 730,
-      "max_hp": 168,
+      "hp": 336,
+      "max_hp": 0,
       "equipment": [
-        41,
-        113,
-        161,
-        181,
-        199,
+        49,
+        120,
+        150,
+        170,
+        0,
         0
       ]
     },
     {
-      "id": 25,
-      "appearance": 22,
-      "name": "烏爾里克",
+      "id": 0,
+      "appearance": 20,
+      "name": "指揮官",
       "x": 10,
-      "y": 19,
-      "direction": 1,
+      "y": 33,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 8,
-      "hp": 600,
+      "hp": 320,
       "max_hp": 0,
       "equipment": [
-        71,
-        144,
-        153,
-        173,
-        191,
+        5,
+        120,
+        149,
+        171,
+        185,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 77,
-      "name": "暹族黑妖精",
-      "x": 11,
-      "y": 17,
-      "direction": 1,
+      "appearance": 48,
+      "name": "十字弓隊",
+      "x": 2,
+      "y": 66,
+      "direction": 2,
       "animation_action": 0,
-      "first_turn": 1,
+      "first_turn": 8,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 328,
-      "max_hp": 110,
+      "hp": 192,
+      "max_hp": 0,
       "equipment": [
-        52,
-        116,
+        48,
+        129,
         149,
-        177,
+        168,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 77,
-      "name": "暹族黑妖精",
-      "x": 4,
-      "y": 30,
-      "direction": 1,
+      "appearance": 48,
+      "name": "十字弓隊",
+      "x": 3,
+      "y": 72,
+      "direction": 2,
       "animation_action": 0,
-      "first_turn": 1,
+      "first_turn": 8,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 328,
-      "max_hp": 110,
+      "hp": 192,
+      "max_hp": 0,
       "equipment": [
-        52,
-        116,
+        48,
+        129,
         149,
-        177,
+        168,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 77,
-      "name": "暹族黑妖精",
+      "appearance": 48,
+      "name": "十字弓隊",
+      "x": 1,
+      "y": 68,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 8,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 192,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 48,
+      "name": "十字弓隊",
+      "x": 3,
+      "y": 69,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 8,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 192,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 48,
+      "name": "十字弓隊",
+      "x": 1,
+      "y": 75,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 8,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 192,
+      "max_hp": 0,
+      "equipment": [
+        48,
+        129,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 14,
+      "name": "忍者",
       "x": 12,
-      "y": 30,
-      "direction": 1,
+      "y": 63,
+      "direction": 3,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 328,
-      "max_hp": 110,
+      "hp": 172,
+      "max_hp": 0,
       "equipment": [
-        52,
-        116,
+        18,
+        100,
         149,
-        177,
+        168,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 77,
-      "name": "暹族黑妖精",
-      "x": 11,
-      "y": 46,
-      "direction": 1,
+      "appearance": 14,
+      "name": "忍者",
+      "x": 22,
+      "y": 69,
+      "direction": 3,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 328,
-      "max_hp": 110,
+      "hp": 172,
+      "max_hp": 0,
       "equipment": [
-        52,
-        116,
+        18,
+        100,
         149,
-        177,
+        168,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 45,
-      "name": "暹族女戰士",
-      "x": 9,
-      "y": 21,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 410,
-      "max_hp": 0,
-      "equipment": [
-        71,
-        144,
-        152,
-        173,
-        191,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 45,
-      "name": "暹族女戰士",
-      "x": 13,
-      "y": 25,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 410,
-      "max_hp": 0,
-      "equipment": [
-        71,
-        144,
-        152,
-        173,
-        191,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 45,
-      "name": "暹族女戰士",
-      "x": 8,
+      "appearance": 14,
+      "name": "忍者",
+      "x": 15,
       "y": 34,
       "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 410,
+      "hp": 172,
       "max_hp": 0,
       "equipment": [
-        71,
-        144,
-        152,
-        173,
-        191,
+        18,
+        100,
+        149,
+        168,
+        0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 45,
-      "name": "暹族女戰士",
-      "x": 16,
-      "y": 31,
+      "appearance": 14,
+      "name": "忍者",
+      "x": 7,
+      "y": 33,
       "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 410,
+      "hp": 172,
       "max_hp": 0,
       "equipment": [
-        71,
-        144,
-        152,
-        173,
-        191,
+        18,
+        100,
+        149,
+        168,
+        0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 45,
-      "name": "暹族女戰士",
-      "x": 13,
-      "y": 42,
-      "direction": 1,
+      "appearance": 14,
+      "name": "忍者",
+      "x": 3,
+      "y": 71,
+      "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 410,
+      "hp": 172,
       "max_hp": 0,
       "equipment": [
-        71,
-        144,
-        152,
-        173,
-        191,
+        18,
+        100,
+        149,
+        168,
+        0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 30,
-      "name": "暹族大魔道",
-      "x": 5,
-      "y": 29,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 306,
-      "max_hp": 148,
-      "equipment": [
-        44,
-        109,
-        160,
-        180,
-        228,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 30,
-      "name": "暹族大魔道",
-      "x": 11,
-      "y": 25,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 306,
-      "max_hp": 148,
-      "equipment": [
-        44,
-        109,
-        160,
-        180,
-        228,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 30,
-      "name": "暹族大魔道",
+      "appearance": 9,
+      "name": "魔法師",
       "x": 15,
+      "y": 58,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 109,
+      "max_hp": 65,
+      "equipment": [
+        32,
+        99,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 9,
+      "name": "魔法師",
+      "x": 21,
+      "y": 71,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 109,
+      "max_hp": 65,
+      "equipment": [
+        32,
+        99,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 9,
+      "name": "魔法師",
+      "x": 9,
+      "y": 37,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 109,
+      "max_hp": 65,
+      "equipment": [
+        32,
+        99,
+        149,
+        168,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 9,
+      "name": "魔法師",
+      "x": 13,
       "y": 38,
       "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 306,
-      "max_hp": 148,
+      "hp": 109,
+      "max_hp": 65,
       "equipment": [
-        44,
-        109,
-        160,
-        180,
-        228,
+        32,
+        99,
+        149,
+        168,
+        0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 30,
-      "name": "暹族大魔道",
-      "x": 8,
-      "y": 51,
-      "direction": 1,
+      "appearance": 38,
+      "name": "長槍兵",
+      "x": 14,
+      "y": 60,
+      "direction": 3,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 306,
-      "max_hp": 148,
+      "hp": 154,
+      "max_hp": 0,
       "equipment": [
-        44,
-        109,
-        160,
-        180,
-        228,
+        74,
+        129,
+        149,
+        168,
+        186,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 30,
-      "name": "暹族大魔道",
-      "x": 9,
-      "y": 17,
+      "appearance": 38,
+      "name": "長槍兵",
+      "x": 20,
+      "y": 73,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 154,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        149,
+        168,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 38,
+      "name": "長槍兵",
+      "x": 13,
+      "y": 33,
       "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 306,
-      "max_hp": 148,
+      "hp": 154,
+      "max_hp": 0,
       "equipment": [
-        44,
-        109,
-        160,
-        180,
-        228,
+        74,
+        129,
+        149,
+        168,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 38,
+      "name": "長槍兵",
+      "x": 1,
+      "y": 67,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 154,
+      "max_hp": 0,
+      "equipment": [
+        74,
+        129,
+        149,
+        168,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "守門戰士",
+      "x": 11,
+      "y": 67,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 248,
+      "max_hp": 0,
+      "equipment": [
+        62,
+        129,
+        150,
+        168,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "守門戰士",
+      "x": 10,
+      "y": 65,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 248,
+      "max_hp": 0,
+      "equipment": [
+        62,
+        129,
+        150,
+        168,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "守門戰士",
+      "x": 14,
+      "y": 74,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 248,
+      "max_hp": 0,
+      "equipment": [
+        62,
+        129,
+        150,
+        168,
+        186,
         0
       ]
     }
@@ -367,9 +521,9 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 17,
-        "y": 53,
-        "direction": 3
+        "x": 1,
+        "y": 45,
+        "direction": 2
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -378,9 +532,9 @@
       "slot": 1,
       "role_id": 1,
       "deployment": {
-        "x": 14,
-        "y": 57,
-        "direction": 3
+        "x": 2,
+        "y": 47,
+        "direction": 2
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -389,9 +543,9 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 17,
-        "y": 51,
-        "direction": 3
+        "x": 2,
+        "y": 49,
+        "direction": 1
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -400,9 +554,9 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 16,
-        "y": 55,
-        "direction": 3
+        "x": 1,
+        "y": 49,
+        "direction": 1
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -411,9 +565,9 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 16,
-        "y": 57,
-        "direction": 3
+        "x": 0,
+        "y": 47,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -422,9 +576,9 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 15,
-        "y": 55,
-        "direction": 3
+        "x": 2,
+        "y": 44,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -433,9 +587,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 16,
-        "y": 53,
-        "direction": 3
+        "x": 1,
+        "y": 47,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -444,9 +598,9 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 15,
-        "y": 57,
-        "direction": 3
+        "x": 1,
+        "y": 44,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -454,86 +608,86 @@
   ],
   "deployment": [
     {
-      "x": 17,
-      "y": 53,
-      "direction": 3,
+      "x": 1,
+      "y": 45,
+      "direction": 2,
       "role_id": 11,
       "fixed": true
     },
     {
-      "x": 14,
-      "y": 57,
-      "direction": 3,
+      "x": 2,
+      "y": 47,
+      "direction": 2,
       "role_id": 1,
       "fixed": true
     },
     {
-      "x": 17,
-      "y": 51,
-      "direction": 3,
+      "x": 2,
+      "y": 49,
+      "direction": 1,
       "role_id": 14,
       "fixed": false
     },
     {
-      "x": 16,
-      "y": 55,
-      "direction": 3,
+      "x": 1,
+      "y": 49,
+      "direction": 1,
       "role_id": 15,
       "fixed": false
     },
     {
-      "x": 16,
-      "y": 57,
-      "direction": 3,
+      "x": 0,
+      "y": 47,
+      "direction": 2,
       "role_id": 13,
       "fixed": false
     },
     {
-      "x": 15,
-      "y": 55,
-      "direction": 3,
+      "x": 2,
+      "y": 44,
+      "direction": 2,
       "role_id": 2,
       "fixed": false
     },
     {
-      "x": 16,
-      "y": 53,
-      "direction": 3,
-      "role_id": 3,
-      "fixed": false
-    },
-    {
-      "x": 15,
-      "y": 57,
-      "direction": 3,
-      "role_id": 4,
-      "fixed": false
-    },
-    {
-      "x": 13,
-      "y": 57,
-      "direction": 3,
+      "x": 1,
+      "y": 47,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 17,
-      "y": 52,
-      "direction": 3,
+      "x": 1,
+      "y": 44,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 17,
-      "y": 54,
-      "direction": 3,
+      "x": 1,
+      "y": 46,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 18,
-      "y": 53,
-      "direction": 3,
+      "x": 2,
+      "y": 45,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 1,
+      "y": 48,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 1,
+      "y": 50,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     }
@@ -544,11 +698,11 @@
       1
     ],
     "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
-    "strength_score": 7822.0,
-    "base_stage": 112
+    "base_stage": 76,
+    "strength_score": 0
   },
   "objects": [],
-  "name": "遊說者",
+  "name": "引起騷動",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",
@@ -557,98 +711,103 @@
   "events": [
     {
       "type": 1,
-      "completion_flag": 0,
+      "completion_flag": 13,
       "trigger": {
         "kind": "turn",
         "turn": 1
       },
       "lines": [
         {
-          "speaker": 126,
-          "name": "暹族靈長老",
-          "text": "....烏村長，看來奚族的人比你想像中的還要機靈的多啊。"
-        },
-        {
-          "speaker": 25,
-          "name": "烏爾里克",
-          "text": "靈長老不用激我，反正事情已經揭開了，我也不在乎了。"
-        },
-        {
-          "speaker": 126,
-          "name": "暹族靈長老",
-          "text": "娜塔莉雅....也真有妳的，居然能趕得回來。在我們的計劃中覺得最礙事的就是妳，居然還是被妳壞了事，妳真該感到驕傲啊....。"
-        },
-        {
-          "speaker": 25,
-          "name": "烏爾里克",
-          "text": "哼....娜塔莉雅，我早就看妳不順眼了，今天正是大好良機，讓我送妳上路吧！"
-        },
-        {
-          "speaker": 1,
-          "name": "娜塔莉雅",
-          "text": "....就這樣？"
-        },
-        {
-          "speaker": 25,
-          "name": "烏爾里克",
-          "text": "什麼就這樣？"
-        },
-        {
-          "speaker": 1,
-          "name": "娜塔莉雅",
-          "text": "你們的人一路上只會放話要對付我，到現在我還是一點事也沒有，部落裡也沒出什麼大事....這就是你們得到優良裝備後所謂的周詳準備嗎？"
-        },
-        {
-          "speaker": 25,
-          "name": "烏爾里克",
-          "text": "等著吧！等我把妳的人頭砍下來的時候妳就知道我的本事了！"
+          "speaker": 5,
+          "name": "古斯塔夫",
+          "text": "娜塔，我們的目標是什麼？"
         }
       ]
     },
     {
-      "type": 3,
+      "type": 8,
       "completion_flag": 0,
-      "condition": 2,
-      "role_id": 25,
-      "lines": [
-        {
-          "speaker": 25,
-          "name": "烏爾里克",
-          "text": "哇....呀....！"
-        }
-      ]
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 21,
+        "offset_7": 73,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
     },
     {
-      "type": 3,
+      "type": 8,
       "completion_flag": 0,
-      "condition": 2,
-      "role_id": 126,
+      "condition": 7,
+      "raw_operands": {
+        "offset_3": 13,
+        "offset_5": 90,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed",
       "lines": [
         {
-          "speaker": 126,
-          "name": "暹族靈長老",
-          "text": "哼....想不到不死身的我也會....有這一天啊！"
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "看到通往城門口旁的兩枝軍旗了嗎？我們在那裡點火焚旗，把城內的守軍都引出來。"
+        },
+        {
+          "speaker": 3,
+          "name": "泰普",
+          "text": "放火？呵呵呵就交給我吧。"
+        },
+        {
+          "speaker": 2,
+          "name": "穆爾",
+          "text": "城門可不是等閒之地，隨時有敵軍會來支援的，我們可得快點。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "不錯，動作越快越安全。"
         }
       ]
     },
     {
-      "type": 2,
-      "completion_flag": 13,
+      "type": 1,
+      "completion_flag": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 8
+      },
       "lines": [
         {
-          "speaker": 1,
-          "name": "娜塔莉雅",
-          "text": "....原本平靜的局面只因為南方領提供了裝備就變成衝突的局面，人心真不可測啊....。"
-        },
+          "speaker": 110,
+          "name": "弓兵統領",
+          "text": "還站在原地發呆啊！不要死守原地，攻擊入侵者！"
+        }
+      ]
+    },
+    {
+      "type": 9,
+      "completion_flag": 14
+    },
+    {
+      "type": 13,
+      "completion_flag": 0,
+      "condition": 1,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 168,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 9,
+      "completion_flag": 3,
+      "lines": [
         {
-          "speaker": 35,
-          "name": "歐西德",
-          "text": "就算不談這裡的事，貝洛與夏普的衝突又何嘗不是肇因於新裝備的提供。"
-        },
-        {
-          "speaker": 1,
-          "name": "娜塔莉雅",
-          "text": "好，也該去注意南方領的動態了。"
+          "speaker": 6,
+          "name": "黛西",
+          "text": "大功告成！"
         }
       ]
     },
@@ -657,7 +816,7 @@
       "completion_flag": 0,
       "condition": 11,
       "raw_operands": {
-        "offset_3": 13,
+        "offset_3": 8,
         "offset_5": 10,
         "offset_7": 0,
         "offset_9": 0
@@ -669,12 +828,23 @@
       "completion_flag": 0,
       "condition": 12,
       "raw_operands": {
-        "offset_3": 13,
+        "offset_3": 8,
         "offset_5": 15,
         "offset_7": 0,
         "offset_9": 0
       },
       "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 9,
+      "completion_flag": 4,
+      "lines": [
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "起火了，我們快走。"
+        }
+      ]
     }
   ]
 }

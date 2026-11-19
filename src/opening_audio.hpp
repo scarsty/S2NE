@@ -29,10 +29,9 @@ class OpeningAudio
     int midi_volume_{ 100 }, cd_volume_{ 100 };
     std::unique_ptr<OriginalEffectAudio> effects_;
     std::atomic<unsigned long long> signal_samples{ 0 };
-    static void fluid_log(int, const char* message, void*)
+    static void fluid_log(int level, const char* message, void*)
     {
-        // FluidSynth默认INFO输出到stdout，会污染JSONL协议；保留诊断但固定送stderr。
-        std::println(stderr, "fluidsynth: {}", message ? message : "");
+        if (level <= FLUID_ERR) { std::println(stderr, "fluidsynth: {}", message ? message : ""); }
     }
     static void SDLCALL monitor(void* userdata, MIX_Mixer*, const SDL_AudioSpec*, float* pcm, int samples)
     {

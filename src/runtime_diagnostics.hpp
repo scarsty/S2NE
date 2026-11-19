@@ -21,7 +21,6 @@ namespace s2ne
 inline void invalid_runtime_parameter(const wchar_t*, const wchar_t*, const wchar_t*, unsigned int, uintptr_t)
 {
     std::print(stderr, "S2NE: invalid C/C++ runtime parameter; terminating.\n");
-    print_stack(capture_stack());
     std::fflush(stderr);
     std::_Exit(EXIT_FAILURE);
 }
@@ -46,21 +45,18 @@ inline void configure_runtime_diagnostics()
     std::signal(SIGABRT, [](int)
         {
             std::print(stderr, "S2NE: runtime abort/assertion failure; terminating.\n");
-            print_stack(capture_stack());
             std::fflush(stderr);
             std::_Exit(EXIT_FAILURE);
         });
     _set_purecall_handler([]
         {
             std::print(stderr, "S2NE: pure virtual function call; terminating.\n");
-            print_stack(capture_stack());
             std::fflush(stderr);
             std::_Exit(EXIT_FAILURE);
         });
     std::set_terminate([]
         {
             std::print(stderr, "S2NE: unhandled C++ exception or terminate request.\n");
-            print_stack(capture_stack());
             std::fflush(stderr);
             std::_Exit(EXIT_FAILURE);
         });
@@ -68,7 +64,6 @@ inline void configure_runtime_diagnostics()
 #ifdef _DEBUG
     _CrtSetReportHook([](int, char*, int*) -> int
         {
-            print_stack(capture_stack());
             return FALSE;
         });
     for (int type : { _CRT_WARN, _CRT_ERROR, _CRT_ASSERT })

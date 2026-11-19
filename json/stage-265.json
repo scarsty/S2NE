@@ -1,363 +1,340 @@
 {
-  "map_id": 98,
-  "music": 23,
+  "map_id": 65,
+  "music": 6,
   "route": {
     "next_stage": 266,
     "alternate_stage": 0,
     "mode": 1,
-    "interbattle_town_id": 98,
     "fantasy_stage": 266
   },
   "units": [
     {
-      "id": 74,
-      "appearance": 24,
-      "name": "聖堂騎士",
-      "x": 2,
-      "y": 49,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 3,
-      "hp": 416,
-      "max_hp": 64,
-      "equipment": [
-        80,
-        136,
-        157,
-        178,
-        197,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 56,
-      "name": "吟唱使者",
-      "x": 4,
-      "y": 50,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 8,
-      "hp": 280,
-      "max_hp": 140,
-      "equipment": [
-        38,
-        110,
-        160,
-        180,
-        198,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 56,
-      "name": "吟唱使者",
+      "id": 28,
+      "appearance": 123,
+      "name": "拉拉",
       "x": 10,
-      "y": 43,
-      "direction": 2,
+      "y": 33,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 8,
-      "hp": 280,
-      "max_hp": 140,
-      "equipment": [
-        38,
-        110,
-        160,
-        180,
-        198,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 56,
-      "name": "吟唱使者",
-      "x": 2,
-      "y": 40,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 8,
-      "hp": 280,
-      "max_hp": 140,
-      "equipment": [
-        38,
-        110,
-        160,
-        180,
-        198,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 62,
-      "name": "聖職護佐",
-      "x": 2,
-      "y": 44,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 8,
-      "hp": 296,
-      "max_hp": 136,
-      "equipment": [
-        38,
-        110,
-        160,
-        180,
-        193,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 62,
-      "name": "聖職護佐",
-      "x": 8,
-      "y": 36,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 8,
-      "hp": 296,
-      "max_hp": 136,
-      "equipment": [
-        38,
-        110,
-        160,
-        180,
-        193,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 62,
-      "name": "聖職護佐",
-      "x": 7,
-      "y": 44,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 8,
-      "hp": 296,
-      "max_hp": 136,
-      "equipment": [
-        38,
-        110,
-        160,
-        180,
-        193,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 11,
-      "name": "十字劍士",
-      "x": 11,
-      "y": 43,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 332,
+      "behavior": 1,
+      "hp": 640,
       "max_hp": 0,
       "equipment": [
-        6,
-        121,
-        149,
-        169,
-        189,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 11,
-      "name": "十字劍士",
-      "x": 17,
-      "y": 38,
+      "appearance": 99,
+      "name": "龍寶寶",
+      "x": 10,
+      "y": 29,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 360,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 99,
+      "name": "龍寶寶",
+      "x": 12,
+      "y": 31,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 360,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 99,
+      "name": "龍寶寶",
+      "x": 12,
+      "y": 26,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 360,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 99,
+      "name": "龍寶寶",
+      "x": 12,
+      "y": 40,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 360,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 106,
+      "name": "魔力鳥",
+      "x": 20,
+      "y": 44,
       "direction": 3,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 332,
-      "max_hp": 0,
+      "hp": 256,
+      "max_hp": 120,
       "equipment": [
-        6,
-        121,
-        149,
-        169,
-        189,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 11,
-      "name": "十字劍士",
-      "x": 8,
-      "y": 31,
+      "appearance": 106,
+      "name": "魔力鳥",
+      "x": 4,
+      "y": 46,
       "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 332,
-      "max_hp": 0,
+      "hp": 256,
+      "max_hp": 120,
       "equipment": [
-        6,
-        121,
-        149,
-        169,
-        189,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 11,
-      "name": "十字劍士",
-      "x": 6,
-      "y": 30,
-      "direction": 2,
+      "appearance": 106,
+      "name": "魔力鳥",
+      "x": 17,
+      "y": 64,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 332,
-      "max_hp": 0,
+      "hp": 256,
+      "max_hp": 120,
       "equipment": [
-        6,
-        121,
-        149,
-        169,
-        189,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 11,
-      "name": "十字劍士",
-      "x": 12,
-      "y": 39,
-      "direction": 2,
+      "appearance": 106,
+      "name": "魔力鳥",
+      "x": 10,
+      "y": 58,
+      "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 332,
-      "max_hp": 0,
+      "hp": 256,
+      "max_hp": 120,
       "equipment": [
-        6,
-        121,
-        149,
-        169,
-        189,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 11,
-      "name": "十字劍士",
-      "x": 3,
-      "y": 40,
-      "direction": 2,
+      "appearance": 121,
+      "name": "異界獸",
+      "x": 19,
+      "y": 42,
+      "direction": 3,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 332,
+      "hp": 408,
       "max_hp": 0,
       "equipment": [
-        6,
-        121,
-        149,
-        169,
-        189,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 11,
-      "name": "十字劍士",
-      "x": 7,
+      "appearance": 121,
+      "name": "異界獸",
+      "x": 15,
       "y": 50,
-      "direction": 2,
+      "direction": 3,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 332,
+      "hp": 408,
       "max_hp": 0,
       "equipment": [
-        6,
-        121,
-        149,
-        169,
-        189,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 11,
-      "name": "十字劍士",
-      "x": 1,
+      "appearance": 121,
+      "name": "異界獸",
+      "x": 5,
+      "y": 45,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 408,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 121,
+      "name": "異界獸",
+      "x": 10,
+      "y": 59,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 408,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 121,
+      "name": "異界獸",
+      "x": 4,
       "y": 55,
       "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 332,
+      "hp": 408,
       "max_hp": 0,
       "equipment": [
-        6,
-        121,
-        149,
-        169,
-        189,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 11,
-      "name": "十字劍士",
-      "x": 6,
-      "y": 55,
-      "direction": 2,
+      "appearance": 121,
+      "name": "異界獸",
+      "x": 22,
+      "y": 62,
+      "direction": 3,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 332,
+      "hp": 408,
       "max_hp": 0,
       "equipment": [
-        6,
-        121,
-        149,
-        169,
-        189,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ]
     }
@@ -367,192 +344,179 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 13,
-        "y": 17,
-        "direction": 0
+        "x": 3,
+        "y": 62,
+        "direction": 2
       },
-      "mandatory_role": true,
-      "source": "original stage-1/stage-71 roster"
+      "mandatory_role": false,
+      "source": "save.group[0].units"
     },
     {
       "slot": 1,
-      "role_id": 1,
+      "role_id": 14,
       "deployment": {
-        "x": 16,
-        "y": 22,
-        "direction": 0
+        "x": 4,
+        "y": 64,
+        "direction": 2
       },
-      "mandatory_role": true,
-      "source": "original stage-1/stage-71 roster"
+      "mandatory_role": false,
+      "source": "save.group[0].units"
     },
     {
       "slot": 2,
-      "role_id": 14,
+      "role_id": 15,
       "deployment": {
-        "x": 15,
-        "y": 20,
-        "direction": 0
+        "x": 2,
+        "y": 68,
+        "direction": 2
       },
       "mandatory_role": false,
-      "source": "original stage-1/stage-71 roster"
+      "source": "save.group[0].units"
     },
     {
       "slot": 3,
-      "role_id": 15,
+      "role_id": 13,
       "deployment": {
-        "x": 12,
-        "y": 17,
-        "direction": 0
+        "x": 3,
+        "y": 64,
+        "direction": 2
       },
       "mandatory_role": false,
-      "source": "original stage-1/stage-71 roster"
+      "source": "save.group[0].units"
     },
     {
       "slot": 4,
-      "role_id": 13,
+      "role_id": 18,
       "deployment": {
-        "x": 14,
-        "y": 23,
-        "direction": 0
+        "x": 1,
+        "y": 64,
+        "direction": 2
       },
       "mandatory_role": false,
-      "source": "original stage-1/stage-71 roster"
+      "source": "save.group[0].units"
     },
     {
       "slot": 5,
-      "role_id": 2,
+      "role_id": 31,
       "deployment": {
-        "x": 11,
-        "y": 15,
-        "direction": 0
+        "x": 2,
+        "y": 66,
+        "direction": 2
       },
       "mandatory_role": false,
-      "source": "original stage-1/stage-71 roster"
+      "source": "save.group[0].units"
     },
     {
       "slot": 6,
-      "role_id": 3,
+      "role_id": 34,
       "deployment": {
-        "x": 14,
-        "y": 20,
-        "direction": 0
+        "x": 2,
+        "y": 64,
+        "direction": 2
       },
       "mandatory_role": false,
-      "source": "original stage-1/stage-71 roster"
+      "source": "save.group[0].units"
     },
     {
       "slot": 7,
-      "role_id": 4,
+      "role_id": 16,
       "deployment": {
-        "x": 15,
-        "y": 26,
-        "direction": 0
+        "x": 1,
+        "y": 66,
+        "direction": 2
       },
       "mandatory_role": false,
-      "source": "original stage-1/stage-71 roster"
+      "source": "save.group[0].units"
+    },
+    {
+      "slot": 8,
+      "role_id": 17,
+      "deployment": {
+        "x": 3,
+        "y": 66,
+        "direction": 2
+      },
+      "mandatory_role": false,
+      "source": "save.group[0].units"
     }
   ],
   "deployment": [
     {
-      "x": 13,
-      "y": 17,
-      "direction": 0,
+      "x": 3,
+      "y": 62,
+      "direction": 2,
       "role_id": 11,
-      "fixed": true
+      "fixed": false
     },
     {
-      "x": 16,
-      "y": 22,
-      "direction": 0,
-      "role_id": 1,
-      "fixed": true
-    },
-    {
-      "x": 15,
-      "y": 20,
-      "direction": 0,
+      "x": 4,
+      "y": 64,
+      "direction": 2,
       "role_id": 14,
       "fixed": false
     },
     {
-      "x": 12,
-      "y": 17,
-      "direction": 0,
+      "x": 2,
+      "y": 68,
+      "direction": 2,
       "role_id": 15,
       "fixed": false
     },
     {
-      "x": 14,
-      "y": 23,
-      "direction": 0,
+      "x": 3,
+      "y": 64,
+      "direction": 2,
       "role_id": 13,
       "fixed": false
     },
     {
-      "x": 11,
-      "y": 15,
-      "direction": 0,
-      "role_id": 2,
+      "x": 1,
+      "y": 64,
+      "direction": 2,
+      "role_id": 18,
       "fixed": false
     },
     {
-      "x": 14,
-      "y": 20,
-      "direction": 0,
-      "role_id": 3,
+      "x": 2,
+      "y": 66,
+      "direction": 2,
+      "role_id": 31,
       "fixed": false
     },
     {
-      "x": 15,
-      "y": 26,
-      "direction": 0,
-      "role_id": 4,
+      "x": 2,
+      "y": 64,
+      "direction": 2,
+      "role_id": 34,
       "fixed": false
     },
     {
-      "x": 15,
-      "y": 22,
-      "direction": 0,
-      "role_id": 0,
+      "x": 1,
+      "y": 66,
+      "direction": 2,
+      "role_id": 16,
       "fixed": false
     },
     {
-      "x": 13,
-      "y": 16,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 13,
-      "y": 18,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 14,
-      "y": 17,
-      "direction": 0,
-      "role_id": 0,
+      "x": 3,
+      "y": 66,
+      "direction": 2,
+      "role_id": 17,
       "fixed": false
     }
   ],
   "deployment_rules": {
-    "mandatory_role_ids": [
-      11,
-      1
-    ],
-    "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
-    "strength_score": 6732.0,
-    "base_stage": 98
+    "mandatory_role_ids": [],
+    "source": "original deployment flow; not inferred from fixed slot flag",
+    "base_stage": 65,
+    "strength_score": 0
   },
   "objects": [],
-  "name": "官道競力",
+  "name": "龍穴",
   "briefing": "",
   "objectives": {
-    "victory": "消滅所有敵軍。",
-    "defeat": "白志超或娜塔莉雅陣亡。"
+    "victory": "1.打敗所有的魔獸。",
+    "defeat": "白志超或拉拉陣亡。"
   },
   "events": [
     {
@@ -564,58 +528,16 @@
       },
       "lines": [
         {
-          "speaker": 4,
-          "name": "蘇",
-          "text": "....這麼多的教士，不會是夏普派來阻止我們的吧？"
+          "speaker": 18,
+          "name": "茱迪",
+          "text": "拉拉？"
         },
         {
-          "speaker": 35,
-          "name": "歐西德",
-          "text": "沒錯，這些人就是南方領握有的傭兵集團之一，專門打擊異己用的。"
-        },
-        {
-          "speaker": 1,
-          "name": "娜塔莉雅",
-          "text": "想不到聖堂騎士也被夏普收買了。"
-        },
-        {
-          "speaker": 74,
-          "name": "聖堂騎士",
-          "text": "收買？妳這個野蠻人居然敢侮辱聖堂騎士，我代上天處罰你！"
-        },
-        {
-          "speaker": 3,
-          "name": "泰普",
-          "text": "惺惺作態的傢伙，我看你就有火！"
+          "speaker": 28,
+          "name": "拉拉",
+          "text": "茱迪姐姐，快來幫忙吧。"
         }
       ]
-    },
-    {
-      "type": 1,
-      "completion_flag": 13,
-      "trigger": {
-        "kind": "turn",
-        "turn": 2
-      },
-      "lines": [
-        {
-          "speaker": 74,
-          "name": "聖堂騎士",
-          "text": "混帳！努力消滅異教徒！"
-        }
-      ]
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 11,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 10,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
     }
   ]
 }

@@ -1,121 +1,297 @@
 {
-  "map_id": 52,
-  "music": 11,
+  "map_id": 73,
+  "music": 19,
   "route": {
-    "next_stage": 274,
+    "interbattle_town_id": 73,
+    "next_stage": 204,
     "alternate_stage": 0,
     "mode": 1,
-    "interbattle_town_id": 52,
-    "fantasy_stage": 274
+    "fantasy_stage": 204
   },
   "units": [
     {
-      "id": 39,
-      "appearance": 32,
-      "name": "貝洛元帥",
-      "x": 10,
-      "y": 47,
-      "direction": 0,
+      "id": 0,
+      "appearance": 113,
+      "name": "地元素",
+      "x": 18,
+      "y": 55,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 3,
-      "hp": 2000,
-      "max_hp": 0,
+      "behavior": 1,
+      "hp": 360,
+      "max_hp": 50,
       "equipment": [
         0,
-        145,
-        158,
-        179,
-        240,
+        0,
+        0,
+        0,
+        0,
         0
       ]
     },
     {
-      "id": 200,
-      "appearance": 67,
-      "name": "貼身護衛",
-      "x": 11,
-      "y": 49,
-      "direction": 0,
+      "id": 0,
+      "appearance": 114,
+      "name": "火元素",
+      "x": 19,
+      "y": 38,
+      "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 8,
-      "hp": 1200,
-      "max_hp": 180,
+      "behavior": 1,
+      "hp": 320,
+      "max_hp": 60,
       "equipment": [
-        14,
-        137,
-        157,
-        179,
-        195,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ]
     },
     {
-      "id": 201,
-      "appearance": 67,
-      "name": "貼身護衛",
-      "x": 12,
-      "y": 47,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 8,
-      "hp": 1200,
-      "max_hp": 180,
-      "equipment": [
-        14,
-        137,
-        157,
-        179,
-        195,
-        0
-      ]
-    },
-    {
-      "id": 202,
-      "appearance": 67,
-      "name": "貼身護衛",
+      "id": 0,
+      "appearance": 115,
+      "name": "風元素",
       "x": 10,
-      "y": 41,
-      "direction": 0,
+      "y": 37,
+      "direction": 3,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 8,
-      "hp": 1200,
-      "max_hp": 180,
+      "behavior": 1,
+      "hp": 280,
+      "max_hp": 80,
       "equipment": [
-        14,
-        137,
-        157,
-        179,
-        195,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ]
     },
     {
-      "id": 203,
-      "appearance": 67,
-      "name": "貼身護衛",
-      "x": 9,
-      "y": 44,
+      "id": 0,
+      "appearance": 116,
+      "name": "水元素",
+      "x": 14,
+      "y": 45,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 308,
+      "max_hp": 70,
+      "equipment": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 45,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 27,
+      "y": 24,
       "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 8,
-      "hp": 1200,
-      "max_hp": 180,
+      "hp": 210,
+      "max_hp": 96,
       "equipment": [
-        14,
-        137,
-        157,
-        179,
-        195,
+        48,
+        106,
+        159,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 25,
+      "y": 24,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 156,
+      "max_hp": 71,
+      "equipment": [
+        48,
+        106,
+        159,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 24,
+      "y": 27,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 156,
+      "max_hp": 71,
+      "equipment": [
+        48,
+        106,
+        159,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 2,
+      "y": 20,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 156,
+      "max_hp": 71,
+      "equipment": [
+        48,
+        106,
+        159,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 3,
+      "y": 23,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 156,
+      "max_hp": 71,
+      "equipment": [
+        48,
+        106,
+        159,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 3,
+      "y": 25,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 156,
+      "max_hp": 71,
+      "equipment": [
+        48,
+        106,
+        159,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 25,
+      "y": 66,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 156,
+      "max_hp": 71,
+      "equipment": [
+        48,
+        106,
+        159,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 26,
+      "y": 70,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 156,
+      "max_hp": 71,
+      "equipment": [
+        48,
+        106,
+        159,
+        180,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 77,
+      "name": "黑精靈",
+      "x": 28,
+      "y": 74,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 156,
+      "max_hp": 71,
+      "equipment": [
+        48,
+        106,
+        159,
+        180,
+        0,
         0
       ]
     }
@@ -125,9 +301,9 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 17,
-        "y": 32,
-        "direction": 0
+        "x": 3,
+        "y": 70,
+        "direction": 2
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -136,9 +312,9 @@
       "slot": 1,
       "role_id": 1,
       "deployment": {
-        "x": 18,
-        "y": 28,
-        "direction": 0
+        "x": 4,
+        "y": 68,
+        "direction": 2
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -147,9 +323,9 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 16,
-        "y": 31,
-        "direction": 0
+        "x": 2,
+        "y": 70,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -158,9 +334,9 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 18,
-        "y": 34,
-        "direction": 0
+        "x": 3,
+        "y": 68,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -169,9 +345,9 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 18,
-        "y": 30,
-        "direction": 0
+        "x": 1,
+        "y": 70,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -180,9 +356,9 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 16,
-        "y": 29,
-        "direction": 0
+        "x": 3,
+        "y": 69,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -191,9 +367,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 15,
-        "y": 29,
-        "direction": 0
+        "x": 3,
+        "y": 71,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -202,9 +378,9 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 18,
-        "y": 36,
-        "direction": 0
+        "x": 4,
+        "y": 70,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -212,86 +388,86 @@
   ],
   "deployment": [
     {
-      "x": 17,
-      "y": 32,
-      "direction": 0,
+      "x": 3,
+      "y": 70,
+      "direction": 2,
       "role_id": 11,
       "fixed": true
     },
     {
-      "x": 18,
-      "y": 28,
-      "direction": 0,
+      "x": 4,
+      "y": 68,
+      "direction": 2,
       "role_id": 1,
       "fixed": true
     },
     {
-      "x": 16,
-      "y": 31,
-      "direction": 0,
+      "x": 2,
+      "y": 70,
+      "direction": 2,
       "role_id": 14,
       "fixed": false
     },
     {
-      "x": 18,
-      "y": 34,
-      "direction": 0,
+      "x": 3,
+      "y": 68,
+      "direction": 2,
       "role_id": 15,
       "fixed": false
     },
     {
-      "x": 18,
-      "y": 30,
-      "direction": 0,
-      "role_id": 13,
-      "fixed": false
-    },
-    {
-      "x": 16,
-      "y": 29,
-      "direction": 0,
-      "role_id": 2,
-      "fixed": false
-    },
-    {
-      "x": 15,
-      "y": 29,
-      "direction": 0,
-      "role_id": 3,
-      "fixed": false
-    },
-    {
-      "x": 18,
-      "y": 36,
-      "direction": 0,
-      "role_id": 4,
-      "fixed": false
-    },
-    {
-      "x": 16,
-      "y": 32,
-      "direction": 0,
+      "x": 1,
+      "y": 70,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 17,
-      "y": 31,
-      "direction": 0,
+      "x": 3,
+      "y": 69,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 17,
-      "y": 33,
-      "direction": 0,
+      "x": 3,
+      "y": 71,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 18,
-      "y": 32,
-      "direction": 0,
+      "x": 4,
+      "y": 70,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 2,
+      "y": 68,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 2,
+      "y": 69,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 2,
+      "y": 71,
+      "direction": 2,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 4,
+      "y": 66,
+      "direction": 2,
       "role_id": 0,
       "fixed": false
     }
@@ -302,11 +478,11 @@
       1
     ],
     "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
-    "strength_score": 7300.0,
-    "base_stage": 52
+    "base_stage": 73,
+    "strength_score": 0
   },
   "objects": [],
-  "name": "落魄的元帥",
+  "name": "神秘的氣息",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",
@@ -315,142 +491,129 @@
   "events": [
     {
       "type": 1,
-      "completion_flag": 13,
+      "completion_flag": 14,
       "trigger": {
         "kind": "turn",
         "turn": 1
       },
       "lines": [
         {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "貝洛....。"
+          "speaker": 2,
+          "name": "穆爾",
+          "text": "原來是這樣！是黑精靈在破壞聖地的平衡之氣。"
         },
         {
-          "speaker": 39,
-          "name": "貝洛元帥",
-          "text": "哼....還是被你們給追上了，真遺憾啊....。"
+          "speaker": 4,
+          "name": "蘇",
+          "text": "娜塔....我們動作要快，我感覺到一股完全不熟悉的力量。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "嗯，快去幫助守衛元素，不能讓黑精靈得逞。"
         }
       ]
     },
     {
-      "type": 12,
+      "type": 11,
       "completion_flag": 0,
-      "condition": 16,
+      "condition": 11,
       "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 200,
-        "offset_7": 2,
+        "offset_3": 14,
+        "offset_5": 10,
+        "offset_7": 0,
         "offset_9": 0
       },
       "raw_operands_semantics": "unconfirmed"
     },
     {
-      "type": 12,
+      "type": 11,
       "completion_flag": 0,
-      "condition": 16,
+      "condition": 12,
       "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 201,
-        "offset_7": 2,
+        "offset_3": 14,
+        "offset_5": 10,
+        "offset_7": 0,
         "offset_9": 0
       },
       "raw_operands_semantics": "unconfirmed"
     },
     {
-      "type": 12,
-      "completion_flag": 0,
-      "condition": 16,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 202,
-        "offset_7": 2,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
+      "type": 1,
+      "completion_flag": 13,
+      "trigger": {
+        "kind": "turn",
+        "turn": 10
+      }
     },
     {
-      "type": 12,
-      "completion_flag": 0,
-      "condition": 16,
+      "type": 8,
+      "completion_flag": 7,
+      "condition": 4,
       "raw_operands": {
         "offset_3": 13,
-        "offset_5": 203,
-        "offset_7": 2,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 12,
-      "completion_flag": 0,
-      "condition": 16,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 39,
-        "offset_7": 2,
+        "offset_5": 15,
+        "offset_7": 46,
         "offset_9": 0
       },
       "raw_operands_semantics": "unconfirmed",
       "lines": [
         {
-          "speaker": 39,
-          "name": "貝洛元帥",
-          "text": "來吧！看看誰能取我的性命，我會讓你們付出代價的！"
+          "speaker": 4,
+          "name": "蘇",
+          "text": "....？？？"
         },
         {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "好氣魄！可惜死不悔改，只有除惡務盡了！"
+          "speaker": 4,
+          "name": "蘇",
+          "text": "這..這不是邪惡的力量啊，這到底是..？"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "妳們的計謀失敗了，還待在這裡做什麼？快離開聖地吧！"
+        },
+        {
+          "speaker": 45,
+          "name": "黑精靈",
+          "text": "奇怪....？那裡錯了？預言不是這樣啊....？"
         }
       ]
     },
     {
-      "type": 3,
-      "completion_flag": 0,
-      "condition": 2,
-      "role_id": 39,
+      "type": 9,
+      "completion_flag": 5,
       "lines": [
         {
-          "speaker": 39,
-          "name": "貝洛元帥",
-          "text": "死....死在你們手裡，總勝過死在那些貪生怕死的螞蟻手下....哈哈哈..。"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "別死～告訴我，你為何要進攻奚族？"
-        },
-        {
-          "speaker": 39,
-          "name": "貝洛元帥",
-          "text": "去..去問....克雷布特里吧....可恨啊....。"
-        },
-        {
-          "speaker": 16,
-          "name": "刑天",
-          "text": "克雷布特里？這個小人？"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "他在那裡？為何他沒有和你在一起？"
-        },
-        {
-          "speaker": 39,
-          "name": "貝洛元帥",
-          "text": "聖....聖..地，奚....族....。"
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "等等....。"
         }
       ]
     },
     {
-      "type": 2,
-      "completion_flag": 0,
+      "type": 9,
+      "completion_flag": 4,
       "lines": [
         {
-          "speaker": 11,
-          "name": "志超",
-          "text": "是奚族的聖地，我們快走。"
+          "speaker": 2,
+          "name": "穆爾",
+          "text": "黑精靈退走了....。"
+        },
+        {
+          "speaker": 3,
+          "name": "泰普",
+          "text": "小蘇啊，這到底是怎麼回事？莫名其妙。"
+        },
+        {
+          "speaker": 4,
+          "name": "蘇",
+          "text": "我也覺得奇怪....本來以為應該有個強大的魔靈被囚禁在這裡，剛剛那一瞬間還以為魔王脫困了。結果取而代之的是一種從來沒有接觸過的力量，我和黑精靈一樣覺得訝異。"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "....我們回部落去向大長老報告這件事，事不宜遲。"
         }
       ]
     }

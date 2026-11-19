@@ -120,7 +120,7 @@ FluidSynth各级原生日志统一送stderr（包括默认会输出stdout的INFO
 
 自动验证可显式追加`--headless-speed`，仅接受`--stdio`且SDL视频和音频驱动均为`dummy`，否则报错退出。此选项按原循环逐帧推进统一16ms虚拟游戏时钟，取消真实帧sleep；`wait`使用相同游戏时钟，仍保留逐帧present确认、脚本顺序、输入锁和成长确认。不固定／注入RNG，实际秒数仍按原随机源读取；不同运行不保证相同随机结果。这是无界面验证加速，不授权改变正常游戏规则；默认可见游玩与默认发布速度不变。
 
-`--stdio <资源根> --save-root <全新隔离目录> [--load <只读初始sav>]`保持正常可见SDL窗口、原音频及用户键鼠；不默认dummy，不绕过动画或输入锁。stdin必须为pipe或文件，逐行JSON对象，stdout仅JSON响应，诊断在stderr。EOF处理完待响应后退出；隔离存档保留，原始sav不改写。可见交互控制器：
+`--stdio <资源根> --save-root <全新隔离目录> [--load <只读初始sav>]`保持正常可见SDL窗口、原音频及用户键鼠；启动后直接进入标题菜单，不播放开场动画；不默认dummy，不绕过输入锁。stdin必须为pipe或文件，逐行JSON对象，stdout仅JSON响应，诊断在stderr。EOF处理完待响应后退出；隔离存档保留，原始sav不改写。可见交互控制器：
 
 ```powershell
 python .\tools\play-stdio.py .\out\manual-session .\out\growth-check\legal\eligible-input.sav

@@ -3,7 +3,7 @@
     "music":  2,
     "route":  {
                   "next_stage":  1,
-                  "alternate_stage":  0,
+                  "alternate_stage":  71,
                   "mode":  3
               },
     "units":  [
@@ -204,6 +204,7 @@
                    {
                        "type":  9,
                        "completion_flag":  0,
+                       "branch_flag": 13,
                        "lines":  [
                                      {
                                          "speaker":  42,
@@ -215,6 +216,7 @@
                    {
                        "type":  9,
                        "completion_flag":  41,
+                       "branch_flag": 13,
                        "lines":  [
                                      {
                                          "speaker":  42,

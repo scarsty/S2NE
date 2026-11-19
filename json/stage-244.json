@@ -1,539 +1,495 @@
 {
-  "map_id": 12,
-  "music": 5,
+  "map_id": 44,
+  "music": 9,
   "route": {
+    "interbattle_town_id": 44,
     "next_stage": 245,
     "alternate_stage": 0,
     "mode": 1,
-    "interbattle_town_id": 12,
     "fantasy_stage": 245
   },
   "units": [
     {
-      "id": 72,
-      "appearance": 22,
-      "name": "打手領頭",
-      "x": 14,
-      "y": 39,
-      "direction": 0,
+      "id": 22,
+      "appearance": 133,
+      "name": "奧帕兒",
+      "x": 9,
+      "y": 29,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 4,
+      "hp": 406,
+      "max_hp": 110,
+      "equipment": [
+        87,
+        110,
+        160,
+        181,
+        195,
+        0
+      ]
+    },
+    {
+      "id": 32,
+      "appearance": 20,
+      "name": "法科爾",
+      "x": 11,
+      "y": 30,
+      "direction": 3,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 1,
+      "hp": 460,
+      "max_hp": 0,
+      "equipment": [
+        8,
+        122,
+        157,
+        177,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 39,
+      "appearance": 32,
+      "name": "貝洛元帥",
+      "x": 4,
+      "y": 16,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 3,
-      "hp": 450,
+      "hp": 1280,
       "max_hp": 0,
       "equipment": [
-        64,
-        132,
-        152,
-        169,
-        188,
-        0
+        0,
+        137,
+        158,
+        179,
+        202,
+        237
       ]
     },
     {
-      "id": 0,
-      "appearance": 1,
-      "name": "賈府打手",
-      "x": 2,
-      "y": 26,
+      "id": 20,
+      "appearance": 94,
+      "name": "克雷布特里",
+      "x": 3,
+      "y": 16,
       "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 252,
+      "behavior": 8,
+      "hp": 560,
       "max_hp": 0,
       "equipment": [
-        63,
-        131,
-        152,
-        169,
-        187,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 1,
-      "name": "賈府打手",
-      "x": 17,
-      "y": 42,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 252,
-      "max_hp": 0,
-      "equipment": [
-        63,
-        131,
-        152,
-        169,
-        187,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 1,
-      "name": "賈府打手",
-      "x": 10,
-      "y": 32,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 252,
-      "max_hp": 0,
-      "equipment": [
-        63,
-        131,
-        152,
-        169,
-        187,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 1,
-      "name": "賈府打手",
-      "x": 11,
-      "y": 34,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 252,
-      "max_hp": 0,
-      "equipment": [
-        63,
-        131,
-        152,
-        169,
-        187,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 1,
-      "name": "賈府打手",
-      "x": 5,
-      "y": 24,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 252,
-      "max_hp": 0,
-      "equipment": [
-        63,
-        131,
-        152,
-        169,
-        187,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 1,
-      "name": "賈府打手",
-      "x": 17,
-      "y": 49,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 3,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 252,
-      "max_hp": 0,
-      "equipment": [
-        63,
-        131,
-        152,
-        169,
-        187,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 1,
-      "name": "賈府打手",
-      "x": 1,
-      "y": 22,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 3,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 252,
-      "max_hp": 0,
-      "equipment": [
-        63,
-        131,
-        152,
-        169,
-        187,
-        0
-      ]
-    },
-    {
-      "id": 54,
-      "appearance": 4,
-      "name": "賈府打手",
-      "x": 16,
-      "y": 33,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 0,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 188,
-      "max_hp": 0,
-      "equipment": [
-        49,
-        120,
-        149,
-        168,
+        7,
+        139,
+        157,
+        177,
         0,
         0
       ]
     },
     {
       "id": 200,
-      "appearance": 4,
-      "name": "賈府打手",
-      "x": 3,
-      "y": 17,
+      "appearance": 67,
+      "name": "貼身護衛",
+      "x": 6,
+      "y": 19,
       "direction": 1,
       "animation_action": 0,
-      "first_turn": 0,
+      "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 188,
-      "max_hp": 0,
+      "behavior": 8,
+      "hp": 600,
+      "max_hp": 136,
       "equipment": [
-        49,
-        120,
-        149,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 201,
-      "appearance": 4,
-      "name": "賈府打手",
-      "x": 17,
-      "y": 35,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 0,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 188,
-      "max_hp": 0,
-      "equipment": [
-        49,
-        120,
-        149,
-        168,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 202,
-      "appearance": 4,
-      "name": "賈府打手",
-      "x": 2,
-      "y": 18,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 0,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 188,
-      "max_hp": 0,
-      "equipment": [
-        49,
-        120,
-        149,
-        168,
-        0,
+        10,
+        137,
+        156,
+        178,
+        197,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 43,
-      "name": "賈府打手",
+      "appearance": 67,
+      "name": "貼身護衛",
       "x": 5,
+      "y": 22,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 600,
+      "max_hp": 136,
+      "equipment": [
+        10,
+        137,
+        156,
+        178,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 67,
+      "name": "貼身護衛",
+      "x": 4,
+      "y": 14,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 8,
+      "hp": 600,
+      "max_hp": 136,
+      "equipment": [
+        10,
+        137,
+        156,
+        178,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 67,
+      "name": "貼身護衛",
+      "x": 2,
       "y": 17,
-      "direction": 0,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 156,
-      "max_hp": 71,
+      "behavior": 8,
+      "hp": 600,
+      "max_hp": 136,
       "equipment": [
-        34,
-        106,
-        159,
-        167,
-        0,
+        10,
+        137,
+        156,
+        178,
+        197,
         0
       ]
     },
     {
-      "id": 0,
-      "appearance": 43,
-      "name": "賈府打手",
-      "x": 9,
-      "y": 23,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 156,
-      "max_hp": 71,
-      "equipment": [
-        34,
-        106,
-        159,
-        167,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 43,
-      "name": "賈府打手",
-      "x": 11,
+      "id": 78,
+      "appearance": 28,
+      "name": "第一軍團長",
+      "x": 7,
       "y": 32,
-      "direction": 0,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 156,
-      "max_hp": 71,
+      "behavior": 8,
+      "hp": 780,
+      "max_hp": 190,
       "equipment": [
-        34,
-        106,
-        159,
-        167,
-        0,
+        38,
+        111,
+        163,
+        180,
+        198,
         0
       ]
     },
     {
-      "id": 0,
-      "appearance": 43,
-      "name": "賈府打手",
-      "x": 16,
-      "y": 49,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 156,
-      "max_hp": 71,
-      "equipment": [
-        34,
-        106,
-        159,
-        167,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 43,
-      "name": "賈府打手",
+      "id": 84,
+      "appearance": 34,
+      "name": "第四軍團長",
       "x": 12,
-      "y": 31,
-      "direction": 0,
+      "y": 22,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 156,
-      "max_hp": 71,
+      "behavior": 8,
+      "hp": 720,
+      "max_hp": 172,
       "equipment": [
-        34,
-        106,
-        159,
-        167,
-        0,
+        38,
+        109,
+        163,
+        180,
+        197,
         0
       ]
     },
     {
-      "id": 129,
-      "appearance": 136,
-      "name": "女奴",
-      "x": 8,
-      "y": 29,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 156,
-      "max_hp": 71,
-      "equipment": [
-        34,
-        106,
-        159,
-        167,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 203,
-      "appearance": 136,
-      "name": "女奴",
-      "x": 9,
-      "y": 34,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 156,
-      "max_hp": 71,
-      "equipment": [
-        34,
-        106,
-        159,
-        167,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 204,
-      "appearance": 136,
-      "name": "女奴",
-      "x": 10,
+      "id": 0,
+      "appearance": 56,
+      "name": "第一軍團",
+      "x": 6,
       "y": 34,
       "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 1,
-      "hp": 156,
-      "max_hp": 71,
+      "behavior": 2,
+      "hp": 396,
+      "max_hp": 124,
       "equipment": [
-        34,
-        106,
-        159,
-        167,
-        0,
+        37,
+        108,
+        160,
+        180,
+        197,
         0
       ]
     },
     {
-      "id": 205,
-      "appearance": 136,
-      "name": "女奴",
-      "x": 11,
+      "id": 0,
+      "appearance": 56,
+      "name": "第一軍團",
+      "x": 5,
+      "y": 36,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 396,
+      "max_hp": 124,
+      "equipment": [
+        37,
+        108,
+        160,
+        180,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 56,
+      "name": "第一軍團",
+      "x": 8,
+      "y": 32,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 396,
+      "max_hp": 124,
+      "equipment": [
+        37,
+        108,
+        160,
+        180,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 56,
+      "name": "第一軍團",
+      "x": 8,
+      "y": 30,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 396,
+      "max_hp": 124,
+      "equipment": [
+        37,
+        108,
+        160,
+        180,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 56,
+      "name": "第一軍團",
+      "x": 7,
+      "y": 30,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 396,
+      "max_hp": 124,
+      "equipment": [
+        37,
+        108,
+        160,
+        180,
+        197,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 56,
+      "name": "第一軍團",
+      "x": 6,
       "y": 37,
       "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 1,
-      "hp": 156,
-      "max_hp": 71,
+      "behavior": 2,
+      "hp": 396,
+      "max_hp": 124,
       "equipment": [
-        34,
-        106,
-        159,
-        167,
-        0,
+        37,
+        108,
+        160,
+        180,
+        197,
         0
       ]
     },
     {
-      "id": 206,
-      "appearance": 136,
-      "name": "女奴",
-      "x": 12,
-      "y": 39,
+      "id": 0,
+      "appearance": 3,
+      "name": "第四軍團",
+      "x": 13,
+      "y": 21,
       "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 1,
-      "hp": 156,
-      "max_hp": 71,
+      "behavior": 2,
+      "hp": 400,
+      "max_hp": 0,
       "equipment": [
-        34,
-        106,
-        159,
-        167,
-        0,
+        78,
+        132,
+        152,
+        173,
+        189,
         0
       ]
     },
     {
-      "id": 207,
-      "appearance": 136,
-      "name": "女奴",
-      "x": 5,
-      "y": 31,
-      "direction": 3,
+      "id": 0,
+      "appearance": 3,
+      "name": "第四軍團",
+      "x": 13,
+      "y": 19,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 1,
-      "hp": 156,
-      "max_hp": 71,
+      "behavior": 2,
+      "hp": 400,
+      "max_hp": 0,
       "equipment": [
-        34,
-        106,
-        159,
-        167,
-        0,
+        78,
+        132,
+        152,
+        173,
+        189,
         0
       ]
     },
     {
-      "id": 208,
-      "appearance": 136,
-      "name": "女奴",
+      "id": 0,
+      "appearance": 3,
+      "name": "第四軍團",
+      "x": 11,
+      "y": 25,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 400,
+      "max_hp": 0,
+      "equipment": [
+        78,
+        132,
+        152,
+        173,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "第四軍團",
       "x": 14,
-      "y": 48,
+      "y": 21,
       "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 1,
-      "hp": 156,
-      "max_hp": 71,
+      "behavior": 2,
+      "hp": 400,
+      "max_hp": 0,
       "equipment": [
-        34,
-        106,
-        159,
-        167,
-        0,
+        78,
+        132,
+        152,
+        173,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "第四軍團",
+      "x": 10,
+      "y": 24,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 400,
+      "max_hp": 0,
+      "equipment": [
+        78,
+        132,
+        152,
+        173,
+        189,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 3,
+      "name": "第四軍團",
+      "x": 11,
+      "y": 27,
+      "direction": 0,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 400,
+      "max_hp": 0,
+      "equipment": [
+        78,
+        132,
+        152,
+        173,
+        189,
         0
       ]
     }
@@ -543,9 +499,9 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 7,
-        "y": 38,
-        "direction": 2
+        "x": 17,
+        "y": 43,
+        "direction": 3
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -554,9 +510,9 @@
       "slot": 1,
       "role_id": 1,
       "deployment": {
-        "x": 7,
-        "y": 40,
-        "direction": 2
+        "x": 16,
+        "y": 39,
+        "direction": 3
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -565,9 +521,9 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 7,
-        "y": 44,
-        "direction": 2
+        "x": 18,
+        "y": 45,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -576,9 +532,9 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 7,
-        "y": 42,
-        "direction": 2
+        "x": 16,
+        "y": 41,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -587,9 +543,9 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 6,
-        "y": 42,
-        "direction": 2
+        "x": 17,
+        "y": 45,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -598,9 +554,9 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 6,
-        "y": 40,
-        "direction": 2
+        "x": 17,
+        "y": 41,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -609,9 +565,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 8,
-        "y": 40,
-        "direction": 2
+        "x": 18,
+        "y": 43,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -620,9 +576,9 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 5,
-        "y": 40,
-        "direction": 2
+        "x": 16,
+        "y": 43,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -630,86 +586,86 @@
   ],
   "deployment": [
     {
-      "x": 7,
-      "y": 38,
-      "direction": 2,
+      "x": 17,
+      "y": 43,
+      "direction": 3,
       "role_id": 11,
       "fixed": true
     },
     {
-      "x": 7,
-      "y": 40,
-      "direction": 2,
+      "x": 16,
+      "y": 39,
+      "direction": 3,
       "role_id": 1,
       "fixed": true
     },
     {
-      "x": 7,
-      "y": 44,
-      "direction": 2,
+      "x": 18,
+      "y": 45,
+      "direction": 3,
       "role_id": 14,
       "fixed": false
     },
     {
-      "x": 7,
-      "y": 42,
-      "direction": 2,
+      "x": 16,
+      "y": 41,
+      "direction": 3,
       "role_id": 15,
       "fixed": false
     },
     {
-      "x": 6,
-      "y": 42,
-      "direction": 2,
+      "x": 17,
+      "y": 45,
+      "direction": 3,
       "role_id": 13,
       "fixed": false
     },
     {
-      "x": 6,
-      "y": 40,
-      "direction": 2,
+      "x": 17,
+      "y": 41,
+      "direction": 3,
       "role_id": 2,
       "fixed": false
     },
     {
-      "x": 8,
-      "y": 40,
-      "direction": 2,
+      "x": 18,
+      "y": 43,
+      "direction": 3,
       "role_id": 3,
       "fixed": false
     },
     {
-      "x": 5,
-      "y": 40,
-      "direction": 2,
+      "x": 16,
+      "y": 43,
+      "direction": 3,
       "role_id": 4,
       "fixed": false
     },
     {
-      "x": 6,
-      "y": 38,
-      "direction": 2,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 7,
-      "y": 37,
-      "direction": 2,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 7,
+      "x": 15,
       "y": 39,
-      "direction": 2,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 8,
-      "y": 38,
-      "direction": 2,
+      "x": 17,
+      "y": 42,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 17,
+      "y": 44,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 17,
+      "y": 39,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     }
@@ -720,11 +676,11 @@
       1
     ],
     "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
-    "strength_score": 5446.0,
-    "base_stage": 12
+    "base_stage": 44,
+    "strength_score": 0
   },
   "objects": [],
-  "name": "人口販子",
+  "name": "奧帕兒女王",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",
@@ -733,122 +689,66 @@
   "events": [
     {
       "type": 1,
-      "completion_flag": 20,
+      "completion_flag": 13,
       "trigger": {
         "kind": "turn",
         "turn": 1
       },
       "lines": [
         {
-          "speaker": 129,
-          "name": "女奴",
-          "text": "哇哇哇！"
+          "speaker": 18,
+          "name": "茱迪",
+          "text": "奧帕兒在前面。"
+        },
+        {
+          "speaker": 16,
+          "name": "刑天",
+          "text": "噢，不妙。是貝洛的人手。"
+        },
+        {
+          "speaker": 39,
+          "name": "貝洛元帥",
+          "text": "太好了，夏普老狐狸除掉了，連他女兒也一併拿到，今日大功告成。"
+        },
+        {
+          "speaker": 20,
+          "name": "克雷布特里",
+          "text": "恭喜元帥，祝元帥德高權重，消滅奚族，一統南疆！"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "克雷布特里！你這個叛徒！我爹爹呢？"
+        },
+        {
+          "speaker": 20,
+          "name": "克雷布特里",
+          "text": "識時務者為俊傑，昏庸的夏普前領主已經死了，我現在效忠的是雄才大略的新領主貝洛元帥，妳不可無禮。"
+        },
+        {
+          "speaker": 39,
+          "name": "貝洛元帥",
+          "text": "後面那些是什麼人?"
+        },
+        {
+          "speaker": 20,
+          "name": "克雷布特里",
+          "text": "回領主，是迦納國派來南方的探子。"
+        },
+        {
+          "speaker": 39,
+          "name": "貝洛元帥",
+          "text": "那麼，和奧帕兒一起拿下吧。"
         }
       ]
     },
     {
-      "type": 16,
-      "completion_flag": 0,
-      "condition": 4,
+      "type": 12,
+      "completion_flag": 49,
+      "condition": 22,
       "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 7,
-        "offset_7": 1,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 16,
-      "completion_flag": 0,
-      "condition": 5,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 129,
-        "offset_7": 0,
-        "offset_9": 21
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 16,
-      "completion_flag": 0,
-      "condition": 5,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 203,
-        "offset_7": 1,
-        "offset_9": 22
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 16,
-      "completion_flag": 0,
-      "condition": 5,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 204,
-        "offset_7": 18,
-        "offset_9": 37
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 16,
-      "completion_flag": 0,
-      "condition": 5,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 205,
-        "offset_7": 18,
-        "offset_9": 54
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 16,
-      "completion_flag": 0,
-      "condition": 5,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 206,
-        "offset_7": 18,
-        "offset_9": 38
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 16,
-      "completion_flag": 0,
-      "condition": 5,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 207,
-        "offset_7": 1,
-        "offset_9": 23
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 16,
-      "completion_flag": 0,
-      "condition": 5,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 208,
-        "offset_7": 17,
-        "offset_9": 53
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 16,
-      "completion_flag": 0,
-      "condition": 7,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 0,
+        "offset_3": 13,
+        "offset_5": 22,
         "offset_7": 0,
         "offset_9": 0
       },
@@ -857,331 +757,227 @@
     {
       "type": 12,
       "completion_flag": 0,
+      "condition": 22,
       "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 129,
+        "offset_3": 13,
+        "offset_5": 32,
         "offset_7": 0,
         "offset_9": 0
       },
       "raw_operands_semantics": "unconfirmed"
     },
     {
-      "type": 12,
-      "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 203,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 12,
-      "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 207,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 12,
-      "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 205,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 12,
-      "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 206,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 12,
-      "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 204,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 12,
-      "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 208,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 11,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 10,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 12,
-      "raw_operands": {
-        "offset_3": 20,
-        "offset_5": 5,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 9,
-      "completion_flag": 13,
+      "type": 3,
+      "completion_flag": 5,
+      "condition": 2,
+      "role_id": 22,
       "lines": [
         {
-          "speaker": 11,
-          "name": "志超",
-          "text": "這裡就是賈得耶開設的妓院嗎？"
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "志超....。"
         },
         {
-          "speaker": 72,
-          "name": "打手領頭",
-          "text": "不錯，既然知道還不快滾！嫌命長啊！"
-        },
-        {
-          "speaker": 14,
-          "name": "飛霜",
-          "text": "那我們找對地方了。"
-        },
-        {
-          "speaker": 18,
-          "name": "茱迪",
-          "text": "這種地方我一看就有火，燒了算了。"
-        },
-        {
-          "speaker": 72,
-          "name": "打手領頭",
-          "text": "嘿嘿嘿....有不怕死的找上門來了，這下有事做了。"
-        },
-        {
-          "speaker": 13,
-          "name": "羅莎莉",
-          "text": "這種土豪劣紳的幫手饒不得。"
-        },
-        {
-          "speaker": 72,
-          "name": "打手領頭",
-          "text": "哼！女人能幹嘛，替我搔癢啊，哈哈哈..。"
-        },
-        {
-          "speaker": 17,
-          "name": "秋月",
-          "text": "平日你們只會魚肉鄉民，自然不曉得厲害，你準備付出代價吧！"
+          "speaker": 39,
+          "name": "貝洛元帥",
+          "text": "剩下的小狗，通通殺了吧。"
         }
       ]
     },
     {
       "type": 3,
-      "completion_flag": 14,
+      "completion_flag": 4,
       "condition": 2,
-      "role_id": 72,
+      "role_id": 29,
       "lines": [
         {
-          "speaker": 72,
-          "name": "打手領頭",
-          "text": "我....我連個娘們都打不過....。"
+          "speaker": 39,
+          "name": "貝洛元帥",
+          "text": "我是不會死的！"
         }
       ]
     },
     {
-      "type": 9,
-      "completion_flag": 0,
-      "condition": 2,
-      "required_flags": [
-        13,
-        14
-      ]
-    },
-    {
       "type": 1,
-      "completion_flag": 15,
+      "completion_flag": 14,
       "trigger": {
         "kind": "turn",
-        "turn": 7
-      }
-    },
-    {
-      "type": 9,
-      "completion_flag": 16,
-      "condition": 1,
-      "required_flags": [
-        13,
-        15
+        "turn": 5
+      },
+      "lines": [
+        {
+          "speaker": 22,
+          "music_after": 12,
+          "name": "奧帕兒",
+          "text": "住手！"
+        },
+        {
+          "speaker": 20,
+          "name": "克雷布特里",
+          "text": "奧帕兒小姐，妳打算向尊貴的貝洛元帥請降了嗎？"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "貝洛....我知道你要的是什麼。"
+        },
+        {
+          "speaker": 39,
+          "name": "貝洛元帥",
+          "text": "哼哼，很好，那又怎麼樣？"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "如果你讓我的同伴們離開，我就....我就....答應你。"
+        },
+        {
+          "speaker": 39,
+          "name": "貝洛元帥",
+          "text": "笑話，現在管妳答不答應，根本由不得妳了。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "是嗎....如果我死了....誰還能強迫我呢？"
+        },
+        {
+          "speaker": 39,
+          "name": "貝洛元帥",
+          "text": "....你不敢的！"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "要試試看嗎！"
+        },
+        {
+          "speaker": 39,
+          "name": "貝洛元帥",
+          "text": "哼..也罷，這幾隻小狗我還不放在眼裡，就讓他們滾吧！"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "志超....我....你.....。你一定要離開這裡，不然我留下來就沒意義了，好嗎？你騙了我好久，原來你是迦納國的探子，你真是壞啊....。"
+        },
+        {
+          "speaker": 11,
+          "name": "志超",
+          "text": "奧帕兒....我....。"
+        },
+        {
+          "speaker": 22,
+          "name": "奧帕兒",
+          "text": "不用說了，快走吧..。"
+        }
       ]
     },
     {
-      "type": 6,
+      "type": 14,
       "completion_flag": 0,
       "raw_operands": {
-        "offset_3": 16,
-        "offset_5": 54,
-        "offset_7": 200,
-        "offset_9": 201
+        "offset_3": 14,
+        "offset_5": 31,
+        "offset_7": 22,
+        "offset_9": 30
       },
       "raw_operands_semantics": "unconfirmed"
     },
     {
-      "type": 6,
+      "type": 14,
       "completion_flag": 0,
+      "condition": 1,
       "raw_operands": {
-        "offset_3": 16,
-        "offset_5": 202,
-        "offset_7": 0,
+        "offset_3": 14,
+        "offset_5": 1,
+        "offset_7": 22,
+        "offset_9": 30
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 14,
+      "completion_flag": 0,
+      "condition": 1,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 22,
+        "offset_7": 15,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 7,
+      "completion_flag": 7,
+      "condition": 2,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 22,
+        "offset_7": 39,
         "offset_9": 0
       },
       "raw_operands_semantics": "unconfirmed",
       "lines": [
         {
-          "speaker": 54,
-          "name": "賈府打手",
-          "text": "老大，有何吩付。"
+          "speaker": 39,
+          "name": "貝洛元帥",
+          "text": "很好，妳很聽話，跟我回宮去吧。"
         },
         {
-          "speaker": 72,
-          "name": "打手領頭",
-          "text": "這幾個不知天高地厚的男女想砸賈老闆的妓院，不用客氣！"
+          "speaker": 20,
+          "name": "克雷布特里",
+          "text": "祝元帥大人喜獲佳人。"
         },
         {
-          "speaker": 54,
-          "music_after": 6,
-          "name": "賈府打手",
-          "text": "找賈老闆麻煩？找死！"
-        },
+          "speaker": 39,
+          "name": "貝洛元帥",
+          "text": "哼哼，收兵。"
+        }
+      ]
+    },
+    {
+      "type": 12,
+      "completion_flag": 0,
+      "raw_operands": {
+        "offset_3": 14,
+        "offset_5": 22,
+        "offset_7": 0,
+        "offset_9": 0
+      },
+      "raw_operands_semantics": "unconfirmed"
+    },
+    {
+      "type": 9,
+      "completion_flag": 4,
+      "lines": [
         {
           "speaker": 11,
           "name": "志超",
-          "text": "這些弓箭手佔了地利，要早點解決才是。"
+          "text": "奧帕兒....我對不起妳....。"
         },
         {
           "speaker": 16,
           "name": "刑天",
-          "text": "嗯。"
-        }
-      ]
-    },
-    {
-      "type": 2,
-      "completion_flag": 17,
-      "condition": 1,
-      "lines": [
+          "text": "......。"
+        },
+        {
+          "speaker": 32,
+          "name": "法科爾",
+          "text": "小姐....。"
+        },
+        {
+          "speaker": 31,
+          "name": "米蘭黛",
+          "text": "..我家和夏普的血海深仇，就此作罷。"
+        },
         {
           "speaker": 14,
-          "music_before": 1,
           "name": "飛霜",
-          "text": "哼，廢物都清潔溜溜了。"
-        },
-        {
-          "speaker": 12,
-          "name": "南巡使",
-          "text": "是啊，我們也該上路了，不要再生是非了。"
-        },
-        {
-          "speaker": 17,
-          "name": "秋月",
-          "text": "這賈得耶為惡不仁，不能留他，到賈府去看看有沒有機會除掉他。"
+          "text": "走吧，現在不是哭泣的時候。"
         }
       ]
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 11,
-      "raw_operands": {
-        "offset_3": 19,
-        "offset_5": 10,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 12,
-      "raw_operands": {
-        "offset_3": 19,
-        "offset_5": -5,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 14,
-      "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 19,
-        "offset_5": 16,
-        "offset_7": 11,
-        "offset_9": 5
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 14,
-      "completion_flag": 0,
-      "raw_operands": {
-        "offset_3": 19,
-        "offset_5": 14,
-        "offset_7": 11,
-        "offset_9": 5
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 14,
-      "completion_flag": 0,
-      "condition": 1,
-      "raw_operands": {
-        "offset_3": 19,
-        "offset_5": 11,
-        "offset_7": -1,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 9,
-      "completion_flag": 0,
-      "condition": 6,
-      "route_stage": 15
-    },
-    {
-      "type": 9,
-      "completion_flag": 0,
-      "condition": 6,
-      "route_stage": 14
     }
   ]
 }

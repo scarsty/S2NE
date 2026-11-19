@@ -1,605 +1,517 @@
 {
-  "map_id": 39,
-  "music": 3,
+  "map_id": 78,
+  "music": 19,
   "route": {
-    "next_stage": 279,
+    "interbattle_town_id": 78,
+    "next_stage": 209,
     "alternate_stage": 0,
     "mode": 1,
-    "interbattle_town_id": 39,
-    "fantasy_stage": 279
+    "fantasy_stage": 209
   },
   "units": [
     {
-      "id": 33,
-      "appearance": 6,
-      "name": "嵐",
-      "x": 15,
-      "y": 38,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 500,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        122,
-        149,
-        177,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 132,
-      "appearance": 131,
-      "name": "男村民",
-      "x": 2,
-      "y": 42,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 120,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        166,
-        0,
-        0
-      ]
-    },
-    {
       "id": 0,
       "appearance": 131,
-      "name": "男村民",
-      "x": 12,
-      "y": 57,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 120,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        166,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 131,
-      "name": "男村民",
-      "x": 20,
-      "y": 46,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 120,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        166,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 131,
-      "name": "男村民",
-      "x": 8,
-      "y": 26,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 120,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        166,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 132,
-      "name": "女村民",
-      "x": 8,
-      "y": 41,
-      "direction": 0,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 112,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        166,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 132,
-      "name": "女村民",
+      "name": "奚族平民",
       "x": 21,
-      "y": 38,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 112,
-      "max_hp": 0,
-      "equipment": [
-        0,
-        97,
-        0,
-        166,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 132,
-      "name": "女村民",
-      "x": 17,
-      "y": 31,
+      "y": 51,
       "direction": 0,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 1,
-      "hp": 112,
+      "hp": 90,
       "max_hp": 0,
       "equipment": [
         0,
         97,
         0,
-        166,
+        0,
         0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 132,
-      "name": "女村民",
+      "appearance": 131,
+      "name": "奚族平民",
       "x": 11,
-      "y": 35,
-      "direction": 0,
+      "y": 31,
+      "direction": 3,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 1,
-      "hp": 112,
+      "hp": 90,
       "max_hp": 0,
       "equipment": [
         0,
         97,
         0,
-        166,
+        0,
         0,
         0
       ]
     },
     {
-      "id": 51,
-      "appearance": 1,
-      "name": "野蠻戰士",
-      "x": 22,
-      "y": 47,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 400,
-      "max_hp": 0,
-      "equipment": [
-        64,
-        134,
-        152,
-        169,
-        191,
-        0
-      ]
-    },
-    {
       "id": 0,
-      "appearance": 1,
-      "name": "野蠻戰士",
-      "x": 21,
-      "y": 50,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 400,
-      "max_hp": 0,
-      "equipment": [
-        64,
-        134,
-        152,
-        169,
-        191,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 1,
-      "name": "野蠻戰士",
-      "x": 22,
-      "y": 49,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 400,
-      "max_hp": 0,
-      "equipment": [
-        64,
-        134,
-        152,
-        169,
-        191,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 1,
-      "name": "野蠻戰士",
-      "x": 21,
-      "y": 52,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 400,
-      "max_hp": 0,
-      "equipment": [
-        64,
-        134,
-        152,
-        169,
-        191,
-        0
-      ]
-    },
-    {
-      "id": 53,
-      "appearance": 3,
-      "name": "當地官兵",
-      "x": 19,
-      "y": 58,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 380,
-      "max_hp": 0,
-      "equipment": [
-        77,
-        132,
-        152,
-        169,
-        190,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "當地官兵",
-      "x": 17,
-      "y": 58,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 380,
-      "max_hp": 0,
-      "equipment": [
-        77,
-        132,
-        152,
-        169,
-        190,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "當地官兵",
-      "x": 13,
-      "y": 66,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 380,
-      "max_hp": 0,
-      "equipment": [
-        77,
-        132,
-        152,
-        169,
-        190,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "當地官兵",
-      "x": 12,
-      "y": 72,
-      "direction": 3,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 380,
-      "max_hp": 0,
-      "equipment": [
-        77,
-        132,
-        152,
-        169,
-        190,
-        0
-      ]
-    },
-    {
-      "id": 0,
-      "appearance": 3,
-      "name": "當地官兵",
+      "appearance": 131,
+      "name": "奚族平民",
       "x": 16,
-      "y": 65,
+      "y": 37,
       "direction": 3,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 380,
+      "behavior": 1,
+      "hp": 90,
       "max_hp": 0,
       "equipment": [
-        77,
-        132,
-        152,
-        169,
-        190,
+        0,
+        97,
+        0,
+        0,
+        0,
         0
       ]
     },
     {
-      "id": 96,
-      "appearance": 46,
-      "name": "當地官兵",
-      "x": 15,
-      "y": 65,
-      "direction": 3,
+      "id": 74,
+      "appearance": 24,
+      "name": "騎兵隊長",
+      "x": 6,
+      "y": 58,
+      "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
-      "behavior": 2,
-      "hp": 332,
-      "max_hp": 0,
+      "behavior": 3,
+      "hp": 360,
+      "max_hp": 64,
       "equipment": [
-        6,
-        121,
-        149,
+        76,
+        130,
+        151,
         169,
-        190,
+        188,
         0
       ]
     },
     {
-      "id": 55,
-      "appearance": 5,
-      "name": "疾風盜賊團",
-      "x": 2,
-      "y": 50,
+      "id": 0,
+      "appearance": 12,
+      "name": "提那重騎兵",
+      "x": 16,
+      "y": 58,
       "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 336,
+      "hp": 200,
       "max_hp": 0,
       "equipment": [
-        20,
-        118,
-        149,
-        169,
-        0,
+        75,
+        129,
+        150,
+        170,
+        187,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 5,
-      "name": "疾風盜賊團",
-      "x": 2,
+      "appearance": 12,
+      "name": "提那重騎兵",
+      "x": 10,
       "y": 56,
       "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 336,
+      "hp": 200,
       "max_hp": 0,
       "equipment": [
-        20,
-        118,
-        149,
-        169,
-        0,
-        0
-      ]
-    },
-    {
-      "id": 90,
-      "appearance": 40,
-      "name": "疾風盜賊團",
-      "x": 3,
-      "y": 52,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 314,
-      "max_hp": 0,
-      "equipment": [
-        20,
-        118,
-        149,
-        169,
-        0,
+        75,
+        129,
+        150,
+        170,
+        187,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 40,
-      "name": "疾風盜賊團",
-      "x": 4,
+      "appearance": 12,
+      "name": "提那重騎兵",
+      "x": 3,
       "y": 55,
       "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 314,
+      "hp": 200,
       "max_hp": 0,
       "equipment": [
-        20,
-        118,
-        149,
-        169,
-        0,
+        75,
+        129,
+        150,
+        170,
+        187,
         0
       ]
     },
     {
-      "id": 99,
-      "appearance": 49,
-      "name": "獎金獵人",
+      "id": 0,
+      "appearance": 47,
+      "name": "提那重騎兵",
+      "x": 14,
+      "y": 55,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 192,
+      "max_hp": 0,
+      "equipment": [
+        75,
+        129,
+        150,
+        170,
+        187,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 47,
+      "name": "提那重騎兵",
+      "x": 12,
+      "y": 58,
+      "direction": 2,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 192,
+      "max_hp": 0,
+      "equipment": [
+        75,
+        129,
+        150,
+        170,
+        187,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 47,
+      "name": "提那重騎兵",
       "x": 3,
-      "y": 59,
+      "y": 58,
       "direction": 2,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 384,
+      "hp": 192,
       "max_hp": 0,
       "equipment": [
-        21,
-        122,
+        75,
+        129,
+        150,
+        170,
+        187,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 7,
+      "name": "暹族教徒",
+      "x": 9,
+      "y": 18,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 141,
+      "max_hp": 68,
+      "equipment": [
+        33,
+        103,
+        159,
+        167,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 7,
+      "name": "暹族教徒",
+      "x": 6,
+      "y": 24,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 141,
+      "max_hp": 68,
+      "equipment": [
+        33,
+        103,
+        159,
+        167,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 7,
+      "name": "暹族教徒",
+      "x": 5,
+      "y": 22,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 141,
+      "max_hp": 68,
+      "equipment": [
+        33,
+        103,
+        159,
+        167,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 7,
+      "name": "暹族教徒",
+      "x": 6,
+      "y": 15,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 141,
+      "max_hp": 68,
+      "equipment": [
+        33,
+        103,
+        159,
+        167,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 7,
+      "name": "暹族教徒",
+      "x": 4,
+      "y": 15,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 141,
+      "max_hp": 68,
+      "equipment": [
+        33,
+        103,
+        159,
+        167,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "武裝士兵",
+      "x": 8,
+      "y": 20,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 206,
+      "max_hp": 0,
+      "equipment": [
+        62,
+        129,
         149,
-        175,
+        167,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "武裝士兵",
+      "x": 7,
+      "y": 17,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 206,
+      "max_hp": 0,
+      "equipment": [
+        62,
+        129,
+        149,
+        167,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "武裝士兵",
+      "x": 5,
+      "y": 17,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 206,
+      "max_hp": 0,
+      "equipment": [
+        62,
+        129,
+        149,
+        167,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 45,
+      "name": "武裝士兵",
+      "x": 3,
+      "y": 19,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 206,
+      "max_hp": 0,
+      "equipment": [
+        62,
+        129,
+        149,
+        167,
+        186,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 29,
+      "name": "暹族武師",
+      "x": 7,
+      "y": 22,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 201,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        102,
+        148,
+        167,
         0,
         0
       ]
     },
     {
-      "id": 130,
-      "appearance": 102,
-      "name": "流民",
-      "x": 9,
-      "y": 65,
-      "direction": 2,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 2,
-      "hp": 360,
-      "max_hp": 0,
-      "equipment": [
-        77,
-        132,
-        152,
-        169,
-        190,
-        0
-      ]
-    },
-    {
       "id": 0,
-      "appearance": 102,
-      "name": "流民",
+      "appearance": 29,
+      "name": "暹族武師",
       "x": 6,
-      "y": 61,
-      "direction": 2,
+      "y": 19,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 360,
+      "hp": 201,
       "max_hp": 0,
       "equipment": [
-        77,
-        132,
-        152,
-        169,
-        190,
+        0,
+        102,
+        148,
+        167,
+        0,
         0
       ]
     },
     {
       "id": 0,
-      "appearance": 102,
-      "name": "流民",
-      "x": 7,
-      "y": 67,
-      "direction": 2,
+      "appearance": 29,
+      "name": "暹族武師",
+      "x": 4,
+      "y": 19,
+      "direction": 1,
       "animation_action": 0,
       "first_turn": 1,
       "last_turn": 0,
       "behavior": 2,
-      "hp": 360,
+      "hp": 201,
       "max_hp": 0,
       "equipment": [
-        77,
-        132,
-        152,
-        169,
-        190,
+        0,
+        102,
+        148,
+        167,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 0,
+      "appearance": 29,
+      "name": "暹族武師",
+      "x": 6,
+      "y": 11,
+      "direction": 1,
+      "animation_action": 0,
+      "first_turn": 1,
+      "last_turn": 0,
+      "behavior": 2,
+      "hp": 201,
+      "max_hp": 0,
+      "equipment": [
+        0,
+        102,
+        148,
+        167,
+        0,
         0
       ]
     }
@@ -609,9 +521,9 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 10,
-        "y": 51,
-        "direction": 0
+        "x": 20,
+        "y": 42,
+        "direction": 3
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -620,9 +532,9 @@
       "slot": 1,
       "role_id": 1,
       "deployment": {
-        "x": 15,
-        "y": 43,
-        "direction": 1
+        "x": 21,
+        "y": 44,
+        "direction": 0
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -631,9 +543,9 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 10,
-        "y": 28,
-        "direction": 0
+        "x": 21,
+        "y": 42,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -642,9 +554,9 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 18,
-        "y": 37,
-        "direction": 1
+        "x": 19,
+        "y": 44,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -653,9 +565,9 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 13,
-        "y": 51,
-        "direction": 1
+        "x": 20,
+        "y": 44,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -664,8 +576,8 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 5,
-        "y": 37,
+        "x": 21,
+        "y": 46,
         "direction": 0
       },
       "mandatory_role": false,
@@ -675,9 +587,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 9,
-        "y": 45,
-        "direction": 0
+        "x": 19,
+        "y": 42,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -686,9 +598,9 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 14,
-        "y": 28,
-        "direction": 1
+        "x": 20,
+        "y": 41,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -696,86 +608,86 @@
   ],
   "deployment": [
     {
-      "x": 10,
-      "y": 51,
-      "direction": 0,
+      "x": 20,
+      "y": 42,
+      "direction": 3,
       "role_id": 11,
       "fixed": true
     },
     {
-      "x": 15,
-      "y": 43,
-      "direction": 1,
+      "x": 21,
+      "y": 44,
+      "direction": 0,
       "role_id": 1,
       "fixed": true
     },
     {
-      "x": 10,
-      "y": 28,
-      "direction": 0,
+      "x": 21,
+      "y": 42,
+      "direction": 3,
       "role_id": 14,
       "fixed": false
     },
     {
-      "x": 18,
-      "y": 37,
-      "direction": 1,
+      "x": 19,
+      "y": 44,
+      "direction": 0,
       "role_id": 15,
       "fixed": false
     },
     {
-      "x": 13,
-      "y": 51,
-      "direction": 1,
+      "x": 20,
+      "y": 44,
+      "direction": 0,
       "role_id": 13,
       "fixed": false
     },
     {
-      "x": 5,
-      "y": 37,
+      "x": 21,
+      "y": 46,
       "direction": 0,
       "role_id": 2,
       "fixed": false
     },
     {
-      "x": 9,
-      "y": 45,
-      "direction": 0,
-      "role_id": 3,
-      "fixed": false
-    },
-    {
-      "x": 14,
-      "y": 28,
-      "direction": 1,
-      "role_id": 4,
-      "fixed": false
-    },
-    {
-      "x": 9,
-      "y": 51,
-      "direction": 0,
+      "x": 19,
+      "y": 42,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 10,
-      "y": 50,
-      "direction": 0,
+      "x": 20,
+      "y": 41,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 10,
-      "y": 52,
-      "direction": 0,
+      "x": 20,
+      "y": 43,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 11,
-      "y": 51,
-      "direction": 0,
+      "x": 22,
+      "y": 44,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 18,
+      "y": 42,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 19,
+      "y": 41,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     }
@@ -786,11 +698,11 @@
       1
     ],
     "source": "two protagonists mandatory; 12 slots from original points plus adjacent extensions",
-    "strength_score": 8396.0,
-    "base_stage": 39
+    "base_stage": 78,
+    "strength_score": 0
   },
   "objects": [],
-  "name": "散財童子",
+  "name": "突圍的選擇",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",
@@ -806,64 +718,29 @@
       },
       "lines": [
         {
-          "speaker": 51,
-          "name": "野蠻戰士",
-          "text": "哈哈哈，村裡頭的小狗快出來投降，出來晚了就通通砍了！"
+          "speaker": 6,
+          "name": "黛西",
+          "text": "後面有騎兵隊....退路被截斷了！"
         },
         {
-          "speaker": 55,
-          "name": "疾風盜賊團",
-          "text": "別在那裡大呼小叫的，是我們疾風盜賊團先到的，就算要屠村也輪不到你們這些蠻子！"
+          "speaker": 5,
+          "name": "古斯塔夫",
+          "text": "前面也有大隊人馬，情況好像....不太對勁啊！"
         },
         {
-          "speaker": 53,
-          "name": "當地官兵",
-          "text": "住嘴！這些珠寶都是官府失落的，應該由我們接收保管才是。"
+          "speaker": 2,
+          "name": "穆爾",
+          "text": "往林中退後，不要和騎兵隊正面衝突，怎麼樣？"
         },
         {
-          "speaker": 130,
-          "name": "流民",
-          "text": "笑話，你們自己沒能力看好財寶，現在被大爺看到了就是我的！"
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "不....現在不能打防禦戰，要各個擊破，往騎兵隊的方向突圍！"
         },
         {
-          "speaker": 90,
-          "name": "疾風盜賊團",
-          "text": "喂！你沒聽到是我們先來的嗎？若說先看到就屬誰，當然是....。"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "那當然是這些村民的啦！"
-        },
-        {
-          "speaker": 99,
-          "name": "獎金獵人",
-          "text": "....死人請不要開口說話。"
-        },
-        {
-          "speaker": 96,
-          "name": "當地官兵",
-          "text": "既然見者有份，小妹建議大夥先讓這裡的證人都「閉嘴」，再來分財寶怎樣？"
-        },
-        {
-          "speaker": 130,
-          "name": "流民",
-          "text": "小妮子說話夠爽快，大爺就跟你分了。"
-        },
-        {
-          "speaker": 51,
-          "name": "野蠻戰士",
-          "text": "殺啊！殺啊！"
-        },
-        {
-          "speaker": 55,
-          "name": "疾風盜賊團",
-          "text": "分就分！要分就出些力氣，不要只靠嘴巴！"
-        },
-        {
-          "speaker": 99,
-          "name": "獎金獵人",
-          "text": "誰砍的多，誰就分的多，上吧！"
+          "speaker": 3,
+          "name": "泰普",
+          "text": "這次要玩真的啦。"
         }
       ]
     },
@@ -871,124 +748,62 @@
       "type": 3,
       "completion_flag": 0,
       "condition": 2,
-      "role_id": 99,
+      "role_id": 74,
       "lines": [
         {
-          "speaker": 99,
-          "name": "獎金獵人",
-          "text": "..死的居然是我！！！"
+          "speaker": 74,
+          "name": "騎兵隊長",
+          "text": "怎..怎麼會輸給步兵....。"
         }
       ]
-    },
-    {
-      "type": 9,
-      "completion_flag": 5
-    },
-    {
-      "type": 1,
-      "completion_flag": 7,
-      "trigger": {
-        "kind": "turn",
-        "turn": 10
-      }
     },
     {
       "type": 2,
-      "completion_flag": 7,
+      "completion_flag": 13,
       "lines": [
         {
-          "speaker": 11,
-          "name": "志超",
-          "text": "呼....，任務完成。"
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "快走，再有人來就沒力氣應付了。"
+        },
+        {
+          "speaker": 5,
+          "name": "古斯塔夫",
+          "text": "那要往那裡去呢？"
+        },
+        {
+          "speaker": 1,
+          "name": "娜塔莉雅",
+          "text": "回奚族的路上南方領一定會派出重兵把守，我們不能往回走。往亞修斯的路上多半也有援軍往來，只能往南北方向走。"
+        },
+        {
+          "speaker": 4,
+          "name": "蘇",
+          "text": "大長老之前提過礦場之事，可以往南去採石場調查。"
+        },
+        {
+          "speaker": 2,
+          "name": "穆爾",
+          "text": "北邊的罕泉鎮經常有商旅往來，我們在路上不容易被發現。"
+        },
+        {
+          "speaker": 3,
+          "name": "泰普",
+          "text": "去那裡都好，快決定吧。"
         }
       ]
     },
     {
-      "type": 11,
+      "type": 9,
       "completion_flag": 0,
-      "condition": 1,
-      "raw_operands": {
-        "offset_3": 7,
-        "offset_5": 33,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed",
-      "lines": [
-        {
-          "speaker": 33,
-          "name": "嵐",
-          "text": "讓我加入你們的行列吧！"
-        },
-        {
-          "speaker": 11,
-          "name": "志超",
-          "text": "呃....我們是旅遊商人耶？"
-        },
-        {
-          "speaker": 33,
-          "name": "嵐",
-          "text": "我意已決，願意跟隨各位。"
-        }
-      ]
-    },
-    {
-      "type": 9,
-      "completion_flag": 18
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 11,
-      "raw_operands": {
-        "offset_3": 18,
-        "offset_5": 5,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 11,
-      "completion_flag": 0,
-      "condition": 11,
-      "raw_operands": {
-        "offset_3": 18,
-        "offset_5": 10,
-        "offset_7": 0,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
-    },
-    {
-      "type": 9,
-      "completion_flag": 19,
-      "condition": 1,
-      "required_flags": [
-        18,
-        42
-      ]
-    },
-    {
-      "type": 9,
-      "completion_flag": 20,
-      "condition": 1,
-      "required_flags": [
-        18,
-        43
-      ]
-    },
-    {
-      "type": 9,
-      "completion_flag": 4,
       "condition": 6,
-      "route_stage": 45
+      "route_stage": 80
     },
     {
       "type": 9,
-      "completion_flag": 4,
+      "completion_flag": 0,
       "condition": 6,
-      "route_stage": 26
+      "route_stage": 79
     }
   ]
 }

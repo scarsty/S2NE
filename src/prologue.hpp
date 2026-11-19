@@ -1106,7 +1106,7 @@ private:
             phase_ = Phase::campaign_blocked;
             return;
         }
-        OriginalEvents source(root_, events.difficulty);
+        OriginalEvents source = events;
         source.load_stage(events.stage);
         story_route_ = OriginalCampaign::completed_story_route(source, events, OriginalCampaign(root_).stage(events.stage).next);
         if (story_route_)
@@ -1976,21 +1976,18 @@ private:
         {
             campaign_.emplace(root_);
         }
+        const auto current_stage = campaign_->stage(events.stage);
         std::vector<OriginalEvents::Unit> allies, enemies;
-        bool enemy = false;
         for (const auto& u : events.units)
         {
-            if (u.behavior == 2 || u.behavior == 3 || u.behavior == 8)
-            {
-                enemy = true;
-            }
             if (u.first_turn > int(battle_->turn()))
             {
                 continue;
             }
-            (enemy ? enemies : allies).push_back(u);
+            (u.hostile() ? enemies : allies).push_back(u);
         }
         OriginalCampaign::Runtime runtime;
+        runtime.mode = current_stage.mode;
         runtime.turn = battle_->turn();
         runtime.forced_victory = events.flags[3] != 0;
         runtime.forced_defeat = events.flags[4] != 0;
@@ -1998,7 +1995,7 @@ private:
         {
             return condition == 31 && events.flags[0] && campaign_->protagonist_at_exit(events);
         };
-        auto decision = OriginalCampaign::evaluate(campaign_->stage(events.stage), allies, enemies, runtime);
+        auto decision = OriginalCampaign::evaluate(current_stage, allies, enemies, runtime);
         if (decision.outcome == OriginalCampaign::Outcome::pending)
         {
             return false;
@@ -5242,6 +5239,22 @@ public:
         }
         else if (phase_ == Phase::branch)
         {
+            if (events.stage == 140 && (chosen_ == 1 || chosen_ == 2))
+            {
+                unsigned route_dialogue = 0;
+                for (size_t i = 0; i < events.event_count(); ++i)
+                {
+                    if (events.type(i) == 9 && events.condition(i) == 0 && route_dialogue++ == chosen_ - 1)
+                    {
+                        event_ = i;
+                        line_ = 0;
+                        phase_ = Phase::flag_dialogue;
+                        prepare();
+                        return Result<bool>::success(true);
+                    }
+                }
+                return Result<bool>::failure(make_error("Original stage 140 route dialogue is missing"));
+            }
             for (size_t i = 0; i < events.event_count(); ++i)
             {
                 if (events.flag_dialogue_trigger(i))
@@ -5281,7 +5294,10 @@ public:
             prepare_briefing();
             return Result<bool>::success(true);
         }
-        return Result<bool>::failure(make_error("Unsupported original prologue event transition"));
+        report_error(make_error("Unsupported original prologue event transition stage=" + std::to_string(events.stage)
+            + " phase=" + std::to_string(int(phase_)) + " event=" + std::to_string(event_)));
+        phase_ = Phase::campaign_blocked;
+        campaign_blocker_ = "Unsupported original prologue event transition";
         return Result<bool>::success(true);
     }
     void draw_status_terrain(const OriginalMenu& font, std::vector<uint8_t>& image, const OriginalEvents::Unit& unit, int panel_y) const

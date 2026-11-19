@@ -22,13 +22,11 @@ inline void print_stack(const StackTrace& stack) noexcept
 struct Error
 {
     std::string message;
-    StackTrace stack;
 };
-inline Error make_error(std::string message) { return { std::move(message), std::stacktrace::current(1) }; }
+inline Error make_error(std::string message) { return { std::move(message) }; }
 inline void report_error(const Error& error) noexcept
 {
     std::print(stderr, "S2NE: {}\n", error.message);
-    print_stack(error.stack);
 }
 [[noreturn]] inline void fatal(const Error& error) noexcept
 {
