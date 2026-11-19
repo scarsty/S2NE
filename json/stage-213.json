@@ -345,9 +345,9 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 13,
-        "y": 21,
-        "direction": 0
+        "x": 7,
+        "y": 32,
+        "direction": 1
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -356,9 +356,9 @@
       "slot": 1,
       "role_id": 1,
       "deployment": {
-        "x": 15,
-        "y": 26,
-        "direction": 2
+        "x": 8,
+        "y": 28,
+        "direction": 1
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -367,9 +367,9 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 14,
-        "y": 23,
-        "direction": 0
+        "x": 9,
+        "y": 28,
+        "direction": 1
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -378,9 +378,9 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 13,
-        "y": 23,
-        "direction": 0
+        "x": 6,
+        "y": 34,
+        "direction": 1
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -389,9 +389,9 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 13,
-        "y": 25,
-        "direction": 0
+        "x": 7,
+        "y": 30,
+        "direction": 1
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -400,9 +400,9 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 14,
-        "y": 25,
-        "direction": 2
+        "x": 5,
+        "y": 34,
+        "direction": 1
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -411,9 +411,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 15,
-        "y": 27,
-        "direction": 2
+        "x": 8,
+        "y": 30,
+        "direction": 1
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -422,9 +422,9 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 17,
-        "y": 36,
-        "direction": 0
+        "x": 6,
+        "y": 32,
+        "direction": 1
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -449,75 +449,71 @@
       "x": 9,
       "y": 28,
       "direction": 1,
-      "role_id": 0,
+      "role_id": 14,
       "fixed": false
     },
     {
       "x": 6,
       "y": 34,
       "direction": 1,
-      "role_id": 0,
+      "role_id": 15,
       "fixed": false
     },
     {
       "x": 7,
       "y": 30,
       "direction": 1,
-      "role_id": 0,
+      "role_id": 13,
       "fixed": false
     },
     {
       "x": 5,
       "y": 34,
       "direction": 1,
-      "role_id": 0,
+      "role_id": 2,
       "fixed": false
     },
     {
       "x": 8,
       "y": 30,
       "direction": 1,
-      "role_id": 0,
+      "role_id": 3,
       "fixed": false
     },
     {
       "x": 6,
       "y": 32,
       "direction": 1,
+      "role_id": 4,
+      "fixed": false
+    },
+    {
+      "x": 7,
+      "y": 28,
+      "direction": 1,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 6,
-      "y": 32.0,
+      "x": 7,
+      "y": 31,
       "direction": 1,
       "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment slot"
+      "fixed": false
     },
     {
       "x": 7,
-      "y": 32.0,
+      "y": 33,
       "direction": 1,
       "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment slot"
+      "fixed": false
     },
     {
-      "x": 9,
-      "y": 32.0,
+      "x": 8,
+      "y": 32,
       "direction": 1,
       "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment slot"
-    },
-    {
-      "x": 9,
-      "y": 33.0,
-      "direction": 1,
-      "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment slot"
+      "fixed": false
     }
   ],
   "deployment_rules": {
@@ -530,7 +526,7 @@
     "base_stage": 15
   },
   "objects": [],
-  "name": "北方合流篇-213-底座15",
+  "name": "沙漠名珠",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",

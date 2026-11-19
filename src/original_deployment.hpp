@@ -47,6 +47,15 @@ class OriginalDeployment
         auto found = std::find(assignment_.begin(), assignment_.end(), int(role));
         return found == assignment_.end() ? -1 : int(found - assignment_.begin());
     }
+    bool occupied_cell(size_t slot) const
+    {
+        const auto& point = slots_.at(slot);
+        for (size_t assigned = 0; assigned < assignment_.size(); ++assigned)
+        {
+            if (assignment_[assigned] >= 0 && slots_[assigned].x == point.x && slots_[assigned].y == point.y) { return true; }
+        }
+        return false;
+    }
     void assign(size_t role, size_t slot)
     {
         assignment_.at(slot) = int(role);
@@ -131,7 +140,7 @@ class OriginalDeployment
         case 0:
             for (size_t s = 0; s < capacity(); ++s)
             {
-                if (assignment_[s] >= 0) { continue; }
+                if (assignment_[s] >= 0 || occupied_cell(s)) { continue; }
                 auto found = std::find_if(roles_.begin(), roles_.end(), [&](size_t role)
                     {
                         return slot_for(role) < 0 && int(events_.units[role].id) == slots_[s].role;
@@ -291,6 +300,18 @@ public:
         if (!picker) { fatal(picker.error()); }
         picker_.emplace(std::move(picker).value());
         slots_ = events_.deployment_slots();
+        if (events_.stage >= 201)
+        {
+            for (const auto& slot : slots_)
+            {
+                if (!picker_->skill_area_cell({ slot.x, slot.y }))
+                {
+                    fatal("Third-route deployment cell is not legal x=" + std::to_string(slot.x) + " y=" + std::to_string(slot.y)
+                        + " map=" + std::to_string(events_.map_id));
+                }
+            }
+        }
+
         fixed_.resize(events_.units.size());
         for (size_t i = 0; i < raw_.groups[0].units.size(); ++i)
         {
@@ -357,7 +378,6 @@ public:
         placement_cell_.assign(icons.begin() + placement + 4, icons.begin() + placement + 2052);
         for (size_t i = 0; i < 2; ++i) { backgrounds_[i] = dword(cells_, 2 + i * 8); }
         map_.load(events_.map_id);
-        std::print(stderr, "Original deployment ctor map loaded stage={} slots={} roles={}\n", events_.stage, slots_.size(), roles_.size());
         picker_->set_mask_surfaces(true);
     }
     size_t capacity() const { return std::min(slots_.size(), roles_.size()); }
@@ -407,7 +427,7 @@ public:
         bool available = false;
         for (size_t s = 0; s < capacity(); ++s)
         {
-            if (assignment_[s] < 0 && slots_[s].x == cell.x && slots_[s].y == cell.y)
+            if (assignment_[s] < 0 && !occupied_cell(s) && slots_[s].x == cell.x && slots_[s].y == cell.y)
             {
                 available = true;
                 break;

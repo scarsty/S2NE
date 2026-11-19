@@ -228,7 +228,6 @@ public:
     OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc, InitializationTag) : root_(root), shop_(root), font_(root), background_(root, disc, 14), cel_(read_shared_resource(root / "SUPERSP.CEL").value()), pal_(read_shared_resource(root / "SUPERSP.PAL").value()) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, OriginalDisc disc)
     {
-        const auto json_path = root / "json" / "towns.json";
         auto json_towns = try_load_towns_json(root);
         if (!json_towns)
         {
@@ -237,7 +236,6 @@ public:
         if (!json_towns.value().empty())
         {
             towns_ = std::move(json_towns).value();
-            std::println("Data source towns=JSON shop path={}", json_path.string());
         }
         else
         {
@@ -248,7 +246,6 @@ public:
                 return s2ne::Result<bool>::failure(make_error("Invalid original town BIN4"));
             }
             towns_.assign(bin.begin() + town, bin.begin() + town + size);
-            std::println("Data source towns=BIN shop path={}", (root / "SUPERSP.BIN").string());
         }
         auto bytes = OriginalDiscResources(root).dat_entry(disc, 3);
         size_t p = 2;

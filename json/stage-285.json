@@ -741,9 +741,9 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 13,
-        "y": 21,
-        "direction": 0
+        "x": 2,
+        "y": 85,
+        "direction": 3
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -752,9 +752,9 @@
       "slot": 1,
       "role_id": 1,
       "deployment": {
-        "x": 15,
-        "y": 26,
-        "direction": 2
+        "x": 4,
+        "y": 87,
+        "direction": 3
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -763,9 +763,9 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 14,
-        "y": 23,
-        "direction": 0
+        "x": 1,
+        "y": 82,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -774,9 +774,9 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 13,
-        "y": 23,
-        "direction": 0
+        "x": 1,
+        "y": 87,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -785,9 +785,9 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 13,
-        "y": 25,
-        "direction": 0
+        "x": 4,
+        "y": 68,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -796,9 +796,9 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 14,
-        "y": 25,
-        "direction": 2
+        "x": 1,
+        "y": 59,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -807,9 +807,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 15,
-        "y": 27,
-        "direction": 2
+        "x": 5,
+        "y": 82,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -818,9 +818,9 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 17,
-        "y": 36,
-        "direction": 0
+        "x": 24,
+        "y": 62,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -830,98 +830,86 @@
     {
       "x": 2,
       "y": 85,
-      "direction": 2,
+      "direction": 3,
       "role_id": 11,
-      "fixed": true,
-      "source": "original first-turn arrival coordinate"
+      "fixed": true
     },
     {
       "x": 4,
       "y": 87,
-      "direction": 2,
+      "direction": 3,
       "role_id": 1,
-      "fixed": true,
-      "source": "original first-turn arrival coordinate"
+      "fixed": true
     },
     {
       "x": 1,
       "y": 82,
-      "direction": 2,
-      "role_id": 0,
-      "fixed": false,
-      "source": "original first-turn arrival coordinate"
+      "direction": 3,
+      "role_id": 14,
+      "fixed": false
     },
     {
       "x": 1,
       "y": 87,
-      "direction": 2,
+      "direction": 3,
+      "role_id": 15,
+      "fixed": false
+    },
+    {
+      "x": 4,
+      "y": 68,
+      "direction": 3,
+      "role_id": 13,
+      "fixed": false
+    },
+    {
+      "x": 1,
+      "y": 59,
+      "direction": 3,
+      "role_id": 2,
+      "fixed": false
+    },
+    {
+      "x": 5,
+      "y": 82,
+      "direction": 3,
+      "role_id": 3,
+      "fixed": false
+    },
+    {
+      "x": 24,
+      "y": 62,
+      "direction": 3,
+      "role_id": 4,
+      "fixed": false
+    },
+    {
+      "x": 1,
+      "y": 85,
+      "direction": 3,
       "role_id": 0,
-      "fixed": false,
-      "source": "original first-turn arrival coordinate"
+      "fixed": false
+    },
+    {
+      "x": 2,
+      "y": 84,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 2,
+      "y": 86,
+      "direction": 3,
+      "role_id": 0,
+      "fixed": false
     },
     {
       "x": 3,
       "y": 85,
-      "direction": 2,
+      "direction": 3,
       "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment coordinate"
-    },
-    {
-      "x": 3,
-      "y": 87,
-      "direction": 2,
-      "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment coordinate"
-    },
-    {
-      "x": 1,
-      "y": 83,
-      "direction": 2,
-      "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment coordinate"
-    },
-    {
-      "x": 1,
-      "y": 86,
-      "direction": 2,
-      "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment coordinate"
-    },
-    {
-      "x": 4,
-      "y": 84,
-      "direction": 2,
-      "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment coordinate"
-    },
-    {
-      "x": 2,
-      "y": 88,
-      "direction": 2,
-      "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment coordinate"
-    },
-    {
-      "x": 2,
-      "y": 83,
-      "direction": 2,
-      "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment coordinate"
-    },
-    {
-      "x": 0,
-      "y": 86,
-      "direction": 2,
-      "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment coordinate"
+      "fixed": false
     }
   ],
   "deployment_rules": {
@@ -934,7 +922,7 @@
     "base_stage": 57
   },
   "objects": [],
-  "name": "北方合流篇-285-底座57",
+  "name": "內鬨",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",

@@ -2548,14 +2548,6 @@ public:
     {
         const auto json_path = root / "json" / "stage-140.json";
         auto override_result = events.try_load_opening_dialogue_override(json_path);
-        if (override_result && override_result.value())
-        {
-            std::println("Data source stage=140 dialogue=JSON path={}", json_path.string());
-        }
-        else if (override_result)
-        {
-            std::println("Data source stage=140 dialogue=BIN");
-        }
         if (!override_result)
         {
             fatal(override_result.error());
@@ -5422,11 +5414,14 @@ public:
         }
         if (story_group_ && !story_group_->draw_completed())
         {
-            for (size_t i = 0; i < story_group_units_.size(); ++i)
+            const auto& tracks = story_group_->tracks();
+            const size_t count = std::min(story_group_units_.size(), tracks.size());
+            for (size_t i = 0; i < count; ++i)
             {
-                if (!story_group_->tracks()[i].active())
+                const size_t unit = story_group_units_[i];
+                if (!tracks[i].active() && unit < story_units.size())
                 {
-                    story_units[story_group_units_[i]].status_flags &= ~0x80u;
+                    story_units[unit].status_flags &= ~0x80u;
                 }
             }
         }

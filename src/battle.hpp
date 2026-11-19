@@ -3708,7 +3708,12 @@ public:
     // Returns true only after the last actor has finished and side AP is reset.
     bool tick_hostile_actions(std::vector<OriginalEvents::Unit>& units, unsigned milliseconds)
     {
-        if (ai_skill_failed_) { return false; }
+        if (ai_skill_failed_)
+        {
+            // 40646D 评分失败后必须清掉候选并重新规划；仅返回会永久锁住电脑行动。
+            fail_ai_skill();
+            return false;
+        }
         if (!hostile_actions_active_)
         {
             return true;

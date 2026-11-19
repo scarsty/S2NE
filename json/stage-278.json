@@ -609,8 +609,8 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 13,
-        "y": 21,
+        "x": 10,
+        "y": 51,
         "direction": 0
       },
       "mandatory_role": true,
@@ -621,8 +621,8 @@
       "role_id": 1,
       "deployment": {
         "x": 15,
-        "y": 26,
-        "direction": 2
+        "y": 43,
+        "direction": 1
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -631,8 +631,8 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 14,
-        "y": 23,
+        "x": 10,
+        "y": 28,
         "direction": 0
       },
       "mandatory_role": false,
@@ -642,9 +642,9 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 13,
-        "y": 23,
-        "direction": 0
+        "x": 18,
+        "y": 37,
+        "direction": 1
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -654,8 +654,8 @@
       "role_id": 13,
       "deployment": {
         "x": 13,
-        "y": 25,
-        "direction": 0
+        "y": 51,
+        "direction": 1
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -664,9 +664,9 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 14,
-        "y": 25,
-        "direction": 2
+        "x": 5,
+        "y": 37,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -675,9 +675,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 15,
-        "y": 27,
-        "direction": 2
+        "x": 9,
+        "y": 45,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -686,9 +686,9 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 17,
-        "y": 36,
-        "direction": 0
+        "x": 14,
+        "y": 28,
+        "direction": 1
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -713,75 +713,71 @@
       "x": 10,
       "y": 28,
       "direction": 0,
-      "role_id": 0,
+      "role_id": 14,
       "fixed": false
     },
     {
       "x": 18,
       "y": 37,
       "direction": 1,
-      "role_id": 0,
+      "role_id": 15,
       "fixed": false
     },
     {
       "x": 13,
       "y": 51,
       "direction": 1,
-      "role_id": 0,
+      "role_id": 13,
       "fixed": false
     },
     {
       "x": 5,
       "y": 37,
       "direction": 0,
-      "role_id": 0,
+      "role_id": 2,
       "fixed": false
     },
     {
       "x": 9,
       "y": 45,
       "direction": 0,
-      "role_id": 0,
+      "role_id": 3,
       "fixed": false
     },
     {
       "x": 14,
       "y": 28,
       "direction": 1,
+      "role_id": 4,
+      "fixed": false
+    },
+    {
+      "x": 9,
+      "y": 51,
+      "direction": 0,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 14,
-      "y": 28.0,
-      "direction": 1,
+      "x": 10,
+      "y": 50,
+      "direction": 0,
       "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment slot"
+      "fixed": false
     },
     {
-      "x": 15,
-      "y": 28.0,
-      "direction": 1,
+      "x": 10,
+      "y": 52,
+      "direction": 0,
       "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment slot"
+      "fixed": false
     },
     {
-      "x": 17,
-      "y": 28.0,
-      "direction": 1,
+      "x": 11,
+      "y": 51,
+      "direction": 0,
       "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment slot"
-    },
-    {
-      "x": 17,
-      "y": 29.0,
-      "direction": 1,
-      "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment slot"
+      "fixed": false
     }
   ],
   "deployment_rules": {
@@ -794,7 +790,7 @@
     "base_stage": 39
   },
   "objects": [],
-  "name": "北方合流篇-278-底座39",
+  "name": "散財童子",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",

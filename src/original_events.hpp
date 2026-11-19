@@ -1562,7 +1562,7 @@ public:
     }
     Result<bool> try_restore_event_states(std::span<const uint16_t> states)
     {
-        if (states.size() != event_count())
+        if (!json_stage_loaded_ && states.size() != event_count())
         {
             return Result<bool>::failure(make_error("Original save event count does not match stage"));
         }
@@ -1573,7 +1573,8 @@ public:
                 return Result<bool>::failure(make_error("Invalid original saved event byte"));
             }
         }
-        for (size_t i = 0; i < states.size(); ++i)
+        const size_t restored_count = std::min(states.size(), event_count());
+        for (size_t i = 0; i < restored_count; ++i)
         {
             if (event_types_.size() < event_count()) { event_types_.resize(event_count()); }
             event_types_[i] = uint8_t(states[i]);

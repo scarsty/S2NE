@@ -533,7 +533,7 @@ public:
         result.flags_4f7d10 = events.flags;
         result.event_states.clear();
         if (result.battle_context()) { result.event_states = events.save_event_states(); }
-        if (result.event_states.size() != baseline->event_states.size())
+        if (!events.json_stage_loaded_ && result.event_states.size() != baseline->event_states.size())
         {
             return Result<OriginalSave::State>::failure(make_error("Stage event set changed"));
         }

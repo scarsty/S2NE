@@ -2473,11 +2473,8 @@ int s2ne::run_application(int argc, char** argv)
                         else if (command == "briefing_advance")
                         {
                             if (!prologue || prologue->diagnostic_phase() != 4 || deployment) { throw std::runtime_error("briefing unavailable"); }
-                            std::print(stderr, "briefing advance begin stage={} offset-phase={}\n", prologue->events.stage, prologue->diagnostic_phase());
                             prologue->advance();
-                            std::print(stderr, "briefing advance after advance stage={} phase={}\n", prologue->events.stage, prologue->diagnostic_phase());
                             showPrologue();
-                            std::print(stderr, "briefing advance after show stage={} phase={}\n", prologue->events.stage, prologue->diagnostic_phase());
                             stdioPending = response;
                             stdioReadyAt = nowUi;
                         }
@@ -5834,6 +5831,7 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (prologue && !rawSave && (prologue->deployment_requested() || !prologue->autosave_requests().empty()) && prologue->events.stage != 140)
             {
+                if (diagnostics) { std::print(stderr, "Campaign deployment init begin stage={}\n", prologue->events.stage); }
                 auto initialized = initialization.try_fresh(root, prologue->events.stage, prologue->events.difficulty, prologue->events.flags, s2ne::OriginalInitialization::setup_from_settings(settingsState, 0));
                 if (!initialized)
                 {
@@ -5841,6 +5839,7 @@ int s2ne::run_application(int argc, char** argv)
                     return EXIT_FAILURE;
                 }
                 auto staged = std::move(initialized).value();
+                if (diagnostics) { std::print(stderr, "Campaign deployment init fresh complete stage={}\n", prologue->events.stage); }
                 auto restoredResult = s2ne::OriginalSaveBridge::try_restore(root, staged);
                 if (!restoredResult)
                 {
@@ -5848,6 +5847,7 @@ int s2ne::run_application(int argc, char** argv)
                     return EXIT_FAILURE;
                 }
                 auto restored = std::move(restoredResult).value();
+                if (diagnostics) { std::print(stderr, "Campaign deployment restore complete stage={}\n", prologue->events.stage); }
                 auto publication = prologue->try_normalize_campaign_roster(std::move(restored.events), 1);
                 if (!publication)
                 {
@@ -5856,10 +5856,11 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 rawSave = std::move(staged);
                 autosaveBlocked = false;
+                if (diagnostics) { std::print(stderr, "Campaign deployment normalization complete stage={}\n", prologue->events.stage); }
             }
             if (prologue && rawSave && prologue->deployment_requested() && !deployment)
             {
-                std::print(stderr, "Original deployment branch begin stage={}\n", prologue->events.stage);
+                if (diagnostics) { std::print(stderr, "Campaign deployment object begin stage={}\n", prologue->events.stage); }
                 auto captured = s2ne::OriginalSaveBridge::try_capture(prologue->events, 1, prologue->camera(), &*rawSave);
                 if (!captured)
                 {
@@ -5867,7 +5868,7 @@ int s2ne::run_application(int argc, char** argv)
                     return EXIT_FAILURE;
                 }
                 deployment.emplace(root, prologue->events, std::move(captured).value(), s2ne::app_domain_for_save(*rawSave));
-                std::print(stderr, "Original deployment branch end stage={}\n", prologue->events.stage);
+                if (diagnostics) { std::print(stderr, "Campaign deployment object complete stage={}\n", prologue->events.stage); }
                 showPrologue();
             }
             if (deployment && deployment->done())

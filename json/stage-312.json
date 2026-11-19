@@ -565,9 +565,9 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 13,
-        "y": 21,
-        "direction": 0
+        "x": 11,
+        "y": 84,
+        "direction": 3
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -576,8 +576,8 @@
       "slot": 1,
       "role_id": 1,
       "deployment": {
-        "x": 15,
-        "y": 26,
+        "x": 8,
+        "y": 84,
         "direction": 2
       },
       "mandatory_role": true,
@@ -587,9 +587,9 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 14,
-        "y": 23,
-        "direction": 0
+        "x": 6,
+        "y": 81,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -598,9 +598,9 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 13,
-        "y": 23,
-        "direction": 0
+        "x": 9,
+        "y": 87,
+        "direction": 2
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -609,8 +609,8 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 13,
-        "y": 25,
+        "x": 9,
+        "y": 75,
         "direction": 0
       },
       "mandatory_role": false,
@@ -620,9 +620,9 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 14,
-        "y": 25,
-        "direction": 2
+        "x": 11,
+        "y": 78,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -631,9 +631,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 15,
-        "y": 27,
-        "direction": 2
+        "x": 12,
+        "y": 81,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -642,9 +642,9 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 17,
-        "y": 36,
-        "direction": 0
+        "x": 21,
+        "y": 84,
+        "direction": 3
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -669,68 +669,68 @@
       "x": 6,
       "y": 81,
       "direction": 2,
-      "role_id": 0,
+      "role_id": 14,
       "fixed": false
     },
     {
       "x": 9,
       "y": 87,
       "direction": 2,
-      "role_id": 0,
+      "role_id": 15,
       "fixed": false
     },
     {
       "x": 9,
       "y": 75,
       "direction": 0,
-      "role_id": 0,
+      "role_id": 13,
       "fixed": false
     },
     {
       "x": 11,
       "y": 78,
       "direction": 0,
-      "role_id": 0,
+      "role_id": 2,
       "fixed": false
     },
     {
       "x": 12,
       "y": 81,
       "direction": 0,
-      "role_id": 0,
+      "role_id": 3,
       "fixed": false
     },
     {
       "x": 21,
       "y": 84,
       "direction": 3,
+      "role_id": 4,
+      "fixed": false
+    },
+    {
+      "x": 10,
+      "y": 84,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 22,
-      "y": 81,
-      "direction": 0,
+      "x": 11,
+      "y": 83,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 21,
-      "y": 78,
-      "direction": 0,
+      "x": 11,
+      "y": 85,
+      "direction": 3,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 19,
-      "y": 75,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false
-    },
-    {
-      "x": 16,
-      "y": 81,
+      "x": 12,
+      "y": 84,
       "direction": 3,
       "role_id": 0,
       "fixed": false
@@ -746,7 +746,7 @@
     "base_stage": 61
   },
   "objects": [],
-  "name": "北方合流篇-312-底座61",
+  "name": "超時空傳說",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",

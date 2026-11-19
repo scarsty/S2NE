@@ -807,8 +807,8 @@
       "slot": 0,
       "role_id": 11,
       "deployment": {
-        "x": 13,
-        "y": 21,
+        "x": 17,
+        "y": 43,
         "direction": 0
       },
       "mandatory_role": true,
@@ -819,8 +819,8 @@
       "role_id": 1,
       "deployment": {
         "x": 15,
-        "y": 26,
-        "direction": 2
+        "y": 32,
+        "direction": 3
       },
       "mandatory_role": true,
       "source": "original stage-1/stage-71 roster"
@@ -829,8 +829,8 @@
       "slot": 2,
       "role_id": 14,
       "deployment": {
-        "x": 14,
-        "y": 23,
+        "x": 15,
+        "y": 40,
         "direction": 0
       },
       "mandatory_role": false,
@@ -840,8 +840,8 @@
       "slot": 3,
       "role_id": 15,
       "deployment": {
-        "x": 13,
-        "y": 23,
+        "x": 17,
+        "y": 39,
         "direction": 0
       },
       "mandatory_role": false,
@@ -851,8 +851,8 @@
       "slot": 4,
       "role_id": 13,
       "deployment": {
-        "x": 13,
-        "y": 25,
+        "x": 15,
+        "y": 36,
         "direction": 0
       },
       "mandatory_role": false,
@@ -862,9 +862,9 @@
       "slot": 5,
       "role_id": 2,
       "deployment": {
-        "x": 14,
-        "y": 25,
-        "direction": 2
+        "x": 16,
+        "y": 43,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -873,9 +873,9 @@
       "slot": 6,
       "role_id": 3,
       "deployment": {
-        "x": 15,
-        "y": 27,
-        "direction": 2
+        "x": 13,
+        "y": 37,
+        "direction": 0
       },
       "mandatory_role": false,
       "source": "original stage-1/stage-71 roster"
@@ -884,8 +884,8 @@
       "slot": 7,
       "role_id": 4,
       "deployment": {
-        "x": 17,
-        "y": 36,
+        "x": 14,
+        "y": 32,
         "direction": 0
       },
       "mandatory_role": false,
@@ -911,76 +911,71 @@
       "x": 15,
       "y": 40,
       "direction": 0,
-      "role_id": 0,
+      "role_id": 14,
       "fixed": false
     },
     {
       "x": 17,
       "y": 39,
       "direction": 0,
-      "role_id": 0,
+      "role_id": 15,
       "fixed": false
     },
     {
       "x": 15,
       "y": 36,
       "direction": 0,
-      "role_id": 0,
+      "role_id": 13,
       "fixed": false
     },
     {
       "x": 16,
       "y": 43,
       "direction": 0,
-      "role_id": 0,
+      "role_id": 2,
       "fixed": false
     },
     {
       "x": 13,
       "y": 37,
       "direction": 0,
+      "role_id": 3,
+      "fixed": false
+    },
+    {
+      "x": 14,
+      "y": 32,
+      "direction": 0,
       "role_id": 0,
       "fixed": false
     },
     {
-      "x": 13,
-      "y": 37.0,
+      "x": 17,
+      "y": 42,
       "direction": 0,
       "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment slot"
-    },
-    {
-      "x": 14,
-      "y": 37.0,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment slot"
-    },
-    {
-      "x": 16,
-      "y": 37.0,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment slot"
-    },
-    {
-      "x": 16,
-      "y": 38.0,
-      "direction": 0,
-      "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment slot"
+      "fixed": false
     },
     {
       "x": 17,
-      "y": 39.0,
+      "y": 44,
       "direction": 0,
       "role_id": 0,
-      "fixed": false,
-      "source": "adjacent extension of original deployment slot"
+      "fixed": false
+    },
+    {
+      "x": 18,
+      "y": 43,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
+    },
+    {
+      "x": 15,
+      "y": 43,
+      "direction": 0,
+      "role_id": 0,
+      "fixed": false
     }
   ],
   "deployment_rules": {
@@ -993,7 +988,7 @@
     "base_stage": 50
   },
   "objects": [],
-  "name": "北方合流篇-307-底座50",
+  "name": "提那南橋",
   "briefing": "",
   "objectives": {
     "victory": "消滅所有敵軍。",

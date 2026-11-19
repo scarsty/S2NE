@@ -227,14 +227,17 @@ public:
         {
             return failure(SDL_GetError());
         }
-        std::print("Audio driver: {}\n", SDL_GetCurrentAudioDriver());
-        int device_count = 0;
-        auto* devices = SDL_GetAudioPlaybackDevices(&device_count);
-        for (int i = 0; devices && i < device_count; ++i)
+        if (diagnostics_)
         {
-            std::print("Playback device: {}\n", SDL_GetAudioDeviceName(devices[i]));
+            std::print(stderr, "Audio driver: {}\n", SDL_GetCurrentAudioDriver());
+            int device_count = 0;
+            auto* devices = SDL_GetAudioPlaybackDevices(&device_count);
+            for (int i = 0; devices && i < device_count; ++i)
+            {
+                std::print(stderr, "Playback device: {}\n", SDL_GetAudioDeviceName(devices[i]));
+            }
+            SDL_free(devices);
         }
-        SDL_free(devices);
         track = MIX_CreateTrack(mixer);
         if (!track || !MIX_SetTrackGain(track, 1.f))
         {
