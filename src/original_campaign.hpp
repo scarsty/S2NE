@@ -192,7 +192,9 @@ public:
             {
                 return Result<Stage>::failure(make_error("Incomplete third-route stage route: " + json_path.string()));
             }
-            Stage stage;
+            auto original = try_stage(original_stage_id(id));
+            if (!original) { return original; }
+            Stage stage = std::move(original).value();
             stage.id = id;
             stage.next = route.at("next_stage").get<unsigned>();
             stage.mode = route.at("mode").get<unsigned>();

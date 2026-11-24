@@ -56,6 +56,8 @@ class OriginalInitialization
         }
         return Result<std::vector<uint8_t>>::success({ bin_.begin() + begin, bin_.begin() + end });
     }
+
+public:
     Result<bool> try_describe(OriginalSave::State& raw, const OriginalEvents& events) const
     {
         auto labelResult = try_text(144), turnResult = try_text(1);

@@ -1701,7 +1701,7 @@ public:
             return 0;
         }
         uint32_t mask = command_masks[5] | (original_rules_ ? command_masks[3] : 0);
-        if ((!acted_ || original_rules_) && u.action_points >= (original_rules_ ? attack_menu_cost(u) : attack_cost(u)))
+        if ((!acted_ || original_rules_) && u.action_points >= (original_rules_ ? attack_menu_cost(u) : attack_cost(u)) && (!original_rules_ || attack_count(units) > 0))
         {
             mask |= command_masks[0];
         }
@@ -2792,12 +2792,6 @@ public:
         {
             int action_slot = executable_attack_slot(action);
             if (action_slot < 0 || (slot >= 0 && slot != action_slot))
-            {
-                continue;
-            }
-            // Preserve the existing bounded contact executor. Type5 uses its
-            // decoded original range, including minimum and shape/height gates.
-            if (action_slot == 0 && (!adjacent({ u.x, u.y }, { v.x, v.y }) || cell({ u.x, u.y }).elevation != cell({ v.x, v.y }).elevation))
             {
                 continue;
             }
@@ -4311,10 +4305,6 @@ private:
             for (const auto& target : action_targets(*hostile_resources_, moved_actor, action, opponents, moved_observers, 0))
             {
                 const auto& defender = opponents[target.unit_index];
-                if (executable_attack_slot(action) == 0 && (!adjacent({ position.x, position.y }, { defender.x, defender.y }) || cell({ position.x, position.y }).elevation != cell({ defender.x, defender.y }).elevation))
-                {
-                    continue;
-                }
                 int previewMode = int(attack_mode({ position.x, position.y }, { defender.x, defender.y }, defender.direction, hostile_resources_->difficulty == 1));
                 if (defender.abilities & 0x2000) { previewMode = 1; }
                 int damage = physical_action_preview(*hostile_resources_, moved_actor, defender, action, false, previewMode);

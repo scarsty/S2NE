@@ -592,6 +592,36 @@ int s2ne::run_application(int argc, char** argv)
             paused = true;
         }
         auto settingsState = s2ne::OriginalSettings::load_state(root);
+        auto saveSettingsConfig = [&](const std::string& text)
+        {
+            std::map<std::string, std::string> replacements;
+            std::istringstream updated(text);
+            std::string line;
+            while (std::getline(updated, line))
+            {
+                auto eq = line.find('=');
+                if (eq != std::string::npos && line.substr(0, eq) != "Version") { replacements[line.substr(0, eq)] = line; }
+            }
+            std::ifstream existing(root / "SUPERSP.CFG", std::ios::binary);
+            std::string merged;
+            while (std::getline(existing, line))
+            {
+                if (!line.empty() && line.back() == '\r') { line.pop_back(); }
+                auto replacement = replacements.find(line.substr(0, line.find('=')));
+                if (replacement != replacements.end())
+                {
+                    line = replacement->second;
+                    replacements.erase(replacement);
+                }
+                merged += line + "\r\n";
+            }
+            existing.close();
+            for (const auto& [key, value] : replacements) { merged += value + "\r\n"; }
+            std::ofstream config(root / "SUPERSP.CFG", std::ios::binary);
+            if (!config) { s2ne::fatal("Cannot save original settings"); }
+            config << merged;
+            if (!config) { s2ne::fatal("Original settings write failed"); }
+        };
         const bool simplifiedChinese = settingsState.simplified_chinese != 0;
         if (std::filesystem::exists(root / "chinese.ttf"))
         {
@@ -797,7 +827,8 @@ int s2ne::run_application(int argc, char** argv)
                                     prologue->mask_ground_selection(pixels, cell);
                                 });
                         }
-                    });
+                    },
+                    !skillMenu);
                 if (spiritSightImage) { image = *spiritSightImage; }
             }
 
@@ -1931,6 +1962,7 @@ int s2ne::run_application(int argc, char** argv)
                 showPrologue();
             }
             if (promotionMenu && promotionMenu->tick(nowUi)) { showPrologue(); }
+            if (churchMenu && churchMenu->tick(nowUi)) { showPrologue(); }
             auto musicSettings = settingsState;
             if (settings) { musicSettings = settings->state(); }
             if (battleMenu) { musicSettings = battleMenu->settings_state(); }
@@ -2343,6 +2375,8 @@ int s2ne::run_application(int argc, char** argv)
                             if (slot < 1 || slot > 50) { throw std::runtime_error("checkpoint slot must be 1..50"); }
                             auto captured = hub_boundary ? s2ne::Result<s2ne::OriginalSave::State>::success(*rawSave) : s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                             if (!captured) { throw std::runtime_error(captured.error().message); }
+                            auto described = initialization.try_describe(captured.value(), prologue->events);
+                            if (!described) { throw std::runtime_error(described.error().message); }
                             auto written = s2ne::OriginalSaveStore::try_write(*isolatedSaveRoot, unsigned(slot), captured.value(), saveItems);
                             if (!written) { throw std::runtime_error(written.error().message); }
                             response["saved_slot"] = slot;
@@ -4866,49 +4900,7 @@ int s2ne::run_application(int argc, char** argv)
                         menu.small_font = settingsState.small_font != 0;
                         if (result.save_config)
                         {
-                            std::map<std::string, std::string> replacements;
-                            std::istringstream updated(settings->config_text());
-                            std::string line;
-                            while (std::getline(updated, line))
-                            {
-                                auto eq = line.find('=');
-                                if (eq != std::string::npos && line.substr(0, eq) != "Version")
-                                {
-                                    replacements[line.substr(0, eq)] = line;
-                                }
-                            }
-                            std::ifstream existing(root / "SUPERSP.CFG", std::ios::binary);
-                            std::string merged;
-                            while (std::getline(existing, line))
-                            {
-                                if (!line.empty() && line.back() == '\r')
-                                {
-                                    line.pop_back();
-                                }
-                                auto key = line.substr(0, line.find('='));
-                                auto replacement = replacements.find(key);
-                                if (replacement != replacements.end())
-                                {
-                                    line = replacement->second;
-                                    replacements.erase(replacement);
-                                }
-                                merged += line + "\r\n";
-                            }
-                            existing.close();
-                            for (const auto& [key, value] : replacements)
-                            {
-                                merged += value + "\r\n";
-                            }
-                            std::ofstream config(root / "SUPERSP.CFG", std::ios::binary);
-                            if (!config)
-                            {
-                                s2ne::fatal("Cannot save original settings");
-                            }
-                            config << merged;
-                            if (!config)
-                            {
-                                s2ne::fatal("Original settings write failed");
-                            }
+                            saveSettingsConfig(settings->config_text());
                         }
                         settings.reset();
                         showMenu();
@@ -5259,6 +5251,8 @@ int s2ne::run_application(int argc, char** argv)
                                         return s2ne::Result<bool>::failure(captured.error());
                                     }
                                     auto state = std::move(captured).value();
+                                    auto described = initialization.try_describe(state, prologue->events);
+                                    if (!described) { return s2ne::Result<bool>::failure(described.error()); }
                                     auto written = s2ne::OriginalSaveStore::try_write(isolatedSaveRoot ? *isolatedSaveRoot : root, result.slot, state, saveItems);
                                     if (!written)
                                     {
@@ -5300,7 +5294,13 @@ int s2ne::run_application(int argc, char** argv)
                     {
                         const auto oldPage = battleMenu->page();
                         const auto oldSelection = battleMenu->selected();
-                        battleMenu->event(input);
+                        const auto result = battleMenu->event(input);
+                        if (result.save_config)
+                        {
+                            settingsState = battleMenu->settings_state();
+                            s2ne::OriginalSettings savedSettings(root, 1, settingsState);
+                            saveSettingsConfig(savedSettings.config_text());
+                        }
                         if ((oldPage == s2ne::OriginalBattleMenu::Page::root || oldPage == s2ne::OriginalBattleMenu::Page::overview || oldPage == s2ne::OriginalBattleMenu::Page::system) && battleMenu->page() == oldPage && battleMenu->selected() != oldSelection) { playEffect(100); }
                         if (oldPage != s2ne::OriginalBattleMenu::Page::confirmation && battleMenu->page() == s2ne::OriginalBattleMenu::Page::confirmation)
                         {
@@ -5392,9 +5392,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (prologue->choosing() || prologue->in_battle())
                         {
-                            const bool selecting = prologue->in_battle() && prologue->battle_state() == s2ne::Battle::State::idle;
                             prologue->mouse(x, y, click);
-                            if (selecting && click && prologue->battle_state() == s2ne::Battle::State::command) { playEffect(126); }
                         }
                         else if (click)
                         {
@@ -5930,6 +5928,13 @@ int s2ne::run_application(int argc, char** argv)
                         break;
                     }
                     auto staged = std::move(captured).value();
+                    auto described = initialization.try_describe(staged, prologue->events);
+                    if (!described)
+                    {
+                        s2ne::report_error(described.error());
+                        allSaved = false;
+                        break;
+                    }
                     auto written = s2ne::OriginalSaveStore::try_write(isolatedSaveRoot ? *isolatedSaveRoot : root, request.slot, staged, saveItems);
                     if (!written)
                     {

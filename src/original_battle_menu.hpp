@@ -47,6 +47,7 @@ public:
         bool changed = false;
         unsigned consumed_mask = 0;
         bool rebuild_mask_surfaces = false, debug_scene_requested = false;
+        bool save_config = false;
     };
     static constexpr unsigned entry_address = 0x431DE8;
     static constexpr std::array<unsigned, 6> root_ids{ 121, 122, 123, 124, 125, 126 };
@@ -384,7 +385,7 @@ public:
                 page_ = Page::system;
                 selected_ = system_selected_;
             }
-            return { r.changed || r.closed, r.consumed_mask, r.rebuild_mask_surfaces, r.debug_scene_requested };
+            return { r.changed || r.closed, r.consumed_mask, r.rebuild_mask_surfaces, r.debug_scene_requested, r.save_config };
         }
         if (page_ == Page::operation || page_ == Page::closed)
         {

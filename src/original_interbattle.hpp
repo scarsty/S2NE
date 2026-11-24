@@ -66,18 +66,9 @@ public:
     OriginalInterbattle(const std::filesystem::path& root, OriginalDisc disc, unsigned resource, InitializationTag) : font_(root) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, OriginalDisc disc, unsigned resource)
     {
-        if (resource != 17 && resource != 14 && resource != 15 && resource != 13)
+        if (resource != 12 && resource != 14 && resource != 15 && resource != 13)
         {
             return s2ne::Result<bool>::failure(make_error("Unsupported original interbattle background"));
-        }
-        if (texture_resources.active())
-        {
-            auto external = texture_resources.load_image("interbattle", resource);
-            if (!external) { return s2ne::Result<bool>::failure(external.error()); }
-            background_ = std::move(external).value().pixels;
-            palette_.assign(768, 0);
-            indices_.assign(640u * 480, 0);
-            return s2ne::Result<bool>::success(true);
         }
         auto dat_result = OriginalDiscResources(root).try_dat_entry(disc, resource);
         if (!dat_result)
@@ -146,9 +137,15 @@ public:
             }
         }
 
+        if (texture_resources.active())
+        {
+            auto external = texture_resources.load_image("interbattle", resource);
+            if (!external) { return s2ne::Result<bool>::failure(external.error()); }
+            background_ = std::move(external).value().pixels;
+        }
         return s2ne::Result<bool>::success(true);
     }
-    explicit OriginalInterbattle(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one, unsigned resource = 17) : font_(root)
+    explicit OriginalInterbattle(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one, unsigned resource = 12) : font_(root)
     {
         auto result = initialize(root, disc, resource);
         if (!result)
@@ -156,7 +153,7 @@ public:
             fatal(result.error());
         }
     }
-    static s2ne::Result<std::unique_ptr<OriginalInterbattle>> create(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one, unsigned resource = 17)
+    static s2ne::Result<std::unique_ptr<OriginalInterbattle>> create(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one, unsigned resource = 12)
     {
         auto result = std::make_unique<OriginalInterbattle>(root, disc, resource, InitializationTag{});
         auto ready = result->initialize(root, disc, resource);
@@ -192,6 +189,7 @@ public:
         {
             return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Original indexed background palette"));
         }
+        if (texture_resources.active()) { return s2ne::Result<std::vector<uint8_t>>::success(background_); }
         auto image = background_;
         for (size_t i = 0; i < indices_.size(); ++i)
         {

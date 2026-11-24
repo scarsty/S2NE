@@ -1478,6 +1478,7 @@ private:
     }
     bool start_campaign_script()
     {
+        if (growth_active()) { return false; }
         if (script_queue_.empty())
         {
             return false;
@@ -1497,7 +1498,7 @@ private:
     }
     bool prepare_campaign_transaction_pose()
     {
-        if (!battle_ || battle_->animating_movement() || battle_->combat_feedback_active())
+        if (growth_active() || !battle_ || battle_->animating_movement() || battle_->combat_feedback_active())
         {
             return false;
         }
@@ -1821,7 +1822,7 @@ private:
     }
     bool dispatch_campaign()
     {
-        if (!battle_ || battle_->animating_movement() || battle_->combat_feedback_active())
+        if (growth_active() || !battle_ || battle_->animating_movement() || battle_->combat_feedback_active())
         {
             return false;
         }
@@ -1996,7 +1997,8 @@ private:
             (u.hostile() ? enemies : allies).push_back(u);
         }
         OriginalCampaign::Runtime runtime;
-        runtime.mode = current_stage.mode;
+        // 4384FE检查4F7CD0游戏模式，不是关卡头的战斗／剧情类型。
+        runtime.mode = 0;
         runtime.turn = battle_->turn();
         runtime.forced_victory = events.flags[3] != 0;
         runtime.forced_defeat = events.flags[4] != 0;
@@ -4958,6 +4960,7 @@ public:
     }
     Result<bool> try_advance()
     {
+        if (growth_active()) { return Result<bool>::success(true); }
         if (deployment_requested_) { return Result<bool>::success(true); }
         if (teleport_ || evacuation_.active() || death_location_)
         {
@@ -5325,14 +5328,14 @@ public:
         map_.draw_terrain(font, image, x, y, panel_y);
     }
     void mask_ground_selection(std::vector<uint8_t>& pixels, Battle::Point cell) const { map_.mask_selection(pixels, cell.x, cell.y); }
-    std::vector<uint8_t> draw(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay = {}) const
+    std::vector<uint8_t> draw(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay = {}, bool commandOverlay = true) const
     {
         if (texture_resources.active()) { texture_resources.set_elapsed(animation_elapsed_); }
-        auto image = draw_uncycled(font, groundOverlay);
+        auto image = draw_uncycled(font, groundOverlay, commandOverlay);
         if (!texture_resources.active() && palette_effects_ && phase_ != Phase::briefing && !interbattle_active() && !ending_active()) { palette_effects_->cycle(image, animation_elapsed_); }
         return image;
     }
-    std::vector<uint8_t> draw_uncycled(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay) const
+    std::vector<uint8_t> draw_uncycled(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay, bool commandOverlay = true) const
     {
         if (temporary_text_) { return temporary_text_->draw(); }
         map_.set_army_modes(events.army_modes);
@@ -5450,7 +5453,7 @@ public:
                 }
             }
         }
-        if (phase_ == Phase::campaign_rewards)
+        if (phase_ == Phase::campaign_rewards && !growth_active())
         {
             campaign().render_rewards(image, campaign().stage(events.stage), events.units);
             return image;
@@ -5687,7 +5690,7 @@ public:
                 draw_status_terrain(font, image, unit, panel_y);
                 auto origin = battle_command_origin();
                 bool submenu = battle_->state() == Battle::State::attack_menu;
-                if (submenu)
+                if (commandOverlay && submenu)
                 {
                     int slot = 0;
                     for (int attack = 0; attack < 8; ++attack)
@@ -5717,7 +5720,7 @@ public:
                         }
                     }
                 }
-                else
+                else if (commandOverlay)
                 {
                     int slot = 0;
                     for (int command = 0; command < 6; ++command)
@@ -5834,7 +5837,7 @@ public:
             }
             return image;
         }
-        if (dialogue_scrolling())
+        if (growth_active() || dialogue_scrolling())
         {
             return image;
         }

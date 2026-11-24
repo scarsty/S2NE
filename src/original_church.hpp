@@ -179,6 +179,7 @@ public:
     void set_promotion(std::function<bool(OriginalSave::State&, size_t, const OriginalPromotion::Request&)> transaction) { promotion_commit_ = std::move(transaction); }
     void set_promotion_stop(std::function<void()> stop) { promotion_stop_ = std::move(stop); }
     bool promotion_active() const { return page_ == Page::promotion; }
+    bool tick(uint64_t milliseconds) { return promotion_active() && promotion_ && promotion_->tick(milliseconds); }
     static s2ne::Result<OriginalSave::State> try_promote(const std::filesystem::path& root, const OriginalSave::State& before,
         size_t index, const OriginalPromotion::Request& request, OriginalRandom& random, uint32_t seconds)
     {

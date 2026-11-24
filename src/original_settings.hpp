@@ -190,7 +190,7 @@ private:
     Result finish()
     {
         closed_ = true;
-        return { true, false, mode_ == 0, mode_ == 1 && state_.status_window != old_mask_, false, 0x1F };
+        return { true, false, mode_ != 2, mode_ == 1 && state_.status_window != old_mask_, false, 0x1F };
     }
 
 public:
