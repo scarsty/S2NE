@@ -115,11 +115,17 @@ inline Result<bool> draw_original_cel(std::vector<uint8_t>& image, std::span<con
     std::span<const uint8_t> palette, unsigned id, int left, int top, OriginalZeroRun zero, std::vector<uint8_t>* indexed = nullptr)
 {
     if (!texture_resources.active()) { return draw_original_cel_legacy(image, cel, palette, id, left, top, zero, indexed); }
+    auto available = texture_resources.has_ui(id);
+    if (!available) { return Result<bool>::failure(available.error()); }
+    if (!available.value()) { return draw_original_cel_legacy(image, cel, palette, id, left, top, zero, indexed); }
     if (image.size() != 640u * 480 * 4 || palette.size() < 768 || (indexed && indexed->size() != 640u * 480)) { return Result<bool>::failure(make_error("Invalid PNG UI framebuffer/palette")); }
     auto output = image;
-    auto result = texture_resources.draw_ui(output, id, left, top, palette, indexed);
-    if (!result) { return draw_original_cel_legacy(image, cel, palette, id, left, top, zero, indexed); }
+    std::vector<uint8_t> indices;
+    if (indexed) { indices = *indexed; }
+    auto result = texture_resources.draw_ui(output, id, left, top, palette, indexed ? &indices : nullptr);
+    if (!result) { return result; }
     image.swap(output);
+    if (indexed) { indexed->swap(indices); }
     (void)cel;
     (void)zero;
     return result;

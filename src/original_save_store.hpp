@@ -9,7 +9,8 @@ namespace s2ne
 {
 class OriginalSaveStore
 {
-    static Result<bool> replace(const std::filesystem::path& path, std::span<const uint8_t> bytes)
+public:
+    static Result<bool> try_replace(const std::filesystem::path& path, std::span<const uint8_t> bytes)
     {
         auto pending = path;
         pending += L".s2ne-tmp";
@@ -72,7 +73,6 @@ class OriginalSaveStore
         return Result<bool>::success(true);
     }
 
-public:
     // 43619F preserves the overwritten original as slot53 before4362B4 writes.
     static Result<bool> try_write(const std::filesystem::path& root, unsigned slot, const OriginalSave::State& state, size_t items)
     {
@@ -119,14 +119,14 @@ public:
                 {
                     return Result<bool>::failure(make_error("Cannot read save backup source"));
                 }
-                auto backup = replace(OriginalSave::slot_path(root, 53), previous_bytes);
+                auto backup = try_replace(OriginalSave::slot_path(root, 53), previous_bytes);
                 if (!backup)
                 {
                     return backup;
                 }
             }
         }
-        return replace(path, encoded.value());
+        return try_replace(path, encoded.value());
     }
     static void write(const std::filesystem::path& root, unsigned slot, const OriginalSave::State& state, size_t items)
     {

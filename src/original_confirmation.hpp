@@ -13,19 +13,9 @@ class OriginalConfirmation
     std::optional<bool> result_;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    s2ne::Result<bool> try_sprite_validated(std::vector<uint8_t>& image, unsigned id, int left, int top) const
-    {
-        return draw_original_cel(image, cel_, pal_, id, left, top, OriginalZeroRun::opaque);
-    }
     s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
     {
-        auto output = image;
-        auto result = try_sprite_validated(output, id, left, top);
-        if (result)
-        {
-            image.swap(output);
-        }
-        return result;
+        return draw_original_cel(image, cel_, pal_, id, left, top, OriginalZeroRun::opaque);
     }
     void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
     {

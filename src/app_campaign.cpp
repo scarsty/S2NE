@@ -4,16 +4,7 @@ namespace s2ne
 {
 Result<ResourceDomain> try_app_domain_for_save(const OriginalSave::State& state)
 {
-    auto value = [](const auto& bytes, size_t at)
-    {
-        uint32_t v = 0;
-        for (unsigned i = 0; i < 4; ++i)
-        {
-            v |= uint32_t(bytes.at(at + i)) << (8 * i);
-        }
-        return int32_t(v);
-    };
-    auto selected = value(state.stage_4fb478, 16);
+    auto selected = int32_t(OriginalSaveBridge::get(state.stage_4fb478, 16, 4));
     if (selected < 0 || selected > 1)
     {
         return Result<ResourceDomain>::failure(make_error("Invalid saved logical resource domain"));
@@ -22,6 +13,14 @@ Result<ResourceDomain> try_app_domain_for_save(const OriginalSave::State& state)
 }
 
 ResourceDomain app_domain_for_save(const OriginalSave::State& state) { return try_app_domain_for_save(state).value(); }
+
+ResourceDomain update_app_domain_for_stage(OriginalSave::State& state)
+{
+    auto domain = resource_domain_for_campaign(int32_t(OriginalSaveBridge::get(state.stage_4fb478, 12, 4)),
+        int32_t(OriginalSaveBridge::get(state.stage_4fb478, 8, 4)), int32_t(OriginalSaveBridge::get(state.globals_4f7cd0, 16, 4)));
+    OriginalSaveBridge::put(state.stage_4fb478, 16, uint32_t(domain), 4);
+    return domain;
+}
 
 OriginalEvents AppCampaignAdapter::deploy_next(const OriginalSave::State& captured) const
 {
@@ -245,11 +244,7 @@ bool AppCampaignAdapter::commit_promotion(int selected, const OriginalPromotion:
                 context.recalculate_army = [&](auto& next)
                 {
                     stagedEvents.units.at(size_t(selected)) = next.unit;
-                    std::vector<int> roles;
-                    for (const auto& record : stagedSave.groups[0].units)
-                    {
-                        roles.push_back(int(int16_t(unsigned(record[8]) | (unsigned(record[9]) << 8))));
-                    }
+                    auto roles = stagedSave.groups[0].role_selectors();
                     if (roles.size() > stagedEvents.units.size())
                     {
                         return false;
@@ -290,19 +285,7 @@ bool AppCampaignAdapter::commit_promotion(int selected, const OriginalPromotion:
                     return false;
                 }
                 stagedBattle.set_hostile_resources(stagedEvents);
-                std::vector<s2ne::Battle::MovementContext> contexts(stagedEvents.units.size());
-                for (size_t i = 0; i < contexts.size(); ++i)
-                {
-                    const auto& u = stagedEvents.units[i];
-                    auto& c = contexts[i];
-                    c.status34 = u.status34;
-                    c.status118 = uint8_t(u.abilities >> 24);
-                    c.status116 = uint8_t(u.abilities >> 8);
-                    c.has_usable_ability = stagedEvents.has_learned_ability(u);
-                    c.movement_class = stagedEvents.movement_class(u);
-                    c.sprite_height = promotionMap.unit_height(u.appearance, u.direction, u.animation_action);
-                }
-                stagedBattle.set_movement_contexts(std::move(contexts));
+                stagedBattle.set_movement_contexts(Prologue::movement_contexts(stagedEvents, promotionMap));
                 random = next->random;
                 return true;
             });

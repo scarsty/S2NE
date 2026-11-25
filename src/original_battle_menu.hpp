@@ -73,24 +73,20 @@ private:
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& p) { return read_shared_resource(p); }
     static SharedBytes read(const std::filesystem::path& p) { return try_read(p).value(); }
+    static SharedBytes read_palette(const std::filesystem::path& p)
+    {
+        auto palette = read(p);
+        palette.mutable_at(0) = palette.mutable_at(1) = palette.mutable_at(2) = 0;
+        return palette;
+    }
     size_t sprite_offset(unsigned id) const
     {
         size_t g = dword(pal_, 816) - 57;
         return g + dword(cel_, g + 2 + (id - 142) * 8);
     }
-    s2ne::Result<bool> try_sprite_validated(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent) const
-    {
-        return draw_original_cel(image, cel_, pal_, id, left, top, transparent ? OriginalZeroRun::transparent : OriginalZeroRun::opaque);
-    }
     s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent) const
     {
-        auto output = image;
-        auto result = try_sprite_validated(output, id, left, top, transparent);
-        if (result)
-        {
-            image.swap(output);
-        }
-        return result;
+        return draw_original_cel(image, cel_, pal_, id, left, top, transparent ? OriginalZeroRun::transparent : OriginalZeroRun::opaque);
     }
     void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent) const
     {
@@ -190,9 +186,8 @@ private:
     }
 
 public:
-    OriginalBattleMenu(const std::filesystem::path& root, Context context, OriginalSettings::State state) : root_(root), font_(root), pal_(read(root / "SUPERSP.PAL")), cel_(read(root / "SUPERSP.CEL")), palette_(pal_), context_(context), settings_state_(state)
+    OriginalBattleMenu(const std::filesystem::path& root, Context context, OriginalSettings::State state) : root_(root), font_(root), pal_(read_palette(root / "SUPERSP.PAL")), cel_(read(root / "SUPERSP.CEL")), palette_(pal_), context_(context), settings_state_(state)
     {
-        pal_.mutable_at(0) = pal_.mutable_at(1) = pal_.mutable_at(2) = 0;
         font_.small_font = state.small_font != 0;
         size_t p = sprite_offset(194);
         left_ = 320 - int(word(cel_, p) + 1) / 2;
@@ -477,7 +472,7 @@ public:
         }
         auto image = battlefield;
         auto dimmed = palette_.try_transform_rect(image, 0, 0, 640, 480, 6);
-        if (!dimmed) { image = battlefield; }
+        if (!dimmed) { return s2ne::Result<std::vector<uint8_t>>::failure(dimmed.error()); }
         const bool show_root_labels = page_ == Page::root || (page_ == Page::confirmation && confirmation_parent_ == Page::root);
         draw_page(image, Page::root, page_ == Page::root ? selected_ : root_selected_, show_root_labels,
             page_ == Page::confirmation && confirmation_parent_ == Page::root);

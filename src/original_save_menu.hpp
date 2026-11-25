@@ -52,7 +52,6 @@ private:
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& path) { return read_shared_resource(path); }
-    static SharedBytes read(const std::filesystem::path& path) { return try_read(path).value(); }
     size_t sprite_position() const
     {
         size_t group = dword(pal_, 816) - 57;
@@ -71,19 +70,9 @@ private:
         }
         image.at(p + 3) = 255;
     }
-    s2ne::Result<bool> try_panel_validated(std::vector<uint8_t>& image) const
-    {
-        return draw_original_cel(image, cel_, pal_, resource_id, left_, top_, OriginalZeroRun::transparent);
-    }
     s2ne::Result<bool> try_panel(std::vector<uint8_t>& image) const
     {
-        auto output = image;
-        auto result = try_panel_validated(output);
-        if (result)
-        {
-            image.swap(output);
-        }
-        return result;
+        return draw_original_cel(image, cel_, pal_, resource_id, left_, top_, OriginalZeroRun::transparent);
     }
     void panel(std::vector<uint8_t>& image) const
     {
@@ -147,44 +136,50 @@ public:
         }
         return slots;
     }
-    struct InitializationTag
+
+private:
+    OriginalSaveMenu(SharedBytes cel, SharedBytes pal, int mode, Slots slots, int page) : cel_(std::move(cel)), pal_(std::move(pal)), slots_(std::move(slots)), mode_(mode), page_(page) {}
+    s2ne::Result<bool> initialize(bool original_mode_one)
     {
-    };
-    OriginalSaveMenu(const std::filesystem::path& root, int mode, Slots slots, int page, bool original_mode_one, InitializationTag) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")), slots_(std::move(slots)), mode_(mode), page_(page) {}
-    s2ne::Result<bool> initialize(const std::filesystem::path& root, int mode, Slots slots, int page, bool original_mode_one)
-    {
-        if (mode < 0 || mode > 3 || page < 0 || page > 4)
+        if (mode_ < 0 || mode_ > 3 || page_ < 0 || page_ > 4)
         {
             return s2ne::Result<bool>::failure(make_error("Invalid original save-menu mode/page"));
         }
         pal_.mutable_at(0) = pal_.mutable_at(1) = pal_.mutable_at(2) = 0;
-        size_t p = sprite_position();
-        width_ = int(word(cel_, p)) + 1;
-        height_ = int(word(cel_, p + 2)) + 1;
+        ResourceReader palette(pal_), archive(cel_);
+        const unsigned address = palette.number(816, 4);
+        if (!palette || address < 57) { return s2ne::Result<bool>::failure(make_error("Invalid original save-menu directory")); }
+        const size_t group = address - 57;
+        const size_t p = group + archive.number(group + 2 + (resource_id - 142) * 8, 4);
+        width_ = int(archive.number(p)) + 1;
+        height_ = int(archive.number(p + 2)) + 1;
+        if (!archive) { return s2ne::Result<bool>::failure(archive.error()); }
         if (width_ > 640 || height_ > 480)
         {
             return s2ne::Result<bool>::failure(make_error("Invalid original save-menu dimensions"));
         }
         left_ = 320 - width_ / 2;
         top_ = 240 - height_ / 2;
-        if (original_mode_one && mode > 1)
+        if (original_mode_one && mode_ > 1)
         {
             closed_ = true;
         }
         return s2ne::Result<bool>::success(true);
     }
-    OriginalSaveMenu(const std::filesystem::path& root, int mode, Slots slots, int page = 0, bool original_mode_one = false) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")), slots_(std::move(slots)), mode_(mode), page_(page)
+
+public:
+    OriginalSaveMenu(const std::filesystem::path& root, int mode, Slots slots, int page = 0, bool original_mode_one = false) : OriginalSaveMenu(std::move(*create(root, mode, std::move(slots), page, original_mode_one).value()))
     {
-        auto result = initialize(root, mode, {}, page, original_mode_one);
-        if (!result)
-        {
-            fatal(result.error());
-        }
     }
     static s2ne::Result<std::unique_ptr<OriginalSaveMenu>> create(const std::filesystem::path& root, int mode, Slots slots, int page = 0, bool original_mode_one = false)
     {
-        auto result = std::make_unique<OriginalSaveMenu>(root, mode, std::move(slots), page, original_mode_one, InitializationTag{});
-        auto ready = result->initialize(root, mode, {}, page, original_mode_one);
+        auto cel = try_read(root / "SUPERSP.CEL");
+        if (!cel) { return s2ne::Result<std::unique_ptr<OriginalSaveMenu>>::failure(cel.error()); }
+        auto pal = try_read(root / "SUPERSP.PAL");
+        if (!pal) { return s2ne::Result<std::unique_ptr<OriginalSaveMenu>>::failure(pal.error()); }
+        if (pal.value().size() < 820) { return s2ne::Result<std::unique_ptr<OriginalSaveMenu>>::failure(make_error("Truncated save-menu palette")); }
+        auto result = std::unique_ptr<OriginalSaveMenu>(new OriginalSaveMenu(std::move(cel).value(), std::move(pal).value(), mode, std::move(slots), page));
+        auto ready = result->initialize(original_mode_one);
         if (!ready)
         {
             return s2ne::Result<std::unique_ptr<OriginalSaveMenu>>::failure(ready.error());
@@ -392,10 +387,11 @@ public:
         {
             return panel_result;
         }
-        font.draw_original_large(image, font.text_bytes(title_ids.at(mode_)), left_ + 180, top_ + 12, 73, 55);
+        auto title = font.try_draw_original_large(image, font.text_bytes(title_ids.at(mode_)), left_ + 180, top_ + 12, 73, 55);
+        if (!title) { return title; }
         auto text = [&](const std::vector<uint8_t>& bytes, int x, int y, unsigned c)
         {
-            font.draw_small_fixed_spaces(image, bytes, left_ + x, top_ + y, c, true);
+            return font.try_draw_small_fixed_spaces(image, bytes, left_ + x, top_ + y, c, true);
         };
         auto ascii = [](const std::string& s)
         {
@@ -405,22 +401,24 @@ public:
         {
             unsigned slot = slot_for(row), color = row == row_ ? 175 : 229;
             int y = row < 10 ? 46 + row * 30 : 366 + (row - 10) * 30;
-            text(ascii(std::to_string(slot)), 74, y, color);
+            auto number = text(ascii(std::to_string(slot)), 74, y, color);
+            if (!number) { return number; }
             const auto& d = slots_[slot - 1].description;
             auto end = std::find(d.begin(), d.end(), uint8_t(0));
-            text(d[0] ? std::vector<uint8_t>(d.begin(), end) : font.text_bytes(145), 96, y, color);
+            auto description = text(d[0] ? std::vector<uint8_t>(d.begin(), end) : font.text_bytes(145), 96, y, color);
+            if (!description) { return description; }
         }
         if (page_ > 0)
         {
-            text(font.text_bytes(154), 86, 341, 175);
+            auto previous = text(font.text_bytes(154), 86, 341, 175);
+            if (!previous) { return previous; }
         }
         if (page_ < 4)
         {
-            text(font.text_bytes(155), 150, 341, 175);
+            auto next = text(font.text_bytes(155), 150, 341, 175);
+            if (!next) { return next; }
         }
-        text(ascii(std::to_string(page_ + 1) + "/5"), 316, 341, 175);
-
-        return s2ne::Result<bool>::success(true);
+        return text(ascii(std::to_string(page_ + 1) + "/5"), 316, 341, 175);
     }
     s2ne::Result<bool> try_draw(std::vector<uint8_t>& image, const OriginalMenu& font) const
     {

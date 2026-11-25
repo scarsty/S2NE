@@ -63,7 +63,7 @@ public:
     struct InitializationTag
     {
     };
-    OriginalInterbattle(const std::filesystem::path& root, OriginalDisc disc, unsigned resource, InitializationTag) : font_(root) {}
+    OriginalInterbattle(OriginalMenu font, InitializationTag) : font_(std::move(font)) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, OriginalDisc disc, unsigned resource)
     {
         if (resource != 12 && resource != 14 && resource != 15 && resource != 13)
@@ -155,7 +155,9 @@ public:
     }
     static s2ne::Result<std::unique_ptr<OriginalInterbattle>> create(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one, unsigned resource = 12)
     {
-        auto result = std::make_unique<OriginalInterbattle>(root, disc, resource, InitializationTag{});
+        auto font = OriginalMenu::create(root);
+        if (!font) { return s2ne::Result<std::unique_ptr<OriginalInterbattle>>::failure(font.error()); }
+        auto result = std::make_unique<OriginalInterbattle>(std::move(font).value(), InitializationTag{});
         auto ready = result->initialize(root, disc, resource);
         if (!ready)
         {

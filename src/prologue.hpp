@@ -1136,6 +1136,7 @@ private:
         unsigned color;
         int x{}, y{};
         unsigned delay{};
+        bool default_delay = true;
     };
     std::vector<std::vector<Glyph>> pages_;
     bool text_animation_ = false, small_font_ = false;
@@ -1160,13 +1161,7 @@ private:
     }
     Result<bool> try_sprite(std::vector<uint8_t>& image, size_t p, bool typed, int left, int top, bool opaque_zero = false) const
     {
-        auto output = image;
-        auto result = sprite_validated(output, p, typed, left, top, opaque_zero);
-        if (result)
-        {
-            image.swap(output);
-        }
-        return result;
+        return sprite_validated(image, p, typed, left, top, opaque_zero);
     }
     void sprite(std::vector<uint8_t>& image, size_t p, bool typed, int left, int top, bool opaque_zero = false) const
     {
@@ -1218,6 +1213,7 @@ private:
         }
         auto text = dialogue.text;
         unsigned color = 42, delay = message_delay_, wait_delay = message_delay_;
+        bool default_delay = true, wait_default = true;
         int text_x = 0, text_y = 0;
         auto digit = [](unsigned c) -> int
         {
@@ -1269,6 +1265,7 @@ private:
                             return reject("Invalid original text control");
                         }
                         delay = hex(p + 1);
+                        default_delay = false;
                         p += 3;
                     }
                     else if (text[p] == 'R' && p + 1 < text.size())
@@ -1280,6 +1277,7 @@ private:
                         else if (text[p + 1] == 'D')
                         {
                             delay = message_delay_;
+                            default_delay = true;
                         }
                         p += 2;
                     }
@@ -1299,13 +1297,13 @@ private:
             // 423C6E leaves '*' undrawn; 41D230 checks pagination after each character.
             if (lead == '*')
             {
-                candidatePages.back().push_back({ {}, color, text_x, text_y, wait_delay });
+                candidatePages.back().push_back({ {}, color, text_x, text_y, wait_delay, wait_default });
             }
             else
 
                 if (lead <= 0x80)
             {
-                candidatePages.back().push_back({ { uint8_t(std::max(lead, 30u)) }, color, text_x, text_y, wait_delay });
+                candidatePages.back().push_back({ { uint8_t(std::max(lead, 30u)) }, color, text_x, text_y, wait_delay, wait_default });
                 text_x += small_font_ ? 8 : 16;
             }
             else
@@ -1314,11 +1312,12 @@ private:
                 {
                     return reject("Truncated original glyph");
                 }
-                candidatePages.back().push_back({ { uint8_t(lead), text.at(p++) }, color, text_x, text_y, wait_delay });
+                candidatePages.back().push_back({ { uint8_t(lead), text.at(p++) }, color, text_x, text_y, wait_delay, wait_default });
                 text_x += small_font_ ? 16 : 24;
             }
 
             wait_delay = delay;
+            wait_default = default_delay;
             if (p < text.size())
             {
                 if (text_y >= 149 && text_x >= 432)
@@ -2633,6 +2632,8 @@ public:
     }
     bool choosing() const { return phase_ == Phase::choice; }
     bool in_battle() const { return phase_ == Phase::battle; }
+    uint64_t idle_pose_time() const { return idle_clock_.pose_time(); }
+    bool palette_cycle_due() const { return !texture_resources.active() && palette_effects_ && palette_effects_->cycle_due(animation_elapsed_); }
     bool hostile_actions() const { return phase_ == Phase::hostile_actions; }
     bool automatic_actions() const { return phase_ == Phase::automatic_actions; }
     bool npc_actions() const { return phase_ == Phase::npc_actions; }
@@ -3728,12 +3729,12 @@ public:
     }
     void enable_text_animation(unsigned delay)
     {
+        message_delay_ = delay;
         if (text_animation_)
         {
             return;
         }
         text_animation_ = true;
-        message_delay_ = delay;
         prepare();
     }
     bool text_revealing() const { return text_animation_ && (phase_ == Phase::campaign_dialogue || phase_ == Phase::dialogue || phase_ == Phase::branch || phase_ == Phase::flag_dialogue) && !pages_.empty() && revealed_glyphs_ < pages_.at(page_).size(); }
@@ -4309,7 +4310,9 @@ public:
         {
             text_elapsed_ += milliseconds;
             // 41D01C resets its timer after every presented glyph; long frames do not catch up.
-            if (text_elapsed_ >= pages_.at(page_).at(revealed_glyphs_).delay * 10)
+            const auto& glyph = pages_.at(page_).at(revealed_glyphs_);
+            const auto delay = glyph.default_delay ? message_delay_ : glyph.delay;
+            if (text_elapsed_ >= delay * 10)
             {
                 ++revealed_glyphs_;
                 text_elapsed_ = 0;
@@ -4530,6 +4533,10 @@ public:
     {
         events.rebuild_army_modes();
         battle_->set_hostile_resources(events);
+        battle_->set_movement_contexts(movement_contexts(events, map_));
+    }
+    static std::vector<Battle::MovementContext> movement_contexts(const OriginalEvents& events, const OriginalMap& map)
+    {
         std::vector<Battle::MovementContext> contexts(events.units.size());
         for (size_t i = 0; i < contexts.size(); ++i)
         {
@@ -4538,9 +4545,9 @@ public:
             contexts[i].status116 = uint8_t(events.units[i].abilities >> 8);
             contexts[i].has_usable_ability = events.has_learned_ability(events.units[i]);
             contexts[i].movement_class = events.movement_class(events.units[i]);
-            contexts[i].sprite_height = map_.unit_height(events.units[i].appearance, events.units[i].direction, events.units[i].animation_action);
+            contexts[i].sprite_height = map.unit_height(events.units[i].appearance, events.units[i].direction, events.units[i].animation_action);
         }
-        battle_->set_movement_contexts(std::move(contexts));
+        return contexts;
     }
     void mouse(float x, float y, bool click)
     {
@@ -5332,11 +5339,16 @@ public:
     {
         if (texture_resources.active()) { texture_resources.set_elapsed(animation_elapsed_); }
         auto image = draw_uncycled(font, groundOverlay, commandOverlay);
-        if (!texture_resources.active() && palette_effects_ && phase_ != Phase::briefing && !interbattle_active() && !ending_active()) { palette_effects_->cycle(image, animation_elapsed_); }
+        cycle_frame(image);
         return image;
+    }
+    void cycle_frame(std::vector<uint8_t>& image) const
+    {
+        if (!texture_resources.active() && palette_effects_ && phase_ != Phase::briefing && !interbattle_active() && !ending_active()) { palette_effects_->cycle(image, animation_elapsed_); }
     }
     std::vector<uint8_t> draw_uncycled(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay, bool commandOverlay = true) const
     {
+        if (texture_resources.active()) { texture_resources.set_elapsed(animation_elapsed_); }
         if (temporary_text_) { return temporary_text_->draw(); }
         map_.set_army_modes(events.army_modes);
         if (death_location_)
@@ -5621,7 +5633,7 @@ public:
             }
             if (!battle_->animating_movement() && !battle_->combat_feedback_active())
             {
-                auto world = map_.try_draw_world(image, rendered_units, battle_->turn(), animation_elapsed_);
+                auto world = map_.try_draw_world(image, rendered_units, battle_->turn(), animation_elapsed_, true);
                 if (!world) { report_error(world.error()); }
             }
             if (in_battle())

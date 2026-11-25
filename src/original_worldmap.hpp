@@ -12,7 +12,8 @@ class OriginalWorldmap
         unsigned width{}, height{};
         std::vector<uint8_t> pixels;
     };
-    std::vector<uint8_t> pixels_, palette_, towns_, external_rgba_;
+    std::vector<uint8_t> pixels_, palette_, towns_;
+    SharedBytes external_rgba_;
     std::array<Icon, 2> icons_;
     unsigned width_{}, height_{}, current_{}, destination_{}, hovered_{};
     int x_{}, y_{};
@@ -95,35 +96,6 @@ class OriginalWorldmap
 public:
     static Result<OriginalWorldmap> create(const std::filesystem::path& root, OriginalDisc domain, std::vector<uint8_t> towns, const OriginalSave::State& state)
     {
-        if (texture_resources.active())
-        {
-            auto external = texture_resources.load_image("worldmap", 11);
-            if (external)
-            {
-                auto archive = OriginalDiscResources(root).try_dat_entry(domain, 7);
-                if (archive)
-                {
-                    OriginalWorldmap result;
-                    result.width_ = unsigned(external.value().width);
-                    result.height_ = unsigned(external.value().height);
-                    result.palette_.assign(768, 0);
-                    result.pixels_.resize(size_t(result.width_) * result.height_);
-                    const auto& rgba = external.value();
-                    result.external_rgba_ = rgba.pixels;
-                    result.towns_ = std::move(towns);
-                    result.delay_ = dword(state.globals_4f7cd0, 32);
-                    result.current_ = word(state.globals_4f7cd0, 24);
-                    result.destination_ = word(state.globals_4f7cd0, 16);
-                    if (!result.current_ || result.current_ > word(result.towns_, 0) || !result.destination_ || result.destination_ > word(result.towns_, 0))
-                    {
-                        return Result<OriginalWorldmap>::failure(make_error("World current/destination town"));
-                    }
-                    size_t record = 2 + (result.current_ - 1) * 14;
-                    result.center(word(result.towns_, record + 6), word(result.towns_, record + 8));
-                    return Result<OriginalWorldmap>::success(std::move(result));
-                }
-            }
-        }
         auto image = OriginalDiscResources(root).try_dat_entry(domain, 11);
         auto archive = OriginalDiscResources(root).try_dat_entry(domain, 7);
         if (!image)
@@ -258,6 +230,25 @@ public:
         }
         size_t record = 2 + (result.current_ - 1) * 14;
         result.center(word(result.towns_, record + 6), word(result.towns_, record + 8));
+        auto external_group = texture_resources.group_available("worldmap");
+        if (!external_group)
+        {
+            return Result<OriginalWorldmap>::failure(external_group.error());
+        }
+        if (external_group.value())
+        {
+            auto external = texture_resources.load_image("worldmap", 11);
+            if (!external)
+            {
+                return Result<OriginalWorldmap>::failure(external.error());
+            }
+            const auto& rgba = external.value();
+            if (rgba.width != int(result.width_) || rgba.height != int(result.height_) || rgba.pixels.size() != size_t(result.width_) * result.height_ * 4)
+            {
+                return Result<OriginalWorldmap>::failure(make_error("Invalid external worldmap dimensions"));
+            }
+            result.external_rgba_ = rgba.pixels;
+        }
         return Result<OriginalWorldmap>::success(std::move(result));
     }
     void enable_presentation_timing()
@@ -442,7 +433,20 @@ public:
                 {
                     const size_t source = (size_t(y + y_) * width_ + x + x_) * 4;
                     const size_t destination = (size_t(y) * 640 + x) * 4;
-                    std::copy_n(external_rgba_.begin() + source, 4, image.begin() + destination);
+                    for (unsigned k = 0; k < 3; ++k)
+                    {
+                        unsigned value = external_rgba_[source + k];
+                        if (presentation_)
+                        {
+                            if (leaving_)
+                            {
+                                value = value * (63 << 2) / 255;
+                            }
+                            value = value * (fade_ << 2) / 255;
+                        }
+                        image[destination + k] = uint8_t(value);
+                    }
+                    image[destination + 3] = 255;
                 }
                 else
                 {

@@ -34,7 +34,8 @@ class OriginalInn
     std::optional<OriginalConfirmation> title_confirm_;
     std::optional<OriginalSaveMenu> saves_;
     std::optional<OriginalConfirmation> overwrite_;
-    std::optional<OriginalSave::State> loaded_;
+    std::optional<OriginalSaveBridge::Restored> loaded_;
+    std::function<Result<OriginalSave::State>(unsigned, const OriginalSave::State&)> save_writer_;
     OriginalSettings::State settings_initial_;
     std::optional<OriginalSettings::State> settings_result_;
     std::filesystem::path root_;
@@ -209,7 +210,8 @@ public:
             settings_.reset();
         }
     }
-    std::optional<OriginalSave::State> take_loaded()
+    void set_save_writer(std::function<Result<OriginalSave::State>(unsigned, const OriginalSave::State&)> writer) { save_writer_ = std::move(writer); }
+    std::optional<OriginalSaveBridge::Restored> take_loaded()
     {
         auto result = std::move(loaded_);
         loaded_.reset();
@@ -266,12 +268,16 @@ public:
             auto count = state.groups[0].inventory.size();
             if (result.action == OriginalSaveMenu::Action::save)
             {
-                auto written = OriginalSaveStore::try_write(save_root_, result.slot, state, count);
-                saves_->complete(bool(written));
-                if (!written)
+                if (!save_writer_)
                 {
-                    report_error(written.error());
+                    blocker_ = "Original inn save writer unavailable";
+                    report_error(make_error(blocker_));
+                    saves_->complete(false);
+                    return;
                 }
+                auto written = save_writer_(result.slot, state);
+                saves_->complete(bool(written));
+                if (!written) { report_error(written.error()); }
             }
             else
             {
@@ -286,7 +292,7 @@ public:
                         saves_->complete(false);
                         return;
                     }
-                    loaded_ = std::move(loaded).value();
+                    loaded_ = std::move(restored).value();
                     saves_->complete(true);
                 }
                 else

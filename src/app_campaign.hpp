@@ -8,6 +8,7 @@ namespace s2ne
 {
 Result<ResourceDomain> try_app_domain_for_save(const OriginalSave::State& state);
 ResourceDomain app_domain_for_save(const OriginalSave::State& state);
+ResourceDomain update_app_domain_for_stage(OriginalSave::State& state);
 class AppCampaignAdapter
 {
 public:

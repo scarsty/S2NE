@@ -172,7 +172,7 @@ public:
         auto result = try_sync_roster(state, events);
         if (!result)
         {
-            report_error(result.error());
+            fatal(result.error());
         }
     }
     void set_donation(std::function<bool(OriginalSave::State&)> transaction) { donation_ = std::move(transaction); }
@@ -211,8 +211,7 @@ public:
         context.recalculate_army = [&](auto& next)
         {
             staged.events.units[index] = next.unit;
-            std::vector<int> roles;
-            for (const auto& record : before.groups[0].units) { roles.push_back(int(int16_t(OriginalSaveBridge::get(record, 8)))); }
+            auto roles = before.groups[0].role_selectors();
             auto result = transaction.try_aggregate_army_metadata(metadata,
                 std::span<const OriginalEvents::Unit>(staged.events.units).first(roles.size()), roles, 2);
             if (!result)

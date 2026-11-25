@@ -18,7 +18,15 @@ class OriginalPalette
     };
     std::array<Node, 258> nodes_{};
     std::array<std::array<uint8_t, 256>, 13> maps_{};
-    const std::vector<uint8_t>& palette_;
+    SharedBytes owned_palette_;
+    const std::vector<uint8_t>* borrowed_palette_{};
+    const std::vector<uint8_t>& palette_bytes() const
+    {
+        if (borrowed_palette_) { return *borrowed_palette_; }
+        return owned_palette_;
+    }
+    mutable std::array<uint8_t, 768> indexed_palette_{};
+    mutable std::unordered_map<uint32_t, unsigned> indices_;
     std::array<unsigned, 3> cycle_offsets_{};
     std::array<uint64_t, 3> cycle_times_{};
     int nearest(int red, int green, int blue) const
@@ -84,11 +92,21 @@ public:
         int rgb[3];
         for (unsigned k = 0; k < 3; ++k)
         {
-            rgb[k] = (int(palette_[from * 3 + k]) * (100 - amount) + int(palette_[to * 3 + k]) * amount) / 100;
+            rgb[k] = (int(palette_bytes()[from * 3 + k]) * (100 - amount) + int(palette_bytes()[to * 3 + k]) * amount) / 100;
         }
         return uint8_t(nearest(rgb[0], rgb[1], rgb[2]));
     }
-    explicit OriginalPalette(const std::vector<uint8_t>& palette) : palette_(palette)
+    explicit OriginalPalette(const SharedBytes& palette) : OriginalPalette(static_cast<const std::vector<uint8_t>&>(palette))
+    {
+        owned_palette_ = palette;
+        borrowed_palette_ = nullptr;
+    }
+    explicit OriginalPalette(std::vector<uint8_t>&& palette) : OriginalPalette(static_cast<const std::vector<uint8_t>&>(palette))
+    {
+        owned_palette_ = SharedBytes(std::move(palette));
+        borrowed_palette_ = nullptr;
+    }
+    explicit OriginalPalette(const std::vector<uint8_t>& palette) : borrowed_palette_(&palette)
     {
         if (palette.size() < 768)
         {
@@ -173,6 +191,16 @@ public:
         generate(11, 60, 15);
         generate(12, 68, 80);
     }
+    bool cycle_due(uint64_t elapsed_ms) const
+    {
+        constexpr std::array<unsigned, 3> periods{ 16, 9, 9 };
+        const auto now = elapsed_ms / 10;
+        for (unsigned i = 0; i < periods.size(); ++i)
+        {
+            if (now < cycle_times_[i] || now - cycle_times_[i] > periods[i]) { return true; }
+        }
+        return false;
+    }
     void cycle_rect(std::vector<uint8_t>& image, int left, int top, int width, int height, uint64_t elapsed_ms)
     {
         // 472D78 table4EAF48: 3..10 at >16cs, 11..18 and 19..31 at >9cs.
@@ -196,15 +224,27 @@ public:
         {
             for (unsigned k = 0; k < 3; ++k)
             {
-                source[c] |= uint32_t(unsigned(palette_[c * 3 + k]) * 255 / 63) << (k * 8);
+                source[c] |= uint32_t(unsigned(palette_bytes()[c * 3 + k]) * 255 / 63) << (k * 8);
             }
         }
-        std::unordered_map<uint32_t, unsigned> rotations;
+        std::array<uint32_t, 128> keys;
+        keys.fill(0xFFFFFFFFu);
+        std::array<unsigned, 128> rotations{};
+        auto bucket = [](uint32_t rgb)
+        {
+            rgb ^= rgb >> 11;
+            rgb *= 0x9E3779B1u;
+            return size_t(rgb >> 25);
+        };
         for (unsigned i = 0; i < 3; ++i)
         {
             for (unsigned c = starts[i]; c < starts[i] + counts[i]; ++c)
             {
-                rotations.emplace(source[c], starts[i] + (c - starts[i] + counts[i] - cycle_offsets_[i]) % counts[i]);
+                size_t slot = bucket(source[c]);
+                while (keys[slot] != 0xFFFFFFFFu && keys[slot] != source[c]) { slot = (slot + 1) & 127; }
+                if (keys[slot] != 0xFFFFFFFFu) { continue; }
+                keys[slot] = source[c];
+                rotations[slot] = starts[i] + (c - starts[i] + counts[i] - cycle_offsets_[i]) % counts[i];
             }
         }
         const int right = std::min(640, left + width);
@@ -215,12 +255,13 @@ public:
             {
                 const size_t p = (size_t(y) * 640 + x) * 4;
                 uint32_t rgb = image[p] | uint32_t(image[p + 1]) << 8 | uint32_t(image[p + 2]) << 16;
-                auto match = rotations.find(rgb);
-                if (match == rotations.end()) { continue; }
-                unsigned color = match->second;
+                size_t slot = bucket(rgb);
+                while (keys[slot] != 0xFFFFFFFFu && keys[slot] != rgb) { slot = (slot + 1) & 127; }
+                if (keys[slot] == 0xFFFFFFFFu) { continue; }
+                unsigned color = rotations[slot];
                 for (unsigned k = 0; k < 3; ++k)
                 {
-                    image[p + k] = uint8_t(unsigned(palette_[color * 3 + k]) * 255 / 63);
+                    image[p + k] = uint8_t(unsigned(palette_bytes()[color * 3 + k]) * 255 / 63);
                 }
             }
         }
@@ -238,18 +279,16 @@ public:
             return Result<bool>::failure(make_error("Invalid palette effect framebuffer or table"));
         }
         auto image = destination;
-        std::array<uint32_t, 256> rgba{};
-        for (unsigned c = 0; c < 256; ++c)
+        if (indices_.empty() || !std::equal(indexed_palette_.begin(), indexed_palette_.end(), palette_bytes().begin()))
         {
-            for (unsigned k = 0; k < 3; ++k)
+            std::copy_n(palette_bytes().begin(), 768, indexed_palette_.begin());
+            indices_.clear();
+            for (unsigned c = 0; c < 256; ++c)
             {
-                rgba[c] |= uint32_t(unsigned(palette_[c * 3 + k]) * 255 / 63) << (k * 8);
+                uint32_t rgba = 0;
+                for (unsigned k = 0; k < 3; ++k) { rgba |= uint32_t(unsigned(palette_bytes()[c * 3 + k]) * 255 / 63) << (k * 8); }
+                indices_.emplace(rgba, c);
             }
-        }
-        std::unordered_map<uint32_t, unsigned> indices;
-        for (unsigned c = 0; c < 256; ++c)
-        {
-            indices.emplace(rgba[c], c);
         }
         for (int y = std::max(0, top); y < std::min(480, top + height); ++y)
         {
@@ -257,15 +296,15 @@ public:
             {
                 size_t p = (size_t(y) * 640 + x) * 4;
                 uint32_t pixel = image[p] | uint32_t(image[p + 1]) << 8 | uint32_t(image[p + 2]) << 16;
-                auto found = indices.find(pixel);
-                if (found == indices.end())
+                auto found = indices_.find(pixel);
+                if (found == indices_.end())
                 {
                     return Result<bool>::failure(make_error("Non-indexed pixel in original palette effect"));
                 }
                 unsigned color = map(table, found->second);
                 for (unsigned k = 0; k < 3; ++k)
                 {
-                    image[p + k] = uint8_t(unsigned(palette_[color * 3 + k]) * 255 / 63);
+                    image[p + k] = uint8_t(unsigned(palette_bytes()[color * 3 + k]) * 255 / 63);
                 }
             }
         }

@@ -28,6 +28,16 @@ public:
         std::array<uint8_t, 18> metadata{};
         std::vector<uint8_t> inventory;      // ITEMSP.BIN's signed 16-bit entry count, not its file size.
         std::array<uint8_t, 33> status{};    // runtime +286
+        std::vector<int> role_selectors() const
+        {
+            std::vector<int> roles;
+            roles.reserve(units.size());
+            for (const auto& record : units)
+            {
+                roles.push_back(int(int16_t(unsigned(record[8]) | (unsigned(record[9]) << 8))));
+            }
+            return roles;
+        }
     };
     struct State
     {

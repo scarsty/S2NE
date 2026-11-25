@@ -1,9 +1,12 @@
 #pragma once
 #include "original_menu.hpp"
+#include "original_save_store.hpp"
 #include "original_sprite.hpp"
 #include <cstdint>
 #include <cstdio>
+#include <map>
 #include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -55,8 +58,6 @@ private:
     size_t password_cursor_ = 0;
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& p) { return read_resource(p); }
-    static std::vector<uint8_t> read(const std::filesystem::path& p) { return try_read(p).value(); }
     std::array<uint8_t*, 7> toggles() { return { &state_.masking, &state_.flag_4f7d05, &state_.animation, &state_.status_window, &state_.flag_4f7d0a, &state_.flag_4f7d09, &state_.cdda }; }
     std::array<uint8_t, 7> toggles() const { return { state_.masking, state_.flag_4f7d05, state_.animation, state_.status_window, state_.flag_4f7d0a, state_.flag_4f7d09, state_.cdda }; }
     void pixel(std::vector<uint8_t>& image, int x, int y, unsigned color) const
@@ -193,12 +194,12 @@ private:
         return { true, false, mode_ != 2, mode_ == 1 && state_.status_window != old_mask_, false, 0x1F };
     }
 
-public:
     struct InitializationTag
     {
     };
-    OriginalSettings(const std::filesystem::path& root, int mode, State state, InitializationTag) : font_(root), state_(state), mode_(mode), old_mask_(state.status_window) {}
-    s2ne::Result<bool> initialize(const std::filesystem::path& root, int mode, State state)
+    OriginalSettings(OriginalMenu font, int mode, State state, InitializationTag) : font_(std::move(font)), state_(state), mode_(mode), old_mask_(state.status_window) {}
+
+    s2ne::Result<bool> initialize(const std::filesystem::path& root, int mode)
     {
         if (mode < 0 || mode > 2)
         {
@@ -210,6 +211,7 @@ public:
             return s2ne::Result<bool>::failure(pal_read_result.error());
         }
         pal_ = std::move(pal_read_result).value();
+        if (pal_.size() < 820) { return s2ne::Result<bool>::failure(make_error("Truncated settings palette")); }
         pal_.at(0) = pal_.at(1) = pal_.at(2) = 0;
         auto cel_read_result = read_shared_resource(root / "SUPERSP.CEL");
         if (!cel_read_result)
@@ -218,7 +220,10 @@ public:
         }
         const auto cel = std::move(cel_read_result).value();
         // 425E84: CEL correction starts at 56; 426CB0 maps 202 to index 60.
-        size_t group = dword(pal_, 808 + 8) - 57;
+        auto address = dword(pal_, 808 + 8);
+        if (address < 57) { return s2ne::Result<bool>::failure(make_error("Invalid settings CEL address")); }
+        size_t group = address - 57;
+        if (group > cel.size() || cel.size() - group < 2 + 61 * 8) { return s2ne::Result<bool>::failure(make_error("Truncated settings CEL directory")); }
         if (word(cel, group) <= 60)
         {
             return s2ne::Result<bool>::failure(make_error("Missing CEL2 settings panel"));
@@ -242,7 +247,8 @@ public:
         {
             for (int x = 0; x < width_;)
             {
-                unsigned code = sprite_.at(p++), n = code ? code & 127 : 1;
+                if (p >= sprite_.size()) { return s2ne::Result<bool>::failure(make_error("Truncated settings panel opcode")); }
+                unsigned code = sprite_[p++], n = code ? code & 127 : 1;
                 if (!n || n > unsigned(width_ - x))
                 {
                     return s2ne::Result<bool>::failure(make_error("Invalid settings panel run"));
@@ -265,18 +271,16 @@ public:
 
         return s2ne::Result<bool>::success(true);
     }
-    explicit OriginalSettings(const std::filesystem::path& root, int mode, State state) : font_(root), state_(state), mode_(mode), old_mask_(state.status_window)
-    {
-        auto result = initialize(root, mode, state);
-        if (!result)
-        {
-            fatal(result.error());
-        }
-    }
+
+public:
+    explicit OriginalSettings(const std::filesystem::path& root, int mode, State state) : OriginalSettings(std::move(*create(root, mode, state).value())) {}
     static s2ne::Result<std::unique_ptr<OriginalSettings>> create(const std::filesystem::path& root, int mode, State state)
     {
-        auto result = std::make_unique<OriginalSettings>(root, mode, state, InitializationTag{});
-        auto ready = result->initialize(root, mode, state);
+        if (mode < 0 || mode > 2) { return s2ne::Result<std::unique_ptr<OriginalSettings>>::failure(make_error("Invalid original settings context")); }
+        auto font = OriginalMenu::create(root);
+        if (!font) { return s2ne::Result<std::unique_ptr<OriginalSettings>>::failure(font.error()); }
+        auto result = std::unique_ptr<OriginalSettings>(new OriginalSettings(std::move(font).value(), mode, state, InitializationTag{}));
+        auto ready = result->initialize(root, mode);
         if (!ready)
         {
             return s2ne::Result<std::unique_ptr<OriginalSettings>>::failure(ready.error());
@@ -293,22 +297,59 @@ public:
         {
             int a, b, c, d, e, g, h, i;
             char drive;
-            char value[16]{};
-            if (std::sscanf(line.c_str(), "DEVICE=%d,%d,%c", &a, &b, &drive) == 3)
+            const auto separator = line.find('=');
+            std::istringstream values(separator == std::string::npos ? "" : line.substr(separator + 1));
+            auto integer = [&values](int& value, bool comma)
             {
+                if (!(values >> value)) { fatal("Malformed or out-of-range CFG integer"); }
+                if (comma)
+                {
+                    char delimiter{};
+                    if (!(values >> delimiter) || delimiter != ',') { fatal("Malformed CFG separator"); }
+                }
+            };
+            if (line.starts_with("DEVICE="))
+            {
+                integer(a, true);
+                integer(b, true);
+                if (!(values >> drive)) { fatal("Missing CFG drive"); }
+                if (a < 0 || (b != 0 && b != 1)) { fatal("Invalid CFG DEVICE values"); }
                 state.device = a;
                 state.small_font = b;
                 state.drive = drive;
             }
-            else if (std::sscanf(line.c_str(), "VOLUME=%d,%d,%d", &a, &b, &c) == 3)
+            else if (line.starts_with("VOLUME="))
             {
+                integer(a, true);
+                integer(b, true);
+                integer(c, false);
+                if (a < 0 || a > 100 || b < 0 || b > 100 || c < 0 || c > 100) { fatal("Invalid CFG VOLUME values"); }
                 state.midi_volume = a;
                 state.cdda_volume = b;
                 state.effect_volume = c;
             }
-            else if (std::sscanf(line.c_str(), "CDDA=%15s", value) == 1) { state.flag_4f7d05 = std::string(value) == "ON"; }
-            else if (std::sscanf(line.c_str(), "SET=%d,%d,%d,%d,%d,%d,%d,%d", &a, &b, &c, &d, &e, &g, &h, &i) == 8)
+            else if (line.starts_with("CDDA="))
             {
+                std::string setting;
+                values >> setting;
+                if (setting != "ON" && setting != "OFF") { fatal("Invalid CFG CDDA value"); }
+                state.flag_4f7d05 = setting == "ON";
+            }
+            else if (line.starts_with("SET="))
+            {
+                integer(a, true);
+                integer(b, true);
+                integer(c, true);
+                integer(d, true);
+                integer(e, true);
+                integer(g, true);
+                integer(h, true);
+                integer(i, false);
+                if (a < 0 || b < 0 || a > int(UINT32_MAX / 10) || b > int(UINT32_MAX / 10)
+                    || c < 0 || c > 1 || d < 0 || d > 1 || e < 0 || e > 1 || g < 0 || g > 1 || h < 0 || h > 1 || i < 0 || i > 1)
+                {
+                    fatal("Invalid CFG SET values");
+                }
                 state.screen_delay = a;
                 state.message_delay = b;
                 state.confirm = uint8_t(c);
@@ -323,7 +364,13 @@ public:
                 state.memory_check = true;
             }
             else if (line == "SIMPLIFIED_CHINESE=1" || line == "SIMPLIFIED_CHINESE=ON") { state.simplified_chinese = 1; }
+            if (line.starts_with("DEVICE=") || line.starts_with("VOLUME=") || line.starts_with("SET=") || line.starts_with("CDDA="))
+            {
+                values >> std::ws;
+                if (!values.eof()) { fatal("Trailing original CFG setting data"); }
+            }
         }
+        if (f.bad()) { fatal("Cannot finish reading original CFG"); }
         return state;
     }
     explicit OriginalSettings(const std::filesystem::path& root, int mode = 0) : OriginalSettings(root, mode, load_state(root)) {}
@@ -332,7 +379,7 @@ public:
     int left() const { return left_; }
     int top() const { return top_; }
     bool password_active() const { return password_; }
-    std::string config_text() const
+    static std::string config_text(const State& state_)
     {
         std::ostringstream o;
         o << "DEVICE=" << state_.device << ',' << state_.small_font << ',' << state_.drive << "\nVOLUME="
@@ -345,6 +392,49 @@ public:
             o << "MemoryCheck=ON\n";
         }
         return o.str();
+    }
+    std::string config_text() const { return config_text(state_); }
+    static s2ne::Result<bool> try_save_state(const std::filesystem::path& root, const State& state)
+    {
+        std::map<std::string, std::string> replacements;
+        std::istringstream updated(config_text(state));
+        std::string line;
+        while (std::getline(updated, line))
+        {
+            const auto eq = line.find('=');
+            if (eq != std::string::npos && line.substr(0, eq) != "Version") { replacements[line.substr(0, eq)] = line; }
+        }
+        const auto path = root / "SUPERSP.CFG";
+        std::error_code error;
+        const bool exists = std::filesystem::exists(path, error);
+        if (error) { return s2ne::Result<bool>::failure(make_error("Cannot inspect original CFG: " + error.message())); }
+        std::ifstream existing;
+        if (exists)
+        {
+            existing.open(path, std::ios::binary);
+            if (!existing) { return s2ne::Result<bool>::failure(make_error("Cannot read original CFG")); }
+        }
+        std::set<std::string> emitted;
+        std::string merged;
+        while (std::getline(existing, line))
+        {
+            if (!line.empty() && line.back() == '\r') { line.pop_back(); }
+            const auto key = line.substr(0, line.find('='));
+            auto replacement = replacements.find(key);
+            if (replacement != replacements.end())
+            {
+                if (!emitted.insert(key).second) { continue; }
+                line = replacement->second;
+            }
+            merged += line + "\r\n";
+        }
+        if (existing.bad()) { return s2ne::Result<bool>::failure(make_error("Cannot finish reading original CFG")); }
+        existing.close();
+        for (const auto& [key, value] : replacements)
+        {
+            if (!emitted.contains(key)) { merged += value + "\r\n"; }
+        }
+        return OriginalSaveStore::try_replace(path, std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(merged.data()), merged.size()));
     }
     // The host owns persistence: only Result::save_config permits writing this text.
     Result event(const Event& e)

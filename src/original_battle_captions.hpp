@@ -57,8 +57,20 @@ struct OriginalBattleCaptions
     {
         // 43A866/43AA0E -> 422402(ink=88h, shadow=9Ah, style=1).
         int x = left(text, icon_x), y = icon_y + 40;
-        font.draw_small(image, text, x + 1, y + 1, 154, true);
-        font.draw_small(image, text, x, y, 136, true);
+        auto output = image;
+        auto shadow = font.try_draw_small_validated(output, text, x + 1, y + 1, 154, true);
+        if (!shadow)
+        {
+            report_error(shadow.error());
+            return;
+        }
+        auto foreground = font.try_draw_small_validated(output, text, x, y, 136, true);
+        if (!foreground)
+        {
+            report_error(foreground.error());
+            return;
+        }
+        image.swap(output);
     }
 };
 }    //namespace s2ne

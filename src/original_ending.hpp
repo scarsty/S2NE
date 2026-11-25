@@ -167,7 +167,6 @@ class OriginalEnding
     }
     static unsigned word(const auto& b, size_t p) { return try_word(b, p).value(); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static std::vector<uint8_t> read(const std::filesystem::path& p) { return read_resource(p).value(); }
     std::vector<uint8_t> string(size_t p) const
     {
         std::vector<uint8_t> result;
@@ -187,7 +186,9 @@ public:
             if (!image) { return s2ne::Result<std::vector<uint8_t>>::failure(image.error()); }
             return s2ne::Result<std::vector<uint8_t>>::success(std::move(image).value().pixels);
         }
-        auto b = OriginalDiscResources(root).dat_entry(disc, id);
+        auto loaded = OriginalDiscResources(root).try_dat_entry(disc, id);
+        if (!loaded) { return s2ne::Result<std::vector<uint8_t>>::failure(loaded.error()); }
+        auto b = std::move(loaded).value();
         if (b.size() < 897 || b[0] != 10 || b[2] != 1 || b[3] != 8 || b[65] != 1 || word(b, 8) != 639 || word(b, 10) < 479)
         {
             return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Unsupported native ending PCX"));
@@ -206,10 +207,12 @@ public:
         std::vector<uint8_t> out(size_t(640) * height * 4);
         while (n < size_t(stride) * height)
         {
+            if (p >= colors - 1) { return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Truncated ending PCX run")); }
             unsigned c = b.at(p++), count = 1;
             if ((c & 192) == 192)
             {
                 count = c & 63;
+                if (p >= colors - 1) { return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Truncated ending PCX color")); }
                 c = b.at(p++);
             }
             if (!count || count > size_t(stride) * height - n || p >= colors)
@@ -241,11 +244,11 @@ private:
         auto result = try_pcx(root, id, disc);
         return std::move(result).value();
     }
-    void paragraph(std::vector<uint8_t>& image, const std::vector<uint8_t>& bytes, int x, int y, int width) const
+    s2ne::Result<bool> paragraph(std::vector<uint8_t>& image, const std::vector<uint8_t>& bytes, int x, int y, int width) const
     {
-        font_.draw_original_wrapped(image, bytes, x, y, 175, 20, unsigned(width / 28), 28);
+        return font_.try_draw_original_wrapped(image, bytes, x, y, 175, 20, unsigned(width / 28), 28);
     }
-    void role_text(std::vector<uint8_t>& image, const std::vector<uint8_t>& text) const
+    s2ne::Result<bool> role_text(std::vector<uint8_t>& image, const std::vector<uint8_t>& text) const
     {
         size_t p = 0;
         for (unsigned row = 0; row < 30 && p < text.size(); ++row)
@@ -256,7 +259,7 @@ private:
                 unsigned c = text[p++];
                 if (!c || c == 10)
                 {
-                    return;
+                    return s2ne::Result<bool>::success(true);
                 }
                 if (c == '*')
                 {
@@ -273,6 +276,7 @@ private:
                 std::vector<uint8_t> glyph{ uint8_t(std::max(c, 30u)) };
                 if (c > 128)
                 {
+                    if (p >= text.size()) { return s2ne::Result<bool>::failure(make_error("Truncated ending role text")); }
                     glyph.push_back(text.at(p++));
                     units += 2;
                 }
@@ -281,25 +285,35 @@ private:
                     ++units;
                 }
                 int x = 120 + int(cell) * 16 - compensation;
-                font_.draw_small(image, glyph, x, 230 + int(row) * 20, 175, true);
+                auto drawn = font_.try_draw_small(image, glyph, x, 230 + int(row) * 20, 175, true);
+                if (!drawn) { return drawn; }
                 if (c <= 128)
                 {
                     compensation += 8;
                 }
             }
         }
+        return s2ne::Result<bool>::success(true);
     }
 
-public:
-    struct InitializationTag
-    {
-    };
-    OriginalEnding(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc, InitializationTag) : font_(root), events_(events), root_(root), disc_((events.stage == 61 || events.stage == 130 || events.stage == 131) ? OriginalDisc::two : disc) {}
+private:
+    OriginalEnding(OriginalMenu font, const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc) : font_(std::move(font)), events_(events), root_(root), disc_((events.stage == 61 || events.stage == 130 || events.stage == 131) ? OriginalDisc::two : disc) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc)
     {
         disc = disc_;
         // 原40DDD5/40D6D6按后续关号为0进入41E9CF；结局入口不按关号或旗标白名单授权。
-        if (OriginalCampaign(root).selected_route(events) != 0)
+        auto campaign = OriginalCampaign::create(root);
+        if (!campaign) { return s2ne::Result<bool>::failure(campaign.error()); }
+        OriginalEvents source = events;
+        auto stage_loaded = source.try_load_stage(events.stage);
+        if (!stage_loaded) { return s2ne::Result<bool>::failure(stage_loaded.error()); }
+        auto route = OriginalCampaign::try_completed_story_route(source, events);
+        if (!route) { return s2ne::Result<bool>::failure(route.error()); }
+        auto stage = campaign.value().try_stage(events.stage);
+        if (!stage) { return s2ne::Result<bool>::failure(stage.error()); }
+        unsigned selected = route.value() ? route.value() : stage.value().next;
+        if (events.script_route && *events.script_route > 0) { selected = unsigned(*events.script_route); }
+        if (selected != 0)
         {
             return s2ne::Result<bool>::failure(make_error("Native terminal outcome not authorized"));
         }
@@ -328,7 +342,10 @@ public:
         }
         auto bin = std::move(bin_result).value();
         size_t at = 848 + 16;
-        size_t offset = dword(pal_, at) - 13, size = dword(pal_, at + 4) - 13;
+        ResourceReader palette(pal_);
+        const unsigned raw_offset = palette.number(at, 4), raw_size = palette.number(at + 4, 4);
+        if (!palette || raw_offset < 13 || raw_size < 13) { return s2ne::Result<bool>::failure(make_error("Invalid BIN3 ending directory")); }
+        size_t offset = raw_offset - 13, size = raw_size - 13;
         if (offset > bin.size() || size > bin.size() - offset)
         {
             return s2ne::Result<bool>::failure(make_error("Invalid BIN3 ending text"));
@@ -404,17 +421,16 @@ public:
 
         return s2ne::Result<bool>::success(true);
     }
-    OriginalEnding(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc) : font_(root), events_(events), root_(root), disc_((events.stage == 61 || events.stage == 130 || events.stage == 131) ? OriginalDisc::two : disc)
+
+public:
+    OriginalEnding(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc) : OriginalEnding(std::move(*create(root, events, disc).value()))
     {
-        auto result = initialize(root, events, disc);
-        if (!result)
-        {
-            fatal(result.error());
-        }
     }
     static s2ne::Result<std::unique_ptr<OriginalEnding>> create(const std::filesystem::path& root, const OriginalEvents& events, OriginalDisc disc)
     {
-        auto result = std::make_unique<OriginalEnding>(root, events, disc, InitializationTag{});
+        auto font = OriginalMenu::create(root);
+        if (!font) { return s2ne::Result<std::unique_ptr<OriginalEnding>>::failure(font.error()); }
+        auto result = std::unique_ptr<OriginalEnding>(new OriginalEnding(std::move(font).value(), root, events, disc));
         auto ready = result->initialize(root, events, disc);
         if (!ready)
         {
@@ -557,12 +573,14 @@ public:
         if (phase.role < 0 && !phase.summary)
         {
             image = phase.text < 2 ? intro_ : background_;
-            paragraph(image, string(dword(text_, records + phase.text * 6)), phase.text < 2 ? 25 : 60, phase.text == 1 ? 120 : 50, 590);
+            auto text = paragraph(image, string(dword(text_, records + phase.text * 6)), phase.text < 2 ? 25 : 60, phase.text == 1 ? 120 : 50, 590);
+            if (!text) { return s2ne::Result<std::vector<uint8_t>>::failure(text.error()); }
             return s2ne::Result<std::vector<uint8_t>>::success(image);
         }
         if (phase.summary)
         {
-            paragraph(image, font_.text_bytes(258), 70, 50, 300);
+            auto text = paragraph(image, font_.text_bytes(258), 70, 50, 300);
+            if (!text) { return s2ne::Result<std::vector<uint8_t>>::failure(text.error()); }
             if (!events_.ending_statistics)
             {
                 return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Native ending campaign statistics unavailable"));
@@ -580,7 +598,8 @@ public:
             for (size_t i = 0; i < 6; ++i)
             {
                 auto number = std::to_string(i < 5 ? (*events_.ending_statistics)[i] : int(total));
-                font_.draw_original_large(image, { number.begin(), number.end() }, 400, y[i], 175);
+                auto drawn = font_.try_draw_original_large(image, { number.begin(), number.end() }, 400, y[i], 175);
+                if (!drawn) { return s2ne::Result<std::vector<uint8_t>>::failure(drawn.error()); }
             }
             return s2ne::Result<std::vector<uint8_t>>::success(image);
         }
@@ -596,27 +615,32 @@ public:
             {
                 return s2ne::Result<std::vector<uint8_t>>::failure(class_result.error());
             }
-            font_.draw_original_large(image, unit.name, 367, 42, 175);
+            auto name = font_.try_draw_original_large(image, unit.name, 367, 42, 175);
+            if (!name) { return s2ne::Result<std::vector<uint8_t>>::failure(name.error()); }
             auto title = unit.profession;
             auto level = " " + std::to_string(unit.level) + " ";
             title.insert(title.end(), level.begin(), level.end());
             auto suffix = font_.text_bytes(113);
             title.insert(title.end(), suffix.begin(), suffix.end());
-            font_.draw_original_large(image, title, 367, 72, 175);
+            auto heading = font_.try_draw_original_large(image, title, 367, 72, 175);
+            if (!heading) { return s2ne::Result<std::vector<uint8_t>>::failure(heading.error()); }
             auto number = [&](unsigned label, int value, int y)
             {
                 auto text = font_.text_bytes(label);
                 auto n = std::to_string(value);
                 text.insert(text.end(), n.begin(), n.end());
-                font_.draw_original_large(image, text, 367, y, 175);
+                return font_.try_draw_original_large(image, text, 367, y, 175);
             };
             if (!unit.ending_combat_value)
             {
                 return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Native ending cached combat statistic unavailable"));
             }
-            number(28, *unit.ending_combat_value, 102);
-            number(256, int(unit.ending_kills), 132);
-            number(257, int(unit.ending_losses), 162);
+            auto combat = number(28, *unit.ending_combat_value, 102);
+            if (!combat) { return s2ne::Result<std::vector<uint8_t>>::failure(combat.error()); }
+            auto kills = number(256, int(unit.ending_kills), 132);
+            if (!kills) { return s2ne::Result<std::vector<uint8_t>>::failure(kills.error()); }
+            auto losses = number(257, int(unit.ending_losses), 162);
+            if (!losses) { return s2ne::Result<std::vector<uint8_t>>::failure(losses.error()); }
             size_t list = dword(text_, variants + variant_ * 8);
             unsigned n = word(text_, variants + variant_ * 8 + 4);
             for (unsigned i = 0; i < n; ++i)
@@ -624,7 +648,8 @@ public:
                 size_t p = list + i * 8;
                 if (word(text_, p) == id)
                 {
-                    role_text(image, string(dword(text_, p + 2)));
+                    auto text = role_text(image, string(dword(text_, p + 2)));
+                    if (!text) { return s2ne::Result<std::vector<uint8_t>>::failure(text.error()); }
                     break;
                 }
             }
@@ -669,7 +694,8 @@ public:
             title.push_back(' ');
             auto label = font_.text_bytes(261);
             title.insert(title.end(), label.begin(), label.end());
-            font_.draw_original_large(image, title, 34, 220, 175);
+            auto heading = font_.try_draw_original_large(image, title, 34, 220, 175);
+            if (!heading) { return s2ne::Result<std::vector<uint8_t>>::failure(heading.error()); }
             unsigned row = 0;
             for (const auto& other : events_.units)
             {
@@ -681,7 +707,8 @@ public:
                 auto name = other.name;
                 std::string value = ":" + std::to_string(unit.relationships[other.id - 1]);
                 name.insert(name.end(), value.begin(), value.end());
-                font_.draw_original_large(image, name, x, y, 175);
+                auto drawn = font_.try_draw_original_large(image, name, x, y, 175);
+                if (!drawn) { return s2ne::Result<std::vector<uint8_t>>::failure(drawn.error()); }
                 if (++row >= 16)
                 {
                     break;

@@ -12,10 +12,13 @@ class OriginalUnitStatus
 {
     SharedBytes cel_, pal_;
     size_t heads_{};
+    mutable std::vector<uint8_t> cached_input_, cached_output_;
+    mutable std::vector<uint8_t> cached_name_, cached_profession_;
+    mutable std::array<int64_t, 26> cached_fields_{};
+    mutable const OriginalMenu* cached_font_{};
     static unsigned word(const std::vector<uint8_t>& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const std::vector<uint8_t>& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& p) { return read_shared_resource(p); }
-    static SharedBytes read(const std::filesystem::path& p) { return try_read(p).value(); }
     void pixel(std::vector<uint8_t>& image, int x, int y, unsigned c) const
     {
         if (x < 0 || x >= 640 || y < 0 || y >= 480)
@@ -60,12 +63,8 @@ class OriginalUnitStatus
     }
     static std::vector<uint8_t> bytes(const std::string& s) { return { s.begin(), s.end() }; }
 
-public:
-    struct InitializationTag
-    {
-    };
-    OriginalUnitStatus(const std::filesystem::path& root, InitializationTag) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL")) {}
-    s2ne::Result<bool> initialize(const std::filesystem::path& root)
+    OriginalUnitStatus(SharedBytes cel, SharedBytes pal) : cel_(std::move(cel)), pal_(std::move(pal)) {}
+    s2ne::Result<bool> initialize()
     {
         pal_.mutable_at(0) = pal_.mutable_at(1) = pal_.mutable_at(2) = 0;
         heads_ = dword(pal_, 808 + 2 * 8) - 58;
@@ -76,18 +75,20 @@ public:
 
         return s2ne::Result<bool>::success(true);
     }
-    explicit OriginalUnitStatus(const std::filesystem::path& root) : cel_(read(root / "SUPERSP.CEL")), pal_(read(root / "SUPERSP.PAL"))
+
+public:
+    explicit OriginalUnitStatus(const std::filesystem::path& root) : OriginalUnitStatus(std::move(*create(root).value()))
     {
-        auto result = initialize(root);
-        if (!result)
-        {
-            fatal(result.error());
-        }
     }
     static s2ne::Result<std::unique_ptr<OriginalUnitStatus>> create(const std::filesystem::path& root)
     {
-        auto result = std::make_unique<OriginalUnitStatus>(root, InitializationTag{});
-        auto ready = result->initialize(root);
+        auto cel = try_read(root / "SUPERSP.CEL");
+        if (!cel) { return s2ne::Result<std::unique_ptr<OriginalUnitStatus>>::failure(cel.error()); }
+        auto pal = try_read(root / "SUPERSP.PAL");
+        if (!pal) { return s2ne::Result<std::unique_ptr<OriginalUnitStatus>>::failure(pal.error()); }
+        if (pal.value().size() < 828) { return s2ne::Result<std::unique_ptr<OriginalUnitStatus>>::failure(make_error("Truncated status palette")); }
+        auto result = std::unique_ptr<OriginalUnitStatus>(new OriginalUnitStatus(std::move(cel).value(), std::move(pal).value()));
+        auto ready = result->initialize();
         if (!ready)
         {
             return s2ne::Result<std::unique_ptr<OriginalUnitStatus>>::failure(ready.error());
@@ -115,17 +116,21 @@ public:
         const std::array<const char*, 4> labels{ "HP", "MP", "ST", "AP" };
         auto small = [&](const std::vector<uint8_t>& text, int x, int y, unsigned color)
         {
-            font.draw_small(image, text, x, y, color, true);
+            return font.try_draw_small_validated(image, text, x, y, color, true);
         };
         for (unsigned row = 0; row < 4; ++row)
         {
             const int y = y_base + y_offsets[row];
-            small(bytes(labels[row]), x_base + 0x0D, y, 187);
-            small(bytes(std::to_string(current[row])), x_base + 0xB8, y, 79);
-            small(bytes("/"), x_base + 0xD8, y, 79);
+            auto label = small(bytes(labels[row]), x_base + 0x0D, y, 187);
+            if (!label) { return label; }
+            auto value = small(bytes(std::to_string(current[row])), x_base + 0xB8, y, 79);
+            if (!value) { return value; }
+            auto separator = small(bytes("/"), x_base + 0xD8, y, 79);
+            if (!separator) { return separator; }
             auto maximum = std::to_string(limit[row]);
             if (row == 3 && u.carry_points > 0) { maximum += "+" + std::to_string(u.carry_points); }
-            small(bytes(maximum), x_base + 0xE0, y, 79);
+            auto maximum_text = small(bytes(maximum), x_base + 0xE0, y, 79);
+            if (!maximum_text) { return maximum_text; }
             if (gate_current[row] < gate_limit[row] || !current[row])
             {
                 const int gap = missing_bar(current[row], limit[row]);
@@ -142,11 +147,13 @@ public:
         {
             const int column = i < 3 ? 0 : 0x41;
             const int y = y_base + 9 + int(i % 3) * 0x16;
-            small(font.text_bytes(labels_id[i]), x_base + 0x10B + column, y, 54);
+            auto label = small(font.text_bytes(labels_id[i]), x_base + 0x10B + column, y, 54);
+            if (!label) { return label; }
             int adjustment = 0;
             if (i % 3 == 0) { adjustment = 1; }
             else if (i % 3 == 2) { adjustment = -1; }
-            small(bytes(std::to_string(values[i])), x_base + 0x131 + column, y + adjustment, 202);
+            auto value = small(bytes(std::to_string(values[i])), x_base + 0x131 + column, y + adjustment, 202);
+            if (!value) { return value; }
         }
         return s2ne::Result<bool>::success(true);
     }
@@ -164,18 +171,16 @@ public:
         }
         if (!(u.status_flags & 0x10))
         {
-            font.draw_original_large(image, u.name, x_base + 0x82, y_base + 0x16, alternate_context ? 60 : 167);
+            auto name = font.try_draw_original_large(image, u.name, x_base + 0x82, y_base + 0x16, alternate_context ? 60 : 167);
+            if (!name) { return name; }
         }
-        auto small = [&](const std::vector<uint8_t>& text, int x, int y, unsigned color)
-        {
-            font.draw_small(image, text, x, y, color, true);
-        };
         auto title = u.profession;
         auto level = bytes(" " + std::to_string(u.level));
         title.insert(title.end(), level.begin(), level.end());
         auto suffix = font.text_bytes(113);
         title.insert(title.end(), suffix.begin(), suffix.end());
-        font.draw_original_large(image, title, x_base + 0x204 - int(title.size()) * 12, y_base + 0x16, 179);
+        auto heading = font.try_draw_original_large(image, title, x_base + 0x204 - int(title.size()) * 12, y_base + 0x16, 179);
+        if (!heading) { return heading; }
         auto status = try_draw_status_chain(font, image, u, x_base + 0x7B, y_base + 0x36);
         if (!status)
         {
@@ -194,24 +199,52 @@ public:
         if (!portrait_result) { return portrait_result; }
         if (!(u.status_flags & 0x10))
         {
-            font.draw_original_large(image, u.name, 111, panel_y + 7, alternate_context ? 60 : 167);
+            auto name = font.try_draw_original_large(image, u.name, 111, panel_y + 7, alternate_context ? 60 : 167);
+            if (!name) { return name; }
         }
         auto title = u.profession;
         const auto level = bytes(" " + std::to_string(u.level));
         title.insert(title.end(), level.begin(), level.end());
         const auto suffix = font.text_bytes(113);
         title.insert(title.end(), suffix.begin(), suffix.end());
-        font.draw_small(image, title, 276, panel_y + 11, 178, true);
-        font.draw_small(image, font.text_bytes(4), 408, panel_y + 11, 178, true);
-        font.draw_small(image, bytes(std::to_string(u.experience)), 449, panel_y + 11, 60, true);
+        auto heading = font.try_draw_small_validated(image, title, 276, panel_y + 11, 178, true);
+        if (!heading) { return heading; }
+        auto label = font.try_draw_small_validated(image, font.text_bytes(4), 408, panel_y + 11, 178, true);
+        if (!label) { return label; }
+        auto experience = font.try_draw_small_validated(image, bytes(std::to_string(u.experience)), 449, panel_y + 11, 60, true);
+        if (!experience) { return experience; }
         return try_draw_status_chain(font, image, u, 104, panel_y + 33);
     }
     void draw(const OriginalMenu& font, std::vector<uint8_t>& image, const OriginalEvents::Unit& u, int panel_y, bool alternate_context = false) const
     {
+        if (image.size() != 640u * 480 * 4 || (panel_y != 0 && panel_y != 363))
+        {
+            report_error(make_error("Invalid status framebuffer or panel position"));
+            return;
+        }
+        const std::array<int64_t, 26> fields{ u.portrait, u.status_flags, u.level, u.experience,
+            u.hp, u.mp, u.st, u.action_points, u.max_hp, u.max_mp, u.max_st, u.base_action_points,
+            u.carry_points, u.attack, u.defense, u.strikeback, u.sp, u.tactics, u.fencing,
+            panel_y, alternate_context, font.small_font, font.simplified_chinese,
+            texture_resources.active(), texture_resources.font_ready(), texture_resources.small_font_ready() };
+        const size_t offset = size_t(panel_y) * 640 * 4, extent = 117u * 640 * 4;
+        const auto first = image.begin() + offset;
+        if (!texture_resources.active() && cached_font_ == &font && !cached_output_.empty() && fields == cached_fields_ && u.name == cached_name_ && u.profession == cached_profession_
+            && std::equal(cached_input_.begin(), cached_input_.end(), first))
+        {
+            std::copy(cached_output_.begin(), cached_output_.end(), first);
+            return;
+        }
         auto staged = image;
         auto result = try_draw(font, staged, u, panel_y, alternate_context);
         if (result)
         {
+            cached_input_.assign(first, first + extent);
+            cached_output_.assign(staged.begin() + offset, staged.begin() + offset + extent);
+            cached_fields_ = fields;
+            cached_font_ = &font;
+            cached_name_ = u.name;
+            cached_profession_ = u.profession;
             image.swap(staged);
         }
         else

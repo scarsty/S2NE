@@ -221,11 +221,7 @@ private:
         text(image, { s.begin(), s.end() }, x, y, color);
     }
 
-public:
-    struct InitializationTag
-    {
-    };
-    OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc, InitializationTag) : root_(root), shop_(root), font_(root), background_(root, disc, 14), cel_(read_shared_resource(root / "SUPERSP.CEL").value()), pal_(read_shared_resource(root / "SUPERSP.PAL").value()) {}
+    OriginalShopMenu(const std::filesystem::path& root, OriginalShop shop, OriginalMenu font, OriginalInterbattle background, SharedBytes cel, SharedBytes pal) : root_(root), shop_(std::move(shop)), font_(std::move(font)), background_(std::move(background)), cel_(std::move(cel)), pal_(std::move(pal)) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, OriginalDisc disc)
     {
         auto json_towns = try_load_towns_json(root);
@@ -239,7 +235,9 @@ public:
         }
         else
         {
-            auto bin = read(root / "SUPERSP.BIN");
+            auto binResult = try_read(root / "SUPERSP.BIN");
+            if (!binResult) { return s2ne::Result<bool>::failure(binResult.error()); }
+            auto bin = std::move(binResult).value();
             size_t town = dword(pal_, 848 + 3 * 8) - 14, size = dword(pal_, 852 + 3 * 8) - 14;
             if (town > bin.size() || size > bin.size() - town)
             {
@@ -247,33 +245,41 @@ public:
             }
             towns_.assign(bin.begin() + town, bin.begin() + town + size);
         }
-        auto bytes = OriginalDiscResources(root).dat_entry(disc, 3);
+        auto bytesResult = OriginalDiscResources(root).try_dat_entry(disc, 3);
+        if (!bytesResult) { return s2ne::Result<bool>::failure(bytesResult.error()); }
+        auto bytes = std::move(bytesResult).value();
+        if (bytes.size() < 2) { return s2ne::Result<bool>::failure(make_error("Truncated shop help header")); }
         size_t p = 2;
         unsigned count = word(bytes, 0);
         for (unsigned i = 0; i < count; ++i)
         {
             size_t start = p;
-            while (bytes.at(p))
+            while (p < bytes.size() && bytes[p])
             {
                 ++p;
             }
+            if (p == bytes.size()) { return s2ne::Result<bool>::failure(make_error("Truncated shop help string")); }
             help_.emplace_back(bytes.begin() + start, bytes.begin() + p);
             ++p;
         }
 
         return s2ne::Result<bool>::success(true);
     }
-    explicit OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one) : root_(root), shop_(root), font_(root), background_(root, disc, 14), cel_(read_shared_resource(root / "SUPERSP.CEL").value()), pal_(read_shared_resource(root / "SUPERSP.PAL").value())
-    {
-        auto result = initialize(root, disc);
-        if (!result)
-        {
-            fatal(result.error());
-        }
-    }
+
+public:
+    explicit OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one) : OriginalShopMenu(std::move(*create(root, disc).value())) {}
     static s2ne::Result<std::unique_ptr<OriginalShopMenu>> create(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one)
     {
-        auto result = std::make_unique<OriginalShopMenu>(root, disc, InitializationTag{});
+        auto font = OriginalMenu::create(root);
+        if (!font) { return s2ne::Result<std::unique_ptr<OriginalShopMenu>>::failure(font.error()); }
+        auto shop = OriginalShop::create(root);
+        if (!shop) { return s2ne::Result<std::unique_ptr<OriginalShopMenu>>::failure(shop.error()); }
+        auto background = OriginalInterbattle::create(root, disc, 14);
+        if (!background) { return s2ne::Result<std::unique_ptr<OriginalShopMenu>>::failure(background.error()); }
+        auto cel = read_shared_resource(root / "SUPERSP.CEL"), pal = read_shared_resource(root / "SUPERSP.PAL");
+        if (!cel) { return s2ne::Result<std::unique_ptr<OriginalShopMenu>>::failure(cel.error()); }
+        if (!pal) { return s2ne::Result<std::unique_ptr<OriginalShopMenu>>::failure(pal.error()); }
+        auto result = std::unique_ptr<OriginalShopMenu>(new OriginalShopMenu(root, std::move(*shop.value()), std::move(font).value(), std::move(*background.value()), std::move(cel).value(), std::move(pal).value()));
         auto ready = result->initialize(root, disc);
         if (!ready)
         {

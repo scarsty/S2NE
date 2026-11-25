@@ -10,6 +10,8 @@ class OriginalSaveBridge
 {
     friend class OriginalInitialization;
     friend class OriginalChurch;
+    friend Result<ResourceDomain> try_app_domain_for_save(const OriginalSave::State& state);
+    friend ResourceDomain update_app_domain_for_stage(OriginalSave::State& state);
     using Raw = OriginalSave::UnitRecord;
     static uint32_t get(std::span<const uint8_t> b, size_t p, unsigned n = 2)
     {

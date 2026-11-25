@@ -36,23 +36,7 @@ struct NativeHostileStatus
         const bool excluded = movement_excluded || (target.runtime_role_selector == 1 && (exclusions & 2)) || (target.runtime_role_selector == 2 && (exclusions & 0x20)) || (effect == 16 && (target.abilities & 0x5000));
         if (!excluded)
         {
-            const int d = actor.st - target.st + hit_base - 100;
-            int chance;
-            if (d > 42) { chance = 99; }
-            else if (d >= 10) { chance = (d - 10) / 4 + 90; }
-            else if (d > 0) { chance = d + 80; }
-            else if (d == 0) { chance = 80; }
-            else if (d > -40) { chance = d / 2 + 80; }
-            else if (d > -80) { chance = d + 100; }
-            else if (d > -120) { chance = (d + 80) / 2 + 21; }
-            else
-            {
-                chance = 1;
-            }
-
-            chance = chance * (config[10] + random.bounded(config[11] + 3, seconds)) / 10;
-            if (!conditions_mode) { chance = chance * (100 + config[0xF3 + difficulty]) / 100; }
-            out.chance = std::clamp(chance, 1, 99);
+            out.chance = original_status_hit_chance(actor.st - target.st + hit_base - 100, random, config, difficulty, seconds, conditions_mode);
         }
         if (effect == 56)
         {
@@ -91,17 +75,7 @@ struct NativeHostileStatus
             out.hit = out.roll <= out.chance;
         }
         if (!out.hit) { return Result<Packet>::success(out); }
-        if (!target.action_status_runtime)
-        {
-            target.action_status_runtime.emplace();
-            auto& r = *target.action_status_runtime;
-            r[0x39] = target.status39.value_or(0);
-            r[0x3C] = target.status3c;
-            r[0x3D] = target.status3d;
-            r[0x3E] = target.status3e;
-            r[0x3F] = target.status3f;
-        }
-        auto& r = *target.action_status_runtime;
+        auto& r = ensure_original_status_runtime(target);
         if (!preserve_sleep) { r[0x3E] &= uint8_t(~2u); }
         out.immune = !bypass_immunity && ((r[0x3E] & 0x10) || (target.abilities & 0x4000));
         if (!out.immune)

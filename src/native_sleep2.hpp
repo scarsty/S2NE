@@ -21,39 +21,13 @@ struct NativeSleep2
         // 46D50F: record29 bit2 excludes runtime role1 before any power RNG.
         if (target.runtime_role_selector != 1)
         {
-            int d = actor.st - target.st - 100;
-            int hit;
-            if (d > 42) { hit = 99; }
-            else if (d >= 10) { hit = (d - 10) / 4 + 90; }
-            else if (d > 0) { hit = d + 80; }
-            else if (d == 0) { hit = 80; }
-            else if (d > -40) { hit = d / 2 + 80; }
-            else if (d > -80) { hit = d + 100; }
-            else if (d > -120) { hit = (d + 80) / 2 + 21; }
-            else
-            {
-                hit = 1;
-            }
-
-            hit = hit * (config[10] + random.bounded(config[11] + 3, seconds)) / 10;
-            if (!conditions_mode) { hit = hit * (100 + config[0xF3 + difficulty]) / 100; }
-            chance = std::clamp(hit, 1, 99);
+            chance = original_status_hit_chance(actor.st - target.st - 100, random, config, difficulty, seconds, conditions_mode);
         }
         out.chance = chance;
         out.roll = random.percent(seconds);
         out.hit = out.roll <= chance;
         if (!out.hit) { return Result<Packet>::success(out); }
-        if (!target.action_status_runtime)
-        {
-            target.action_status_runtime.emplace();
-            auto& r = *target.action_status_runtime;
-            r[0x39] = target.status39.value_or(0);
-            r[0x3C] = target.status3c;
-            r[0x3D] = target.status3d;
-            r[0x3E] = target.status3e;
-            r[0x3F] = target.status3f;
-        }
-        auto& r = *target.action_status_runtime;
+        auto& r = ensure_original_status_runtime(target);
         // 4685CD wakes first, even an immune target; stale timer is retained.
         r[0x3E] &= uint8_t(~2u);
         out.immune = (r[0x3E] & 0x10) || (target.abilities & 0x4000);

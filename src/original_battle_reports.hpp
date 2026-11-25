@@ -45,7 +45,6 @@ private:
     OriginalMap unit_resources_;
     SharedBytes cel_, pal_, items_;
     mutable OriginalPalette palette_;
-    mutable OriginalPalette equipment_palette_;
     std::vector<int> combat_values_;
     bool enemy_strength_visible_ = true;
     std::vector<std::vector<uint8_t>> ability_names_;
@@ -68,7 +67,6 @@ private:
     static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
     static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& p) { return read_shared_resource(p); }
-    static SharedBytes read(const std::filesystem::path& p) { return try_read(p).value(); }
     static std::vector<uint8_t> bytes(const std::string& s) { return { s.begin(), s.end() }; }
     void pixel(std::vector<uint8_t>& image, int x, int y, unsigned c) const
     {
@@ -83,19 +81,9 @@ private:
         }
         image.at(p + 3) = 255;
     }
-    s2ne::Result<bool> try_sprite_validated(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent = true) const
-    {
-        return draw_original_cel(image, cel_, pal_, id, left, top, transparent ? OriginalZeroRun::transparent : OriginalZeroRun::opaque);
-    }
     s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent = true) const
     {
-        auto output = image;
-        auto result = try_sprite_validated(output, id, left, top, transparent);
-        if (result)
-        {
-            image.swap(output);
-        }
-        return result;
+        return draw_original_cel(image, cel_, pal_, id, left, top, transparent ? OriginalZeroRun::transparent : OriginalZeroRun::opaque);
     }
     void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent = true) const
     {
@@ -105,8 +93,8 @@ private:
             report_error(result.error());
         }
     }
-    void large(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color) const { font_.draw_original_large(image, text, x, y, color); }
-    void small(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color) const { font_.draw_small(image, text, x, y, color, true); }
+    s2ne::Result<bool> large(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color) const { return font_.try_draw_original_large(image, text, x, y, color); }
+    s2ne::Result<bool> small(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color) const { return font_.try_draw_small(image, text, x, y, color, true); }
     s2ne::Result<bool> try_detail(std::vector<uint8_t>& image) const
     {
         ResourceReader palette_reader(pal_), archive(cel_);
@@ -129,16 +117,20 @@ private:
         {
             if (i == 0 && selected().enemy && !enemy_strength_visible_) { continue; }
             const int y = 0x3F + int(i) * 0x16;
-            small(image, font_.text_bytes(titles[i]), 0x216, y, 179);
-            small(image, bytes(std::to_string(values[i])), 0x240, y, 60);
+            auto label = small(image, font_.text_bytes(titles[i]), 0x216, y, 179);
+            if (!label) { return label; }
+            auto value = small(image, bytes(std::to_string(values[i])), 0x240, y, 60);
+            if (!value) { return value; }
         }
         if (!selected().enemy && selected().runtime_kind)
         {
-            small(image, bytes("NPC"), 0x246, 0x1E, 38);
+            auto label = small(image, bytes("NPC"), 0x246, 0x1E, 38);
+            if (!label) { return label; }
         }
         else
         {
-            small(image, font_.text_bytes(selected().enemy ? 20 : 19), 0x246, 0x1E, selected().enemy ? 60 : 40);
+            auto label = small(image, font_.text_bytes(selected().enemy ? 20 : 19), 0x246, 0x1E, selected().enemy ? 60 : 40);
+            if (!label) { return label; }
         }
         unsigned emblem = 0;
         if (unit.movement_type >= 1 && unit.movement_type <= 5) { emblem = 0xE0; }
@@ -187,11 +179,12 @@ private:
             }
             size_t end = start;
             while (end < start + 12 && items_[end]) { ++end; }
-            large(image, { items_.begin() + start, items_.begin() + end }, 0x120, 0xA6 + int(i) * 0x23, 0xE9);
+            auto name = large(image, { items_.begin() + start, items_.begin() + end }, 0x120, 0xA6 + int(i) * 0x23, 0xE9);
+            if (!name) { return name; }
             auto icon = draw_original_cel(image, cel_, pal_, id + 0x1EC, 0xFE, 0xA1 + int(i) * 0x23, OriginalZeroRun::transparent);
             if (!icon) { return icon; }
         }
-        equipment_palette_.cycle_rect(image, 0xFE, 0xA1, 0x40, 0x23 * int(unit.equipment.size()), texture_resources.elapsed());
+        palette_.cycle_rect(image, 0xFE, 0xA1, 0x40, 0x23 * int(unit.equipment.size()), texture_resources.elapsed());
         return skills_.try_draw_status_effects(image, unit);
     }
     s2ne::Result<bool> try_roster_row_validated(std::vector<uint8_t>& image, int row, const Entry& entry) const
@@ -216,14 +209,16 @@ private:
         }
         if (!(entry.unit.status_flags & 0x10))
         {
-            large(image, entry.unit.name, 5 + 0x74, base + 7, entry.enemy ? 60 : 167);
+            auto name = large(image, entry.unit.name, 5 + 0x74, base + 7, entry.enemy ? 60 : 167);
+            if (!name) { return name; }
         }
         auto title = entry.unit.profession;
         auto level = bytes(" " + std::to_string(entry.unit.level));
         title.insert(title.end(), level.begin(), level.end());
         auto suffix = font_.text_bytes(113);
         title.insert(title.end(), suffix.begin(), suffix.end());
-        large(image, title, 507 - int(title.size()) * 12, base + 7, 179);
+        auto heading = large(image, title, 507 - int(title.size()) * 12, base + 7, 179);
+        if (!heading) { return heading; }
         auto figure = unit_resources_.try_draw_status_figure(image, entry.unit, 5 + 0x230, base + 0x76);
         if (!figure) { return figure; }
         return status_.try_draw_status_chain(font_, image, entry.unit, 5 + 0x6E, base + 0x21);
@@ -282,33 +277,21 @@ private:
 
         return s2ne::Result<bool>::success(true);
     }
-    void build_mini(OriginalMap map)
-    {
-        auto result = try_build_mini(map);
-        if (!result)
-        {
-            report_error(result.error());
-        }
-    }
 
-public:
+private:
     // Entries must retain the original two army arrays' order; no hostility reclassification.
-    struct InitializationTag
-    {
-    };
-    OriginalBattleReports(const std::filesystem::path& root, Page page, const OriginalEvents& events,
-        std::vector<Entry> entries, const std::vector<uint8_t>& background, const OriginalMap* map, bool small_font, int dword_4f7cd0, InitializationTag) : font_(root),
-                                                                                                                                                            status_(root),
-                                                                                                                                                            cel_(read(root / "SUPERSP.CEL")),
-                                                                                                                                                            pal_(read(root / "SUPERSP.PAL")),
-                                                                                                                                                            palette_(pal_),
-                                                                                                                                                            background_(background),
-                                                                                                                                                            stage_name_(events.stage_name),
-                                                                                                                                                            victory_(events.victory_objective),
-                                                                                                                                                            defeat_(events.defeat_objective),
-                                                                                                                                                            stage_(events.stage),
-                                                                                                                                                            page_(page),
-                                                                                                                                                            equipment_palette_(pal_) {}
+    OriginalBattleReports(OriginalMenu font, OriginalUnitStatus status, SharedBytes cel, SharedBytes pal, Page page, const OriginalEvents& events,
+        const std::vector<uint8_t>& background) : font_(std::move(font)),
+                                                  status_(std::move(status)),
+                                                  cel_(std::move(cel)),
+                                                  pal_(std::move(pal)),
+                                                  palette_(pal_),
+                                                  background_(background),
+                                                  stage_name_(events.stage_name),
+                                                  victory_(events.victory_objective),
+                                                  defeat_(events.defeat_objective),
+                                                  stage_(events.stage),
+                                                  page_(page) {}
     s2ne::Result<bool> initialize(const std::filesystem::path& root, Page page, const OriginalEvents& events,
         std::vector<Entry> entries, const std::vector<uint8_t>& background, const OriginalMap* map, bool small_font, int dword_4f7cd0)
     {
@@ -316,7 +299,6 @@ public:
         {
             return s2ne::Result<bool>::failure(make_error("Battle report requires640x480 RGBA"));
         }
-        pal_.mutable_at(0) = pal_.mutable_at(1) = pal_.mutable_at(2) = 0;
         enemy_strength_visible_ = events.army_modes && ((*events.army_modes)[1] & 4);
         auto skills = OriginalSkills::create(root, small_font);
         if (!skills) { return s2ne::Result<bool>::failure(skills.error()); }
@@ -398,30 +380,26 @@ public:
 
         return s2ne::Result<bool>::success(true);
     }
+
+public:
     OriginalBattleReports(const std::filesystem::path& root, Page page, const OriginalEvents& events,
-        std::vector<Entry> entries, const std::vector<uint8_t>& background, const OriginalMap* map = nullptr, bool small_font = false, int dword_4f7cd0 = 0) : font_(root),
-                                                                                                                                                               status_(root),
-                                                                                                                                                               cel_(read(root / "SUPERSP.CEL")),
-                                                                                                                                                               pal_(read(root / "SUPERSP.PAL")),
-                                                                                                                                                               palette_(pal_),
-                                                                                                                                                               background_(background),
-                                                                                                                                                               stage_name_(events.stage_name),
-                                                                                                                                                               victory_(events.victory_objective),
-                                                                                                                                                               defeat_(events.defeat_objective),
-                                                                                                                                                               stage_(events.stage),
-                                                                                                                                                               page_(page),
-                                                                                                                                                               equipment_palette_(pal_)
+        std::vector<Entry> entries, const std::vector<uint8_t>& background, const OriginalMap* map = nullptr, bool small_font = false, int dword_4f7cd0 = 0) : OriginalBattleReports(std::move(*create(root, page, events, std::move(entries), background, map, small_font, dword_4f7cd0).value()))
     {
-        auto result = initialize(root, page, events, std::move(entries), background, map, small_font, dword_4f7cd0);
-        if (!result)
-        {
-            fatal(result.error());
-        }
     }
     static s2ne::Result<std::unique_ptr<OriginalBattleReports>> create(const std::filesystem::path& root, Page page, const OriginalEvents& events,
         std::vector<Entry> entries, const std::vector<uint8_t>& background, const OriginalMap* map = nullptr, bool small_font = false, int dword_4f7cd0 = 0)
     {
-        auto result = std::make_unique<OriginalBattleReports>(root, page, events, entries, background, map, small_font, dword_4f7cd0, InitializationTag{});
+        auto font = OriginalMenu::create(root);
+        if (!font) { return s2ne::Result<std::unique_ptr<OriginalBattleReports>>::failure(font.error()); }
+        auto status = OriginalUnitStatus::create(root);
+        if (!status) { return s2ne::Result<std::unique_ptr<OriginalBattleReports>>::failure(status.error()); }
+        auto cel = try_read(root / "SUPERSP.CEL");
+        if (!cel) { return s2ne::Result<std::unique_ptr<OriginalBattleReports>>::failure(cel.error()); }
+        auto pal = try_read(root / "SUPERSP.PAL");
+        if (!pal) { return s2ne::Result<std::unique_ptr<OriginalBattleReports>>::failure(pal.error()); }
+        if (pal.value().size() < 828) { return s2ne::Result<std::unique_ptr<OriginalBattleReports>>::failure(make_error("Truncated report palette")); }
+        pal.value().mutable_at(0) = pal.value().mutable_at(1) = pal.value().mutable_at(2) = 0;
+        auto result = std::unique_ptr<OriginalBattleReports>(new OriginalBattleReports(std::move(font).value(), std::move(*status.value()), std::move(cel).value(), std::move(pal).value(), page, events, background));
         auto ready = result->initialize(root, page, events, std::move(entries), background, map, small_font, dword_4f7cd0);
         if (!ready)
         {
@@ -765,22 +743,33 @@ public:
                     return s2ne::Result<std::vector<uint8_t>>::failure(rendered.error());
                 }
             }
-            large(image, font_.text_bytes(47), left + 320 - int(font_.text_bytes(47).size()) * 6, top + 17, 57);
-            large(image, font_.text_bytes(48), left + 90, top + 57, 54);
+            auto heading = large(image, font_.text_bytes(47), left + 320 - int(font_.text_bytes(47).size()) * 6, top + 17, 57);
+            if (!heading) { return s2ne::Result<std::vector<uint8_t>>::failure(heading.error()); }
+            auto stage_label = large(image, font_.text_bytes(48), left + 90, top + 57, 54);
+            if (!stage_label) { return s2ne::Result<std::vector<uint8_t>>::failure(stage_label.error()); }
             auto title = bytes(std::to_string(stage_) + ".");
             title.insert(title.end(), stage_name_.begin(), stage_name_.end());
-            large(image, title, left + 213, top + 57, 54);
-            large(image, font_.text_bytes(49), left + 90, top + 108, 119);
-            large(image, font_.text_bytes(50), left + 90, top + 208, 87);
-            font_.draw_original_wrapped(image, victory_, left + 213, top + 108, 119, 4, 11, 28, 42);
-            font_.draw_original_wrapped(image, defeat_, left + 213, top + 208, 87, 4, 11, 28, 42);
+            auto name = large(image, title, left + 213, top + 57, 54);
+            if (!name) { return s2ne::Result<std::vector<uint8_t>>::failure(name.error()); }
+            auto victory_label = large(image, font_.text_bytes(49), left + 90, top + 108, 119);
+            if (!victory_label) { return s2ne::Result<std::vector<uint8_t>>::failure(victory_label.error()); }
+            auto defeat_label = large(image, font_.text_bytes(50), left + 90, top + 208, 87);
+            if (!defeat_label) { return s2ne::Result<std::vector<uint8_t>>::failure(defeat_label.error()); }
+            auto victory = font_.try_draw_original_wrapped(image, victory_, left + 213, top + 108, 119, 4, 11, 28, 42);
+            if (!victory) { return s2ne::Result<std::vector<uint8_t>>::failure(victory.error()); }
+            auto defeat = font_.try_draw_original_wrapped(image, defeat_, left + 213, top + 208, 87, 4, 11, 28, 42);
+            if (!defeat) { return s2ne::Result<std::vector<uint8_t>>::failure(defeat.error()); }
             const std::array<int, 3> xs{ 86, 264, 436 }, numbers{ friendly_count_, npc_count_, enemy_count_ };
-            large(image, font_.text_bytes(19), left + xs[0], top + 330, 40);
-            large(image, bytes("NPC"), left + xs[1], top + 330, 38);
-            large(image, font_.text_bytes(20), left + xs[2], top + 330, 60);
+            auto friendly = large(image, font_.text_bytes(19), left + xs[0], top + 330, 40);
+            if (!friendly) { return s2ne::Result<std::vector<uint8_t>>::failure(friendly.error()); }
+            auto npc = large(image, bytes("NPC"), left + xs[1], top + 330, 38);
+            if (!npc) { return s2ne::Result<std::vector<uint8_t>>::failure(npc.error()); }
+            auto enemy = large(image, font_.text_bytes(20), left + xs[2], top + 330, 60);
+            if (!enemy) { return s2ne::Result<std::vector<uint8_t>>::failure(enemy.error()); }
             for (int i = 0; i < 3; ++i)
             {
-                large(image, bytes(std::to_string(numbers[i])), left + 144 + 176 * i, top + 330, 185);
+                auto number = large(image, bytes(std::to_string(numbers[i])), left + 144 + 176 * i, top + 330, 185);
+                if (!number) { return s2ne::Result<std::vector<uint8_t>>::failure(number.error()); }
             }
             return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
         }
@@ -802,29 +791,38 @@ public:
             auto panel = try_sprite(image, 0xE8, 0, top, true);
             if (!panel) { return s2ne::Result<std::vector<uint8_t>>::failure(panel.error()); }
             const auto title = font_.text_bytes(0x27C / 4);
-            large(image, title, 320 - int(title.size()) * 6, top + 8, 0x49);
-            large(image, font_.text_bytes(0xA8 / 4), 0x87, top + 8, 0x49);
-            large(image, font_.text_bytes(0x280 / 4), 0x1C6, top + 8, 0x49);
+            auto heading = large(image, title, 320 - int(title.size()) * 6, top + 8, 0x49);
+            if (!heading) { return s2ne::Result<std::vector<uint8_t>>::failure(heading.error()); }
+            auto weapon = large(image, font_.text_bytes(0xA8 / 4), 0x87, top + 8, 0x49);
+            if (!weapon) { return s2ne::Result<std::vector<uint8_t>>::failure(weapon.error()); }
+            auto learned = large(image, font_.text_bytes(0x280 / 4), 0x1C6, top + 8, 0x49);
+            if (!learned) { return s2ne::Result<std::vector<uint8_t>>::failure(learned.error()); }
             const auto& unit = selected().unit;
             for (unsigned i = 0; i < 6; ++i)
             {
                 const int x = i < 5 ? 0x154 : 0x1EA;
                 const int y = 0x181 + int(i % 5) * 16;
-                small(image, font_.text_bytes(0x2B0 / 4 + i), x, y, 0xE9);
-                small(image, bytes(std::to_string(unit.weapon_proficiency[i])), x + 0x50, y, 0x89);
+                auto label = small(image, font_.text_bytes(0x2B0 / 4 + i), x, y, 0xE9);
+                if (!label) { return s2ne::Result<std::vector<uint8_t>>::failure(label.error()); }
+                auto value = small(image, bytes(std::to_string(unit.weapon_proficiency[i])), x + 0x50, y, 0x89);
+                if (!value) { return s2ne::Result<std::vector<uint8_t>>::failure(value.error()); }
             }
             for (unsigned i = 0; i < 9; ++i)
             {
                 const int x = i < 5 ? 0x14 : 0xA5;
                 const int y = 0x181 + int(i % 5) * 16;
-                small(image, font_.text_bytes(0x284 / 4 + i), x, y, 0xE9);
-                small(image, bytes(std::to_string(unit.learned_proficiency[i] / 10)), x + 0x60, y, 0x89);
+                auto label = small(image, font_.text_bytes(0x284 / 4 + i), x, y, 0xE9);
+                if (!label) { return s2ne::Result<std::vector<uint8_t>>::failure(label.error()); }
+                auto value = small(image, bytes(std::to_string(unit.learned_proficiency[i] / 10)), x + 0x60, y, 0x89);
+                if (!value) { return s2ne::Result<std::vector<uint8_t>>::failure(value.error()); }
             }
             for (unsigned i = 0; i < 2; ++i)
             {
                 const int y = 0x1B1 + int(i) * 16;
-                small(image, font_.text_bytes(0x2A8 / 4 + i), 0x1EA, y, 0xE9);
-                small(image, bytes(std::to_string(unit.learned_proficiency[9 + i] / 10)), 0x23A, y, 0x89);
+                auto label = small(image, font_.text_bytes(0x2A8 / 4 + i), 0x1EA, y, 0xE9);
+                if (!label) { return s2ne::Result<std::vector<uint8_t>>::failure(label.error()); }
+                auto value = small(image, bytes(std::to_string(unit.learned_proficiency[9 + i] / 10)), 0x23A, y, 0x89);
+                if (!value) { return s2ne::Result<std::vector<uint8_t>>::failure(value.error()); }
             }
             return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
         }
@@ -841,12 +839,14 @@ public:
             auto panel = try_sprite(image, 0xE6, 0, top, true);
             if (!panel) { return s2ne::Result<std::vector<uint8_t>>::failure(panel.error()); }
             const auto title = font_.text_bytes(0x278 / 4);
-            large(image, title, 320 - int(title.size()) * 6, top + 7, 0x49);
+            auto heading = large(image, title, 320 - int(title.size()) * 6, top + 7, 0x49);
+            if (!heading) { return s2ne::Result<std::vector<uint8_t>>::failure(heading.error()); }
             const uint32_t flags = selected().unit.abilities;
             if (!flags)
             {
                 const auto& none = ability_names_.at(0);
-                large(image, none, 320 - int(none.size()) * 6, top + 0x3D, 0xE9);
+                auto label = large(image, none, 320 - int(none.size()) * 6, top + 0x3D, 0xE9);
+                if (!label) { return s2ne::Result<std::vector<uint8_t>>::failure(label.error()); }
                 return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
             }
             unsigned learned = 0;
@@ -860,7 +860,8 @@ public:
             for (unsigned i = 1; i < ability_names_.size(); ++i)
             {
                 if (!(flags & (1u << (i - 1)))) { continue; }
-                large(image, ability_names_[i], x, y, 0xE9);
+                auto name = large(image, ability_names_[i], x, y, 0xE9);
+                if (!name) { return s2ne::Result<std::vector<uint8_t>>::failure(name.error()); }
                 ++drawn;
                 if (drawn & 1) { y += 0x1E; }
                 else

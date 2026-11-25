@@ -17,6 +17,7 @@ class OriginalMenu
     std::array<uint8_t, 768> title_palette_{};
     size_t strings{}, index{}, glyphs{};
     unsigned count{};
+    std::vector<std::vector<uint8_t>> texts_;
     unsigned word(size_t p) const { return bin.at(p) | (unsigned(bin.at(p + 1)) << 8); }
     unsigned dword(size_t p) const { return word(p) | (word(p + 2) << 16); }
     size_t entry(unsigned id) const
@@ -97,6 +98,7 @@ public:
             {
                 return Result<OriginalMenu>::failure(text.error());
             }
+            result.texts_.push_back(std::move(text).value());
         }
         return Result<OriginalMenu>::success(std::move(result));
     }
@@ -138,6 +140,7 @@ public:
         {
             return Result<std::vector<uint8_t>>::failure(make_error("Invalid original string ID"));
         }
+        if (id < texts_.size()) { return Result<std::vector<uint8_t>>::success(texts_[id]); }
         ResourceReader reader(bin);
         size_t offset = reader.number(strings + 2 + id * 8, 4);
         if (!reader)
@@ -160,14 +163,10 @@ public:
         }
         return Result<std::vector<uint8_t>>::success({ bin.begin() + text, bin.begin() + end });
     }
-    std::vector<uint8_t> text_bytes(unsigned id) const
+    const std::vector<uint8_t>& text_bytes(unsigned id) const
     {
-        auto result = try_text_bytes(id);
-        if (!result)
-        {
-            fatal(result.error());
-        }
-        return std::move(result).value();
+        if (id >= texts_.size()) { fatal("Invalid original string ID"); }
+        return texts_[id];
     }
     void draw_text(std::vector<uint8_t>& image, unsigned id, int x, int y, unsigned color) const
     {
@@ -314,7 +313,7 @@ public:
             report_error(result.error());
         }
     }
-    void draw_small_fixed_spaces(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, bool original_padding = false) const
+    s2ne::Result<bool> try_draw_small_fixed_spaces(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, bool original_padding = false) const
     {
         for (size_t p = 0; p < text.size();)
         {
@@ -325,12 +324,19 @@ public:
                 continue;
             }
             unsigned width = text[p] > 0x80 ? 2 : 1;
-            if (p + width > text.size()) { break; }
+            if (p + width > text.size()) { return s2ne::Result<bool>::failure(make_error("Truncated Big5 fixed text")); }
             std::vector<uint8_t> glyph(text.begin() + p, text.begin() + p + width);
-            draw_small(image, glyph, x, y, color, original_padding);
+            auto drawn = try_draw_small(image, glyph, x, y, color, original_padding);
+            if (!drawn) { return drawn; }
             x += width == 2 ? 16 : 8;
             p += width;
         }
+        return s2ne::Result<bool>::success(true);
+    }
+    void draw_small_fixed_spaces(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, bool original_padding = false) const
+    {
+        auto drawn = try_draw_small_fixed_spaces(image, text, x, y, color, original_padding);
+        if (!drawn) { report_error(drawn.error()); }
     }
     s2ne::Result<bool> try_draw_big5_validated(std::vector<uint8_t>& image, const std::vector<uint8_t>& text,
         int x, int y, unsigned color, std::vector<uint8_t>* indexed = nullptr) const
@@ -506,14 +512,14 @@ public:
                 const SDL_Color foreground{ uint8_t(std::min(255u, unsigned(pal.at(color * 3)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 1)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(color * 3 + 2)) * 255 / 63)), 255 };
                 if (shadow)
                 {
+                    if (*shadow > 255) { return s2ne::Result<bool>::failure(make_error("Invalid text shadow color")); }
                     const SDL_Color shadow_color{ uint8_t(std::min(255u, unsigned(pal.at(*shadow * 3)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(*shadow * 3 + 1)) * 255 / 63)), uint8_t(std::min(255u, unsigned(pal.at(*shadow * 3 + 2)) * 255 / 63)), 255 };
-                    auto rendered_shadow = texture_resources.draw_large_text(image, translated, x + 1, y + 1, shadow_color);
-                    if (rendered_shadow)
-                    {
-                        auto rendered = texture_resources.draw_large_text(image, translated, x, y, foreground);
-                        return rendered;
-                    }
-                    return rendered_shadow;
+                    return texture_resources.draw_text_batch(image, [&](std::vector<uint8_t>& output)
+                        {
+                            auto rendered_shadow = texture_resources.draw_large_text(output, translated, x + 1, y + 1, shadow_color);
+                            if (!rendered_shadow) { return rendered_shadow; }
+                            return texture_resources.draw_large_text(output, translated, x, y, foreground);
+                        });
                 }
                 else
                 {
@@ -548,7 +554,7 @@ public:
                 if (shadow)
                 {
                     {
-                        auto rendered = try_draw_small(output, glyph, gx + 1, gy + 1, *shadow, true, indexed ? &indices : nullptr);
+                        auto rendered = try_draw_small_validated(output, glyph, gx + 1, gy + 1, *shadow, true, indexed ? &indices : nullptr);
                         if (!rendered)
                         {
                             return rendered;
@@ -556,7 +562,7 @@ public:
                     }
                 }
                 {
-                    auto rendered = try_draw_small(output, glyph, gx, gy, color, true, indexed ? &indices : nullptr);
+                    auto rendered = try_draw_small_validated(output, glyph, gx, gy, color, true, indexed ? &indices : nullptr);
                     if (!rendered)
                     {
                         return rendered;
@@ -568,7 +574,7 @@ public:
                 if (shadow)
                 {
                     {
-                        auto rendered = try_draw_big5(output, glyph, ink_x + 1, ink_y + 1, *shadow, indexed ? &indices : nullptr);
+                        auto rendered = try_draw_big5_validated(output, glyph, ink_x + 1, ink_y + 1, *shadow, indexed ? &indices : nullptr);
                         if (!rendered)
                         {
                             return rendered;
@@ -576,7 +582,7 @@ public:
                     }
                 }
                 {
-                    auto rendered = try_draw_big5(output, glyph, ink_x, ink_y, color, indexed ? &indices : nullptr);
+                    auto rendered = try_draw_big5_validated(output, glyph, ink_x, ink_y, color, indexed ? &indices : nullptr);
                     if (!rendered)
                     {
                         return rendered;
@@ -597,7 +603,9 @@ public:
             report_error(result.error());
         }
     }
-    void draw_original_wrapped(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, unsigned rows, unsigned columns, int row_height, std::optional<unsigned> shadow = std::nullopt) const
+
+private:
+    s2ne::Result<bool> draw_original_wrapped_validated(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, unsigned rows, unsigned columns, int row_height, std::optional<unsigned> shadow) const
     {
         if (texture_resources.active() && texture_resources.font_ready())
         {
@@ -607,7 +615,7 @@ public:
                 int compensation = 0;
                 for (unsigned cell = 0, units = 1; units < columns * 2; ++cell)
                 {
-                    if (p >= text.size() || !text[p] || text[p] == '\n') { return; }
+                    if (p >= text.size() || !text[p] || text[p] == '\n') { return s2ne::Result<bool>::success(true); }
                     const auto lead = text[p++];
                     if (lead == '*')
                     {
@@ -623,8 +631,7 @@ public:
                     {
                         if (p >= text.size())
                         {
-                            report_error(make_error("Truncated Big5 wrapped text"));
-                            return;
+                            return s2ne::Result<bool>::failure(make_error("Truncated Big5 wrapped text"));
                         }
                         glyph.push_back(text[p++]);
                         units += 2;
@@ -634,11 +641,11 @@ public:
                         ++units;
                     }
                     auto drawn = try_draw_original_large(image, glyph, x + int(cell) * 28 - compensation, y + int(row) * row_height, color, shadow);
-                    if (!drawn) { report_error(drawn.error()); }
+                    if (!drawn) { return drawn; }
                     if (lead <= 128) { compensation += 8; }
                 }
             }
-            return;
+            return s2ne::Result<bool>::success(true);
         }
         // 423AC5 uses 28-pixel cells, compensating eight pixels after each ASCII.
         size_t p = 0;
@@ -649,7 +656,7 @@ public:
             {
                 if (p >= text.size() || !text[p] || text[p] == '\n')
                 {
-                    return;
+                    return s2ne::Result<bool>::success(true);
                 }
                 unsigned lead = text[p++];
                 if (lead == '*')
@@ -667,6 +674,7 @@ public:
                 std::vector<uint8_t> glyph{ uint8_t(std::max(lead, 30u)) };
                 if (lead > 128)
                 {
+                    if (p >= text.size()) { return s2ne::Result<bool>::failure(make_error("Truncated Big5 wrapped text")); }
                     glyph.push_back(text.at(p++));
                     units += 2;
                 }
@@ -679,9 +687,11 @@ public:
                 {
                     if (shadow)
                     {
-                        draw_small(image, glyph, gx + 1, gy + 5, *shadow, true);
+                        auto drawn = try_draw_small(image, glyph, gx + 1, gy + 5, *shadow, true);
+                        if (!drawn) { return drawn; }
                     }
-                    draw_small(image, glyph, gx, gy + 4, color, true);
+                    auto drawn = try_draw_small(image, glyph, gx, gy + 4, color, true);
+                    if (!drawn) { return drawn; }
                 }
                 else
                 {
@@ -689,9 +699,11 @@ public:
                     gy += lead <= 128 ? 1 : 0;
                     if (shadow)
                     {
-                        draw_big5(image, glyph, gx + 1, gy + 1, *shadow);
+                        auto drawn = try_draw_big5(image, glyph, gx + 1, gy + 1, *shadow);
+                        if (!drawn) { return drawn; }
                     }
-                    draw_big5(image, glyph, gx, gy, color);
+                    auto drawn = try_draw_big5(image, glyph, gx, gy, color);
+                    if (!drawn) { return drawn; }
                 }
                 if (lead <= 128)
                 {
@@ -699,6 +711,25 @@ public:
                 }
             }
         }
+        return s2ne::Result<bool>::success(true);
+    }
+
+public:
+    s2ne::Result<bool> try_draw_original_wrapped(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, unsigned rows, unsigned columns, int row_height, std::optional<unsigned> shadow = std::nullopt) const
+    {
+        if (texture_resources.active() && texture_resources.font_ready())
+        {
+            return texture_resources.draw_text_batch(image, [&](std::vector<uint8_t>& output)
+                {
+                    return draw_original_wrapped_validated(output, text, x, y, color, rows, columns, row_height, shadow);
+                });
+        }
+        return draw_original_wrapped_validated(image, text, x, y, color, rows, columns, row_height, shadow);
+    }
+    void draw_original_wrapped(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, unsigned rows, unsigned columns, int row_height, std::optional<unsigned> shadow = std::nullopt) const
+    {
+        auto drawn = try_draw_original_wrapped(image, text, x, y, color, rows, columns, row_height, shadow);
+        if (!drawn) { report_error(drawn.error()); }
     }
     void draw_banner_ascii(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y) const
     {

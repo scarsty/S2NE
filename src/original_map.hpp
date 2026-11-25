@@ -18,13 +18,14 @@ namespace s2ne
 class OriginalMap
 {
     SharedBytes prg_, pal_;
+    std::shared_ptr<const OriginalPalette> palette_;
     std::vector<uint8_t> pixels_, terrain_names_;
     unsigned terrain_ground_names_{}, terrain_object_names_{};
     struct Image
     {
         unsigned w, h;
-        std::vector<uint8_t> pixels;
-        std::vector<uint8_t> literal;
+        SharedBytes pixels;
+        SharedBytes literal;
         unsigned texture_group{}, texture_id{};
     };
     struct TexturePlacement
@@ -345,15 +346,16 @@ class OriginalMap
         {
             return Result<Image>::failure(make_error("Invalid original map backdrop"));
         }
-        image.pixels.reserve(size_t(image.w) * image.h);
-        image.literal.assign(size_t(image.w) * image.h, 0);
+        std::vector<uint8_t> pixels;
+        pixels.reserve(size_t(image.w) * image.h);
+        std::vector<uint8_t> literal(size_t(image.w) * image.h, 0);
         if (encoding)
         {
             if (size_t(image.w) * image.h > end - p)
             {
                 return Result<Image>::failure(make_error("Truncated original raw backdrop"));
             }
-            image.pixels.assign(prg_.begin() + p, prg_.begin() + p + size_t(image.w) * image.h);
+            pixels.assign(prg_.begin() + p, prg_.begin() + p + size_t(image.w) * image.h);
         }
         else
         {
@@ -368,7 +370,7 @@ class OriginalMap
                     unsigned code = prg_.at(p++), n = code & 127;
                     if (!code)
                     {
-                        image.pixels.push_back(0);
+                        pixels.push_back(0);
                         ++x;
                         continue;
                     }
@@ -394,14 +396,16 @@ class OriginalMap
                                 return Result<Image>::failure(make_error("Truncated original backdrop literal"));
                             }
                             c = prg_.at(p++);
-                            image.literal.at(image.pixels.size()) = 1;
+                            literal.at(pixels.size()) = 1;
                         }
-                        image.pixels.push_back(uint8_t(c));
+                        pixels.push_back(uint8_t(c));
                         ++x;
                     }
                 }
             }
         }
+        image.pixels = SharedBytes(std::move(pixels));
+        image.literal = SharedBytes(std::move(literal));
         return Result<Image>::success(std::move(image));
     }
     Image backdrop(unsigned id) const
@@ -594,18 +598,18 @@ public:
     }
     unsigned width{}, height{}, map_id{};
     // 42BEED: the terrain area shares the status panel's top/bottom placement.
-    void draw_terrain(const OriginalMenu& font, std::vector<uint8_t>& image, int x, int y, int panel_y) const
+    Result<bool> draw_terrain_validated(const OriginalMenu& font, std::vector<uint8_t>& image, int x, int y, int panel_y) const
     {
-        if (!map_id || x < 0 || y < 0 || x >= int(width) || y >= int(height * 2)) { return; }
+        if (!map_id || x < 0 || y < 0 || x >= int(width) || y >= int(height * 2)) { return Result<bool>::success(true); }
         size_t m = item(6, map_id - 1), cell = m + 28 + (size_t(y) * width + x) * 5;
         unsigned ground = word(prg_, cell + 1), object = cell_object(cell);
-        if (ground == 1) { return; }
+        if (ground == 1) { return Result<bool>::success(true); }
         size_t attributes = group(7), ground_attributes = attributes + 6;
         unsigned attr = ground ? word(prg_, ground_attributes + (ground - 1) * 2) : 0;
         if (!attr)
         {
             font.draw_original_large(image, font.text_bytes(0), 543, panel_y + 50, 179);
-            return;
+            return Result<bool>::success(true);
         }
         auto put = [&](unsigned ink, int dx, int dy)
         {
@@ -618,8 +622,20 @@ public:
         bool ground_drawn = false;
         if (texture_resources.active())
         {
-            auto result = texture_resources.draw_map_sprite(image, "ground", ground_image.texture_id, 526, panel_y + 40);
-            ground_drawn = bool(result);
+            auto available = texture_resources.group_available("ground");
+            if (!available)
+            {
+                return Result<bool>::failure(available.error());
+            }
+            if (available.value())
+            {
+                auto result = texture_resources.draw_map_sprite(image, "ground", ground_image.texture_id, 526, panel_y + 40);
+                if (!result)
+                {
+                    return Result<bool>::failure(result.error());
+                }
+                ground_drawn = true;
+            }
         }
         if (!ground_drawn)
         {
@@ -641,8 +657,20 @@ public:
             bool object_drawn = false;
             if (texture_resources.active())
             {
-                auto result = texture_resources.draw_map_sprite(image, "objects", object_image.texture_id, 526, panel_y - 56);
-                object_drawn = bool(result);
+                auto available = texture_resources.group_available("objects");
+                if (!available)
+                {
+                    return Result<bool>::failure(available.error());
+                }
+                if (available.value())
+                {
+                    auto result = texture_resources.draw_map_sprite(image, "objects", object_image.texture_id, 526, panel_y - 56);
+                    if (!result)
+                    {
+                        return Result<bool>::failure(result.error());
+                    }
+                    object_drawn = true;
+                }
             }
             if (!object_drawn)
             {
@@ -658,10 +686,12 @@ public:
         }
         auto small = [&](const std::string& text, int dx, int dy)
         {
-            font.draw_small(image, { text.begin(), text.end() }, dx, panel_y + dy, 137, true);
+            return font.try_draw_small_validated(image, { text.begin(), text.end() }, dx, panel_y + dy, 137, true);
         };
-        small("X=" + std::to_string(x), 595, 48);
-        small("Y=" + std::to_string(y), 595, 64);
+        auto coordinate = small("X=" + std::to_string(x), 595, 48);
+        if (!coordinate) { return coordinate; }
+        coordinate = small("Y=" + std::to_string(y), 595, 64);
+        if (!coordinate) { return coordinate; }
         font.draw_original_large(image, [&]
             {
                 auto value = std::to_string(prg_.at(cell));
@@ -674,12 +704,47 @@ public:
             unsigned object_local = object_attributes_.at(object - 1) & 255;
             if (object_local <= terrain_object_names_) { local = terrain_ground_names_ + object_local; }
         }
-        if (!local || size_t(local) * 11 > terrain_names_.size()) { return; }
+        if (!local || size_t(local) * 11 > terrain_names_.size()) { return Result<bool>::success(true); }
         size_t start = size_t(local - 1) * 11;
         std::vector<uint8_t> name;
         for (size_t p = start; p < start + 11 && terrain_names_[p]; ++p) { name.push_back(terrain_names_[p]); }
-        font.draw_small(image, name, 596 - int(name.size()) * 4, panel_y + 17, 54, true);
-        font.draw_small(image, name, 595 - int(name.size()) * 4, panel_y + 16, 178, true);
+        auto label = font.try_draw_small_validated(image, name, 596 - int(name.size()) * 4, panel_y + 17, 54, true);
+        if (!label) { return label; }
+        label = font.try_draw_small_validated(image, name, 595 - int(name.size()) * 4, panel_y + 16, 178, true);
+        if (!label) { return label; }
+        return Result<bool>::success(true);
+    }
+    Result<bool> try_draw_terrain(const OriginalMenu& font, std::vector<uint8_t>& image, int x, int y, int panel_y) const
+    {
+        if (image.size() != 640u * 480 * 4 || (panel_y != 0 && panel_y != 363))
+        {
+            return Result<bool>::failure(make_error("Invalid terrain framebuffer or panel position"));
+        }
+        bool extended_ground = false;
+        if (map_id && x >= 0 && y >= 0 && x < int(width) && y < int(height * 2))
+        {
+            const size_t cell = item(6, map_id - 1) + 28 + (size_t(y) * width + x) * 5;
+            const unsigned ground = word(prg_, cell + 1);
+            if (ground > 1) { extended_ground = raw(item(3, ground - 1)).h > 77; }
+        }
+        if (texture_resources.active() || extended_ground)
+        {
+            auto output = image;
+            auto result = draw_terrain_validated(font, output, x, y, panel_y);
+            if (result) { image.swap(output); }
+            return result;
+        }
+        const size_t first = size_t(std::max(0, panel_y - 56)) * 640 * 4;
+        const size_t last = size_t(std::min(480, panel_y + 117)) * 640 * 4;
+        std::vector<uint8_t> previous(image.begin() + first, image.begin() + last);
+        auto result = draw_terrain_validated(font, image, x, y, panel_y);
+        if (!result) { std::copy(previous.begin(), previous.end(), image.begin() + first); }
+        return result;
+    }
+    void draw_terrain(const OriginalMenu& font, std::vector<uint8_t>& image, int x, int y, int panel_y) const
+    {
+        auto result = try_draw_terrain(font, image, x, y, panel_y);
+        if (!result) { fatal(result.error()); }
     }
     void movement_effect_presented()
     {
@@ -762,7 +827,7 @@ public:
                 return Result<std::vector<uint8_t>>::failure(make_error("Invalid original reaction foot mask"));
             }
             reaction_foot_mask_.assign(dat.begin() + offset + 4, dat.begin() + offset + 2052);
-            OriginalPalette palette(pal_);
+            const auto& palette = *palette_;
             for (unsigned i = 0; i < 256; ++i)
             {
                 reaction_shadow_[i] = palette.map(5, i);
@@ -905,7 +970,8 @@ public:
             return Result<OriginalMap>::failure(make_error("Invalid original terrain names"));
         }
         result.terrain_names_.assign(table.begin() + names, table.begin() + names + names_size);
-        OriginalPalette palette(result.pal_);
+        result.palette_ = std::make_shared<const OriginalPalette>(result.pal_);
+        const auto& palette = *result.palette_;
         for (unsigned color = 0; color < 256; ++color)
         {
             result.object_shadows_[0][color] = palette.map(6, color);
@@ -1167,7 +1233,9 @@ public:
                     }
                     auto image = raw(item(4, object - 1));
                     int level = prg_.at(cell);
-                    mask_unit_ground(image.pixels, image.w, image.h, x, row, level);
+                    std::vector<uint8_t> masked = image.pixels;
+                    mask_unit_ground(masked, image.w, image.h, x, row, level);
+                    image.pixels = SharedBytes(std::move(masked));
                     blit(image, x * 64 + (row & 1) * 32, row * 16 - (level - 1) * 16 - 64, true, true);
                 }
             }
@@ -1292,7 +1360,7 @@ public:
                 else
                 {
                     int left = x * 64 + (y & 1) * 32, top = y * 16 - (int(prg_.at(cells + (size_t(y) * width + x) * 5)) - 1) * 16 - 64;
-                    Image background{ 64, 96, std::vector<uint8_t>(64 * 96), {} };
+                    Image background{ 64, 96, SharedBytes(std::vector<uint8_t>(64 * 96)), {} };
                     for (int row = 0; row < 96; ++row)
                     {
                         for (int col = 0; col < 64; ++col)
@@ -1300,7 +1368,7 @@ public:
                             int dx = left + col, dy = top + row;
                             if (dx >= 0 && dy >= 0 && dx < int(width * 64) && dy < int(height * 32))
                             {
-                                background.pixels[size_t(row) * 64 + col] = pixels_[size_t(dy) * width * 64 + dx];
+                                background.pixels.mutable_at(size_t(row) * 64 + col) = pixels_[size_t(dy) * width * 64 + dx];
                             }
                         }
                     }
@@ -1319,7 +1387,9 @@ public:
                 continue;
             }
             auto image = raw(item(4, object - 1));
-            mask_unit_ground(image.pixels, image.w, image.h, x, y, elevation);
+            std::vector<uint8_t> masked = image.pixels;
+            mask_unit_ground(masked, image.w, image.h, x, y, elevation);
+            image.pixels = SharedBytes(std::move(masked));
             blit(image, x * 64 + (y & 1) * 32, y * 16 - (elevation - 1) * 16 - 64, true);
         }
         camera_x = 32;
@@ -1760,7 +1830,7 @@ public:
             disappearance_.frame_interval = 20;
             disappearance_.first_weight = 40;
         }
-        OriginalPalette palette(pal_);
+        const auto& palette = *palette_;
         disappearance_frames_.clear();
         auto copy = disappearance_;
         if (death)
@@ -1797,6 +1867,7 @@ public:
     // Full roster order is required for 4485DB's persistent B1 overlays.
     Result<bool> draw_units_validated(std::vector<uint8_t>& image, const std::vector<OriginalEvents::Unit>& units, unsigned turn = 1, uint64_t elapsed_ms = 0, std::optional<unsigned> silhouette = std::nullopt, std::optional<unsigned> reaction = std::nullopt, unsigned background_mode = 0, std::optional<unsigned> only_instance = std::nullopt, std::vector<uint8_t>* indexed = nullptr) const
     {
+        const auto& palette = *palette_;
         size_t index = group(1), frames = group(2);
         unsigned count = word(prg_, index);
         struct Presented
@@ -1809,6 +1880,7 @@ public:
         };
         std::vector<Presented> presented;
         std::vector<unsigned> changed;
+        std::optional<bool> external_units_available;
         for (const auto& unit : units)
         {
             unsigned instance = unsigned(&unit - units.data());
@@ -1939,7 +2011,6 @@ public:
             if (arrival_target_ && instance == *arrival_target_ && !silhouette)
             {
                 // 454ED5 tints AD before4462B6 composes feet and terrain masks.
-                OriginalPalette palette(pal_);
                 for (auto& ink : decoded)
                 {
                     if (ink)
@@ -1963,7 +2034,6 @@ public:
             {
                 if (unit.action_state == 2)
                 {
-                    OriginalPalette palette(pal_);
                     for (auto& ink : decoded)
                     {
                         if (ink) { ink = uint8_t(palette.map(7, ink)); }
@@ -2042,7 +2112,7 @@ public:
                         foot.assign(bytes.begin() + offset + 4, bytes.begin() + offset + 2052);
                     }
                     auto shadow = NativeInvisibility::shadow(decoded, unit_bitmaps_.at(instance).b1, w, h, displacement,
-                        foot, OriginalPalette(pal_), special, unit.movement_type == 9);
+                        foot, palette, special, unit.movement_type == 9);
                     if (!shadow) { return shadow; }
                 }
             }
@@ -2099,7 +2169,6 @@ public:
                 auto scratch = bitmap.ad;
                 if (arrival_target_ && pose.instance == *arrival_target_)
                 {
-                    OriginalPalette palette(pal_);
                     for (auto& ink : scratch)
                     {
                         if (ink) { ink = palette.blend_index(ink, arrival_color_, arrival_departure_ ? 10 + int(arrival_frame_) * 10 : 100 - int(arrival_frame_) * 10); }
@@ -2127,9 +2196,9 @@ public:
                 }
                 const int displacement = int(int8_t(prg_.at(bitmap.frame + 6)));
                 auto shadow = NativeInvisibility::shadow(scratch, bitmap.b1, bitmap.w, bitmap.h, displacement,
-                    foot, OriginalPalette(pal_), special, pose.unit.movement_type == 9);
+                    foot, palette, special, pose.unit.movement_type == 9);
                 if (!shadow) { return shadow; }
-                auto composed = NativeInvisibility::compose(scratch, bitmap.b1, pose.unit, OriginalPalette(pal_));
+                auto composed = NativeInvisibility::compose(scratch, bitmap.b1, pose.unit, palette);
                 if (!composed) { return composed; }
                 mask_unit_ground(scratch, bitmap.w, bitmap.h, pose.unit.x, pose.unit.y, int(prg_.at(cell)), checker_mask_, displacement);
                 // 4465B4(mode1) and 4462B6 erase both armies' nearer raw AD masks.
@@ -2255,10 +2324,20 @@ public:
             bool external_drawn = false;
             if (external_pose)
             {
-                const uint64_t pose_time = pose.unit.movement_pose ? uint64_t(pose.unit.movement_frame) * 190 : idle_pose_time_.value_or(elapsed_ms);
-                auto drawn = texture_resources.draw_unit(image, pose.unit.appearance, pose.unit.animation_action, pose.unit.direction & 3, pose_time,
-                    pose.left, pose.top, pose.w, pose.h, pose.pixels);
-                external_drawn = bool(drawn);
+                if (!external_units_available)
+                {
+                    auto available = texture_resources.group_available("units");
+                    if (!available) { return Result<bool>::failure(available.error()); }
+                    external_units_available = available.value();
+                }
+                if (*external_units_available)
+                {
+                    const uint64_t pose_time = pose.unit.movement_pose ? uint64_t(pose.unit.movement_frame) * 190 : idle_pose_time_.value_or(elapsed_ms);
+                    auto drawn = texture_resources.draw_unit(image, pose.unit.appearance, pose.unit.animation_action, pose.unit.direction & 3, pose_time,
+                        pose.left, pose.top, pose.w, pose.h, pose.pixels);
+                    if (!drawn) { return Result<bool>::failure(drawn.error()); }
+                    external_drawn = true;
+                }
             }
             for (unsigned y = 0; y < pose.h; ++y)
             {
@@ -2397,19 +2476,31 @@ public:
     Result<bool> refresh_world(const std::vector<OriginalEvents::Unit>& roster, unsigned turn, uint64_t elapsed)
     {
         auto prepared = *this;
-        prepared.invisibility_world_ = pixels_;
-        prepared.read_world_background_ = true;
-        auto image = prepared.draw();
-        auto result = prepared.try_draw_units(image, roster, turn, elapsed);
+        auto result = prepared.refresh_world_candidate(roster, turn, elapsed);
         if (!result) { return result; }
-        prepared.write_invisibility_world_ = true;
-        result = prepared.try_draw_units(image, roster, turn, elapsed);
-        if (!result) { return result; }
-        prepared.write_invisibility_world_ = false;
-        prepared.read_world_background_ = false;
         *this = std::move(prepared);
         return Result<bool>::success(true);
     }
+
+private:
+    Result<bool> refresh_world_candidate(const std::vector<OriginalEvents::Unit>& roster, unsigned turn, uint64_t elapsed, const std::vector<uint8_t>* background = nullptr)
+    {
+        invisibility_world_ = pixels_;
+        read_world_background_ = true;
+        auto image = background ? *background : draw();
+        pending_effect_presentations_.clear();
+        auto result = draw_units_validated(image, roster, turn, elapsed);
+        if (!result) { return result; }
+        write_invisibility_world_ = true;
+        pending_effect_presentations_.clear();
+        result = draw_units_validated(image, roster, turn, elapsed);
+        if (!result) { return result; }
+        write_invisibility_world_ = false;
+        read_world_background_ = false;
+        return Result<bool>::success(true);
+    }
+
+public:
     Result<std::vector<uint8_t>> world_viewport() const
     {
         if (invisibility_world_.size() != pixels_.size()) { return Result<std::vector<uint8_t>>::failure(make_error("42927B world not initialized")); }
@@ -2420,12 +2511,20 @@ public:
         }
         return Result<std::vector<uint8_t>>::success(std::move(indices));
     }
-    Result<bool> try_draw_world(std::vector<uint8_t>& image, const std::vector<OriginalEvents::Unit>& roster, unsigned turn, uint64_t elapsed) const
+    Result<bool> try_draw_world(std::vector<uint8_t>& image, const std::vector<OriginalEvents::Unit>& roster, unsigned turn, uint64_t elapsed, bool contains_background = false) const
     {
         if (image.size() != 640u * 480 * 4) { return Result<bool>::failure(make_error("42927B invalid framebuffer extent")); }
         auto prepared = *this;
-        auto result = prepared.refresh_world(roster, turn, elapsed);
+        auto result = prepared.refresh_world_candidate(roster, turn, elapsed, contains_background ? &image : nullptr);
         if (!result) { return result; }
+        if (texture_resources.active())
+        {
+            auto output = contains_background ? image : draw();
+            invisibility_world_ = std::move(prepared.invisibility_world_);
+            unit_bitmaps_ = std::move(prepared.unit_bitmaps_);
+            image.swap(output);
+            return Result<bool>::success(true);
+        }
         auto cropped = prepared.world_viewport();
         if (!cropped) { return Result<bool>::failure(cropped.error()); }
         auto output = image;
@@ -2455,7 +2554,6 @@ public:
         }
         invisibility_world_ = std::move(prepared.invisibility_world_);
         unit_bitmaps_ = std::move(prepared.unit_bitmaps_);
-        if (texture_resources.active()) { output = draw(); }
         image.swap(output);
         return Result<bool>::success(true);
     }
@@ -2522,7 +2620,7 @@ public:
         }
         auto drawn = try_draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, std::nullopt, &indexed);
         if (!drawn) { return Result<std::vector<uint8_t>>::failure(drawn.error()); }
-        OriginalPalette palette(pal_);
+        const auto& palette = *palette_;
         for (auto& color : indexed)
         {
             if (color)
@@ -2587,7 +2685,7 @@ public:
             }
         }
         auto image = background;
-        OriginalPalette palette(pal_);
+        const auto& palette = *palette_;
         top -= camera_y + std::max(0, elevation - 1) * 16;
         left -= camera_x;
         if (texture_resources.active())
@@ -2636,7 +2734,7 @@ public:
         }
         auto drawn = try_draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, std::nullopt, &indexed);
         if (!drawn) { return Result<std::vector<uint8_t>>::failure(drawn.error()); }
-        OriginalPalette palette(pal_);
+        const auto& palette = *palette_;
         std::array<uint8_t, 256> tint{};
         for (unsigned c = 0; c < tint.size(); ++c) { tint[c] = c ? palette.blend_index(c, tint_source, tint_amount) : 0; }
         for (size_t p = 0; p < indexed.size(); ++p)
@@ -2686,7 +2784,7 @@ public:
                 }
             }
         }
-        OriginalPalette palette(pal_);
+        const auto& palette = *palette_;
         int left = actor.x * 64 + (actor.y & 1) * 32 - camera_x + 32 - visual.anchor_x(), top = actor.y * 16 - camera_y + 32 - visual.anchor_y();
         if (visual.anchor_x() == -1) { left = 0; }
         if (visual.anchor_y() == -1) { top = 0; }
@@ -2792,7 +2890,7 @@ public:
     std::vector<uint8_t> draw() const
     {
         std::vector<uint8_t> image(640 * 480 * 4);
-        if (texture_resources.active())
+        if (texture_resources.map_available())
         {
             for (size_t p = 0; p < image.size(); p += 4)
             {
@@ -2801,7 +2899,7 @@ public:
             }
             auto started = texture_resources.begin_canvas(image);
             if (!started) { fatal(started.error()); }
-            bool all_drawn = true;
+            std::optional<Error> draw_error;
             for (const auto& placement : texture_placements_)
             {
                 const auto& sprite = placement.image;
@@ -2816,14 +2914,25 @@ public:
                 case 8: group_name = "battle-backdrops"; break;
                 default: fatal("Invalid external map texture group");
                 }
-                auto mask = sprite.pixels;
+                std::vector<uint8_t> mask = sprite.pixels;
                 if (!placement.transparent) { std::fill(mask.begin(), mask.end(), uint8_t(1)); }
                 auto drawn = texture_resources.draw_masked(image, group_name, sprite.texture_id, placement.x - camera_x, placement.y - camera_y, sprite.w, sprite.h, mask);
-                if (!drawn) { all_drawn = false; }
+                if (!drawn)
+                {
+                    draw_error = drawn.error();
+                    break;
+                }
             }
             auto completed = texture_resources.end_canvas(image);
             if (!completed) { fatal(completed.error()); }
-            if (all_drawn) { return image; }
+            if (draw_error) { fatal(*draw_error); }
+            return image;
+        }
+        std::array<std::array<uint8_t, 4>, 256> colors{};
+        for (unsigned c = 0; c < colors.size(); ++c)
+        {
+            for (unsigned k = 0; k < 3; ++k) { colors[c][k] = uint8_t(unsigned(pal_.at(c * 3 + k)) * 255 / 63); }
+            colors[c][3] = 255;
         }
         for (int y = 0; y < 480; ++y)
         {
@@ -2831,11 +2940,7 @@ public:
             {
                 unsigned c = pixels_.at(size_t(camera_y + y) * width * 64 + camera_x + x);
                 size_t dst = (size_t(y) * 640 + x) * 4;
-                for (unsigned k = 0; k < 3; ++k)
-                {
-                    image[dst + k] = uint8_t(unsigned(pal_.at(c * 3 + k)) * 255 / 63);
-                }
-                image[dst + 3] = 255;
+                std::copy(colors[c].begin(), colors[c].end(), image.begin() + dst);
             }
         }
         return image;

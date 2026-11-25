@@ -48,19 +48,9 @@ class OriginalCampaign
         }
         image.at(p + 3) = 255;
     }
-    s2ne::Result<bool> try_sprite_validated(std::vector<uint8_t>& image, unsigned id, int left, int top) const
-    {
-        return draw_original_cel(image, cel_, pal_, id, left, top, OriginalZeroRun::transparent);
-    }
     s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
     {
-        auto output = image;
-        auto result = try_sprite_validated(output, id, left, top);
-        if (result)
-        {
-            image.swap(output);
-        }
-        return result;
+        return draw_original_cel(image, cel_, pal_, id, left, top, OriginalZeroRun::transparent);
     }
     void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
     {
