@@ -49,8 +49,6 @@ private:
     bool closed_ = false;
     std::optional<Result> pending_;
     int return_code_ = 0;
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& path) { return read_shared_resource(path); }
     size_t sprite_position() const
     {

@@ -11,7 +11,6 @@ class OriginalItemUse
     std::vector<uint8_t> items_;
     OriginalEquipment equipment_;
     std::filesystem::path root_;
-    static unsigned word(const auto& b, size_t p) { return unsigned(b.at(p)) | (unsigned(b.at(p + 1)) << 8); }
     static int sw(const auto& b, size_t p) { return int(int16_t(word(b, p))); }
     static void put(auto& b, size_t p, int value)
     {

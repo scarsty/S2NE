@@ -10,13 +10,10 @@ namespace s2ne
 class OriginalInterbattle
 {
     OriginalMenu font_;
-    std::vector<uint8_t> background_, palette_, indices_;
+    std::vector<uint8_t> background_, caption_palette_;
+    std::vector<uint8_t> wide_background_;
     int selected_{ 1 }, pointer_x_{ 298 }, pointer_y_{ 253 };
     bool pending_{}, closed_{}, services_allowed_{ true };
-    static s2ne::Result<std::vector<uint8_t>> try_read(const std::filesystem::path& p) { return read_resource(p); }
-    static std::vector<uint8_t> read(const std::filesystem::path& p) { return try_read(p).value(); }
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     void caption(std::vector<uint8_t>& image, unsigned id, int x, int y) const
     {
         const auto text = font_.text_bytes(id);
@@ -32,7 +29,7 @@ class OriginalInterbattle
                 {
                     for (unsigned k = 0; k < 3; ++k)
                     {
-                        image[p + k] = opening_palette_channel(uint8_t(palette_[ink * 3 + k] >> 2));
+                        image[p + k] = opening_palette_channel(uint8_t(caption_palette_[ink * 3 + k] >> 2));
                     }
                     image[p + 3] = 255;
                 }
@@ -70,79 +67,19 @@ public:
         {
             return s2ne::Result<bool>::failure(make_error("Unsupported original interbattle background"));
         }
-        auto dat_result = OriginalDiscResources(root).try_dat_entry(disc, resource);
+        auto dat_result = OriginalDiscResources(root).try_dat_entry(disc, 12);
         if (!dat_result)
         {
             return s2ne::Result<bool>::failure(dat_result.error());
         }
         auto dat = std::move(dat_result).value();
-        size_t offset = 0, size = dat.size();
-        if (offset > dat.size() || size > dat.size() - offset || size < 897)
-        {
-            return s2ne::Result<bool>::failure(make_error("Invalid hub PCX17"));
-        }
-        if (dat.at(offset) != 10 || dat.at(offset + 2) != 1 || dat.at(offset + 3) != 8 || dat.at(offset + 65) != 1 || word(dat, offset + 8) != 639 || word(dat, offset + 10) != 479)
-        {
-            return s2ne::Result<bool>::failure(make_error("Unsupported hub PCX17"));
-        }
-        unsigned stride = word(dat, offset + 66);
-        if (stride < 640 || stride > 4096)
-        {
-            return s2ne::Result<bool>::failure(make_error("Invalid hub stride"));
-        }
-        size_t colors = offset + size - 768;
-        if (dat.at(colors - 1) != 12)
-        {
-            return s2ne::Result<bool>::failure(make_error("Missing hub palette"));
-        }
-        palette_.assign(dat.begin() + colors, dat.begin() + colors + 768);
-        background_.resize(640 * 480 * 4);
-        indices_.resize(640 * 480);
-        size_t p = offset + 128, pixel = 0, total = size_t(stride) * 480;
-        while (pixel < total)
-        {
-            if (p >= colors - 1)
-            {
-                return s2ne::Result<bool>::failure(make_error("Truncated hub PCX"));
-            }
-            unsigned value = dat.at(p++), n = 1;
-            if ((value & 192) == 192)
-            {
-                n = value & 63;
-                if (p >= colors - 1)
-                {
-                    return s2ne::Result<bool>::failure(make_error("Truncated hub run"));
-                }
-                value = dat.at(p++);
-            }
-            if (!n || n > total - pixel)
-            {
-                return s2ne::Result<bool>::failure(make_error("Invalid hub run"));
-            }
-            while (n--)
-            {
-                size_t x = pixel % stride, y = pixel / stride;
-                ++pixel;
-                if (x >= 640)
-                {
-                    continue;
-                }
-                indices_[y * 640 + x] = uint8_t(value);
-                size_t q = (y * 640 + x) * 4;
-                for (unsigned k = 0; k < 3; ++k)
-                {
-                    background_[q + k] = opening_palette_channel(uint8_t(palette_[value * 3 + k] >> 2));
-                }
-                background_[q + 3] = 255;
-            }
-        }
-
-        if (texture_resources.active())
-        {
-            auto external = texture_resources.load_image("interbattle", resource);
-            if (!external) { return s2ne::Result<bool>::failure(external.error()); }
-            background_ = std::move(external).value().pixels;
-        }
+        if (dat.size() < 769 || dat[dat.size() - 769] != 12) { return s2ne::Result<bool>::failure(make_error("Missing hub caption palette")); }
+        caption_palette_.assign(dat.end() - 768, dat.end());
+        auto external = texture_resources.load_image_scaled("interbattle", resource, 768, 480);
+        if (!external) { return s2ne::Result<bool>::failure(external.error()); }
+        wide_background_ = external.value().pixels;
+        set_fixed_page_background(wide_background_);
+        background_ = fixed_page_center();
         return s2ne::Result<bool>::success(true);
     }
     explicit OriginalInterbattle(const std::filesystem::path& root, OriginalDisc disc = OriginalDisc::one, unsigned resource = 12) : font_(root)
@@ -166,7 +103,11 @@ public:
         return s2ne::Result<std::unique_ptr<OriginalInterbattle>>::success(std::move(result));
     }
 
-    const std::vector<uint8_t>& background() const { return background_; }
+    const std::vector<uint8_t>& background() const
+    {
+        if (!wide_background_.empty()) { fixed_page_background = wide_background_; }
+        return background_;
+    }
     static bool town_services_allowed(const std::filesystem::path& root, unsigned town)
     {
         auto pal = read_shared_resource(root / "SUPERSP.PAL").value();
@@ -185,28 +126,7 @@ public:
         }
     }
     bool services_allowed() const { return services_allowed_; }
-    s2ne::Result<std::vector<uint8_t>> try_indexed_background(const std::vector<uint8_t>& palette) const
-    {
-        if (palette.size() < 768)
-        {
-            return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Original indexed background palette"));
-        }
-        if (texture_resources.active()) { return s2ne::Result<std::vector<uint8_t>>::success(background_); }
-        auto image = background_;
-        for (size_t i = 0; i < indices_.size(); ++i)
-        {
-            for (unsigned k = 0; k < 3; ++k)
-            {
-                image[i * 4 + k] = uint8_t(unsigned(palette[indices_[i] * 3 + k]) * 255 / 63);
-            }
-        }
-        return s2ne::Result<std::vector<uint8_t>>::success(image);
-    }
-    std::vector<uint8_t> indexed_background(const std::vector<uint8_t>& palette) const
-    {
-        auto result = try_indexed_background(palette);
-        return std::move(result).value();
-    }
+    void draw_caption(std::vector<uint8_t>& image, unsigned id, int x, int y) const { caption(image, id, x, y); }
     int selected() const { return selected_; }
     bool closed() const { return closed_; }
     bool pending() const { return pending_; }
@@ -231,9 +151,9 @@ public:
         pointer_x_ = x;
         pointer_y_ = y;
         int row = hit(x, y);
+        selected_ = row;
         if (row)
         {
-            selected_ = row;
             if (left_click)
             {
                 pending_ = true;
@@ -261,7 +181,7 @@ public:
             pointer_x_ = (r.left + r.right) / 2;
             pointer_y_ = (r.top + r.bottom) / 2;
         }
-        else if (code == 0x1C || code == 0x39)
+        else if ((code == 0x1C || code == 0x39) && selected_ > 0)
         {
             pending_ = true;
         }
@@ -299,18 +219,19 @@ public:
     }
     std::vector<uint8_t> draw(bool all_captions = false) const
     {
-        auto image = background_;
+        auto image = background();
         if (all_captions)
         {
             for (size_t i = 0; i < labels.size(); ++i)
             {
+                if (i < 3 && !services_allowed_) { continue; }
                 auto r = rectangles[i];
                 auto t = font_.text_bytes(labels[i]);
                 int x = std::clamp((r.left + r.right) / 2 - int(t.size()) * 4, 0, 639 - int(t.size()) * 8);
                 caption(image, labels[i], x, (r.top + r.bottom) / 2);
             }
         }
-        else
+        else if (selected_ > 0 && (selected_ == 4 || services_allowed_))
         {
             auto text = font_.text_bytes(labels[size_t(selected_ - 1)]);
             int x = std::clamp(pointer_x_ - int(text.size()) * 4, 0, 639 - int(text.size()) * 8);

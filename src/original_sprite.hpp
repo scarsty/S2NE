@@ -14,7 +14,8 @@ enum class OriginalZeroRun
 inline Result<bool> draw_original_sprite(std::vector<uint8_t>& image, std::span<const uint8_t> bytes,
     std::span<const uint8_t> palette, size_t position, bool typed, int left, int top, OriginalZeroRun zero, std::vector<uint8_t>* indexed = nullptr)
 {
-    if (image.size() != 640u * 480 * 4 || palette.size() < 768 || (indexed && indexed->size() != 640u * 480))
+    const int stride = framebuffer_width(image);
+    if (!stride || palette.size() < 768 || (indexed && indexed->size() != image.size() / 4))
     {
         return Result<bool>::failure(make_error("Invalid original sprite framebuffer/palette"));
     }
@@ -41,9 +42,14 @@ inline Result<bool> draw_original_sprite(std::vector<uint8_t>& image, std::span<
     unsigned type = typed ? reader.number(position++, 1) : 0;
     unsigned width = reader.number(position) + 1, height = reader.number(position + 2) + 1;
     position += 4;
-    if (!reader || width > 640 || height > 480 || type > 1)
+    if (!reader || type > 1)
     {
         return Result<bool>::failure(make_error("Invalid original sprite header"));
+    }
+    const size_t minimum_row_bytes = type ? width : (size_t(width) + 126) / 127;
+    if (position > bytes.size() || size_t(height) > (bytes.size() - position) / minimum_row_bytes)
+    {
+        return Result<bool>::failure(make_error("Truncated original sprite rows"));
     }
     auto output = image;
     std::vector<uint8_t> indices;
@@ -69,12 +75,12 @@ inline Result<bool> draw_original_sprite(std::vector<uint8_t>& image, std::span<
                 int dx = left + int(x++), dy = top + int(y);
                 // Keep the existing raw typed-image index mask distinct from RLE literals.
                 // 原版零游程始终表示底图透明，不能覆盖页面下方的已有像素。
-                bool skip = !ink && zero == OriginalZeroRun::transparent && !(op & 128);
-                if (skip || dx < 0 || dx >= 640 || dy < 0 || dy >= 480)
+                bool skip = !ink && (type || (zero == OriginalZeroRun::transparent && !(op & 128)));
+                if (skip || dx < 0 || dx >= stride || dy < 0 || dy >= 480)
                 {
                     continue;
                 }
-                size_t dst = (size_t(dy) * 640 + dx) * 4;
+                size_t dst = (size_t(dy) * stride + dx) * 4;
                 if (indexed) { indices[dst / 4] = uint8_t(ink); }
                 for (unsigned k = 0; k < 3; ++k)
                 {
@@ -114,11 +120,9 @@ inline Result<bool> draw_original_cel_legacy(std::vector<uint8_t>& image, std::s
 inline Result<bool> draw_original_cel(std::vector<uint8_t>& image, std::span<const uint8_t> cel,
     std::span<const uint8_t> palette, unsigned id, int left, int top, OriginalZeroRun zero, std::vector<uint8_t>* indexed = nullptr)
 {
-    if (!texture_resources.active()) { return draw_original_cel_legacy(image, cel, palette, id, left, top, zero, indexed); }
     auto available = texture_resources.has_ui(id);
     if (!available) { return Result<bool>::failure(available.error()); }
     if (!available.value()) { return draw_original_cel_legacy(image, cel, palette, id, left, top, zero, indexed); }
-    if (image.size() != 640u * 480 * 4 || palette.size() < 768 || (indexed && indexed->size() != 640u * 480)) { return Result<bool>::failure(make_error("Invalid PNG UI framebuffer/palette")); }
     auto output = image;
     std::vector<uint8_t> indices;
     if (indexed) { indices = *indexed; }
@@ -126,8 +130,6 @@ inline Result<bool> draw_original_cel(std::vector<uint8_t>& image, std::span<con
     if (!result) { return result; }
     image.swap(output);
     if (indexed) { indexed->swap(indices); }
-    (void)cel;
-    (void)zero;
     return result;
 }
 }    //namespace s2ne

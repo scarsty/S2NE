@@ -1,4 +1,5 @@
 #pragma once
+#include "framebuffer.hpp"
 #include "resource_result.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
@@ -62,6 +63,23 @@ class TextureResources
     };
     std::unordered_map<std::string, Image> images_;
 
+    static void copy_surface_pixels(const SDL_Surface& surface, std::span<uint8_t> pixels)
+    {
+        for (int y = 0; y < surface.h; ++y) { std::memcpy(pixels.data() + size_t(y) * surface.w * 4, static_cast<const uint8_t*>(surface.pixels) + y * surface.pitch, size_t(surface.w) * 4); }
+    }
+
+    static Result<Image> decode_image(const std::filesystem::path& path)
+    {
+        auto loaded = load_png(path);
+        if (!loaded) { return Result<Image>::failure(loaded.error()); }
+        std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> source(loaded.value(), SDL_DestroySurface);
+        std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> rgba(SDL_ConvertSurface(source.get(), SDL_PIXELFORMAT_RGBA32), SDL_DestroySurface);
+        if (!rgba) { return Result<Image>::failure(make_error(path.string() + ": " + SDL_GetError())); }
+        std::vector<uint8_t> pixels(size_t(rgba->w) * rgba->h * 4);
+        copy_surface_pixels(*rgba, pixels);
+        return Result<Image>::success(Image{ SharedBytes(std::move(pixels)), rgba->w, rgba->h });
+    }
+
     Result<std::vector<char>> read_resource(const std::string& relative) const
     {
         const auto file = root_ / std::filesystem::path(relative);
@@ -70,15 +88,10 @@ class TextureResources
         return Result<std::vector<char>>::success({ std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>() });
     }
 
-    Result<SDL_Surface*> load_png(const std::string& relative) const
+    static Result<SDL_Surface*> load_png(const std::filesystem::path& path)
     {
-        auto bytes = read_resource(relative);
-        if (!bytes) { return Result<SDL_Surface*>::failure(bytes.error()); }
-        auto buffer = std::move(bytes).value();
-        auto* io = SDL_IOFromConstMem(buffer.data(), buffer.size());
-        if (!io) { return Result<SDL_Surface*>::failure(make_error(SDL_GetError())); }
-        auto* surface = SDL_LoadPNG_IO(io, true);
-        if (!surface) { return Result<SDL_Surface*>::failure(make_error(relative + ": " + SDL_GetError())); }
+        auto* surface = SDL_LoadPNG(path.string().c_str());
+        if (!surface) { return Result<SDL_Surface*>::failure(make_error(path.string() + ": " + SDL_GetError())); }
         return Result<SDL_Surface*>::success(surface);
     }
 
@@ -88,18 +101,41 @@ public:
         if (!active()) { return Result<Image>::failure(make_error("Texture resources are not active")); }
         const auto relative = group + "/" + std::to_string(id) + ".png";
         if (auto cached = images_.find(relative); cached != images_.end()) { return Result<Image>::success(cached->second); }
-        auto loaded = load_png(relative);
+        auto loaded = decode_image(root_ / std::filesystem::path(relative));
         if (!loaded) { return Result<Image>::failure(loaded.error()); }
-        std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> source(loaded.value(), SDL_DestroySurface);
-        std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> rgba(SDL_ConvertSurface(source.get(), SDL_PIXELFORMAT_RGBA32), SDL_DestroySurface);
-        if (!rgba) { return Result<Image>::failure(make_error("Invalid external image: " + relative)); }
-        std::vector<uint8_t> image(size_t(rgba->w) * rgba->h * 4);
-        for (int y = 0; y < rgba->h; ++y) { std::memcpy(image.data() + size_t(y) * rgba->w * 4, static_cast<uint8_t*>(rgba->pixels) + y * rgba->pitch, size_t(rgba->w) * 4); }
-        Image result{ SharedBytes(std::move(image)), rgba->w, rgba->h };
+        auto result = std::move(loaded).value();
         images_.emplace(relative, result);
         return Result<Image>::success(std::move(result));
     }
 
+    Result<Image> load_image_scaled(const std::string& group, unsigned id, int width, int height)
+    {
+        auto loaded = load_image(group, id);
+        return scale_image(std::move(loaded), width, height);
+    }
+
+    static Result<Image> load_file_scaled(const std::filesystem::path& path, int width, int height)
+    {
+        return scale_image(decode_image(path), width, height);
+    }
+
+private:
+    static Result<Image> scale_image(Result<Image> loaded, int width, int height)
+    {
+        if (!loaded) { return loaded; }
+        if (loaded.value().width == width && loaded.value().height == height) { return loaded; }
+        const auto& source = loaded.value();
+        std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> surface(SDL_CreateSurface(source.width, source.height, SDL_PIXELFORMAT_RGBA32), SDL_DestroySurface);
+        if (!surface) { return Result<Image>::failure(make_error(SDL_GetError())); }
+        for (int y = 0; y < source.height; ++y) { std::memcpy(static_cast<uint8_t*>(surface->pixels) + y * surface->pitch, source.pixels.data() + size_t(y) * source.width * 4, size_t(source.width) * 4); }
+        std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> scaled(SDL_ScaleSurface(surface.get(), width, height, SDL_SCALEMODE_LINEAR), SDL_DestroySurface);
+        if (!scaled) { return Result<Image>::failure(make_error(SDL_GetError())); }
+        std::vector<uint8_t> pixels(size_t(width) * height * 4);
+        copy_surface_pixels(*scaled, pixels);
+        return Result<Image>::success(Image{ SharedBytes(std::move(pixels)), width, height });
+    }
+
+public:
     Result<bool> draw_small_text(std::vector<uint8_t>& image, std::string_view text, int left, int top, SDL_Color color)
     {
         if (!small_font_) { return Result<bool>::failure(make_error("SDL_ttf small font is not initialized")); }
@@ -164,7 +200,7 @@ private:
         if (!resolved) { return Result<SDL_Texture*>::failure(resolved.error()); }
         const auto key = std::move(resolved).value();
         if (auto found = textures_.find(key); found != textures_.end()) { return Result<SDL_Texture*>::success(found->second.get()); }
-        auto loaded = load_png(key + ".png");
+        auto loaded = load_png(root_ / (key + ".png"));
         if (!loaded) { return Result<SDL_Texture*>::failure(loaded.error()); }
         std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> surface(loaded.value(), SDL_DestroySurface);
         std::shared_ptr<SDL_Texture> texture(SDL_CreateTextureFromSurface(renderer_, surface.get()), SDL_DestroyTexture);
@@ -181,7 +217,8 @@ private:
 
     Result<bool> readback(std::vector<uint8_t>& image)
     {
-        if (image.size() != 640u * 480 * 4) { return Result<bool>::failure(make_error("Invalid texture readback framebuffer")); }
+        const int width = framebuffer_width(image);
+        if (!width) { return Result<bool>::failure(make_error("Invalid texture readback framebuffer")); }
         std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> pixels(SDL_RenderReadPixels(renderer_, nullptr), SDL_DestroySurface);
         if (!pixels) { return Result<bool>::failure(make_error(SDL_GetError())); }
         if (pixels->format != SDL_PIXELFORMAT_RGBA32)
@@ -189,20 +226,28 @@ private:
             pixels.reset(SDL_ConvertSurface(pixels.get(), SDL_PIXELFORMAT_RGBA32));
             if (!pixels) { return Result<bool>::failure(make_error(SDL_GetError())); }
         }
-        if (pixels->w != 640 || pixels->h != 480) { return Result<bool>::failure(make_error("Invalid texture readback extent")); }
-        for (int y = 0; y < 480; ++y) { std::memcpy(image.data() + size_t(y) * 640 * 4, static_cast<uint8_t*>(pixels->pixels) + y * pixels->pitch, 640 * 4); }
+        if (pixels->w != width || pixels->h != 480) { return Result<bool>::failure(make_error("Invalid texture readback extent")); }
+        copy_surface_pixels(*pixels, image);
         return Result<bool>::success(true);
     }
 
     Result<bool> prepare_canvas(std::span<const uint8_t> image)
     {
-        if (!renderer_ || image.size() != 640u * 480 * 4) { return Result<bool>::failure(make_error("Invalid texture canvas framebuffer")); }
+        const int width = framebuffer_width(image);
+        if (!renderer_ || !width) { return Result<bool>::failure(make_error("Invalid texture canvas framebuffer")); }
+        float old_width{};
+        if (target_ && (!SDL_GetTextureSize(target_.get(), &old_width, nullptr) || int(old_width) != width))
+        {
+            if (batching_) { return Result<bool>::failure(make_error("Texture batch framebuffer changed")); }
+            target_.reset();
+            background_.reset();
+        }
         if (batching_) { return Result<bool>::success(true); }
-        if (!target_) { target_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 640, 480)); }
-        if (!background_) { background_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, 640, 480)); }
+        if (!target_) { target_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, width, 480)); }
+        if (!background_) { background_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, width, 480)); }
         if (!target_ || !background_) { return Result<bool>::failure(make_error(SDL_GetError())); }
         if (!SDL_SetTextureBlendMode(background_.get(), SDL_BLENDMODE_NONE) || !SDL_SetTextureBlendMode(target_.get(), SDL_BLENDMODE_NONE)
-            || !SDL_UpdateTexture(background_.get(), nullptr, image.data(), 640 * 4) || !SDL_SetRenderTarget(renderer_, target_.get())
+            || !SDL_UpdateTexture(background_.get(), nullptr, image.data(), width * 4) || !SDL_SetRenderTarget(renderer_, target_.get())
             || !SDL_RenderTexture(renderer_, background_.get(), nullptr, nullptr)) { return Result<bool>::failure(make_error(SDL_GetError())); }
         return Result<bool>::success(true);
     }
@@ -260,7 +305,7 @@ public:
     uint64_t elapsed() const { return elapsed_; }
     Result<bool> begin_canvas(std::span<const uint8_t> image)
     {
-        if (!renderer_ || batching_ || image.size() != 640u * 480 * 4) { return Result<bool>::failure(make_error("Invalid texture canvas begin")); }
+        if (!renderer_ || batching_ || !framebuffer_width(image)) { return Result<bool>::failure(make_error("Invalid texture canvas begin")); }
         batch_previous_ = SDL_GetRenderTarget(renderer_);
         TargetRestore restore(renderer_);
         auto prepared = prepare_canvas(image);
@@ -279,7 +324,7 @@ public:
     }
     Result<bool> draw_cached(std::vector<uint8_t>& image, SDL_Texture* source, int left, int top)
     {
-        if (!renderer_ || !source || image.size() != 640u * 480 * 4) { return Result<bool>::failure(make_error("Invalid cached texture draw")); }
+        if (!renderer_ || !source || !framebuffer_width(image)) { return Result<bool>::failure(make_error("Invalid cached texture draw")); }
         TargetRestore restore(renderer_);
         auto prepared = prepare_canvas(image);
         if (!prepared) { return prepared; }
@@ -292,6 +337,8 @@ public:
     }
     Result<bool> draw_glyph(std::vector<uint8_t>& image, std::span<const uint8_t> bits, unsigned width, unsigned height, int left, int top, std::span<const uint8_t> palette, unsigned color, std::vector<uint8_t>* indexed)
     {
+        const int stride = framebuffer_width(image);
+        if (!stride || (indexed && indexed->size() != image.size() / 4)) { return Result<bool>::failure(make_error("Invalid glyph framebuffer")); }
         if (!renderer_ || !width || width % 8 || bits.size() != size_t(width / 8) * height || palette.size() < 768 || color > 255) { return Result<bool>::failure(make_error("Invalid original glyph texture")); }
         std::string key = "glyph/" + std::to_string(width) + "/" + std::to_string(height) + "/";
         key.append(reinterpret_cast<const char*>(bits.data()), bits.size());
@@ -319,14 +366,13 @@ public:
         if (batching_) { result = draw_cached(image, glyph, left, top); }
         else
         {
-            if (image.size() != 640u * 480 * 4 || (indexed && indexed->size() != 640u * 480)) { return Result<bool>::failure(make_error("Invalid glyph framebuffer")); }
             for (unsigned y = 0; y < height; ++y)
             {
                 for (unsigned x = 0; x < width; ++x)
                 {
                     const int dx = left + int(x), dy = top + int(y);
-                    if (dx < 0 || dx >= 640 || dy < 0 || dy >= 480 || !(bits[size_t(y) * (width / 8) + x / 8] & (128 >> (x % 8)))) { continue; }
-                    const size_t p = (size_t(dy) * 640 + dx) * 4;
+                    if (dx < 0 || dx >= stride || dy < 0 || dy >= 480 || !(bits[size_t(y) * (width / 8) + x / 8] & (128 >> (x % 8)))) { continue; }
+                    const size_t p = (size_t(dy) * stride + dx) * 4;
                     for (unsigned k = 0; k < 3; ++k) { image[p + k] = uint8_t(unsigned(palette[color * 3 + k]) * 255 / 63); }
                     image[p + 3] = 255;
                 }
@@ -338,7 +384,7 @@ public:
             for (unsigned x = 0; x < width; ++x)
             {
                 const int dx = left + int(x), dy = top + int(y);
-                if (dx >= 0 && dx < 640 && dy >= 0 && dy < 480 && (bits[size_t(y) * (width / 8) + x / 8] & (128 >> (x % 8)))) { indexed->at(size_t(dy) * 640 + dx) = uint8_t(color); }
+                if (dx >= 0 && dx < stride && dy >= 0 && dy < 480 && (bits[size_t(y) * (width / 8) + x / 8] & (128 >> (x % 8)))) { indexed->at(size_t(dy) * stride + dx) = uint8_t(color); }
             }
         }
         return result;
@@ -430,7 +476,14 @@ public:
     }
     Result<bool> draw_ttf_text(std::vector<uint8_t>& image, std::string_view text, int left, int top, SDL_Color color, TTF_Font* font, float size)
     {
-        if (!font || image.size() != 640u * 480 * 4) { return Result<bool>::failure(make_error("Invalid SDL_ttf draw target")); }
+        const int stride = framebuffer_width(image);
+        if (!font || !stride) { return Result<bool>::failure(make_error("Invalid SDL_ttf draw target")); }
+        std::string display(text);
+        for (auto position = display.find("\xE2\x80\xA7"); position != std::string::npos; position = display.find("\xE2\x80\xA7", position + 2))
+        {
+            display.replace(position, 3, "\xC2\xB7");
+        }
+        text = display;
         const auto key = std::to_string(reinterpret_cast<uintptr_t>(font)) + "/" + std::to_string(size) + "/" + std::string(text);
         auto cached = text_textures_.find(key);
         if (cached == text_textures_.end())
@@ -447,7 +500,7 @@ public:
         {
             auto* surface = text_surfaces_.at(key).get();
             if (!SDL_SetSurfaceColorMod(surface, color.r, color.g, color.b) || !SDL_SetSurfaceAlphaMod(surface, color.a) || !SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_BLEND)) { return Result<bool>::failure(make_error(SDL_GetError())); }
-            std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> destination(SDL_CreateSurfaceFrom(640, 480, SDL_PIXELFORMAT_RGBA32, image.data(), 640 * 4), SDL_DestroySurface);
+            std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> destination(SDL_CreateSurfaceFrom(stride, 480, SDL_PIXELFORMAT_RGBA32, image.data(), stride * 4), SDL_DestroySurface);
             if (!destination) { return Result<bool>::failure(make_error(SDL_GetError())); }
             SDL_Rect rectangle{ left, top, surface->w, surface->h };
             if (!SDL_BlitSurface(surface, nullptr, destination.get(), &rectangle)) { return Result<bool>::failure(make_error(SDL_GetError())); }
@@ -461,7 +514,8 @@ public:
         std::span<const uint8_t> palette, std::vector<uint8_t>* indexed)
     {
         if (!renderer_) { return Result<bool>::failure(make_error("Texture renderer not bound")); }
-        if (image.size() != 640u * 480 * 4 || (indexed && (palette.size() < 768 || indexed->size() != 640u * 480))) { return Result<bool>::failure(make_error("Invalid PNG palette/framebuffer")); }
+        const int stride = framebuffer_width(image);
+        if (!stride || (indexed && (palette.size() < 768 || indexed->size() != image.size() / 4))) { return Result<bool>::failure(make_error("Invalid PNG palette/framebuffer")); }
         auto loaded = load(group, id);
         if (!loaded) { return Result<bool>::failure(loaded.error()); }
         auto* texture = loaded.value();
@@ -489,9 +543,9 @@ public:
         }
         for (int y = std::max(0, top); y < std::min(480, top + int(height)); ++y)
         {
-            for (int x = std::max(0, left); x < std::min(640, left + int(width)); ++x)
+            for (int x = std::max(0, left); x < std::min(stride, left + int(width)); ++x)
             {
-                const size_t position = size_t(y) * 640 + x;
+                const size_t position = size_t(y) * stride + x;
                 const auto* pixel = image.data() + position * 4;
                 if (indexed)
                 {
@@ -534,7 +588,7 @@ public:
     }
     Result<bool> draw_masked(std::vector<uint8_t>& image, const std::string& group, unsigned frame, int left, int top, unsigned width, unsigned height, std::span<const uint8_t> mask)
     {
-        if (!width || !height || image.size() != 640u * 480 * 4 || mask.size() != size_t(width) * height) { return Result<bool>::failure(make_error("Invalid external texture mask")); }
+        if (!width || !height || !framebuffer_width(image) || mask.size() != size_t(width) * height) { return Result<bool>::failure(make_error("Invalid external texture mask")); }
         auto texture = load(group, frame);
         if (!texture) { return Result<bool>::failure(texture.error()); }
         TargetRestore restore(renderer_);
@@ -586,13 +640,16 @@ public:
     }
     Result<SDL_Texture*> upload_frame(std::span<const uint8_t> image)
     {
-        if (!renderer_ || image.size() != 640u * 480 * 4) { return Result<SDL_Texture*>::failure(make_error("Invalid external frame upload")); }
+        if (!renderer_ || !framebuffer_width(image)) { return Result<SDL_Texture*>::failure(make_error("Invalid external frame upload")); }
+        const int width = int(image.size() / (480 * 4));
+        float previous_width{};
+        if (presentation_ && (!SDL_GetTextureSize(presentation_.get(), &previous_width, nullptr) || int(previous_width) != width)) { presentation_.reset(); }
         if (!presentation_)
         {
-            presentation_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, 640, 480));
+            presentation_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, width, 480));
             if (!presentation_ || !SDL_SetTextureScaleMode(presentation_.get(), SDL_SCALEMODE_LINEAR)) { return Result<SDL_Texture*>::failure(make_error(SDL_GetError())); }
         }
-        if (!SDL_UpdateTexture(presentation_.get(), nullptr, image.data(), 640 * 4))
+        if (!SDL_UpdateTexture(presentation_.get(), nullptr, image.data(), width * 4))
         {
             return Result<SDL_Texture*>::failure(make_error(SDL_GetError()));
         }

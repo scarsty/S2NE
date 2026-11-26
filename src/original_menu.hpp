@@ -180,7 +180,8 @@ public:
     // sub_422402: BIN 12 contains 16x16 Big5 glyphs; BIN 15 contains 8x15 ASCII.
     s2ne::Result<bool> try_draw_small_validated(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, bool original_padding = false, std::vector<uint8_t>* indexed = nullptr) const
     {
-        if (image.size() != 640u * 480 * 4 || color > 255 || (indexed && indexed->size() != 640u * 480))
+        const int stride = framebuffer_width(image);
+        if (!stride || color > 255 || (indexed && indexed->size() != image.size() / 4))
         {
             return s2ne::Result<bool>::failure(make_error("Invalid text framebuffer or palette color"));
         }
@@ -274,11 +275,11 @@ public:
                         continue;
                     }
                     int dx = x + int(gx) + (original_padding ? 1 : 0), dy = y + int(gy) + (original_padding && height == 15 ? 1 : 0);
-                    if (dx < 0 || dx >= 640 || dy < 0 || dy >= 480)
+                    if (dx < 0 || dx >= stride || dy < 0 || dy >= 480)
                     {
                         continue;
                     }
-                    size_t dst = (size_t(dy) * 640 + dx) * 4;
+                    size_t dst = (size_t(dy) * stride + dx) * 4;
                     if (indexed) { indexed->at(dst / 4) = uint8_t(color); }
                     for (unsigned c = 0; c < 3; ++c)
                     {
@@ -341,7 +342,8 @@ public:
     s2ne::Result<bool> try_draw_big5_validated(std::vector<uint8_t>& image, const std::vector<uint8_t>& text,
         int x, int y, unsigned color, std::vector<uint8_t>* indexed = nullptr) const
     {
-        if (image.size() != 640u * 480 * 4 || color > 255 || (indexed && indexed->size() != 640u * 480))
+        const int stride = framebuffer_width(image);
+        if (!stride || color > 255 || (indexed && indexed->size() != image.size() / 4))
         {
             return s2ne::Result<bool>::failure(make_error("Invalid text framebuffer or palette color"));
         }
@@ -377,11 +379,11 @@ public:
                         {
                             continue;
                         }
-                        if (x + gx < 0 || x + gx >= 640 || y + gy < 0 || y + gy >= 480)
+                        if (x + gx < 0 || x + gx >= stride || y + gy < 0 || y + gy >= 480)
                         {
                             continue;
                         }
-                        size_t dst = (size_t(y + gy) * 640 + x + gx) * 4;
+                        size_t dst = (size_t(y + gy) * stride + x + gx) * 4;
                         if (indexed) { indexed->at(dst / 4) = uint8_t(color); }
                         for (unsigned c = 0; c < 3; ++c)
                         {
@@ -456,11 +458,11 @@ public:
                     {
                         continue;
                     }
-                    if (x + gx < 0 || x + gx >= 640 || y + gy < 0 || y + gy >= 480)
+                    if (x + gx < 0 || x + gx >= stride || y + gy < 0 || y + gy >= 480)
                     {
                         continue;
                     }
-                    size_t dst = (size_t(y + gy) * 640 + x + gx) * 4;
+                    size_t dst = (size_t(y + gy) * stride + x + gx) * 4;
                     if (indexed) { indexed->at(dst / 4) = uint8_t(color); }
                     for (unsigned c = 0; c < 3; ++c)
                     {
@@ -499,7 +501,7 @@ public:
     }
     s2ne::Result<bool> try_draw_original_large(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color, std::optional<unsigned> shadow = std::nullopt, std::vector<uint8_t>* indexed = nullptr) const
     {
-        if (image.size() != 640u * 480 * 4 || color > 255 || (indexed && indexed->size() != 640u * 480))
+        if (!framebuffer_width(image) || color > 255 || (indexed && indexed->size() != image.size() / 4))
         {
             return s2ne::Result<bool>::failure(make_error("Invalid text framebuffer or palette color"));
         }
@@ -744,29 +746,13 @@ public:
     void draw(std::vector<uint8_t>& image) const
     {
         // 40DFD6/40E057: both normal and selected rows use style1, edge3.
-        if (texture_resources.active() && texture_resources.font_ready())
-        {
-            for (unsigned row = 0; row < 5; ++row)
-            {
-                const auto text = SimpleCC::big5_to_utf8(text_bytes(ids[row]));
-                const unsigned palette_index = row == static_cast<unsigned>(selected) ? 2 : 15;
-                const SDL_Color color{ title_palette_[palette_index * 3], title_palette_[palette_index * 3 + 1], title_palette_[palette_index * 3 + 2], 255 };
-                auto drawn = texture_resources.draw_large_text(image, SimpleCC::enabled() ? SimpleCC::shared().convert(text) : text, 278, 286 + int(row) * 30, color);
-                if (!drawn) { fatal(drawn.error()); }
-            }
-            return;
-        }
-        std::vector<uint8_t> text(image.size()), indices(640 * 480);
         for (unsigned row = 0; row < 5; ++row)
         {
-            auto drawn = try_draw_original_large(text, text_bytes(ids[row]), 278, 286 + int(row) * 30, int(row) == selected ? 2 : 15, 3, &indices);
+            const auto text = SimpleCC::big5_to_utf8(text_bytes(ids[row]));
+            const unsigned palette_index = row == static_cast<unsigned>(selected) ? 2 : 15;
+            const SDL_Color color{ title_palette_[palette_index * 3], title_palette_[palette_index * 3 + 1], title_palette_[palette_index * 3 + 2], 255 };
+            auto drawn = texture_resources.draw_large_text(image, SimpleCC::enabled() ? SimpleCC::shared().convert(text) : text, 278, 286 + int(row) * 30, color);
             if (!drawn) { fatal(drawn.error()); }
-        }
-        for (size_t i = 0; i < indices.size(); ++i)
-        {
-            if (!text[i * 4 + 3]) { continue; }
-            for (size_t c = 0; c < 3; ++c) { image.at(i * 4 + c) = title_palette_[size_t(indices[i]) * 3 + c]; }
-            image.at(i * 4 + 3) = 255;
         }
     }
 };

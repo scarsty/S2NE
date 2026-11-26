@@ -18,8 +18,6 @@ class OriginalSkill88Visual
     unsigned prefix_frames_{};
     unsigned texture_visual_{};
     size_t texture_frames_{};
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
 
 public:
     static std::vector<uint8_t> shake_frame(const std::vector<uint8_t>& source, const std::vector<uint8_t>& previous, unsigned remaining)
@@ -417,16 +415,8 @@ public:
         if (accelerated) { delay = std::max(1u, delay / 4); }
         if (presented_ && elapsed_ >= delay)
         {
-            if (accelerated)
-            {
-                ++frame_;
-                elapsed_ = 0;
-            }
-            else
-            {
-                ++frame_;
-                elapsed_ = 0;
-            }
+            ++frame_;
+            elapsed_ = 0;
             presented_ = false;
         }
     }

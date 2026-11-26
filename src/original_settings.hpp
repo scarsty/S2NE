@@ -56,8 +56,6 @@ private:
     bool closed_ = false, password_ = false;
     std::string password_text_;
     size_t password_cursor_ = 0;
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     std::array<uint8_t*, 7> toggles() { return { &state_.masking, &state_.flag_4f7d05, &state_.animation, &state_.status_window, &state_.flag_4f7d0a, &state_.flag_4f7d09, &state_.cdda }; }
     std::array<uint8_t, 7> toggles() const { return { state_.masking, state_.flag_4f7d05, state_.animation, state_.status_window, state_.flag_4f7d0a, state_.flag_4f7d09, state_.cdda }; }
     void pixel(std::vector<uint8_t>& image, int x, int y, unsigned color) const

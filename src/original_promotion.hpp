@@ -93,7 +93,7 @@ private:
         const size_t offset = data.number(entry, 4), length = data.number(entry + 4, 4);
         if (!data.extent(group + offset, length) || length < 4) { return s2ne::Result<std::pair<int, int>>::failure(make_error("Invalid promotion confirmation CEL extent")); }
         const int width = int(data.number(group + offset)) + 1, height = int(data.number(group + offset + 2)) + 1;
-        if (!data || width > 640 || height > 480) { return s2ne::Result<std::pair<int, int>>::failure(make_error("Invalid promotion confirmation CEL dimensions")); }
+        if (!data) { return s2ne::Result<std::pair<int, int>>::failure(make_error("Invalid promotion confirmation CEL dimensions")); }
         return s2ne::Result<std::pair<int, int>>::success({ 320 - width / 2, 240 - height / 2 });
     }
 

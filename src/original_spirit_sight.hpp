@@ -7,8 +7,6 @@ namespace s2ne
 class OriginalSpiritSight
 {
     SharedBytes kinds_, cel_, pal_;
-    static unsigned word(const auto& bytes, size_t p) { return bytes.at(p) | (unsigned(bytes.at(p + 1)) << 8); }
-    static unsigned dword(const auto& bytes, size_t p) { return word(bytes, p) | (word(bytes, p + 2) << 16); }
     static std::vector<uint8_t> text(const auto& bytes, size_t p, size_t limit)
     {
         std::vector<uint8_t> result;

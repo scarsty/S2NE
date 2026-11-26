@@ -16,9 +16,6 @@ class OriginalUnitStatus
     mutable std::vector<uint8_t> cached_name_, cached_profession_;
     mutable std::array<int64_t, 26> cached_fields_{};
     mutable const OriginalMenu* cached_font_{};
-    static unsigned word(const std::vector<uint8_t>& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const std::vector<uint8_t>& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& p) { return read_shared_resource(p); }
     void pixel(std::vector<uint8_t>& image, int x, int y, unsigned c) const
     {
         if (x < 0 || x >= 640 || y < 0 || y >= 480)
@@ -82,9 +79,9 @@ public:
     }
     static s2ne::Result<std::unique_ptr<OriginalUnitStatus>> create(const std::filesystem::path& root)
     {
-        auto cel = try_read(root / "SUPERSP.CEL");
+        auto cel = read_shared_resource(root / "SUPERSP.CEL");
         if (!cel) { return s2ne::Result<std::unique_ptr<OriginalUnitStatus>>::failure(cel.error()); }
-        auto pal = try_read(root / "SUPERSP.PAL");
+        auto pal = read_shared_resource(root / "SUPERSP.PAL");
         if (!pal) { return s2ne::Result<std::unique_ptr<OriginalUnitStatus>>::failure(pal.error()); }
         if (pal.value().size() < 828) { return s2ne::Result<std::unique_ptr<OriginalUnitStatus>>::failure(make_error("Truncated status palette")); }
         auto result = std::unique_ptr<OriginalUnitStatus>(new OriginalUnitStatus(std::move(cel).value(), std::move(pal).value()));

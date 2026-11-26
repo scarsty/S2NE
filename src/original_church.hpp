@@ -660,7 +660,7 @@ public:
             auto image = background_.background();
             auto r = rectangles[selected_ - 1];
             auto label = font_.text_bytes(195 + selected_);
-            font_.draw_small(image, label, (r.left + r.right) / 2 - int(label.size()) * 4, (r.top + r.bottom) / 2 - 30, 3);
+            background_.draw_caption(image, 195 + selected_, (r.left + r.right) / 2 - int(label.size()) * 4, (r.top + r.bottom) / 2 - 30);
             return image;
         }
         if (page_ == Page::recipients || page_ == Page::resurrection_confirm)

@@ -9,8 +9,6 @@ class OriginalSkill94Visual
     size_t frame_{};
     uint64_t elapsed_{};
     bool presented_{};
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
 
 public:
     static Result<std::vector<OriginalSkill32Visual::Frame>> try_parse(const std::vector<uint8_t>& entry)
@@ -106,16 +104,8 @@ public:
         elapsed_ += ms;
         if (presented_ && elapsed_ >= (accelerated ? 12u : 50u))
         {
-            if (accelerated)
-            {
-                ++frame_;
-                elapsed_ = 0;
-            }
-            else
-            {
-                ++frame_;
-                elapsed_ = 0;
-            }
+            ++frame_;
+            elapsed_ = 0;
             presented_ = false;
         }
     }

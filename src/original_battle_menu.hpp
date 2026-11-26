@@ -69,13 +69,9 @@ private:
     std::optional<int> return_code_;
     std::unique_ptr<OriginalConfirmation> confirmation_;
     std::unique_ptr<OriginalSettings> settings_;
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& p) { return read_shared_resource(p); }
-    static SharedBytes read(const std::filesystem::path& p) { return try_read(p).value(); }
     static SharedBytes read_palette(const std::filesystem::path& p)
     {
-        auto palette = read(p);
+        auto palette = read_shared_resource(p).value();
         palette.mutable_at(0) = palette.mutable_at(1) = palette.mutable_at(2) = 0;
         return palette;
     }
@@ -84,13 +80,9 @@ private:
         size_t g = dword(pal_, 816) - 57;
         return g + dword(cel_, g + 2 + (id - 142) * 8);
     }
-    s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent) const
-    {
-        return draw_original_cel(image, cel_, pal_, id, left, top, transparent ? OriginalZeroRun::transparent : OriginalZeroRun::opaque);
-    }
     void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, bool transparent) const
     {
-        auto result = try_sprite(image, id, left, top, transparent);
+        auto result = draw_original_cel(image, cel_, pal_, id, left, top, transparent ? OriginalZeroRun::transparent : OriginalZeroRun::opaque);
         if (!result)
         {
             report_error(result.error());
@@ -186,7 +178,7 @@ private:
     }
 
 public:
-    OriginalBattleMenu(const std::filesystem::path& root, Context context, OriginalSettings::State state) : root_(root), font_(root), pal_(read_palette(root / "SUPERSP.PAL")), cel_(read(root / "SUPERSP.CEL")), palette_(pal_), context_(context), settings_state_(state)
+    OriginalBattleMenu(const std::filesystem::path& root, Context context, OriginalSettings::State state) : root_(root), font_(root), pal_(read_palette(root / "SUPERSP.PAL")), cel_(read_shared_resource(root / "SUPERSP.CEL").value()), palette_(pal_), context_(context), settings_state_(state)
     {
         font_.small_font = state.small_font != 0;
         size_t p = sprite_offset(194);
@@ -460,7 +452,7 @@ public:
         }
         return {};
     }
-    s2ne::Result<std::vector<uint8_t>> try_draw(const std::vector<uint8_t>& battlefield) const
+    s2ne::Result<std::vector<uint8_t>> try_draw(const std::vector<uint8_t>& battlefield, FullWidthCanvas* canvas = nullptr) const
     {
         if (battlefield.size() != 640 * 480 * 4)
         {
@@ -471,7 +463,7 @@ public:
             return s2ne::Result<std::vector<uint8_t>>::success(battlefield);
         }
         auto image = battlefield;
-        auto dimmed = palette_.try_transform_rect(image, 0, 0, 640, 480, 6);
+        auto dimmed = palette_.try_transform_rect(image, 0, 0, 640, 480, 6, canvas);
         if (!dimmed) { return s2ne::Result<std::vector<uint8_t>>::failure(dimmed.error()); }
         const bool show_root_labels = page_ == Page::root || (page_ == Page::confirmation && confirmation_parent_ == Page::root);
         draw_page(image, Page::root, page_ == Page::root ? selected_ : root_selected_, show_root_labels,

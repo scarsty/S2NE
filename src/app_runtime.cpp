@@ -147,7 +147,7 @@ int s2ne::run_application(int argc, char** argv)
         audio.set_diagnostics(diagnostics);
         startup.mark("sdl-init");
         bool audioAvailable = false;
-        if (!SDL_CreateWindowAndRenderer("Northern Envoy - original intro and menu", 960, 720,
+        if (!SDL_CreateWindowAndRenderer("Northern Envoy - original intro and menu", 1152, 720,
                 SDL_WINDOW_RESIZABLE, &window, &renderer))
         {
             s2ne::fatal(SDL_GetError());
@@ -155,6 +155,10 @@ int s2ne::run_application(int argc, char** argv)
         texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, 640, 480);
         ownedPresentationTexture = texture;
         s2ne::texture_resources.bind(renderer);
+        auto font = s2ne::texture_resources.initialize_font(root / "chinese.ttf");
+        if (!font) { s2ne::fatal(font.error()); }
+        auto smallFont = s2ne::texture_resources.initialize_small_font(root / "chinese.ttf");
+        if (!smallFont) { s2ne::fatal(smallFont.error()); }
         auto setupCheck = setup.draw(title, menu);
         auto menuCheck = title;
         menu.draw(menuCheck);
@@ -171,7 +175,7 @@ int s2ne::run_application(int argc, char** argv)
         }
         // Present the original opening frame before preparing battle-only data or audio.
         std::vector<uint8_t> firstFrame;
-        if (!clips.front().next(firstFrame) || !SDL_UpdateTexture(texture, nullptr, firstFrame.data(), 640 * 4) || !SDL_RenderClear(renderer) || !SDL_RenderTexture(renderer, texture, nullptr, nullptr) || !SDL_RenderPresent(renderer))
+        if (!clips.front().next(firstFrame) || !SDL_UpdateTexture(texture, nullptr, firstFrame.data(), 640 * 4) || !SDL_RenderClear(renderer) || !s2ne::render_logical_frame(renderer, texture) || !SDL_RenderPresent(renderer))
         {
             s2ne::fatal("Cannot present original opening frame: " + std::string(SDL_GetError()));
         }
@@ -220,8 +224,26 @@ int s2ne::run_application(int argc, char** argv)
             return result;
         };
         bool presentationDirty = true;
+        std::unique_ptr<SDL_Texture, decltype(&SDL_DestroyTexture)> wideTexture(nullptr, SDL_DestroyTexture);
+        auto uploadSoftwareFrame = [&](const std::vector<uint8_t>& image)
+        {
+            const int width = int(image.size() / (480 * 4));
+            texture = ownedPresentationTexture;
+            if (width == 768)
+            {
+                if (!wideTexture)
+                {
+                    wideTexture.reset(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, 768, 480));
+                    auto configured = s2ne::configure_original_presentation(renderer, wideTexture.get());
+                    if (!configured) { s2ne::fatal(configured.error()); }
+                }
+                texture = wideTexture.get();
+            }
+            if (!SDL_UpdateTexture(texture, nullptr, image.data(), width * 4)) { s2ne::fatal(SDL_GetError()); }
+        };
         auto showMenu = [&]
         {
+            s2ne::set_full_width_fixed_page(renderer, true);
             presentationDirty = true;
             if (aniAudio)
             {
@@ -232,7 +254,13 @@ int s2ne::run_application(int argc, char** argv)
             inMenu = true;
             paused = true;
             auto image = title;
+            if (s2ne::texture_resources.active())
+            {
+                title = s2ne::load_title(root);
+                image = title;
+            }
             menu.draw(image);
+            if (s2ne::texture_resources.active()) { image = s2ne::compose_fixed_page(image); }
             if (stdio) { stdioLogicalFrame = image; }
             if (s2ne::texture_resources.active())
             {
@@ -240,21 +268,31 @@ int s2ne::run_application(int argc, char** argv)
                 if (!uploaded) { s2ne::fatal(uploaded.error()); }
                 texture = uploaded.value();
             }
-            else if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
+            else
+            {
+                uploadSoftwareFrame(image);
+            }
         };
         auto showSetup = [&]
         {
+            s2ne::set_full_width_fixed_page(renderer, true);
             presentationDirty = true;
             inSetup = true;
+            if (s2ne::texture_resources.active()) { s2ne::load_title(root, 20); }
             auto image = setup.draw(title, menu);
+            if (s2ne::texture_resources.active()) { image = s2ne::compose_fixed_page(image); }
             if (stdio) { stdioLogicalFrame = image; }
+            if (s2ne::full_width_fixed_page(renderer) && s2ne::texture_resources.active() && image.size() == s2ne::WideViewport::legacy_bytes) { image = s2ne::compose_fixed_page(image); }
             if (s2ne::texture_resources.active())
             {
                 auto uploaded = s2ne::texture_resources.upload_frame(image);
                 if (!uploaded) { s2ne::fatal(uploaded.error()); }
                 texture = uploaded.value();
             }
-            else if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
+            else
+            {
+                uploadSoftwareFrame(image);
+            }
         };
         showMenu();
         std::unique_ptr<s2ne::Prologue> prologue;
@@ -392,13 +430,6 @@ int s2ne::run_application(int argc, char** argv)
             }
         };
         const bool simplifiedChinese = settingsState.simplified_chinese != 0;
-        if (std::filesystem::exists(root / "chinese.ttf"))
-        {
-            auto font = s2ne::texture_resources.initialize_font(root / "chinese.ttf");
-            if (!font) { s2ne::fatal(font.error()); }
-            auto smallFont = s2ne::texture_resources.initialize_small_font(root / "chinese.ttf");
-            if (!smallFont) { s2ne::fatal(smallFont.error()); }
-        }
         menu.set_simplified_chinese(simplifiedChinese, root / "cc");
         auto currentSettings = [&]() -> const s2ne::OriginalSettings::State&
         {
@@ -464,8 +495,9 @@ int s2ne::run_application(int argc, char** argv)
         menu.small_font = settingsState.small_font != 0;
         auto showSettings = [&]
         {
+            s2ne::set_full_width_fixed_page(renderer, true);
             presentationDirty = true;
-            auto rendered = settings->try_draw(s2ne::load_title(root, 20, false));
+            auto rendered = settings->try_draw(s2ne::load_title(root, 20));
             if (!rendered)
             {
                 s2ne::report_error(rendered.error());
@@ -473,6 +505,7 @@ int s2ne::run_application(int argc, char** argv)
                 return;
             }
             auto image = std::move(rendered).value();
+            if (s2ne::texture_resources.active()) { image = s2ne::compose_fixed_page(image); }
             if (stdio) { stdioLogicalFrame = image; }
             if (s2ne::texture_resources.active())
             {
@@ -480,7 +513,10 @@ int s2ne::run_application(int argc, char** argv)
                 if (!uploaded) { s2ne::fatal(uploaded.error()); }
                 texture = uploaded.value();
             }
-            else if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
+            else
+            {
+                uploadSoftwareFrame(image);
+            }
         };
         auto beginSettings = [&]
         {
@@ -527,6 +563,7 @@ int s2ne::run_application(int argc, char** argv)
         bool prologueRedraw = false;
         bool paletteOnlyRedraw = false;
         std::vector<uint8_t> uncycledBattleFrame;
+        std::vector<uint8_t> uncycledWideFrame;
         uint64_t idleBattleFrame = ~uint64_t{};
         s2ne::Prologue* presentedPrologue = nullptr;
         auto showPrologue = [&]
@@ -536,6 +573,14 @@ int s2ne::run_application(int argc, char** argv)
         };
         auto renderPrologue = [&]
         {
+            bool wideMap = false;
+            s2ne::FullWidthCanvas canvas([&](const auto& center)
+                {
+                    if (deployment) { return deployment->wide_frame(center); }
+                    if (s2ne::full_width_fixed_page(renderer) && s2ne::texture_resources.active()) { return s2ne::compose_fixed_page(center); }
+                    return prologue->wide_frame(menu, center);
+                });
+            s2ne::set_full_width_fixed_page(renderer, prologue->interbattle_active() && !deployment);
             presentationDirty = true;
             prologueRedraw = false;
             idleBattleFrame = prologue->idle_pose_time();
@@ -557,7 +602,7 @@ int s2ne::run_application(int argc, char** argv)
                 if (auto point = shopMenu->take_cursor())
                 {
                     float x{}, y{};
-                    if (SDL_RenderCoordinatesToWindow(renderer, float(point->first), float(point->second), &x, &y))
+                    if (s2ne::legacy_coordinates_to_window(renderer, float(point->first), float(point->second), &x, &y))
                     {
                         SDL_WarpMouseInWindow(window, x, y);
                     }
@@ -566,51 +611,53 @@ int s2ne::run_application(int argc, char** argv)
             std::vector<uint8_t> image;
             if (deployment)
             {
-                image = deployment->draw();
+                image = deployment->draw(false, &canvas);
                 deployment->frame_presented();
             }
-            else if (innMenu && rawSave) { image = innMenu->draw(*rawSave); }
+            else if (innMenu && rawSave) { image = innMenu->draw(*rawSave, &canvas); }
             else if (churchMenu && rawSave) { image = churchMenu->draw(*rawSave); }
-            else if (shopMenu && rawSave) { image = shopMenu->draw(*rawSave); }
-            else if (battleItems && !itemTargetRequest && !itemSpellSource && rawSave) { image = battleItems->draw(*rawSave); }
+            else if (shopMenu && rawSave) { image = shopMenu->draw(*rawSave, &canvas); }
+            else if (battleItems && !itemTargetRequest && !itemSpellSource && rawSave) { image = battleItems->draw(*rawSave, &canvas); }
             else
             {
+                wideMap = true;
                 if (paletteOnlyRedraw && !uncycledBattleFrame.empty()) { image = uncycledBattleFrame; }
                 else
                 {
-                    image = prologue->draw_uncycled(menu, [&](auto& ground)
+                    auto groundOverlay = [&](auto& ground)
+                    {
+                        if (!skillMenu || pendingSkillTarget || skillMenu->page() != s2ne::OriginalSkills::Page::requested || prologue->battle_selected() < 0) { return; }
+                        auto actor = prologue->events.units.at(size_t(prologue->battle_selected()));
+                        auto camera = prologue->camera();
+                        prologue->battle().draw_skill_cells(ground, camera.first, camera.second, 0, [&](auto cell)
+                            {
+                                return skillMenu->selection_cell_in_range(actor, cell.x, cell.y);
+                            },
+                            [&](auto& pixels, auto cell)
+                            {
+                                prologue->mask_ground_selection(pixels, cell);
+                            });
+                        if (sleepCenter && skillMenu->status_area_supported())
                         {
-                            if (!skillMenu || pendingSkillTarget || skillMenu->page() != s2ne::OriginalSkills::Page::requested || prologue->battle_selected() < 0) { return; }
-                            auto actor = prologue->events.units.at(size_t(prologue->battle_selected()));
-                            auto camera = prologue->camera();
-                            prologue->battle().draw_skill_cells(ground, camera.first, camera.second, 0, [&](auto cell)
+                            auto center = actor;
+                            center.x = sleepCenter->x;
+                            center.y = sleepCenter->y;
+                            prologue->battle().draw_skill_cells(ground, camera.first, camera.second, 1, [&](auto cell)
                                 {
-                                    return skillMenu->selection_cell_in_range(actor, cell.x, cell.y);
+                                    auto target = actor;
+                                    target.x = cell.x;
+                                    target.y = cell.y;
+                                    return skillMenu->sleep2_area(center, target);
                                 },
                                 [&](auto& pixels, auto cell)
                                 {
                                     prologue->mask_ground_selection(pixels, cell);
                                 });
-                            if (sleepCenter && skillMenu->status_area_supported())
-                            {
-                                auto center = actor;
-                                center.x = sleepCenter->x;
-                                center.y = sleepCenter->y;
-                                prologue->battle().draw_skill_cells(ground, camera.first, camera.second, 1, [&](auto cell)
-                                    {
-                                        auto target = actor;
-                                        target.x = cell.x;
-                                        target.y = cell.y;
-                                        return skillMenu->sleep2_area(center, target);
-                                    },
-                                    [&](auto& pixels, auto cell)
-                                    {
-                                        prologue->mask_ground_selection(pixels, cell);
-                                    });
-                            }
-                        },
-                        !skillMenu);
+                        }
+                    };
+                    image = prologue->draw_uncycled(menu, groundOverlay, !skillMenu, false, &canvas);
                     uncycledBattleFrame = image;
+                    uncycledWideFrame = prologue->wide_frame(menu, image, false, groundOverlay);
                 }
                 prologue->cycle_frame(image);
                 paletteOnlyRedraw = false;
@@ -624,7 +671,7 @@ int s2ne::run_application(int argc, char** argv)
             if (battleMenu)
             {
                 SDL_ShowCursor();
-                auto rendered = battleMenu->try_draw(image);
+                auto rendered = battleMenu->try_draw(image, &canvas);
                 if (rendered)
                 {
                     image = std::move(rendered).value();
@@ -639,7 +686,7 @@ int s2ne::run_application(int argc, char** argv)
             if (battleReports)
             {
                 s2ne::texture_resources.set_elapsed(gameTicks());
-                auto rendered = battleReports->try_draw();
+                auto rendered = battleReports->try_draw(&canvas);
                 if (rendered)
                 {
                     image = std::move(rendered).value();
@@ -703,7 +750,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                     }
                 }
-                skillMenu->draw(image);
+                if (prologue->battle_selected() >= 0) { skillMenu->draw(image, prologue->events.units.at(size_t(prologue->battle_selected())), &canvas); }
             }
             if (!itemLearningNotices.empty())
             {
@@ -795,13 +842,22 @@ int s2ne::run_application(int argc, char** argv)
                 image = std::move(panel).value();
             }
             if (stdio) { stdioLogicalFrame = image; }
+            if (canvas.empty() && wideMap && !s2ne::full_width_fixed_page(renderer) && uncycledWideFrame.size() == s2ne::WideViewport::bytes)
+            {
+                canvas.set_background(uncycledWideFrame);
+                prologue->cycle_frame(canvas.background());
+            }
+            if (!spiritSightImage) { image = canvas.compose(image); }
             if (s2ne::texture_resources.active())
             {
                 auto uploaded = s2ne::texture_resources.upload_frame(image);
                 if (!uploaded) { s2ne::fatal(uploaded.error()); }
                 texture = uploaded.value();
             }
-            else if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
+            else
+            {
+                uploadSoftwareFrame(image);
+            }
         };
         auto openSelectedDetail = [&]
         {
@@ -2325,7 +2381,7 @@ int s2ne::run_application(int argc, char** argv)
                                 throw std::runtime_error("system menu unavailable in current state");
                             }
                             float wx{}, wy{};
-                            if (!SDL_RenderCoordinatesToWindow(renderer, 320.0f, 240.0f, &wx, &wy))
+                            if (!s2ne::legacy_coordinates_to_window(renderer, 320.0f, 240.0f, &wx, &wy))
                             {
                                 throw std::runtime_error(SDL_GetError());
                             }
@@ -2616,7 +2672,7 @@ int s2ne::run_application(int argc, char** argv)
                             const auto button = request->value("button", std::string("left"));
                             if (button != "left" && button != "right" && button != "move") { throw std::runtime_error("button must be left/right/move"); }
                             float wx{}, wy{};
-                            if (!SDL_RenderCoordinatesToWindow(renderer, float(x), float(y), &wx, &wy)) { throw std::runtime_error(SDL_GetError()); }
+                            if (!s2ne::legacy_coordinates_to_window(renderer, float(x), float(y), &wx, &wy)) { throw std::runtime_error(SDL_GetError()); }
                             SDL_WarpMouseInWindow(window, wx, wy);
                             SDL_Event event{};
                             event.type = SDL_EVENT_MOUSE_MOTION;
@@ -3577,7 +3633,7 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 float x{}, y{}, rx{}, ry{};
                 SDL_GetMouseState(&x, &y);
-                bool edgeActive = !spiritSightImage && !battleMenu && !battleReports && !promotionMenu && !itemMenu && !saveMenu && !overwriteConfirmation && prologue->in_battle() && !prologue->battle().animating_movement() && (prologue->battle_state() == s2ne::Battle::State::idle || prologue->battle_state() == s2ne::Battle::State::movement || prologue->battle_state() == s2ne::Battle::State::attack_target) && SDL_GetMouseFocus() == window && SDL_RenderCoordinatesFromWindow(renderer, x, y, &rx, &ry) && rx >= 0 && rx < 640 && ry >= 0 && ry < 480 && (rx < 10 || rx > 630 || ry < 10 || ry > 470);
+                bool edgeActive = !spiritSightImage && !battleMenu && !battleReports && !promotionMenu && !itemMenu && !saveMenu && !overwriteConfirmation && prologue->in_battle() && !prologue->battle().animating_movement() && (prologue->battle_state() == s2ne::Battle::State::idle || prologue->battle_state() == s2ne::Battle::State::movement || prologue->battle_state() == s2ne::Battle::State::attack_target) && SDL_GetMouseFocus() == window && s2ne::legacy_coordinates_from_window(renderer, x, y, &rx, &ry) && rx >= -64 && rx < 704 && ry >= 0 && ry < 480 && (rx < -54 || rx > 694 || ry < 10 || ry > 470);
                 if (edgeScrollTiming.due(nowUi, edgeActive, unsigned(std::max(0, settingsState.screen_delay)) * 10u))
                 {
                     prologue->edge_scroll(rx, ry);
@@ -3715,7 +3771,7 @@ int s2ne::run_application(int argc, char** argv)
                         float x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x;
                         float y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y;
                         float rx{}, ry{};
-                        SDL_RenderCoordinatesFromWindow(renderer, x, y, &rx, &ry);
+                        s2ne::legacy_coordinates_from_window(renderer, x, y, &rx, &ry);
                         deployment->mouse(int(rx), int(ry), event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT);
                     }
                     showPrologue();
@@ -3738,7 +3794,7 @@ int s2ne::run_application(int argc, char** argv)
                     else if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
                         float x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x, y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y, rx{}, ry{};
-                        if (SDL_RenderCoordinatesFromWindow(renderer, x, y, &rx, &ry))
+                        if (s2ne::legacy_coordinates_from_window(renderer, x, y, &rx, &ry))
                         {
                             bool enteringWorld = !innMenu->world_active();
                             innMenu->mouse(int(rx), int(ry), event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT, *rawSave);
@@ -3811,7 +3867,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     else if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
-                        SDL_ConvertEventToRenderCoordinates(renderer, &event);
+                        s2ne::legacy_event_coordinates(renderer, &event);
                         bool down = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
                         battleItems->mouse(int(down ? event.button.x : event.motion.x), int(down ? event.button.y : event.motion.y),
                             down && event.button.button == SDL_BUTTON_LEFT, down && event.button.button == SDL_BUTTON_RIGHT, *rawSave);
@@ -3838,7 +3894,7 @@ int s2ne::run_application(int argc, char** argv)
                         cancel = !selfUse && event.button.button == SDL_BUTTON_RIGHT;
                         if (selfUse || event.button.button == SDL_BUTTON_LEFT)
                         {
-                            if (!selfUse) { SDL_ConvertEventToRenderCoordinates(renderer, &event); }
+                            if (!selfUse) { s2ne::legacy_event_coordinates(renderer, &event); }
                             auto [actor, id] = *itemTargetRequest;
                             auto snapshot = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                             if (!snapshot) { s2ne::report_error(snapshot.error()); }
@@ -3888,7 +3944,7 @@ int s2ne::run_application(int argc, char** argv)
                     else if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
                         float x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x, y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y, rx{}, ry{};
-                        if (SDL_RenderCoordinatesFromWindow(renderer, x, y, &rx, &ry) && churchMenu->mouse(int(rx), int(ry), event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT, *rawSave))
+                        if (s2ne::legacy_coordinates_from_window(renderer, x, y, &rx, &ry) && churchMenu->mouse(int(rx), int(ry), event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT, *rawSave))
                         {
                             s2ne::OriginalChurch::sync_roster(*rawSave, prologue->events);
                         }
@@ -3936,7 +3992,7 @@ int s2ne::run_application(int argc, char** argv)
                     else if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
                         float x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x, y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y, rx{}, ry{};
-                        if (SDL_RenderCoordinatesFromWindow(renderer, x, y, &rx, &ry) && shopMenu->mouse(int(rx), int(ry), event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT, *rawSave))
+                        if (s2ne::legacy_coordinates_from_window(renderer, x, y, &rx, &ry) && shopMenu->mouse(int(rx), int(ry), event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT, *rawSave))
                         {
                             s2ne::OriginalChurch::sync_roster(*rawSave, prologue->events);
                         }
@@ -3980,7 +4036,7 @@ int s2ne::run_application(int argc, char** argv)
                         float x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x;
                         float y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y;
                         float rx{}, ry{};
-                        if (SDL_RenderCoordinatesFromWindow(renderer, x, y, &rx, &ry))
+                        if (s2ne::legacy_coordinates_from_window(renderer, x, y, &rx, &ry))
                         {
                             prologue->mouse(int(rx), int(ry), event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT);
                         }
@@ -4000,6 +4056,16 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     int selected = prologue->battle_selected();
                     bool confirm = false;
+                    if (skillMenu->inspection_help())
+                    {
+                        if ((event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat && (event.key.key == SDLK_ESCAPE || event.key.key == SDLK_RETURN || event.key.key == SDLK_SPACE))
+                            || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+                        {
+                            skillMenu->close_inspection_help();
+                            showPrologue();
+                        }
+                        continue;
+                    }
                     if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
                     {
                         if (event.key.key == SDLK_ESCAPE)
@@ -4034,6 +4100,13 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (skillMenu->page() == s2ne::OriginalSkills::Page::list)
                         {
+                            if (event.key.key == SDLK_F1)
+                            {
+                                auto opened = skillMenu->try_open_inspection_help();
+                                if (!opened) { s2ne::report_error(opened.error()); }
+                                showPrologue();
+                                continue;
+                            }
                             int scan;
                             if (event.key.key == SDLK_LEFT) { scan = 0x4B; }
                             else if (event.key.key == SDLK_RIGHT) { scan = 0x4D; }
@@ -4071,7 +4144,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
-                        SDL_ConvertEventToRenderCoordinates(renderer, &event);
+                        s2ne::legacy_event_coordinates(renderer, &event);
                         bool click = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
                         if (click && event.button.button == SDL_BUTTON_RIGHT)
                         {
@@ -4270,7 +4343,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
-                        SDL_ConvertEventToRenderCoordinates(renderer, &event);
+                        s2ne::legacy_event_coordinates(renderer, &event);
                         if (event.button.button == SDL_BUTTON_RIGHT)
                         {
                             itemMenu = false;
@@ -4339,7 +4412,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
-                        SDL_ConvertEventToRenderCoordinates(renderer, &event);
+                        s2ne::legacy_event_coordinates(renderer, &event);
                         input.type = 0x20;
                         input.x = int(event.button.x);
                         input.y = int(event.button.y);
@@ -4376,7 +4449,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     else if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
-                        SDL_ConvertEventToRenderCoordinates(renderer, &event);
+                        s2ne::legacy_event_coordinates(renderer, &event);
                         bool down = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
                         input.type = down ? 0x20 : 8;
                         input.x = int(down ? event.button.x : event.motion.x);
@@ -4474,7 +4547,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     else if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
-                        SDL_ConvertEventToRenderCoordinates(renderer, &event);
+                        s2ne::legacy_event_coordinates(renderer, &event);
                         bool down = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
                         input.type = down ? 0x20 : 8;
                         input.x = int(down ? event.button.x : event.motion.x);
@@ -4514,7 +4587,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     else if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
-                        SDL_ConvertEventToRenderCoordinates(renderer, &event);
+                        s2ne::legacy_event_coordinates(renderer, &event);
                         bool down = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
                         input.type = down ? 0x20 : 8;
                         input.x = int(down ? event.button.x : event.motion.x);
@@ -4559,7 +4632,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     else if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
-                        SDL_ConvertEventToRenderCoordinates(renderer, &event);
+                        s2ne::legacy_event_coordinates(renderer, &event);
                         bool down = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
                         input.type = down ? 0x20 : 8;
                         input.x = int(down ? event.button.x : event.motion.x);
@@ -4763,7 +4836,7 @@ int s2ne::run_application(int argc, char** argv)
                 {
                     if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
-                        SDL_ConvertEventToRenderCoordinates(renderer, &event);
+                        s2ne::legacy_event_coordinates(renderer, &event);
                         bool click = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT;
                         float x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x;
                         float y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y;
@@ -4878,7 +4951,7 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 if (inSetup && (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN))
                 {
-                    SDL_ConvertEventToRenderCoordinates(renderer, &event);
+                    s2ne::legacy_event_coordinates(renderer, &event);
                     bool down = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
                     float x = down ? event.button.x : event.motion.x, y = down ? event.button.y : event.motion.y;
                     if (down && event.button.button == SDL_BUTTON_RIGHT)
@@ -4900,7 +4973,7 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 if (inMenu && !inSetup && (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN))
                 {
-                    SDL_ConvertEventToRenderCoordinates(renderer, &event);
+                    s2ne::legacy_event_coordinates(renderer, &event);
                     bool click = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT;
                     float x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x;
                     float y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y;
@@ -5031,6 +5104,7 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 else
                 {
+                    s2ne::set_full_width_fixed_page(renderer, false);
                     if (aniAudio)
                     {
                         auto advanced = aniAudio->advance(++aniFrame, playAni, stopEffects);
@@ -5044,7 +5118,10 @@ int s2ne::run_application(int argc, char** argv)
                         if (!uploaded) { s2ne::fatal(uploaded.error()); }
                         texture = uploaded.value();
                     }
-                    else if (!SDL_UpdateTexture(texture, nullptr, rgba.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
+                    else
+                    {
+                        uploadSoftwareFrame(rgba);
+                    }
                     next = frameStarted + s2ne::original_ani_frame_ms(0xAF12, a.delay);
                 }
             }
@@ -5423,6 +5500,7 @@ int s2ne::run_application(int argc, char** argv)
             {
                 presentationDirty = true;
                 saveMenuRedraw = false;
+                if (s2ne::texture_resources.active()) { title = s2ne::load_title(root); }
                 auto image = title;
                 menu.draw(image);
                 auto rendered = saveMenu->try_draw(image, menu);
@@ -5431,6 +5509,7 @@ int s2ne::run_application(int argc, char** argv)
                     s2ne::report_error(rendered.error());
                     saveMenu.reset();
                 }
+                if (s2ne::texture_resources.active()) { image = s2ne::compose_fixed_page(image); }
                 if (stdio) { stdioLogicalFrame = image; }
                 if (s2ne::texture_resources.active())
                 {
@@ -5438,14 +5517,17 @@ int s2ne::run_application(int argc, char** argv)
                     if (!uploaded) { s2ne::fatal(uploaded.error()); }
                     texture = uploaded.value();
                 }
-                else if (!SDL_UpdateTexture(texture, nullptr, image.data(), 640 * 4)) { s2ne::fatal(SDL_GetError()); }
+                else
+                {
+                    uploadSoftwareFrame(image);
+                }
             }
             if (!saveMenu) { saveMenuRedraw = true; }
             const bool didPresent = presentationDirty || (stdioScreenshotPending && stdioPending);
             if (didPresent)
             {
                 if (!SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255) || !SDL_RenderClear(renderer)
-                    || !SDL_RenderTexture(renderer, texture, nullptr, nullptr) || !SDL_RenderPresent(renderer))
+                    || !s2ne::render_logical_frame(renderer, texture) || !SDL_RenderPresent(renderer))
                 {
                     s2ne::fatal(SDL_GetError());
                 }

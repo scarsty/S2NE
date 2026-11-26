@@ -55,7 +55,7 @@ private:
         }
         cached_first_ = -1;
     }
-    std::vector<uint8_t> fade(std::vector<uint8_t> image) const
+    std::vector<uint8_t> fade(std::vector<uint8_t> image, FullWidthCanvas* canvas) const
     {
         if (!presentation_driven_)
         {
@@ -63,14 +63,7 @@ private:
         }
         unsigned intensity = std::min(fade_step_, 15u) * 16;
         // 472EF1/47F5D2: (six-bit DAC component<<2)*(step<<2)/255.
-        for (size_t p = 0; p < image.size(); p += 4)
-        {
-            for (unsigned c = 0; c < 3; ++c)
-            {
-                unsigned dac = (unsigned(image[p + c]) * 63 + 254) / 255;
-                image[p + c] = uint8_t((dac * 4) * intensity / 255);
-            }
-        }
+        fade_full_width_canvas(image, intensity, canvas);
         return image;
     }
     std::vector<uint8_t> towns_;
@@ -141,10 +134,6 @@ private:
         return std::move(result).value();
     }
     unsigned unit_price(const OriginalSave::State& state, unsigned id) const { return buying_ ? shop_.buy_price(state, id) : shop_.sale_price(state, id); }
-    static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& path) { return read_shared_resource(path); }
-    static SharedBytes read(const std::filesystem::path& path) { return try_read(path).value(); }
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, OriginalZeroRun zero) const
     {
         return draw_original_cel(image, cel_, pal_, id, left, top, zero);
@@ -235,7 +224,7 @@ private:
         }
         else
         {
-            auto binResult = try_read(root / "SUPERSP.BIN");
+            auto binResult = read_shared_resource(root / "SUPERSP.BIN");
             if (!binResult) { return s2ne::Result<bool>::failure(binResult.error()); }
             auto bin = std::move(binResult).value();
             size_t town = dword(pal_, 848 + 3 * 8) - 14, size = dword(pal_, 852 + 3 * 8) - 14;
@@ -290,7 +279,7 @@ public:
 
     std::vector<uint8_t> service_panel(unsigned portrait, unsigned title, uint32_t cash, const OriginalInterbattle& background, bool show_cash = true) const
     {
-        auto image = background.indexed_background(pal_);
+        auto image = background.background();
         sprite(image, 235, 6, 8, OriginalZeroRun::opaque);
         if (show_cash)
         {
@@ -341,7 +330,6 @@ public:
             }
         }
     }
-    std::vector<uint8_t> indexed_scene(const OriginalInterbattle& scene) const { return scene.indexed_background(pal_); }
     int panel_width(unsigned id) const
     {
         size_t g = dword(pal_, 816) - 57;
@@ -793,14 +781,14 @@ public:
         }
         return false;
     }
-    std::vector<uint8_t> draw(const OriginalSave::State& state) const
+    std::vector<uint8_t> draw(const OriginalSave::State& state, FullWidthCanvas* canvas = nullptr) const
     {
         auto image = background_.background();
         if (page_ == Page::shop)
         {
             auto r = rectangles[size_t(option_ - 1)];
             auto s = font_.text_bytes(unsigned(option_ == 4 ? 199 : 92 + option_));
-            font_.draw_small(image, s, (r.left + r.right) / 2 - int(s.size()) * 4, (r.top + r.bottom) / 2 - 30, 3);
+            background_.draw_caption(image, unsigned(option_ == 4 ? 199 : 92 + option_), (r.left + r.right) / 2 - int(s.size()) * 4, (r.top + r.bottom) / 2 - 30);
             return image;
         }
         std::vector<uint8_t> key;
@@ -1023,7 +1011,7 @@ public:
             text(image, font_.text_bytes(206), buying_ ? 488 : 428, 416);
             number(image, buying_ ? money(state) - quantity_ * unit_price(state, item()) : money(state) + quantity_ * unit_price(state, item()), 480, 205, 179);
         }
-        return fade(std::move(image));
+        return fade(std::move(image), canvas);
     }
 };
 }    //namespace s2ne

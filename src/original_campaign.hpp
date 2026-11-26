@@ -19,8 +19,6 @@ class OriginalCampaign
     SharedBytes bin_, pal_, cel_, prg_;
     std::vector<uint8_t> items_;
     OriginalMenu font_;
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     size_t table() const { return dword(pal_, 848) - 11; }
     s2ne::Result<size_t> try_header(unsigned stage) const
     {
@@ -47,18 +45,6 @@ class OriginalCampaign
             image.at(p + k) = uint8_t(unsigned(pal_.at(color * 3 + k)) * 255 / 63);
         }
         image.at(p + 3) = 255;
-    }
-    s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
-    {
-        return draw_original_cel(image, cel_, pal_, id, left, top, OriginalZeroRun::transparent);
-    }
-    void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
-    {
-        auto result = try_sprite(image, id, left, top);
-        if (!result)
-        {
-            report_error(result.error());
-        }
     }
 
 public:
@@ -824,7 +810,7 @@ public:
         }
         size_t g = dword(pal_, 816) - 57, p = g + dword(cel_, g + 2 + (207 - 142) * 8);
         int left = 320 - int(word(cel_, p) + 1) / 2, top = 240 - int(word(cel_, p + 2) + 1) / 2;
-        auto panel_result = try_sprite(image, 207, left, top);
+        auto panel_result = draw_original_cel(image, cel_, pal_, 207, left, top, OriginalZeroRun::transparent);
         if (!panel_result)
         {
             return panel_result;
@@ -865,7 +851,7 @@ public:
                 for (size_t j = 0; j < r.values.size(); ++j)
                 {
                     int x = left + 198 + int(j % 2) * 168, yy = y + int(j / 2) * 30;
-                    auto icon_result = try_sprite(image, unsigned(r.values[j]) + 492, x, yy);
+                    auto icon_result = draw_original_cel(image, cel_, pal_, unsigned(r.values[j]) + 492, x, yy, OriginalZeroRun::transparent);
                     if (!icon_result)
                     {
                         return icon_result;

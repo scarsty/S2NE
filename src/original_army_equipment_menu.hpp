@@ -27,21 +27,13 @@ class OriginalArmyEquipmentMenu
     bool closed_ = false, changed_ = false;
     unsigned fade_step_ = 16;
     bool presentation_driven_ = false;
-    std::vector<uint8_t> fade(std::vector<uint8_t> image) const
+    std::vector<uint8_t> fade(std::vector<uint8_t> image, FullWidthCanvas* canvas) const
     {
         if (fade_step_ >= 16) { return image; }
         unsigned intensity = std::min(fade_step_, 15u) * 16;
-        for (size_t p = 0; p < image.size(); p += 4)
-        {
-            for (unsigned k = 0; k < 3; ++k)
-            {
-                unsigned dac = (unsigned(image[p + k]) * 63 + 254) / 255;
-                image[p + k] = uint8_t((dac * 4) * intensity / 255);
-            }
-        }
+        fade_full_width_canvas(image, intensity, canvas);
         return image;
     }
-    static unsigned word(const auto& b, size_t p) { return unsigned(b.at(p)) | (unsigned(b.at(p + 1)) << 8); }
     static void move(size_t& first, size_t& row, size_t count, size_t visible, bool down)
     {
         if (down && first + row + 1 < count)
@@ -361,7 +353,7 @@ public:
             }
         }
     }
-    std::vector<uint8_t> draw(const OriginalSave::State& state) const
+    std::vector<uint8_t> draw(const OriginalSave::State& state, FullWidthCanvas* canvas = nullptr) const
     {
         std::vector<uint8_t> image(640 * 480 * 4);
         for (size_t i = 3; i < image.size(); i += 4) { image[i] = 255; }
@@ -409,7 +401,7 @@ public:
                 font_.draw_original_wrapped(image, item_help_[selected_item()], 273, top + 58, 45, 7, 12, 28);
             }
             if (confirmation_) { confirmation_->draw(image, font_); }
-            return fade(std::move(image));
+            return fade(std::move(image), canvas);
         }
         const int top = 480 - graphics_.panel_height(218);
         graphics_.panel(image, 218, 0, top);
@@ -490,7 +482,7 @@ public:
             }
             if (y > top + 80) { font_.draw_original_large(image, font_.text_bytes(120), 503, top + 37, 233); }
         }
-        return fade(std::move(image));
+        return fade(std::move(image), canvas);
     }
 };
 }    //namespace s2ne

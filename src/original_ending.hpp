@@ -180,12 +180,6 @@ class OriginalEnding
 public:
     static s2ne::Result<std::vector<uint8_t>> try_pcx(const std::filesystem::path& root, unsigned id, OriginalDisc disc)
     {
-        if (texture_resources.active())
-        {
-            auto image = texture_resources.load_image("ending", id);
-            if (!image) { return s2ne::Result<std::vector<uint8_t>>::failure(image.error()); }
-            return s2ne::Result<std::vector<uint8_t>>::success(std::move(image).value().pixels);
-        }
         auto loaded = OriginalDiscResources(root).try_dat_entry(disc, id);
         if (!loaded) { return s2ne::Result<std::vector<uint8_t>>::failure(loaded.error()); }
         auto b = std::move(loaded).value();
@@ -203,39 +197,9 @@ public:
         {
             return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid ending PCX stride"));
         }
-        size_t p = 128, n = 0;
-        std::vector<uint8_t> out(size_t(640) * height * 4);
-        while (n < size_t(stride) * height)
-        {
-            if (p >= colors - 1) { return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Truncated ending PCX run")); }
-            unsigned c = b.at(p++), count = 1;
-            if ((c & 192) == 192)
-            {
-                count = c & 63;
-                if (p >= colors - 1) { return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Truncated ending PCX color")); }
-                c = b.at(p++);
-            }
-            if (!count || count > size_t(stride) * height - n || p >= colors)
-            {
-                return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid ending PCX run"));
-            }
-            while (count--)
-            {
-                size_t x = n % stride, y = n / stride;
-                ++n;
-                if (x >= 640)
-                {
-                    continue;
-                }
-                size_t q = (y * 640 + x) * 4;
-                for (unsigned k = 0; k < 3; ++k)
-                {
-                    out[q + k] = b.at(colors + c * 3 + k);
-                }
-                out[q + 3] = 255;
-            }
-        }
-        return s2ne::Result<std::vector<uint8_t>>::success(out);
+        auto image = texture_resources.load_image_scaled("ending", id, 640, int(height));
+        if (!image) { return s2ne::Result<std::vector<uint8_t>>::failure(image.error()); }
+        return s2ne::Result<std::vector<uint8_t>>::success(std::move(image).value().pixels);
     }
 
 private:

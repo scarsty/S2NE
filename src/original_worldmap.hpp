@@ -170,9 +170,10 @@ public:
             }
             icon.width = word(group, offset + 1) + 1;
             icon.height = word(group, offset + 3) + 1;
-            if (icon.width > 640 || icon.height > 480)
+            const size_t minimum_row_bytes = (size_t(icon.width) + 126) / 127;
+            if (size_t(icon.height) > (group.size() - offset - 5) / minimum_row_bytes)
             {
-                return Result<OriginalWorldmap>::failure(make_error("World marker dimensions"));
+                return Result<OriginalWorldmap>::failure(make_error("Truncated world marker rows"));
             }
             size_t cursor = offset + 5;
             for (unsigned row = 0; row < icon.height; ++row)
@@ -237,17 +238,12 @@ public:
         }
         if (external_group.value())
         {
-            auto external = texture_resources.load_image("worldmap", 11);
+            auto external = texture_resources.load_image_scaled("worldmap", 11, int(result.width_), int(result.height_));
             if (!external)
             {
                 return Result<OriginalWorldmap>::failure(external.error());
             }
-            const auto& rgba = external.value();
-            if (rgba.width != int(result.width_) || rgba.height != int(result.height_) || rgba.pixels.size() != size_t(result.width_) * result.height_ * 4)
-            {
-                return Result<OriginalWorldmap>::failure(make_error("Invalid external worldmap dimensions"));
-            }
-            result.external_rgba_ = rgba.pixels;
+            result.external_rgba_ = external.value().pixels;
         }
         return Result<OriginalWorldmap>::success(std::move(result));
     }

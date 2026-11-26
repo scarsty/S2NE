@@ -11,20 +11,6 @@ class OriginalConfirmation
     std::vector<uint8_t> text_;
     int x_, y_, selection_;
     std::optional<bool> result_;
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
-    s2ne::Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
-    {
-        return draw_original_cel(image, cel_, pal_, id, left, top, OriginalZeroRun::opaque);
-    }
-    void sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
-    {
-        auto result = try_sprite(image, id, left, top);
-        if (!result)
-        {
-            report_error(result.error());
-        }
-    }
 
 public:
     OriginalConfirmation(const std::filesystem::path& root, const OriginalMenu& font, unsigned string_id, int x, int y, bool default_yes = true) : text_(font.text_bytes(string_id)), x_(x), y_(y), selection_(default_yes ? 0 : 1)
@@ -70,7 +56,7 @@ public:
     {
         // 431997 calls 475970 with fill=0: outline the embedded O/X artwork.
         {
-            auto rendered = try_sprite(image, 197, x_, y_);
+            auto rendered = draw_original_cel(image, cel_, pal_, 197, x_, y_, OriginalZeroRun::opaque);
             if (!rendered)
             {
                 return s2ne::Result<bool>::failure(rendered.error());
@@ -109,7 +95,7 @@ public:
         if (result_)
         {
             {
-                auto rendered = try_sprite(image, *result_ ? 198 : 199, x_ + (*result_ ? 169 : 200), y_ + 5);
+                auto rendered = draw_original_cel(image, cel_, pal_, *result_ ? 198 : 199, x_ + (*result_ ? 169 : 200), y_ + 5, OriginalZeroRun::opaque);
                 if (!rendered)
                 {
                     return s2ne::Result<bool>::failure(rendered.error());

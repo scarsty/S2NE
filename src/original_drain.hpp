@@ -12,6 +12,14 @@ class OriginalDrain
     std::array<int, 256> config_{};
 
 public:
+    static void prepare_target(OriginalEvents::Unit& target)
+    {
+        auto& runtime = *target.action_status_runtime;
+        if ((unsigned(runtime[8]) | unsigned(runtime[9]) << 8) != 2) { return; }
+        target.ai_role10 = 1;
+        runtime[0xA] = 1;
+        runtime[0xB] = runtime[0xC] = runtime[0xD] = 0;
+    }
     struct Packet
     {
         int chance{}, roll{}, damage{}, healing{}, snapshot{}, caster_before{}, caster_after_damage{};
@@ -62,12 +70,7 @@ public:
         context.profession_resistance = masks[0];
         context.profession_weakness = masks[1];
         auto& runtime = *t.action_status_runtime;
-        if ((unsigned(runtime[8]) | unsigned(runtime[9]) << 8) == 2)
-        {
-            t.ai_role10 = 1;
-            runtime[0xA] = 1;
-            runtime[0xB] = runtime[0xC] = runtime[0xD] = 0;
-        }
+        prepare_target(t);
         NativeDamageFormula::Input input;
         input.actor_value = std::max(1, a.st + (resources.equipment_special(a, 18) ? a.st / 5 : 0));
         input.target_value = std::max(1, t.st + (resources.equipment_special(t, 18) ? t.st / 5 : 0));

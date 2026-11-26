@@ -22,6 +22,7 @@
 #include "original_sprite.hpp"
 #include "original_ui_timing.hpp"
 #include "original_unit_status.hpp"
+#include "wide_viewport.hpp"
 #include <deque>
 #include <map>
 #include <optional>
@@ -34,7 +35,7 @@ class Prologue
     std::vector<uint8_t> pal_, caption_items_;
     mutable std::optional<OriginalPalette> palette_effects_;
     OriginalUnitStatus unit_status_;
-    OriginalMap map_;
+    mutable OriginalMap map_;
     std::optional<OriginalSkill32Visual> skill32_visual_;
     std::string skill32_visual_error_;
     std::optional<OriginalSkill88Visual> skill88_visual_;
@@ -54,6 +55,16 @@ class Prologue
     mutable std::vector<uint8_t> spell_shake_frame_;
     std::vector<uint8_t> spell_shake_source_;
     mutable int spell_shake_cursor_{ -1 };
+    struct VisualSlice
+    {
+        OriginalMap map;
+        std::vector<uint8_t> background, shake_source;
+        mutable std::vector<uint8_t> shake_frame;
+        mutable int shake_cursor{ -1 };
+    };
+    std::vector<VisualSlice> visual_slices_;
+    mutable std::vector<uint8_t> wide_shake_frame_;
+    mutable int wide_shake_cursor_{ -1 };
     unsigned skill32_target_{};
     std::optional<Battle::Point> skill_area_center_;
     bool battle_menu_overlay_{};
@@ -1142,8 +1153,6 @@ private:
     bool text_animation_ = false, small_font_ = false;
     unsigned message_delay_ = 10, text_elapsed_ = 0;
     size_t revealed_glyphs_ = 0;
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     size_t group(unsigned id) const { return dword(pal_, 808 + (id - 1) * 8) - 56 - (id - 1); }
     Result<size_t> try_sprite_offset(unsigned archive, unsigned index) const
     {
@@ -2553,6 +2562,7 @@ public:
     };
     Prologue(const std::filesystem::path& root, unsigned difficulty, InitializationTag) : unit_status_(root), map_(root), root_(root), events(root, difficulty)
     {
+        map_.set_viewport_extension(64);
         const auto json_path = root / "json" / "stage-140.json";
         auto override_result = events.try_load_opening_dialogue_override(json_path);
         if (!override_result)
@@ -3560,7 +3570,11 @@ public:
                 spell_shake_source_ = map_.draw();
                 map_.draw_units(spell_shake_source_, events.units, battle_->turn());
             }
-            auto background = map_.skill88_background(events.units, battle_->turn(), performer.value_or(caster), visual.tint_amount(), visual.tint_source(), partner);
+            auto background = prepare_visual_background([&](OriginalMap& map)
+                {
+                    return map.skill88_background(events.units, battle_->turn(), performer.value_or(caster), visual.tint_amount(), visual.tint_source(), partner);
+                },
+                statusSkill == 29);
             if (!background)
             {
                 return reject(background.error().message);
@@ -3656,7 +3670,10 @@ public:
         }
         {
             auto visual = std::move(prepared).value();
-            auto background = map_.skill32_background(events.units, battle_->turn(), caster, target, 233, 35);
+            auto background = prepare_visual_background([&](OriginalMap& map)
+                {
+                    return map.skill32_background(events.units, battle_->turn(), caster, target, 233, 35);
+                });
             if (!background)
             {
                 report_error(background.error());
@@ -3696,7 +3713,10 @@ public:
         }
         {
             auto visual = std::move(prepared).value();
-            auto background = curse33 ? map_.skill32_background(events.units, battle_->turn(), caster, target, 0, 0) : map_.skill32_background(events.units, battle_->turn(), caster, target);
+            auto background = prepare_visual_background([&](OriginalMap& map)
+                {
+                    return curse33 ? map.skill32_background(events.units, battle_->turn(), caster, target, 0, 0) : map.skill32_background(events.units, battle_->turn(), caster, target);
+                });
             if (!background)
             {
                 error = context + " stage=background " + background.error().message;
@@ -4087,6 +4107,7 @@ public:
             {
                 skill94_visual_.reset();
                 skill32_background_.clear();
+                visual_slices_.clear();
             }
             return Result<bool>::success(true);
         }
@@ -4103,6 +4124,8 @@ public:
                 skill_audio_cues_.cancel();
                 skill88_visual_.reset();
                 skill32_background_.clear();
+                visual_slices_.clear();
+                wide_shake_frame_.clear();
             }
             return Result<bool>::success(true);
         }
@@ -4113,6 +4136,7 @@ public:
             {
                 skill32_visual_.reset();
                 skill32_background_.clear();
+                visual_slices_.clear();
             }
             return Result<bool>::success(true);
         }
@@ -4494,8 +4518,16 @@ public:
     }
     void edge_scroll(float x, float y)
     {
-        if (in_battle() && !battle_->animating_movement() && (battle_->state() == Battle::State::idle || battle_->state() == Battle::State::movement || battle_->state() == Battle::State::attack_target) && map_.edge_scroll(x, y))
+        if (x < -64 || x >= 704 || y < 0 || y >= 480) { return; }
+        if (in_battle() && !battle_->animating_movement() && (battle_->state() == Battle::State::idle || battle_->state() == Battle::State::movement || battle_->state() == Battle::State::attack_target))
         {
+            int dx = 0, dy = 0;
+            if (x < -54) { dx = -32; }
+            else if (x > 694) { dx = 32; }
+            if (y < 10) { dy = -32; }
+            else if (y > 470) { dy = 32; }
+            if (!dx && !dy) { return; }
+            map_.pan(dx, dy);
             mouse(x, y, false);
         }
     }
@@ -4628,6 +4660,7 @@ public:
             {
                 context = unsigned((*events.army_modes)[0]);
             }
+            if (x < -64 || x >= 704 || y < 0 || y >= 480) { return; }
             battle_->mouse(events.units, x, y, click, map_.camera_x, map_.camera_y, context);
             begin_finish_confirmation();
             if (!battle_->animating_movement() && battle_->state() == Battle::State::command && before != Battle::State::command && battle_->selected() >= 0)
@@ -5346,20 +5379,113 @@ public:
     {
         if (!texture_resources.active() && palette_effects_ && phase_ != Phase::briefing && !interbattle_active() && !ending_active()) { palette_effects_->cycle(image, animation_elapsed_); }
     }
-    std::vector<uint8_t> draw_uncycled(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay, bool commandOverlay = true) const
+    Result<std::vector<uint8_t>> prepare_visual_background(const std::function<Result<std::vector<uint8_t>>(OriginalMap&)>& prepare, bool shake = false)
     {
-        if (texture_resources.active()) { texture_resources.set_elapsed(animation_elapsed_); }
-        if (temporary_text_) { return temporary_text_->draw(); }
-        map_.set_army_modes(events.army_modes);
-        if (death_location_)
+        std::vector<VisualSlice> slices;
+        for (int offset : { -WideViewport::margin, WideViewport::margin })
         {
-            auto image = map_.draw();
-            map_.draw_units(image, events.units, battle_->turn(), animation_elapsed_);
-            auto result = map_.draw_completion_location(font, image, death_location_->first, death_location_->second);
-            if (!result) { report_error(result.error()); }
+            VisualSlice slice{ map_ };
+            slice.map.camera_x += offset;
+            if (shake)
+            {
+                slice.shake_source = slice.map.draw();
+                slice.map.draw_units(slice.shake_source, events.units, battle_->turn());
+                slice.shake_frame = slice.shake_source;
+            }
+            auto background = prepare(slice.map);
+            if (!background) { return background; }
+            slice.background = std::move(background).value();
+            slices.push_back(std::move(slice));
+        }
+        auto center = prepare(map_);
+        if (!center) { return center; }
+        visual_slices_ = std::move(slices);
+        wide_shake_frame_.clear();
+        wide_shake_cursor_ = -1;
+        return center;
+    }
+    std::vector<uint8_t> wide_frame(const OriginalMenu& font, const std::vector<uint8_t>& center, bool cycle = true, const std::function<void(std::vector<uint8_t>&)>& groundOverlay = {}) const
+    {
+        if (phase_ == Phase::briefing || interbattle_active() || ending_active() || temporary_text_)
+        {
+            std::vector<uint8_t> black(WideViewport::legacy_bytes);
+            return WideViewport::compose(center, black, black);
+        }
+        // 侧片复用完整人物／地形遮挡顺序，快照隔离其展示时钟和世界缓冲。
+        if (map_.invisibility_present_pending())
+        {
+            auto left = map_.present_invisibility_viewport(0), right = map_.present_invisibility_viewport(1);
+            if (cycle)
+            {
+                cycle_frame(left);
+                cycle_frame(right);
+            }
+            auto image = WideViewport::compose(center, left, right);
             return image;
         }
-        if (map_.invisibility_present_pending()) { return map_.present_invisibility_viewport(); }
+        if (skill88_visual_ && visual_slices_.size() == 2)
+        {
+            const auto frame = skill88_visual_->frame();
+            if (spell_dispatch_ == 7 && frame < 7)
+            {
+                const auto source = WideViewport::compose(spell_shake_source_, visual_slices_[0].shake_source, visual_slices_[1].shake_source);
+                if (wide_shake_frame_.empty()) { wide_shake_frame_ = source; }
+                if (wide_shake_cursor_ != int(frame))
+                {
+                    // 原震动是连续索引缓冲移动，不在切片接缝重新起行。
+                    if ((7 - frame) & 1) { std::copy_n(source.begin() + 8, source.size() - 8, wide_shake_frame_.begin()); }
+                    else
+                    {
+                        std::copy_n(source.begin(), source.size() - 8, wide_shake_frame_.begin() + 8);
+                    }
+                    wide_shake_cursor_ = int(frame);
+                }
+                auto image = wide_shake_frame_;
+                if (cycle) { cycle_frame(image); }
+                return image;
+            }
+            if (spell_dispatch_ == 8 && frame >= spell_primary_frames_)
+            {
+                auto source = WideViewport::compose(skill32_background_, visual_slices_[0].background, visual_slices_[1].background);
+                auto image = source;
+                const int shift = ((frame - spell_primary_frames_) & 1) ? 2 : -2;
+                for (int y = 0; y < 480; ++y)
+                {
+                    const size_t row = size_t(y) * 768 * 4;
+                    const size_t from = row + (shift > 0 ? 8 : 0), to = row + (shift < 0 ? 8 : 0);
+                    std::copy_n(source.begin() + from, 766 * 4, image.begin() + to);
+                }
+                if (cycle) { cycle_frame(image); }
+                return image;
+            }
+        }
+        auto side = [&](int offset)
+        {
+            if ((skill32_visual_ || skill88_visual_ || skill94_visual_) && visual_slices_.size() == 2)
+            {
+                const auto& slice = visual_slices_[offset < 0 ? 0 : 1];
+                auto image = draw_visual(slice.map, slice.background, slice.shake_source, slice.shake_frame, slice.shake_cursor);
+                if (cycle) { cycle_frame(image); }
+                return image;
+            }
+            auto saved = map_;
+            struct Restore
+            {
+                OriginalMap& map;
+                OriginalMap saved;
+                ~Restore() { map = std::move(saved); }
+            } restore{ map_, std::move(saved) };
+            map_.camera_x += offset;
+            auto image = draw_uncycled(font, groundOverlay, false, true);
+            if (cycle) { cycle_frame(image); }
+            return image;
+        };
+        auto left = side(-WideViewport::margin);
+        auto right = side(WideViewport::margin);
+        return WideViewport::compose(center, left, right);
+    }
+    std::vector<uint8_t> draw_visual(const OriginalMap& map_, const std::vector<uint8_t>& skill32_background_, const std::vector<uint8_t>& spell_shake_source_, std::vector<uint8_t>& spell_shake_frame_, int& spell_shake_cursor_) const
+    {
         if (skill94_visual_)
         {
             return map_.skill32_frame(skill32_background_, skill94_visual_->current(), events.units, battle_->turn(), skill32_target_);
@@ -5435,11 +5561,31 @@ public:
         {
             return map_.skill32_frame(skill32_background_, skill32_visual_->current(), events.units, battle_->turn(), skill32_target_, &*skill32_visual_);
         }
-        if (ending_)
+        return {};
+    }
+    std::vector<uint8_t> draw_uncycled(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay, bool commandOverlay = true, bool worldOnly = false, FullWidthCanvas* canvas = nullptr) const
+    {
+        if (texture_resources.active()) { texture_resources.set_elapsed(animation_elapsed_); }
+        if (!worldOnly && temporary_text_) { return temporary_text_->draw(); }
+        map_.set_army_modes(events.army_modes);
+        if (death_location_)
+        {
+            auto image = map_.draw();
+            map_.draw_units(image, events.units, battle_->turn(), animation_elapsed_);
+            auto result = map_.draw_completion_location(font, image, death_location_->first, death_location_->second);
+            if (!result) { report_error(result.error()); }
+            return image;
+        }
+        if (!worldOnly && map_.invisibility_present_pending()) { return map_.present_invisibility_viewport(); }
+        if (!worldOnly && (skill32_visual_ || skill88_visual_ || skill94_visual_))
+        {
+            return draw_visual(map_, skill32_background_, spell_shake_source_, spell_shake_frame_, spell_shake_cursor_);
+        }
+        if (!worldOnly && ending_)
         {
             return ending_->draw();
         }
-        if (interbattle_active())
+        if (!worldOnly && interbattle_active())
         {
             return interbattle_->draw();
         }
@@ -5465,7 +5611,7 @@ public:
                 }
             }
         }
-        if (phase_ == Phase::campaign_rewards && !growth_active())
+        if (!worldOnly && phase_ == Phase::campaign_rewards && !growth_active())
         {
             campaign().render_rewards(image, campaign().stage(events.stage), events.units);
             return image;
@@ -5477,7 +5623,7 @@ public:
         }
         if (phase_ == Phase::campaign_defeat || phase_ == Phase::campaign_blocked || phase_ == Phase::story_ready)
         {
-            if (campaign_defeated() && defeat_frame_ < defeat_frames_.size())
+            if (!worldOnly && campaign_defeated() && defeat_frame_ < defeat_frames_.size())
             {
                 const auto& frame = defeat_frames_[defeat_frame_];
                 for (unsigned y = 0; y < frame.height; ++y)
@@ -5496,7 +5642,7 @@ public:
         }
         if (battle_intro() || showing_objectives())
         {
-            if (showing_objectives())
+            if (showing_objectives() || worldOnly)
             {
                 std::vector<OriginalEvents::Unit> visible;
                 for (const auto& unit : events.units)
@@ -5508,12 +5654,13 @@ public:
                 }
                 map_.draw_units(image, visible, battle_->turn(), animation_elapsed_);
             }
+            if (worldOnly) { return image; }
             if (battle_intro())
             {
                 // sub_438719: one 50% edge, 176 rows at 60%, then the other edge.
-                palette_effects_->transform(image, 121, 1, 6);
-                palette_effects_->transform(image, 122, 176, 5);
-                palette_effects_->transform(image, 298, 1, 6);
+                palette_effects_->transform_rect(image, 0, 121, 640, 1, 6, canvas);
+                palette_effects_->transform_rect(image, 0, 122, 640, 176, 5, canvas);
+                palette_effects_->transform_rect(image, 0, 298, 640, 1, 6, canvas);
                 auto b = banner(presentation_driven_ ? banner_presentation_.pose() : intro_elapsed_ / banner_pose_duration_);
                 sprite(image, sprite_offset(2, (battle_->hostile_side() ? 149 : 150) - 142), false, 208, b.y);
                 font.draw_banner_ascii(image, { 'T', 'U', 'R', 'N' }, b.turn_x, 250);
@@ -5690,6 +5837,7 @@ public:
                         }
                     });
             }
+            if (worldOnly) { return image; }
             if (!battle_menu_overlay_ && in_battle() && !battle_->animating_movement() && (battle_->state() == Battle::State::command || battle_->state() == Battle::State::attack_menu))
             {
                 // sub_43AA52 uses CEL 143 (4F729C) at the opposite edge of the selected unit.
@@ -5819,6 +5967,7 @@ public:
             return image;
         }
         map_.draw_units(image, story_units, phase_ == Phase::campaign_dialogue ? battle_->turn() : 1, animation_elapsed_);
+        if (worldOnly) { return image; }
         if (phase_ == Phase::briefing)
         {
             std::fill(image.begin(), image.end(), 0);

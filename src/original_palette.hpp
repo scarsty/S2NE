@@ -1,16 +1,18 @@
 #pragma once
+#include "original_presentation.hpp"
 #include "runtime_error.hpp"
 #include "texture_resources.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <unordered_map>
 #include <vector>
 
 namespace s2ne
 {
 class OriginalPalette
 {
+    inline static constexpr std::array<unsigned, 13> targets_{ 33, 33, 33, 33, 33, 32, 32, 234, 32, 189, 36, 60, 68 };
+    inline static constexpr std::array<unsigned, 13> amounts_{ 0, 10, 20, 30, 40, 60, 50, 65, 25, 60, 15, 15, 80 };
     struct Node
     {
         std::array<int, 3> rgb{};
@@ -25,8 +27,6 @@ class OriginalPalette
         if (borrowed_palette_) { return *borrowed_palette_; }
         return owned_palette_;
     }
-    mutable std::array<uint8_t, 768> indexed_palette_{};
-    mutable std::unordered_map<uint32_t, unsigned> indices_;
     std::array<unsigned, 3> cycle_offsets_{};
     std::array<uint64_t, 3> cycle_times_{};
     int nearest(int red, int green, int blue) const
@@ -178,18 +178,7 @@ public:
                 maps_[table][c] = uint8_t(mapped);
             }
         };
-        for (unsigned i = 0; i < 5; ++i)
-        {
-            generate(i, 33, int(i) * 10);
-        }
-        generate(5, 32, 60);
-        generate(6, 32, 50);
-        generate(7, 234, 65);
-        generate(8, 32, 25);
-        generate(9, 189, 60);
-        generate(10, 36, 15);
-        generate(11, 60, 15);
-        generate(12, 68, 80);
+        for (unsigned i = 0; i < maps_.size(); ++i) { generate(i, targets_[i], int(amounts_[i])); }
     }
     bool cycle_due(uint64_t elapsed_ms) const
     {
@@ -247,13 +236,14 @@ public:
                 rotations[slot] = starts[i] + (c - starts[i] + counts[i] - cycle_offsets_[i]) % counts[i];
             }
         }
-        const int right = std::min(640, left + width);
+        const int stride = int(image.size() / (480 * 4));
+        const int right = std::min(stride, left + width);
         const int bottom = std::min(480, top + height);
         for (int y = std::max(0, top); y < bottom; ++y)
         {
             for (int x = std::max(0, left); x < right; ++x)
             {
-                const size_t p = (size_t(y) * 640 + x) * 4;
+                const size_t p = (size_t(y) * stride + x) * 4;
                 uint32_t rgb = image[p] | uint32_t(image[p + 1]) << 8 | uint32_t(image[p + 2]) << 16;
                 size_t slot = bucket(rgb);
                 while (keys[slot] != 0xFFFFFFFFu && keys[slot] != rgb) { slot = (slot + 1) & 127; }
@@ -266,54 +256,43 @@ public:
             }
         }
     }
-    void cycle(std::vector<uint8_t>& image, uint64_t elapsed_ms) { cycle_rect(image, 0, 0, 640, 480, elapsed_ms); }
+    void cycle(std::vector<uint8_t>& image, uint64_t elapsed_ms) { cycle_rect(image, 0, 0, int(image.size() / (480 * 4)), 480, elapsed_ms); }
     uint8_t map(unsigned table, unsigned color) const { return maps_.at(table).at(color); }
     void transform(std::vector<uint8_t>& image, int first_row, int row_count, unsigned table) const
     {
         transform_rect(image, 0, first_row, 640, row_count, table);
     }
-    Result<bool> try_transform_rect(std::vector<uint8_t>& destination, int left, int top, int width, int height, unsigned table) const
+    Result<bool> try_transform_rect(std::vector<uint8_t>& destination, int left, int top, int width, int height, unsigned table, FullWidthCanvas* canvas = nullptr) const
     {
-        if (destination.size() != 640 * 480 * 4 || table >= maps_.size())
+        const int stride = framebuffer_width(destination);
+        if (!stride || table >= maps_.size())
         {
             return Result<bool>::failure(make_error("Invalid palette effect framebuffer or table"));
         }
-        auto image = destination;
-        if (indices_.empty() || !std::equal(indexed_palette_.begin(), indexed_palette_.end(), palette_bytes().begin()))
+        if (canvas && stride == 640 && left == 0 && width == 640)
         {
-            std::copy_n(palette_bytes().begin(), 768, indexed_palette_.begin());
-            indices_.clear();
-            for (unsigned c = 0; c < 256; ++c)
-            {
-                uint32_t rgba = 0;
-                for (unsigned k = 0; k < 3; ++k) { rgba |= uint32_t(unsigned(palette_bytes()[c * 3 + k]) * 255 / 63) << (k * 8); }
-                indices_.emplace(rgba, c);
-            }
+            return canvas->transform(destination, [&](auto& wide)
+                {
+                    return try_transform_rect(wide, 0, top, 768, height, table);
+                });
         }
         for (int y = std::max(0, top); y < std::min(480, top + height); ++y)
         {
-            for (int x = std::max(0, left); x < std::min(640, left + width); ++x)
+            for (int x = std::max(0, left); x < std::min(stride, left + width); ++x)
             {
-                size_t p = (size_t(y) * 640 + x) * 4;
-                uint32_t pixel = image[p] | uint32_t(image[p + 1]) << 8 | uint32_t(image[p + 2]) << 16;
-                auto found = indices_.find(pixel);
-                if (found == indices_.end())
-                {
-                    return Result<bool>::failure(make_error("Non-indexed pixel in original palette effect"));
-                }
-                unsigned color = map(table, found->second);
+                size_t p = (size_t(y) * stride + x) * 4;
                 for (unsigned k = 0; k < 3; ++k)
                 {
-                    image[p + k] = uint8_t(unsigned(palette_bytes()[color * 3 + k]) * 255 / 63);
+                    const unsigned target = unsigned(palette_bytes()[targets_[table] * 3 + k]) * 255 / 63;
+                    destination[p + k] = uint8_t((unsigned(destination[p + k]) * (100 - amounts_[table]) + target * amounts_[table]) / 100);
                 }
             }
         }
-        destination.swap(image);
         return Result<bool>::success(true);
     }
-    void transform_rect(std::vector<uint8_t>& image, int left, int top, int width, int height, unsigned table) const
+    void transform_rect(std::vector<uint8_t>& image, int left, int top, int width, int height, unsigned table, FullWidthCanvas* canvas = nullptr) const
     {
-        auto result = try_transform_rect(image, left, top, width, height, table);
+        auto result = try_transform_rect(image, left, top, width, height, table, canvas);
         if (!result)
         {
             fatal(result.error());

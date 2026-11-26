@@ -21,6 +21,7 @@ class OriginalMap
     std::shared_ptr<const OriginalPalette> palette_;
     std::vector<uint8_t> pixels_, terrain_names_;
     unsigned terrain_ground_names_{}, terrain_object_names_{};
+    int viewport_extension_{};
     struct Image
     {
         unsigned w, h;
@@ -55,9 +56,16 @@ class OriginalMap
     unsigned invisibility_scratch_{};
     bool invisibility_present_pending_{};
     std::vector<std::vector<uint8_t>> invisibility_presentations_;
+    std::array<std::vector<std::vector<uint8_t>>, 2> invisibility_side_presentations_;
     size_t invisibility_presentation_cursor_{};
     mutable bool write_invisibility_world_{};
     mutable bool read_world_background_{};
+    uint8_t viewport_pixel(const std::vector<uint8_t>& source, int x, int y) const
+    {
+        const int sx = camera_x + x, sy = camera_y + y;
+        if (sx < 0 || sy < 0 || sx >= int(width * 64) || sy >= int(height * 32)) { return 0; }
+        return source.at(size_t(sy) * width * 64 + sx);
+    }
     std::optional<uint64_t> idle_pose_time_;
     original_movement::SharedEffectClock movement_effect_clock_;
     std::map<unsigned, uint64_t> movement_effect_stamps_;
@@ -129,8 +137,6 @@ class OriginalMap
     }
     std::vector<unsigned> object_attributes_, scenery_attributes_;
     std::array<std::array<uint8_t, 256>, 2> object_shadows_{};
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     size_t group(unsigned id) const { return dword(pal_, 808 + 8 * (64 + id - 1)) - 10 - (id - 1); }
     Result<size_t> try_item(unsigned archive, unsigned index) const
     {
@@ -1120,6 +1126,7 @@ public:
         invisibility_scratch_ = 0;
         invisibility_present_pending_ = false;
         invisibility_presentations_.clear();
+        for (auto& side : invisibility_side_presentations_) { side.clear(); }
         invisibility_presentation_cursor_ = 0;
         write_invisibility_world_ = false;
         read_world_background_ = false;
@@ -1394,6 +1401,7 @@ public:
         }
         camera_x = 32;
         camera_y = 16;
+        constrain_camera();
         return Result<bool>::success(true);
     }
     Result<std::pair<int, int>> try_screen_position(int x, int y) const
@@ -1483,7 +1491,7 @@ public:
         {
             row = int(height) * 2 - 30;
         }
-        return { std::max(1, half) * 32, std::max(1, row) * 16 };
+        return constrained_camera(std::max(1, half) * 32, std::max(1, row) * 16);
     }
     void movement_camera(int x, int y)
     {
@@ -1500,6 +1508,7 @@ public:
         }
         camera_x = std::max(1, half) * 32;
         camera_y = (row < 1 ? 2 : row) * 16;
+        constrain_camera();
     }
     Result<unsigned> try_idle_frame(unsigned appearance, uint64_t elapsed_ms = 0, unsigned direction = 0, unsigned action = 0) const
     {
@@ -2133,7 +2142,7 @@ public:
             {
                 for (int x = 0; x < 640; ++x)
                 {
-                    movement_indices[size_t(y) * 640 + x] = indexed ? indexed->at(size_t(y) * 640 + x) : pixels_.at(size_t(camera_y + y) * width * 64 + camera_x + x);
+                    movement_indices[size_t(y) * 640 + x] = indexed ? indexed->at(size_t(y) * 640 + x) : viewport_pixel(pixels_, x, y);
                 }
             }
         }
@@ -2423,7 +2432,7 @@ public:
         }
     }
     Result<bool> prepare_invisibility_buffers(const std::vector<OriginalEvents::Unit>& baseline,
-        const std::vector<OriginalEvents::Unit>& staged, const std::vector<size_t>& targets, unsigned turn, uint64_t elapsed)
+        const std::vector<OriginalEvents::Unit>& staged, const std::vector<size_t>& targets, unsigned turn, uint64_t elapsed, bool wide = true)
     {
         if (baseline.size() != staged.size()) { return Result<bool>::failure(make_error("466D83 roster extent changed")); }
         bool newly_hidden = false;
@@ -2434,6 +2443,17 @@ public:
         }
         if (!newly_hidden) { return Result<bool>::success(true); }
         auto prepared = *this;
+        if (wide)
+        {
+            for (unsigned side = 0; side < 2; ++side)
+            {
+                auto slice = *this;
+                slice.camera_x += side == 0 ? -64 : 64;
+                auto result = slice.prepare_invisibility_buffers(baseline, staged, targets, turn, elapsed, false);
+                if (!result) { return result; }
+                prepared.invisibility_side_presentations_[side] = std::move(slice.invisibility_presentations_);
+            }
+        }
         prepared.invisibility_world_ = pixels_;
         prepared.invisibility_present_pending_ = false;
         prepared.invisibility_presentations_.clear();
@@ -2444,7 +2464,7 @@ public:
         {
             for (unsigned x = 0; x < 640; ++x)
             {
-                prepared.invisibility_viewports_[0][size_t(y) * 640 + x] = pixels_.at(size_t(camera_y + y) * width * 64 + camera_x + x);
+                prepared.invisibility_viewports_[0][size_t(y) * 640 + x] = viewport_pixel(pixels_, int(x), int(y));
             }
         }
         auto image = prepared.draw();
@@ -2507,7 +2527,7 @@ public:
         std::vector<uint8_t> indices(640 * 480);
         for (unsigned y = 0; y < 480; ++y)
         {
-            std::copy_n(invisibility_world_.begin() + size_t(camera_y + y) * width * 64 + camera_x, 640, indices.begin() + size_t(y) * 640);
+            for (int x = 0; x < 640; ++x) { indices[size_t(y) * 640 + x] = viewport_pixel(invisibility_world_, x, int(y)); }
         }
         return Result<std::vector<uint8_t>>::success(std::move(indices));
     }
@@ -2594,13 +2614,15 @@ public:
         {
             invisibility_present_pending_ = false;
             invisibility_presentations_.clear();
+            for (auto& side : invisibility_side_presentations_) { side.clear(); }
             invisibility_presentation_cursor_ = 0;
         }
     }
-    std::vector<uint8_t> present_invisibility_viewport() const
+    std::vector<uint8_t> present_invisibility_viewport(std::optional<unsigned> side = std::nullopt) const
     {
         std::vector<uint8_t> image(640 * 480 * 4, 255);
-        const auto& viewport = invisibility_presentations_.at(invisibility_presentation_cursor_);
+        const auto& presentations = side ? invisibility_side_presentations_.at(*side) : invisibility_presentations_;
+        const auto& viewport = presentations.at(invisibility_presentation_cursor_);
         for (size_t p = 0; p < viewport.size(); ++p)
         {
             for (unsigned c = 0; c < 3; ++c) { image[p * 4 + c] = uint8_t(unsigned(pal_.at(viewport[p] * 3 + c)) * 255 / 63); }
@@ -2615,7 +2637,7 @@ public:
         {
             for (unsigned x = 0; x < 640; ++x)
             {
-                indexed[size_t(y) * 640 + x] = pixels_.at(size_t(camera_y + y) * width * 64 + camera_x + x);
+                indexed[size_t(y) * 640 + x] = viewport_pixel(pixels_, int(x), int(y));
             }
         }
         auto drawn = try_draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, std::nullopt, &indexed);
@@ -2729,7 +2751,7 @@ public:
         {
             for (unsigned x = 0; x < 640; ++x)
             {
-                indexed[size_t(y) * 640 + x] = pixels_.at(size_t(camera_y + y) * width * 64 + camera_x + x);
+                indexed[size_t(y) * 640 + x] = viewport_pixel(pixels_, int(x), int(y));
             }
         }
         auto drawn = try_draw_units(image, units, turn, 0, std::nullopt, std::nullopt, 0, std::nullopt, &indexed);
@@ -2822,10 +2844,34 @@ public:
         }
         return image;
     }
+    std::pair<int, int> constrained_camera(int x, int y) const
+    {
+        const int original_right = std::max(32, int(width * 64) - 21 * 32);
+        int left = 32, right = original_right;
+        // 原交错地表两边各留半列；只有地图能容纳全宽时才收紧中央镜头。
+        if (original_right - 32 >= viewport_extension_ * 2)
+        {
+            left += viewport_extension_;
+            right -= viewport_extension_;
+        }
+        return { std::clamp(x, left, right), std::clamp(y, 16, std::max(16, int(height * 32) - 480)) };
+    }
+    void constrain_camera()
+    {
+        const auto position = constrained_camera(camera_x, camera_y);
+        camera_x = position.first;
+        camera_y = position.second;
+    }
+    void set_viewport_extension(int extension)
+    {
+        viewport_extension_ = std::max(0, extension);
+        constrain_camera();
+    }
     void pan(int dx, int dy)
     {
-        camera_x = std::clamp(camera_x + dx, 32, std::max(32, int(width * 64) - 21 * 32));
-        camera_y = std::clamp(camera_y + dy, 16, std::max(16, int(height * 32) - 480));
+        const auto position = constrained_camera(camera_x + dx, camera_y + dy);
+        camera_x = position.first;
+        camera_y = position.second;
     }
     bool edge_scroll(float x, float y)
     {
@@ -2875,11 +2921,15 @@ public:
         int elevation = int(prg_.at(item(6, map_id - 1) + 28 + (size_t(y) * width + x) * 5));
         int hx = std::max(1, std::min(2 * x - ((y & 1) ? 8 : 9), int(width) * 2 - 21));
         int vy = std::max(1, std::min(y - (elevation - 1 + 16), int(height) * 2 - 30));
+        const auto target = constrained_camera(hx * 32, vy * 16);
+        hx = target.first / 32;
+        vy = target.second / 16;
         int cx = camera_x / 32, cy = camera_y / 16;
         cx += (cx < hx) - (cx > hx);
         cy += (cy < vy) - (cy > vy);
         camera_x = cx * 32;
         camera_y = cy * 16;
+        constrain_camera();
         return cx == hx && cy == vy;
     }
     void center(int x, int y)
@@ -2938,7 +2988,7 @@ public:
         {
             for (int x = 0; x < 640; ++x)
             {
-                unsigned c = pixels_.at(size_t(camera_y + y) * width * 64 + camera_x + x);
+                unsigned c = viewport_pixel(pixels_, x, y);
                 size_t dst = (size_t(y) * 640 + x) * 4;
                 std::copy(colors[c].begin(), colors[c].end(), image.begin() + dst);
             }

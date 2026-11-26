@@ -40,8 +40,6 @@ class OriginalInn
     std::optional<OriginalSettings::State> settings_result_;
     std::filesystem::path root_;
     std::filesystem::path save_root_;
-    static unsigned word(const auto& bytes, size_t p) { return bytes.at(p) | (unsigned(bytes.at(p + 1)) << 8); }
-    static unsigned dword(const auto& bytes, size_t p) { return word(bytes, p) | (word(bytes, p + 2) << 16); }
 
 public:
     static constexpr std::array<unsigned, 10> labels{ 193, 194, 128, 129, 195, 192, 80, 131, 123, 190 };
@@ -647,7 +645,7 @@ public:
             }
         }
     }
-    std::vector<uint8_t> draw(const OriginalSave::State& state) const
+    std::vector<uint8_t> draw(const OriginalSave::State& state, FullWidthCanvas* canvas = nullptr) const
     {
         if (world_)
         {
@@ -659,7 +657,7 @@ public:
         }
         if (equipment_menu_)
         {
-            return equipment_menu_->draw(state);
+            return equipment_menu_->draw(state, canvas);
         }
         if (roster_)
         {
@@ -671,7 +669,7 @@ public:
             font_.draw_original_wrapped(image, rumor_, 149, 42, 42, 6, 16, 28);
             return image;
         }
-        auto image = auto_confirm_ || saves_ || title_confirm_ ? graphics_.indexed_scene(background_) : background_.background();
+        auto image = background_.background();
         if (title_confirm_)
         {
             title_confirm_->draw(image, font_);
@@ -693,7 +691,7 @@ public:
         }
         auto r = rectangles[selected_ - 1];
         auto label = font_.text_bytes(labels[selected_ - 1]);
-        font_.draw_small(image, label, (r.left + r.right) / 2 - int(label.size()) * 4, (r.top + r.bottom) / 2 - 30, 3);
+        background_.draw_caption(image, labels[selected_ - 1], (r.left + r.right) / 2 - int(label.size()) * 4, (r.top + r.bottom) / 2 - 30);
         return image;
     }
 };

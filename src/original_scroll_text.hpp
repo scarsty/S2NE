@@ -13,8 +13,6 @@ class OriginalScrollText
     int top_{ 478 }, visible_{ 2 }, source_{}, remaining_{};
     std::array<uint8_t, 3> ink_{};
     bool done_{};
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
 
 public:
     OriginalScrollText(const std::filesystem::path& root, unsigned background, unsigned text, OriginalDisc disc) : font_(root)
@@ -63,11 +61,8 @@ public:
             background_.resize(640 * 480 * 4);
             if (!texture_resources.active())
             {
-                if (!texture_resources.active())
-                {
-                    auto pcx = OriginalDiscResources(root).dat_entry(disc, background);
-                    for (unsigned c = 0; c < 3; ++c) { ink_[c] = pcx.at(pcx.size() - 768 + 255 * 3 + c); }
-                }
+                auto pcx = OriginalDiscResources(root).dat_entry(disc, background);
+                for (unsigned c = 0; c < 3; ++c) { ink_[c] = pcx.at(pcx.size() - 768 + 255 * 3 + c); }
             }
         }
     }

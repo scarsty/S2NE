@@ -8,8 +8,6 @@ class NewGameSetup
 {
     std::vector<uint8_t> dat, pal, backdrop_;
     size_t group{};
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     Result<bool> try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const
     {
         if (id < 1 || dat.size() < 2 || id > word(dat, 0) || group + 2 + size_t(id) * 8 > dat.size())
@@ -57,7 +55,7 @@ public:
             return Result<NewGameSetup>::failure(make_error("Truncated setup palette"));
         }
         result.pal[0] = result.pal[1] = result.pal[2] = 0;
-        auto backdrop = try_load_title(root, 20, false);
+        auto backdrop = try_load_title(root, 20);
         if (!backdrop)
         {
             return Result<NewGameSetup>::failure(backdrop.error());

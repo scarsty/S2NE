@@ -115,8 +115,6 @@ private:
     Page page_{ Page::closed };
     size_t group_{}, skill_{};
     std::optional<Request> request_;
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     size_t entry(unsigned id) const { return dword(pal_, 848 + (id - 1) * 8) - 11 - (id - 1); }
     std::vector<uint8_t> string(size_t p) const
     {
@@ -250,6 +248,7 @@ public:
         owner_id_ = unit.id;
         owner_appearance_ = unit.appearance;
         groups_.clear();
+        inspection_help_ = false;
         request_.reset();
         group_ = skill_ = 0;
         page_ = Page::closed;
@@ -373,7 +372,7 @@ public:
         }
         return s2ne::Result<bool>::success(true);
     }
-    s2ne::Result<bool> try_draw_inspection(std::vector<uint8_t>& image, const OriginalEvents::Unit& unit) const
+    s2ne::Result<bool> try_draw_inspection(std::vector<uint8_t>& image, const OriginalEvents::Unit& unit, FullWidthCanvas* canvas = nullptr) const
     {
         auto output = image;
         auto panel = draw_original_cel(output, cel_, pal_, 240, 0, 380, OriginalZeroRun::transparent);
@@ -424,7 +423,7 @@ public:
         if (inspection_help_)
         {
             OriginalPalette palette(pal_);
-            auto dimmed = palette.try_transform_rect(output, 0, 0, 640, 480, 8);
+            auto dimmed = palette.try_transform_rect(output, 0, 0, 640, 480, 8, canvas);
             if (!dimmed) { return dimmed; }
             auto help = draw_original_cel(output, cel_, pal_, 239, 260, 36, OriginalZeroRun::opaque);
             if (!help) { return help; }
@@ -1613,12 +1612,7 @@ public:
             {
                 if (!t.action_status_runtime) { return fail(); }
                 auto& runtime = *t.action_status_runtime;
-                if ((unsigned(runtime[8]) | unsigned(runtime[9]) << 8) == 2)
-                {
-                    t.ai_role10 = 1;
-                    runtime[0xA] = 1;
-                    runtime[0xB] = runtime[0xC] = runtime[0xD] = 0;
-                }
+                OriginalDrain::prepare_target(t);
                 OriginalDrain::Packet packet;
                 if (t.runtime_role_selector != 1)
                 {
@@ -2034,6 +2028,12 @@ public:
         {
             return false;
         }
+        if (click && x >= 20 && x < 136 && y >= 435 && y < 468)
+        {
+            auto opened = try_open_inspection_help();
+            if (!opened) { report_error(opened.error()); }
+            return false;
+        }
         if (x >= 26 && x <= 506 && y >= 394 && y <= 426)
         {
             size_t index = size_t(x - 26) / 34;
@@ -2058,7 +2058,7 @@ public:
         }
         return false;
     }
-    s2ne::Result<bool> try_draw(std::vector<uint8_t>& image) const
+    s2ne::Result<bool> try_draw(std::vector<uint8_t>& image, const OriginalEvents::Unit& unit, FullWidthCanvas* canvas = nullptr) const
     {
         if (page_ != Page::list)
         {
@@ -2068,32 +2068,11 @@ public:
         {
             return s2ne::Result<bool>::failure(make_error("Skill menu requires 640x480 RGBA"));
         }
-        auto output = image;
-        auto sprite_result = try_sprite(output, 98, 0, 380);
-        if (!sprite_result)
-        {
-            return sprite_result;
-        }
-        for (size_t g = 0; g < groups_.size(); ++g)
-        {
-            const auto& name = groups_[g].name;
-            font_.draw_small(output, name, 508 + int(g % 3) * 45 - int(name.size()) * 4, 394 + int(g / 3) * 28, g == group_ ? 60 : 105, true);
-        }
-        for (size_t s = 0; s < groups_[group_].records.size(); ++s)
-        {
-            sprite_result = try_sprite(output, 121 + 2 * (groups_[group_].records[s].id - 1) + (s == skill_ ? 1 : 0), 26 + int(s) * 34, 394);
-            if (!sprite_result)
-            {
-                return sprite_result;
-            }
-        }
-        font_.draw_original_large(output, selected().name(), 148, 438, 168);
-        image.swap(output);
-        return s2ne::Result<bool>::success(true);
+        return try_draw_inspection(image, unit, canvas);
     }
-    void draw(std::vector<uint8_t>& image) const
+    void draw(std::vector<uint8_t>& image, const OriginalEvents::Unit& unit, FullWidthCanvas* canvas = nullptr) const
     {
-        auto result = try_draw(image);
+        auto result = try_draw(image, unit, canvas);
         if (!result)
         {
             report_error(result.error());

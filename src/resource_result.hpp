@@ -8,6 +8,8 @@
 #include <vector>
 namespace s2ne
 {
+inline unsigned word(const auto& bytes, size_t position) { return unsigned(bytes.at(position)) | (unsigned(bytes.at(position + 1)) << 8); }
+inline unsigned dword(const auto& bytes, size_t position) { return word(bytes, position) | (word(bytes, position + 2) << 16); }
 inline Result<std::vector<uint8_t>> read_resource(const std::filesystem::path& path)
 {
     StartupTrace trace("Resource");

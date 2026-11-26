@@ -2,6 +2,7 @@
 #include "battle.hpp"
 #include "original_army_equipment_menu.hpp"
 #include "original_battle_reports.hpp"
+#include "wide_viewport.hpp"
 
 namespace s2ne
 {
@@ -32,8 +33,6 @@ class OriginalDeployment
     std::optional<OriginalEvents::Unit> before_position_;
     int before_slot_{ -1 };
     Battle::Point cursor_{ -1, -1 };
-    static unsigned word(const auto& b, size_t p) { return unsigned(b.at(p)) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     size_t selected() const { return roles_.at(first_ + row_); }
     size_t deployed_count() const
     {
@@ -672,10 +671,31 @@ public:
         if (!encoded) { return Result<OriginalSave::State>::failure(encoded.error()); }
         return captured;
     }
-    std::vector<uint8_t> draw()
+    std::vector<uint8_t> wide_frame(const std::vector<uint8_t>& center)
     {
-        if (equipment_) { return equipment_->draw(raw_); }
-        if (report_) { return report_->draw(); }
+        if (!position_)
+        {
+            const std::vector<uint8_t> black(WideViewport::legacy_bytes);
+            return WideViewport::compose(center, black, black);
+        }
+        auto saved = map_;
+        struct Restore
+        {
+            OriginalMap& map;
+            OriginalMap saved;
+            ~Restore() { map = std::move(saved); }
+        } restore{ map_, std::move(saved) };
+        const int camera = map_.camera_x;
+        map_.camera_x = camera - WideViewport::margin;
+        auto left = draw(true);
+        map_.camera_x = camera + WideViewport::margin;
+        auto right = draw(true);
+        return WideViewport::compose(center, left, right);
+    }
+    std::vector<uint8_t> draw(bool world_only = false, FullWidthCanvas* canvas = nullptr)
+    {
+        if (!world_only && equipment_) { return equipment_->draw(raw_, canvas); }
+        if (!world_only && report_) { return report_->draw(canvas); }
         std::vector<uint8_t> image(640 * 480 * 4);
         if (position_)
         {
@@ -804,12 +824,12 @@ public:
             outline(image, 16 + int(row_) * 122, 4, 133 + int(row_) * 122, 198, 59);
             if (buttons_) { outline(image, 12 + int(option_) * 112, 213, 119 + int(option_) * 112, 243, 59); }
         }
-        if (notice_)
+        if (!world_only && notice_)
         {
             graphics_.shared_panel(image, 0x4F72C8, 160, 88);
             font_.draw_original_large(image, font_.text_bytes(notice_), 176, 100, 42);
         }
-        if (confirmation_)
+        if (!world_only && confirmation_)
         {
             if (facing_)
             {

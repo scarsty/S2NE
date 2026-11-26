@@ -64,8 +64,6 @@ private:
     {
         return button < 2 || inspection_available_.at(size_t(first_ + row_)).at(button - 2);
     }
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     static s2ne::Result<SharedBytes> try_read(const std::filesystem::path& p) { return read_shared_resource(p); }
     static std::vector<uint8_t> bytes(const std::string& s) { return { s.begin(), s.end() }; }
     void pixel(std::vector<uint8_t>& image, int x, int y, unsigned c) const
@@ -95,14 +93,11 @@ private:
     }
     s2ne::Result<bool> large(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color) const { return font_.try_draw_original_large(image, text, x, y, color); }
     s2ne::Result<bool> small(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color) const { return font_.try_draw_small(image, text, x, y, color, true); }
-    s2ne::Result<bool> try_detail(std::vector<uint8_t>& image) const
+    s2ne::Result<bool> try_detail(std::vector<uint8_t>& image, FullWidthCanvas* canvas) const
     {
         ResourceReader palette_reader(pal_), archive(cel_);
         const size_t group = palette_reader.number(816, 4) - 57;
-        const size_t offset = archive.number(group + 2 + (0xDB - 142) * 8, 4);
-        const int height = int(archive.number(group + offset + 2)) + 1;
-        if (!palette_reader || !archive) { return s2ne::Result<bool>::failure(make_error("Invalid 456179 background extent")); }
-        auto dimmed = palette_.try_transform_rect(image, 0, height, 640, 480 - height, 5);
+        auto dimmed = palette_.try_transform_rect(image, 0, 0, 640, 480, 5, canvas);
         if (!dimmed) { return dimmed; }
         auto panel = try_sprite(image, 0xDB, 0, 0, false);
         if (!panel) { return panel; }
@@ -711,7 +706,7 @@ public:
         }
         return {};
     }
-    s2ne::Result<std::vector<uint8_t>> try_draw() const
+    s2ne::Result<std::vector<uint8_t>> try_draw(FullWidthCanvas* canvas = nullptr) const
     {
         auto image = background_;
         if (page_ == Page::closed)
@@ -775,7 +770,7 @@ public:
         }
         if (page_ == Page::abilities || page_ == Page::proficiencies)
         {
-            auto status = try_detail(image);
+            auto status = try_detail(image, canvas);
             if (!status) { return s2ne::Result<std::vector<uint8_t>>::failure(status.error()); }
         }
         if (page_ == Page::proficiencies)
@@ -874,9 +869,9 @@ public:
         }
         if (page_ == Page::status || page_ == Page::equipment)
         {
-            auto detail = try_detail(image);
+            auto detail = try_detail(image, canvas);
             if (!detail) { return s2ne::Result<std::vector<uint8_t>>::failure(detail.error()); }
-            auto menu = skills_.try_draw_inspection(image, selected().unit);
+            auto menu = skills_.try_draw_inspection(image, selected().unit, canvas);
             if (!menu) { return s2ne::Result<std::vector<uint8_t>>::failure(menu.error()); }
             return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
         }
@@ -884,7 +879,7 @@ public:
         {
             // 456179 starts from CEL 0xDB and clears a complete dedicated
             // detail page; it does not draw into the fourth roster row.
-            auto status = try_detail(image);
+            auto status = try_detail(image, canvas);
             if (!status)
             {
                 return s2ne::Result<std::vector<uint8_t>>::failure(status.error());
@@ -932,9 +927,9 @@ public:
         }
         return s2ne::Result<std::vector<uint8_t>>::success(std::move(image));
     }
-    std::vector<uint8_t> draw() const
+    std::vector<uint8_t> draw(FullWidthCanvas* canvas = nullptr) const
     {
-        auto result = try_draw();
+        auto result = try_draw(canvas);
         return std::move(result).value();
     }
 };

@@ -307,8 +307,6 @@ private:
     std::vector<uint8_t> movement_categories_;
     std::vector<Point> path_;
     std::string message_ = "Select a unit to open its original command bar";
-    static unsigned word(const auto& b, size_t p) { return b.at(p) | (unsigned(b.at(p + 1)) << 8); }
-    static unsigned dword(const auto& b, size_t p) { return word(b, p) | (word(b, p + 2) << 16); }
     uint32_t random_seconds() const { return random_seconds_.value_or(uint32_t(std::time(nullptr))); }
     int percent() { return random_.percent(random_seconds()); }
     int roll(int n) { return random_.bounded(n, random_seconds()); }
@@ -2502,6 +2500,16 @@ public:
     void set_mask_surfaces(bool enabled) { mask_surfaces_ = enabled; }
     Point pick_surface(float x, float y, int cx, int cy) const
     {
+        if (x >= -64 && x < 0)
+        {
+            x += 64;
+            cx -= 64;
+        }
+        else if (x >= 640 && x < 704)
+        {
+            x -= 64;
+            cx += 64;
+        }
         if (original_rules_)
         {
             // 42A2BD/42A3D2: integer division truncates toward zero, including negative edges.
