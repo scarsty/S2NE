@@ -44,7 +44,12 @@ class OpeningAudio
                 ++audible;
             }
         }
-        self->signal_samples.fetch_add(audible, std::memory_order_relaxed);
+        const auto previous = self->signal_samples.fetch_add(audible, std::memory_order_relaxed);
+#ifdef __ANDROID__
+        if (audible && previous == 0) { SDL_Log("Audio mixer produced non-silent PCM"); }
+#else
+        (void)previous;
+#endif
     }
 
 public:
@@ -146,6 +151,9 @@ public:
         if (result)
         {
             music_id_ = id;
+#ifdef __ANDROID__
+            SDL_Log("Music started: id=%u midi=%d duration=%lld", id, int(midi), static_cast<long long>(MIX_GetAudioDuration(audio)));
+#endif
             if (diagnostics_) { std::print(stderr, "Original music id={} file={}\n", id, music_path_.filename().string()); }
         }
         return result;

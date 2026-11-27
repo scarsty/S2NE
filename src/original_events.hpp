@@ -2,6 +2,7 @@
 #include "original_combat.hpp"
 #include "original_stage_route.hpp"
 #include "resource_result.hpp"
+#include "text_encoding.hpp"
 #include <array>
 #include <cstdint>
 #include <filesystem>
@@ -13,7 +14,6 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
-#include <windows.h>
 
 namespace s2ne
 {
@@ -1931,23 +1931,7 @@ public:
                 output.clear();
                 return true;
             }
-            int wide_length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), nullptr, 0);
-            if (wide_length <= 0)
-            {
-                return false;
-            }
-            std::wstring wide(size_t(wide_length), L'\0');
-            if (!MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), wide.data(), wide_length))
-            {
-                return false;
-            }
-            int byte_length = WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide.data(), wide_length, nullptr, 0, nullptr, nullptr);
-            if (byte_length <= 0)
-            {
-                return false;
-            }
-            output.resize(size_t(byte_length));
-            return WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide.data(), wide_length, reinterpret_cast<char*>(output.data()), byte_length, nullptr, nullptr) > 0;
+            return utf8_to_big5(utf8, output);
         };
         auto read_optional_text = [&](const nlohmann::json& item, const char* key, std::vector<uint8_t>& output) -> bool
         {
@@ -2179,14 +2163,7 @@ public:
                     if (item.contains(text_key) && item.at(text_key).is_string())
                     {
                         const auto utf8 = item.at(text_key).get<std::string>();
-                        const int wide_length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), nullptr, 0);
-                        if (wide_length <= 0) { return false; }
-                        std::wstring wide(size_t(wide_length), L'\0');
-                        MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), wide.data(), wide_length);
-                        const int byte_length = WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide.data(), wide_length, nullptr, 0, nullptr, nullptr);
-                        if (byte_length <= 0) { return false; }
-                        output.resize(size_t(byte_length));
-                        return WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide.data(), wide_length, reinterpret_cast<char*>(output.data()), byte_length, nullptr, nullptr) > 0;
+                        return utf8_to_big5(utf8, output);
                     }
                     if (!item.contains(bytes_key) || !item.at(bytes_key).is_array()) { return false; }
                     for (const auto& byte : item.at(bytes_key))

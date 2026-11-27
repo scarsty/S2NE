@@ -6,6 +6,14 @@
 
 ## 项目介绍
 
+Android Studio 工程位于 [s2ne-androidstudio](s2ne-androidstudio/README.md)，
+目前提供 Android 10+ ARM64 APK，直接读取 `/sdcard/s2ne` 已解压资源，
+不负责打包／解包；仅SDL全屏画面，无Java叠加按钮，强制横屏。
+已通过原生／Java 构建、Android lint 与 Windows Release 回归构建；
+已在连接设备安装并直接进入GameActivity，无可见引导页；SDL主入口、
+渲染及音频设备初始化有实机日志确认，
+未验证游戏画面、音频、存读档及触控，不代表安卓完整验收。
+
 项目仍在开发中，不代表原版全部功能已经实现。本页仅介绍游戏与项目；实现状态、未完成项与原函数／实现／测试／历史证据统一见 [PROGRESS](PROGRESS.md#current-status)；[分项验证导航](PROGRESS.md#validation)区分正常输入、受控专项与未验证边界。
 
 音频现状：已接原资源效果音、ANI声音cue、关卡及关间BGM与XMI合成；现代SoundFont不等同原声卡音色，但听感差异不作为缺口。跨阶段未实现展示所需的音乐／音效入口仍是缺口，不宣称全音频完成。自然习得已验证原技能菜单施放、熟练度跨阈值、学习通知与隔离存读档；不代表双线正常通关。详细证据与边界见[进度报告](PROGRESS.md)。阶段与村庄 JSON 字段说明见资源根 [json/README.md](../json/README.md)。

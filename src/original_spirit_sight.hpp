@@ -1,6 +1,7 @@
 #pragma once
 #include "original_map.hpp"
 #include "original_sprite.hpp"
+#include <SDL3/SDL_stdinc.h>
 #include <fstream>
 namespace s2ne
 {
@@ -95,7 +96,7 @@ public:
             {
                 const auto name = it->path().filename().string();
                 int number = -1;
-                if (name.size() >= 7 && _stricmp(it->path().extension().string().c_str(), ".PCX") == 0 && sscanf(name.c_str(), "UJ%6d.PCX", &number) == 1 && number >= 0)
+                if (name.size() >= 7 && SDL_strcasecmp(it->path().extension().string().c_str(), ".PCX") == 0 && sscanf(name.c_str(), "UJ%6d.PCX", &number) == 1 && number >= 0)
                 {
                     next = std::max(next, unsigned(number) + 1);
                 }

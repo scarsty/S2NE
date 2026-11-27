@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- SDL checks Bluetooth permission before enabling BLE. Keep app code checked. -->
+    <issue id="MissingPermission">
+        <ignore regexp=".*[\\/]org[\\/]libsdl[\\/]app[\\/]HIDDevice.*\.java" />
+    </issue>
+    <!-- SDL uses the flags overload on API 33+, and the legacy call only below it. -->
+    <issue id="UnspecifiedRegisterReceiverFlag">
+        <ignore regexp=".*[\\/]org[\\/]libsdl[\\/]app[\\/]HIDDeviceManager\.java" />
+    </issue>
+</lint>

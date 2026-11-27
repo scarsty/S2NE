@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "resource_result.hpp"
+#include "text_encoding.hpp"
 #include <fstream>
 #include <nlohmann/json.hpp>
 
@@ -78,16 +79,8 @@ inline Result<std::vector<uint8_t>> try_load_towns_json(const std::filesystem::p
         auto encode = [&](const std::string& utf8) -> Result<std::vector<uint8_t>>
         {
             if (utf8.empty()) { return Result<std::vector<uint8_t>>::success({}); }
-            int wide_length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), nullptr, 0);
-            if (wide_length <= 0) { return Result<std::vector<uint8_t>>::failure(make_error("Invalid town JSON name: " + path.string())); }
-            std::wstring wide(size_t(wide_length), L'\0');
-            wide.resize(size_t(wide_length));
-            MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), wide.data(), wide_length);
-            int byte_length = WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide.data(), wide_length, nullptr, 0, nullptr, nullptr);
-            if (byte_length <= 0) { return Result<std::vector<uint8_t>>::failure(make_error("Town name is not CP950 encodable: " + path.string())); }
             std::vector<uint8_t> name;
-            name.resize(size_t(byte_length));
-            WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide.data(), wide_length, reinterpret_cast<char*>(name.data()), byte_length, nullptr, nullptr);
+            if (!utf8_to_big5(utf8, name)) { return Result<std::vector<uint8_t>>::failure(make_error("Town name is not CP950 encodable: " + path.string())); }
             return Result<std::vector<uint8_t>>::success(std::move(name));
         };
         auto encoded = encode(source.at("name").get<std::string>());

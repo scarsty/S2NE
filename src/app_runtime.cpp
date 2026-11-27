@@ -54,7 +54,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <vector>
-#include <windows.h>
 
 int s2ne::run_application(int argc, char** argv)
 {
@@ -78,6 +77,10 @@ int s2ne::run_application(int argc, char** argv)
     } textureCleanup;
     {
         const s2ne::AppOptions options(argc, argv);
+#ifdef __ANDROID__
+        std::filesystem::current_path(std::filesystem::absolute(options.resource_root(argc, argv)));
+        SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "1");
+#endif
         s2ne::OriginalProgression::initialize_cheat(std::filesystem::current_path());
         s2ne::texture_resources.configure(std::filesystem::current_path());
         const bool diagnostics = options.stdio;
@@ -152,8 +155,12 @@ int s2ne::run_application(int argc, char** argv)
         audio.set_diagnostics(diagnostics);
         startup.mark("sdl-init");
         bool audioAvailable = false;
+        SDL_WindowFlags windowFlags = SDL_WINDOW_RESIZABLE;
+#ifdef __ANDROID__
+        windowFlags = SDL_WINDOW_FULLSCREEN;
+#endif
         if (!SDL_CreateWindowAndRenderer("Northern Envoy - original intro and menu", s2ne::screen_width, s2ne::screen_height,
-                SDL_WINDOW_RESIZABLE, &window, &renderer))
+                windowFlags, &window, &renderer))
         {
             s2ne::fatal(SDL_GetError());
         }

@@ -433,7 +433,11 @@ public:
         auto now = std::chrono::system_clock::now();
         auto seconds = std::chrono::system_clock::to_time_t(now);
         std::tm local{};
+#ifdef _WIN32
         localtime_s(&local, &seconds);
+#else
+        localtime_r(&seconds, &local);
+#endif
         auto fraction = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() % 1000;
         return unsigned((local.tm_min * 60 + local.tm_sec) * 100 + fraction / 10);
     }

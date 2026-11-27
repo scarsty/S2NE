@@ -5,6 +5,63 @@
 <a id="current-status"></a>
 ## 当前状态
 
+Android Release按kys-cpp方式使用本机debug keystore签名，保持Release优化，
+产出app-release.apk可侧载安装；不是正式发布证书。应用显示名改为
+“北方密使复刻版”，图标基于texture/opening/19.png人物区域裁剪，生成
+多密度PNG并使用自适应图标。Release构建／lint、apksigner v2签名及aapt
+名称／图标／ARM64元数据校验通过；本轮未覆盖设备当前游戏进程。
+
+安卓无音乐根因：除最初漏复制MP3外，所用vcpkg Android SDL_mixer core构建
+还关闭MP3/MIDI；此前仅凭二进制含decoder源文件名推断支持解码不成立。
+补齐sdl3-mixer[fluidsynth,mpg123]:arm64-android-dynamic，核实实际构建缓存
+MP3／MPG123／MIDI／FLUIDSYNTH均ON。优化APK构建／lint及Windows Release
+回归通过并已安装；设备日志确认music id25 MIDI=0启动，随后混音器输出
+非静音PCM。补Android report_error的logcat输出，避免stderr错误不可见。
+音乐成功与首次非静音输出均记录诊断；实际扬声器听感及MIDI播放仍待验收。
+
+安卓取消输入按最新要求改为右下角触摸区域（屏宽右20%且屏高底20%）单指
+抬起发送当前光标位置右键，整次手势不传左键，多指／取消不触发。
+撤掉系统返回映射Esc的设计，恢复SDL默认返回行为；不绘制额外UI。
+
+安卓取消输入：系统返回键／系统返回手势映射为SDL Escape按下和抬起，
+沿用游戏已有取消／返回路径，不直接finish Activity，不增加Java叠加按钮。
+
+安卓优化实验：新增optimized构建变体，native使用RelWithDebInfo，已核对实际
+编译命令含-O2 -g -DNDEBUG，保留Debug签名及Java调试能力，普通Debug不改。
+assembleOptimized／lintOptimized通过并覆盖安装，实机确认SDL_main、渲染与
+音频设备初始化。启动后两次SDLThread采样96.2%／82.5%，并非同场景帧率
+对照，不能换算提速比例或认定性能问题已解决；未改资源、CFG或存档。
+
+安卓显示：移除Java叠加的Right click／Esc按钮，只保留SDL全屏表面。
+Android窗口使用FULLSCREEN而非RESIZABLE，GameActivity覆盖SDL方向回调，
+强制LANDSCAPE，避免SDL按可调整窗口重新启用FULL_USER而转成竖屏；Windows不变。
+新版构建／lint通过并已覆盖安装；实机日志surface为2560×1600（此前竖屏
+1600×2512），GameActivity处于resumed，配置land／fullscreen，内容insets为0。
+
+Android入口进一步按用户要求移除可见引导页及启动按钮：透明入口仅处理
+必要系统授权／资源校验，已授权时直接进入GameActivity；首次授权成功后
+自动进入游戏。拒绝授权或缺资源显示错误，不自动重复弹权限请求。
+新版APK构建／lint通过并覆盖安装，实机启动直接到GameActivity（659ms），
+入口Activity已结束；权限为USER_SET已授予。日志确认进入SDL_main、初始化
+RGBA渲染及音频设备，进程存活且GameActivity处于resumed；未做画面／操作验收。
+
+Android 移植：参考 kys-cpp 安卓工程，在仓库新增 s2ne-androidstudio，
+使用 Gradle8.12／AGP8.10.1、NDK29、SDK35、CMake3.22.1，最低 Android10，
+当前仅 arm64-v8a。共享生产 C++ 入口，补齐 Big5／UTF-8 转码、诊断栈、
+stdio、原子存档与 localtime 的平台分支；资源工作目录先于 cheat／纹理初始化。
+Java 使用匹配 SDL3.4.14 源码，按最新要求移除 ZIP 导入／解包，
+固定读取 `/sdcard/s2ne`，启动前检查必要资源；
+不内置原游戏资源。增加右键和 Esc 触控辅助，横屏运行。
+assembleDebug、lintDebug、Windows Release 构建及中文转码／存档专项通过；
+检查 APK 原生库依赖齐备、SDL_main 导出及 ELF LOAD 至少16KB对齐。
+lint 仅对上游 SDL HID 权限保护与旧 API 接收器分支做定点排除，应用代码仍检查。
+2026-11-27：连接设备已授权 adb，Android10/API29；运行资源（合并档、
+CFG、字体、texture、json、cc、audio）已复制到 `/sdcard/s2ne`，未复制
+Windows二进制、个人存档或cheat。APK安装成功、启动器冷启动成功（410ms）；
+READ/WRITE_EXTERNAL_STORAGE仍未授权，等待手机系统权限弹窗确认后进入游戏。
+Android11+使用系统“所有文件访问”授权页，Android10使用存储运行时权限。
+不通过adb强授予权限。游戏画面、音频、触控、生命周期及存读档仍待真机验证。
+
 多目标击杀呈现纠偏：范围伤害整批事务发布前，已播完消失的目标额外加入
 展示隐藏表；后续目标的地图、死亡底图及死亡对白不再重绘此前目标，不提前
 改HP／在场位／召唤槽。正常发布及回滚清空隐藏表。

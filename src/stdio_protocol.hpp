@@ -2,18 +2,31 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
+#include "simple_cc.hpp"
 #include <deque>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
+#include <vector>
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include <cerrno>
+#include <poll.h>
+#include <unistd.h>
+#endif
 namespace s2ne
 {
 class StdioProtocol
 {
+#ifdef _WIN32
     HANDLE input_ = GetStdHandle(STD_INPUT_HANDLE);
     HANDLE output_ = GetStdHandle(STD_OUTPUT_HANDLE);
+#else
+    int input_ = STDIN_FILENO;
+    int output_ = STDOUT_FILENO;
+#endif
     std::string partial_;
     std::deque<std::string> lines_;
     bool oversized_{};
@@ -24,21 +37,14 @@ public:
     static std::string original_text(const Json& bytes)
     {
         if (!bytes.is_array()) { return {}; }
-        std::string input;
+        std::vector<uint8_t> input;
         for (const auto& byte : bytes)
         {
             if (!byte.is_number_integer() || byte.get<int>() < 0 || byte.get<int>() > 255) { return {}; }
-            input += char(byte.get<unsigned>());
+            input.push_back(byte.get<uint8_t>());
         }
         if (input.empty()) { return {}; }
-        const int count = MultiByteToWideChar(950, MB_ERR_INVALID_CHARS, input.data(), int(input.size()), nullptr, 0);
-        if (!count) { return {}; }
-        std::wstring wide(size_t(count), L'\0');
-        MultiByteToWideChar(950, MB_ERR_INVALID_CHARS, input.data(), int(input.size()), wide.data(), count);
-        const int size = WideCharToMultiByte(CP_UTF8, 0, wide.data(), count, nullptr, 0, nullptr, nullptr);
-        std::string text(size_t(size), '\0');
-        WideCharToMultiByte(CP_UTF8, 0, wide.data(), count, text.data(), size, nullptr, nullptr);
-        return text;
+        return SimpleCC::big5_to_utf8(input);
     }
     static void describe(Json& value)
     {
@@ -124,8 +130,31 @@ public:
         auto described = response;
         describe(described);
         const auto bytes = described.dump(-1, ' ', false, Json::error_handler_t::replace) + "\n";
+#ifdef _WIN32
         DWORD written{};
         if (!WriteFile(output_, bytes.data(), DWORD(bytes.size()), &written, nullptr) || written != bytes.size()) { eof_ = true; }
+#else
+        size_t offset = 0;
+        while (offset < bytes.size())
+        {
+            pollfd descriptor{ output_, POLLOUT, 0 };
+            const int ready = ::poll(&descriptor, 1, -1);
+            if (ready < 0 && errno == EINTR) { continue; }
+            if (ready < 0 || (descriptor.revents & (POLLERR | POLLHUP | POLLNVAL)))
+            {
+                eof_ = true;
+                return;
+            }
+            const auto written = ::write(output_, bytes.data() + offset, std::min<size_t>(bytes.size() - offset, 4096));
+            if (written < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)) { continue; }
+            if (written <= 0)
+            {
+                eof_ = true;
+                return;
+            }
+            offset += size_t(written);
+        }
+#endif
     }
     void feed(std::string_view bytes)
     {
@@ -158,6 +187,7 @@ public:
     void poll()
     {
         if (eof_ || lines_.size() >= 16) { return; }
+#ifdef _WIN32
         DWORD available{};
         if (GetFileType(input_) == FILE_TYPE_PIPE)
         {
@@ -183,6 +213,28 @@ public:
             return;
         }
         feed(std::string_view(bytes, read));
+#else
+        pollfd descriptor{ input_, POLLIN, 0 };
+        const int ready = ::poll(&descriptor, 1, 0);
+        if (ready < 0 && errno == EINTR) { return; }
+        if (ready < 0 || (descriptor.revents & (POLLERR | POLLNVAL)))
+        {
+            respond({ { "ok", false }, { "error", "stdin poll failed" } });
+            finish();
+            return;
+        }
+        if (!ready || !(descriptor.revents & (POLLIN | POLLHUP))) { return; }
+        char bytes[4096];
+        const auto count = ::read(input_, bytes, sizeof(bytes));
+        if (count < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)) { return; }
+        if (count < 0) { respond({ { "ok", false }, { "error", "stdin read failed" } }); }
+        if (count <= 0)
+        {
+            finish();
+            return;
+        }
+        feed(std::string_view(bytes, size_t(count)));
+#endif
     }
     void finish()
     {

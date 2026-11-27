@@ -1,11 +1,11 @@
 #pragma once
+#include "text_encoding.hpp"
 #include <cstdio>
 #include <filesystem>
 #include <functional>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <windows.h>
 
 namespace s2ne
 {
@@ -63,15 +63,9 @@ public:
     static std::string big5_to_utf8(const std::vector<uint8_t>& text)
     {
         if (text.empty()) { return {}; }
-        const int wide_length = MultiByteToWideChar(950, MB_ERR_INVALID_CHARS, reinterpret_cast<const char*>(text.data()), static_cast<int>(text.size()), nullptr, 0);
-        if (!wide_length) { return {}; }
-        std::wstring wide(static_cast<size_t>(wide_length), L'\0');
-        if (!MultiByteToWideChar(950, MB_ERR_INVALID_CHARS, reinterpret_cast<const char*>(text.data()), static_cast<int>(text.size()), wide.data(), wide_length)) { return {}; }
-        const int utf8_length = WideCharToMultiByte(CP_UTF8, 0, wide.data(), wide_length, nullptr, 0, nullptr, nullptr);
-        if (!utf8_length) { return {}; }
-        std::string utf8(static_cast<size_t>(utf8_length), '\0');
-        if (!WideCharToMultiByte(CP_UTF8, 0, wide.data(), wide_length, utf8.data(), utf8_length, nullptr, nullptr)) { return {}; }
-        return utf8;
+        auto converted = convert_text(text, false);
+        if (!converted) { return {}; }
+        return { converted->begin(), converted->end() };
     }
     bool init(const std::vector<std::string>& files)
     {

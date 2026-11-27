@@ -1,0 +1,77 @@
+plugins {
+    id 'com.android.application'
+}
+
+def dependenciesPrefix = providers.gradleProperty('s2neDependencies').orElse(
+    providers.environmentVariable('VCPKG_ROOT').map { "${it}/installed/arm64-android-dynamic" }
+).orElse(rootProject.file('deps/installed/arm64-android-dynamic').absolutePath).get()
+def sdlJava = providers.gradleProperty('sdlJavaDirectory').orElse(
+    rootProject.file('deps/SDL/android-project/app/src/main/java').absolutePath
+).get()
+def jsonInclude = providers.gradleProperty('s2neJsonInclude').orElse(new File(dependenciesPrefix, 'include').absolutePath).get()
+
+android {
+    namespace 'org.s2ne.android'
+    compileSdk 35
+    ndkVersion '29.0.14206865'
+
+    defaultConfig {
+        applicationId 'org.s2ne.android'
+        minSdk 29
+        targetSdk 35
+        versionCode 1
+        versionName '0.1'
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_shared', "-DS2NE_DEPENDENCIES=${dependenciesPrefix}", "-DS2NE_JSON_INCLUDE=${jsonInclude}"
+                targets 'main'
+            }
+        }
+    }
+    sourceSets.main.java.srcDir sdlJava
+    // AGP expects ABI-named children under each jniLibs source root.
+    sourceSets.main.jniLibs.srcDir layout.buildDirectory.dir('dependency-jni')
+    externalNativeBuild {
+        cmake {
+            path file('jni/CMakeLists.txt')
+            version '3.22.1'
+        }
+
+        def stageDependencyJni = tasks.register('stageDependencyJni', Sync) {
+            from(new File(dependenciesPrefix, 'lib')) {
+                include '*.so'
+                exclude 'libgtest.so', 'libgmock.so'
+            }
+            into layout.buildDirectory.dir('dependency-jni/arm64-v8a')
+        }
+        tasks.named('preBuild').configure {
+            dependsOn stageDependencyJni
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    packaging.jniLibs.useLegacyPackaging = true
+    lint {
+        lintConfig = file('lint.xml')
+    }
+    buildTypes {
+        optimized {
+            initWith debug
+            matchingFallbacks = ['debug']
+            externalNativeBuild {
+                cmake {
+                    arguments '-DCMAKE_BUILD_TYPE=RelWithDebInfo'
+                }
+            }
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+}
