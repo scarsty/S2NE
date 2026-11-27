@@ -273,7 +273,8 @@ public:
         movement,
         attack_menu,
         attack_target,
-        finish_confirm
+        finish_confirm,
+        item_menu
     };
     static constexpr std::array<unsigned, 6> command_icons{ 158, 160, 162, 164, 188, 166 };
     // sub_43AE24 copies these six availability masks before packing the
@@ -291,12 +292,24 @@ public:
 private:
     State state_ = State::idle;
     int command_ = 0, target_ = -1, attack_index_ = 0, requested_command_ = -1;
+    int requested_detail_unit_ = -1;
     std::function<bool(const OriginalEvents::Unit&, int)> command_request_available_;
 
 public:
     int requested_command() const { return requested_command_; }
-    void clear_requested_command() { requested_command_ = -1; }
+    int requested_detail_unit() const { return requested_detail_unit_; }
+    void clear_requested_command()
+    {
+        requested_command_ = -1;
+        requested_detail_unit_ = -1;
+    }
     void commit_external_action() { acted_ = true; }
+    void commit_equipment_action(OriginalEvents::Unit& actor)
+    {
+        actor.action_points = int(int16_t(actor.action_points - ai_config_[0xF2]));
+        actor.carry_points = std::min(actor.carry_points, actor.action_points);
+        actor.status34 |= 0x20;
+    }
     // Modal owners supply their proven complete skill/promotion eligibility.
     void set_command_request_availability(std::function<bool(const OriginalEvents::Unit&, int)> available) { command_request_available_ = std::move(available); }
 
@@ -1671,6 +1684,25 @@ public:
         }
         return false;
     }
+    bool select_or_inspect_unit(std::vector<OriginalEvents::Unit>& units, size_t index, unsigned context_flags = 0)
+    {
+        if (hostile_side_ || hostile_actions_active_ || animating_movement() || combat_feedback_active() || state_ != State::idle || index >= units.size()) { return false; }
+        const auto& unit = units[index];
+        if (!unit.present(turn_) || !valid({ unit.x, unit.y }) || !(unit.status_flags & 0x80) || ((unit.status_flags & 0x20) && !(unit.status_flags & 2))) { return false; }
+        if (unit.hostile())
+        {
+            std::vector<OriginalEvents::Unit> observers;
+            for (const auto& observer : units)
+            {
+                if (!observer.hostile() && observer.present(turn_)) { observers.push_back(observer); }
+            }
+            if (!target_visible(unit, observers, context_flags)) { return false; }
+        }
+        if (select_unit(units, index, context_flags)) { return true; }
+        requested_detail_unit_ = int(index);
+        requested_command_ = 3;
+        return true;
+    }
     const std::string& message() const { return message_; }
     State state() const { return state_; }
     int command_index() const { return command_; }
@@ -2453,7 +2485,7 @@ public:
         }
         path_.clear();
         target_ = -1;
-        if (state_ == State::movement || state_ == State::attack_menu || state_ == State::attack_target)
+        if (state_ == State::movement || state_ == State::attack_menu || state_ == State::attack_target || state_ == State::item_menu)
         {
             state_ = State::command;
             message_ = "Command cancelled; select another command";
@@ -2624,6 +2656,7 @@ public:
         }
         auto c = screen_center({ units[selected_].x, units[selected_].y }, cx, cy);
         int count = state_ == State::attack_menu ? std::max(1, attack_count(units)) : std::max(1, command_count(units));
+        if (state_ == State::item_menu) { count = 2; }
         const auto context = size_t(selected_) < movement_contexts_.size() ? movement_contexts_[selected_] : MovementContext{};
         int y = c.y + 16;
         if (context.movement_class >= 3 && context.movement_class <= 5)
@@ -2892,6 +2925,11 @@ public:
     }
     void cycle_command(int delta)
     {
+        if (state_ == State::item_menu)
+        {
+            item_choice_ ^= 1;
+            return;
+        }
         if (state_ == State::attack_menu)
         {
             for (int n = 0; n < 8; ++n)
@@ -2929,8 +2967,10 @@ public:
 private:
     uint32_t available_mask_{};
     unsigned attack_menu_mask_{};
+    int item_choice_ = 0;
 
 public:
+    int item_choice() const { return item_choice_; }
     void cycle_target(const std::vector<OriginalEvents::Unit>& units)
     {
         if (state_ != State::attack_target || units.empty())
@@ -2956,6 +2996,12 @@ public:
         if (selected_ < 0)
         {
             return false;
+        }
+        if (state_ == State::item_menu)
+        {
+            requested_command_ = item_choice_ ? 8 : 2;
+            state_ = State::command;
+            return true;
         }
         if (state_ == State::attack_menu)
         {
@@ -3048,7 +3094,13 @@ public:
             state_ = State::finish_confirm;
             return true;
         }
-        if (command_ == 2 || command_ == 3 || command_ == 4)
+        if (command_ == 2)
+        {
+            item_choice_ = 0;
+            state_ = State::item_menu;
+            return true;
+        }
+        if (command_ == 3 || command_ == 4)
         {
             requested_command_ = command_;
             return true;
@@ -3092,14 +3144,16 @@ public:
         {
             return false;
         }
-        if (state_ == State::command || state_ == State::attack_menu)
+        if (state_ == State::command || state_ == State::attack_menu || state_ == State::item_menu)
         {
             prepare_commands(units);
             auto o = command_origin(units, cx, cy);
             int count = state_ == State::attack_menu ? attack_count(units) : command_count(units);
+            if (state_ == State::item_menu) { count = 2; }
             if (x >= o.x && x < o.x + count * 32 && y >= o.y && y < o.y + 32)
             {
-                if (state_ == State::command)
+                if (state_ == State::item_menu) { item_choice_ = int(x - o.x) / 32; }
+                else if (state_ == State::command)
                 {
                     int slot = int(x - o.x) / 32;
                     int command = command_from_slot(units, slot);
@@ -3131,7 +3185,7 @@ public:
         if (state_ == State::idle)
         {
             int hit = occupant(units, p);
-            return hit >= 0 && select_unit(units, size_t(hit), context_flags);
+            return hit >= 0 && select_or_inspect_unit(units, size_t(hit), context_flags);
         }
         return click(units, p);
     }
@@ -5623,11 +5677,7 @@ public:
         int hit = occupant(units, p);
         if (state_ == State::idle)
         {
-            if (hit < 0 || !units[hit].controllable() || units[hit].action_state == 2)
-            {
-                return false;
-            }
-            return select_unit(units, size_t(hit));
+            return hit >= 0 && select_or_inspect_unit(units, size_t(hit));
         }
         if (state_ == State::movement)
         {

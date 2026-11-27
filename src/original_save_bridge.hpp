@@ -314,6 +314,22 @@ public:
         auto& count = inventory[item - 1];
         if (count < 99) { ++count; }
     }
+    static void order_third_route_roster(OriginalSave::State& state)
+    {
+        auto& units = state.groups[0].units;
+        if (get(state.globals_4f7cd0, 8, 4) >= 201)
+        {
+            auto heroine = std::find_if(units.begin(), units.end(), [](const auto& record)
+                {
+                    return get(record, 2) == 1;
+                });
+            if (units.size() > 1 && heroine != units.end() && heroine != units.begin())
+            {
+                std::rotate(units.begin() + 1, heroine, heroine + 1);
+            }
+        }
+        for (size_t i = 0; i < units.size(); ++i) { put(units[i], 0, unsigned(i + 1)); }
+    }
     static void compact_interbattle_members(OriginalSave::State& state)
     {
         if (state.battle_context()) { return; }
@@ -323,7 +339,7 @@ public:
             {
                 return get(record, 8) == 1 && ((record[0x33] & 0x20) || !(record[0x33] & 0x40));
             });
-        for (size_t i = 0; i < units.size(); ++i) { put(units[i], 0, unsigned(i + 1)); }
+        order_third_route_roster(state);
     }
     struct Restored
     {

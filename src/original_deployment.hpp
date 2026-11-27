@@ -137,7 +137,7 @@ class OriginalDeployment
         switch (option_)
         {
         case 0:
-            for (size_t s = 0; s < capacity(); ++s)
+            for (size_t s = 0; s < assignment_.size() && deployed_count() < capacity(); ++s)
             {
                 if (assignment_[s] >= 0 || occupied_cell(s)) { continue; }
                 auto found = std::find_if(roles_.begin(), roles_.end(), [&](size_t role)
@@ -201,9 +201,9 @@ class OriginalDeployment
                 return;
             }
             auto p = cursor_;
-            for (size_t s = 0; s < capacity(); ++s)
+            for (size_t s = 0; s < assignment_.size(); ++s)
             {
-                if (assignment_[s] < 0 && slots_[s].x == p.x && slots_[s].y == p.y)
+                if (assignment_[s] < 0 && !occupied_cell(s) && slots_[s].x == p.x && slots_[s].y == p.y)
                 {
                     unsigned direction = events_.units.at(placing_).direction;
                     assign(placing_, s);
@@ -316,8 +316,7 @@ public:
         {
             auto& u = events_.units.at(i);
             // 4414FC(mode=1)：0x20、0x40、控制类型1和0x10均不列入出阵候选。
-            const bool third_route_role = events_.stage >= 201 && (u.id == 11 || u.id == 14 || u.id == 15 || u.id == 13 || u.id == 1 || u.id == 2 || u.id == 3 || u.id == 4);
-            if (!(u.status_flags & 0x70) && u.behavior != 1 && word(raw_.groups[0].units[i], 8) != 1 && (events_.stage < 201 || third_route_role))
+            if (!(u.status_flags & 0x70) && u.behavior != 1 && word(raw_.groups[0].units[i], 8) != 1)
             {
                 roles_.push_back(i);
                 // 原4414FC(mode=1)只重建可部署候选的登场状态。
@@ -328,16 +327,12 @@ public:
         {
             if (events_.stage >= 201)
             {
-                fatal("Third-route deployment requires both protagonists");
+                fatal("Third-route deployment requires a nonempty roster and deployment slots");
             }
             done_ = true;
             return;
         }
-        if (events_.stage >= 201 && roles_.size() < 8)
-        {
-            fatal("Third-route deployment requires all eight core roster members");
-        }
-        assignment_.assign(capacity(), -1);
+        assignment_.assign(slots_.size(), -1);
         if (events_.stage >= 201)
         {
             size_t mandatory_count = 0;
@@ -354,7 +349,7 @@ public:
             }
         }
         // 原44AED2先保留指定角色；没有指定角色时仅默认第一人出阵。
-        for (size_t s = 0; s < capacity(); ++s)
+        for (size_t s = 0; s < assignment_.size(); ++s)
         {
             if (!slots_[s].fixed) { continue; }
             for (size_t role : roles_)
@@ -424,7 +419,7 @@ public:
     {
         if (!position_ || facing_ || inspect_ || confirmation_) { return false; }
         bool available = false;
-        for (size_t s = 0; s < capacity(); ++s)
+        for (size_t s = 0; s < assignment_.size(); ++s)
         {
             if (assignment_[s] < 0 && !occupied_cell(s) && slots_[s].x == cell.x && slots_[s].y == cell.y)
             {
@@ -537,9 +532,9 @@ public:
     void choose_position()
     {
         if (inspect_ || facing_) { return; }
-        for (size_t s = 0; s < capacity(); ++s)
+        for (size_t s = 0; s < assignment_.size(); ++s)
         {
-            if (assignment_[s] < 0 && slots_[s].x == cursor_.x && slots_[s].y == cursor_.y)
+            if (assignment_[s] < 0 && !occupied_cell(s) && slots_[s].x == cursor_.x && slots_[s].y == cursor_.y)
             {
                 auto& u = events_.units.at(placing_);
                 u.x = cursor_.x;

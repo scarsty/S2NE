@@ -320,10 +320,12 @@ int s2ne::run_application(int argc, char** argv)
         std::optional<s2ne::OriginalDeployment> deployment;
         std::optional<s2ne::OriginalPromotion> promotionMenu;
         std::optional<s2ne::OriginalArmyEquipmentMenu> battleItems;
+        bool battleEquipmentChanged = false;
         s2ne::OriginalItemUse itemUse(root);
         std::optional<std::pair<size_t, unsigned>> itemTargetRequest;
         std::optional<unsigned> itemSpellSource;
         unsigned itemNoticeMilliseconds{};
+        unsigned battleNoticeText = 73;
         std::vector<std::vector<uint8_t>> itemLearningNotices;
         uint64_t itemLearningSince{};
         std::function<void()> itemLearningPublish;
@@ -589,10 +591,11 @@ int s2ne::run_application(int argc, char** argv)
             s2ne::FullWidthCanvas canvas([&](const auto& center)
                 {
                     if (deployment) { return deployment->wide_frame(center); }
+                    if (prologue->campaign_travel_pending()) { return prologue->wide_frame(menu, center); }
                     if (s2ne::full_width_fixed_page(renderer) && s2ne::texture_resources.active()) { return s2ne::compose_fixed_page(center); }
                     return prologue->wide_frame(menu, center);
                 });
-            s2ne::set_full_width_fixed_page(renderer, prologue->interbattle_active() && !deployment);
+            s2ne::set_full_width_fixed_page(renderer, prologue->interbattle_active() && !prologue->campaign_travel_pending() && !deployment);
             presentationDirty = true;
             prologueRedraw = false;
             idleBattleFrame = prologue->idle_pose_time();
@@ -671,7 +674,6 @@ int s2ne::run_application(int argc, char** argv)
                     uncycledBattleFrame = image;
                     uncycledWideFrame = prologue->wide_frame(menu, image, false, groundOverlay);
                 }
-                prologue->cycle_frame(image);
                 paletteOnlyRedraw = false;
                 if (spiritSightImage) { image = *spiritSightImage; }
             }
@@ -775,11 +777,12 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (itemNoticeMilliseconds)
             {
-                itemNoticeGraphics.shared_panel(image, 0x4F72C8, 176, 80);
-                const auto text = itemNoticeFont.text_bytes(73);
+                const int top = battleNoticeText == 84 ? 40 : 80;
+                itemNoticeGraphics.shared_panel(image, 0x4F72C8, 176, top);
+                const auto text = itemNoticeFont.text_bytes(battleNoticeText);
                 const unsigned panel = s2ne::OriginalShopMenu::shared_sprite(0x4F72C8);
                 itemNoticeFont.draw_original_large(image, text, 176 + itemNoticeGraphics.panel_width(panel) / 2 - int(text.size()) * 6,
-                    80 + itemNoticeGraphics.panel_height(panel) / 2 - 12, 42);
+                    top + itemNoticeGraphics.panel_height(panel) / 2 - 12, 42);
             }
             if (itemMenu && !usableItems.empty())
             {
@@ -853,17 +856,21 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 image = std::move(panel).value();
             }
-            if (stdio) { stdioLogicalFrame = image; }
+            if (stdio)
+            {
+                stdioLogicalFrame = image;
+                if (!battleReports) { prologue->cycle_frame(stdioLogicalFrame); }
+            }
             if (canvas.empty() && wideMap && !s2ne::full_width_fixed_page(renderer) && uncycledWideFrame.size() == s2ne::WideViewport::bytes())
             {
                 canvas.set_background(uncycledWideFrame);
-                prologue->cycle_frame(canvas.background());
             }
             if (!spiritSightImage) { image = canvas.compose(image); }
             if (!battleMenu && !battleReports && !skillMenu && !promotionMenu && !saveMenu && !overwriteConfirmation && !spiritSightImage && !prologue->growth_active())
             {
                 prologue->draw_battle_edge_hud(menu, image);
             }
+            if (!battleReports) { prologue->cycle_frame(image); }
             if (s2ne::texture_resources.active())
             {
                 auto uploaded = s2ne::texture_resources.upload_frame(image);
@@ -875,9 +882,9 @@ int s2ne::run_application(int argc, char** argv)
                 uploadSoftwareFrame(image);
             }
         };
-        auto openSelectedDetail = [&]
+        auto openSelectedDetail = [&](int inspected = -1)
         {
-            int selected = prologue->battle_selected();
+            int selected = inspected >= 0 ? inspected : prologue->battle_selected();
             if (selected < 0 || size_t(selected) >= prologue->events.units.size())
             {
                 return;
@@ -1475,7 +1482,12 @@ int s2ne::run_application(int argc, char** argv)
                 if (prologue->learning_notice()) { state["modal"] = "learning"; }
                 if (prologue->experience_notice() > 0) { state["modal"] = "experience"; }
             }
-            const bool automatic = state.value("computer_actions", false) || state.value("movement_active", false)
+            if (prologue && prologue->campaign_travel_active())
+            {
+                state["modal"] = "campaign_travel";
+                state["input_locked"] = true;
+            }
+            const bool automatic = (prologue && prologue->campaign_travel_pending()) || state.value("computer_actions", false) || state.value("movement_active", false)
                 || state.value("combat_feedback_active", false) || state.value("battle_intro", false)
                 || state.value("dialogue_scrolling", false) || bool(itemLearningPublish) || pendingSkillTarget.has_value() || (shopMenu && shopMenu->transitioning()) || (innMenu && innMenu->transitioning())
                 || (prologue && prologue->diagnostic_phase() >= 11 && prologue->diagnostic_phase() <= 14);
@@ -2780,6 +2792,7 @@ int s2ne::run_application(int argc, char** argv)
                 if (!deployment && !itemLearningPublish && (!battleItems || itemSpellSource) && !spiritSightImage && !battleMenu && !battleReports && !promotionMenu && !itemMenu && (!skillMenu || pendingSkillTarget || prologue->growth_active()))
                 {
                     prologue->tick(unsigned(nowUi - lastUiTick));
+                    if (prologue->campaign_travel_pending()) { showPrologue(); }
                 }
                 if (prologue->ending_active())
                 {
@@ -2868,6 +2881,10 @@ int s2ne::run_application(int argc, char** argv)
                         skillGrowthNotices.clear();
                         const auto visualActorIndex = prologue->battle().ai_skill_actor().value_or(size_t(prologue->battle_selected()));
                         const auto& visualActor = prologue->events.units.at(visualActorIndex);
+                        if (skillMenu->directional_skill() && !aiSkillActive)
+                        {
+                            skillMenu->set_ai_direction(s2ne::Battle::facing({ visualActor.x, visualActor.y }, { target.x, target.y }, visualActor.direction));
+                        }
                         std::print("Original AI visual context actor_index={} actor_id={} target_index={} target_id={} selected_skill={}\n", visualActorIndex, visualActor.id, *pendingSkillTarget, target.id, skillMenu->selected().id);
                         bool visualStarted;
                         std::string visualError;
@@ -3888,12 +3905,41 @@ int s2ne::run_application(int argc, char** argv)
                         battleItems->mouse(int(down ? event.button.x : event.motion.x), int(down ? event.button.y : event.motion.y),
                             down && event.button.button == SDL_BUTTON_LEFT, down && event.button.button == SDL_BUTTON_RIGHT, *rawSave);
                     }
-                    if (battleItems->closed() && !itemTargetRequest && !itemSpellSource) { battleItems.reset(); }
+                    if (battleItems->take_changed())
+                    {
+                        battleEquipmentChanged = true;
+                        const auto live = prologue->events.units;
+                        auto synced = s2ne::OriginalChurch::try_sync_roster(*rawSave, prologue->events);
+                        if (!synced) { s2ne::report_error(synced.error()); }
+                        else
+                        {
+                            for (size_t i = 0; i < rawSave->groups[0].units.size(); ++i)
+                            {
+                                auto& unit = prologue->events.units[i];
+                                unit.first_turn = live[i].first_turn;
+                                unit.last_turn = live[i].last_turn;
+                                unit.effect_state_5f8 = live[i].effect_state_5f8;
+                            }
+                            prologue->events.army_modes = std::array<uint32_t, 2>{ s2ne::dword(rawSave->groups[0].metadata, 4), s2ne::dword(rawSave->groups[1].metadata, 4) };
+                            prologue->battle().set_hostile_resources(prologue->events);
+                            prologue->battle().refresh_command_availability(prologue->events.units);
+                        }
+                    }
+                    if (battleItems->closed() && !itemTargetRequest && !itemSpellSource)
+                    {
+                        if (battleEquipmentChanged && prologue->battle_selected() >= 0)
+                        {
+                            prologue->battle().commit_equipment_action(prologue->events.units.at(size_t(prologue->battle_selected())));
+                            prologue->battle().refresh_command_availability(prologue->events.units);
+                        }
+                        battleItems.reset();
+                    }
                     showPrologue();
                     continue;
                 }
                 if (itemTargetRequest && prologue && rawSave)
                 {
+                    battleNoticeText = 73;
                     if (itemNoticeMilliseconds)
                     {
                         if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
@@ -4066,6 +4112,16 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 if (skillMenu && prologue && rawSave)
                 {
+                    if (itemNoticeMilliseconds)
+                    {
+                        if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+                        {
+                            itemNoticeMilliseconds = 0;
+                            battleNoticeText = 73;
+                            showPrologue();
+                        }
+                        continue;
+                    }
                     if (pendingSkillTarget)
                     {
                         continue;
@@ -4146,10 +4202,14 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (event.key.key == SDLK_TAB && skillMenu->selected().id != 88 && skillMenu->page() == s2ne::OriginalSkills::Page::requested)
                         {
+                            const auto& actor = prologue->events.units.at(size_t(selected));
                             for (size_t n = 1; n <= prologue->events.units.size(); ++n)
                             {
                                 size_t i = (skillTarget.value_or(0) + n) % prologue->events.units.size();
-                                if ((skillMenu->healing1_in_range(prologue->events.units.at(size_t(selected)), prologue->events.units[i])) || skillMenu->hostile_in_range(prologue->events.units.at(size_t(selected)), prologue->events.units[i]))
+                                const auto& candidate = prologue->events.units[i];
+                                if (candidate.present(prologue->battle_turn()) && prologue->battle().skill_area_cell({ candidate.x, candidate.y })
+                                    && prologue->battle().target_visible(candidate, std::span(&actor, 1), 0)
+                                    && (skillMenu->healing1_in_range(actor, candidate) || skillMenu->hostile_in_range(actor, candidate)))
                                 {
                                     skillTarget = i;
                                     sleepCenter.reset();
@@ -4285,11 +4345,28 @@ int s2ne::run_application(int argc, char** argv)
                                 skillTarget.reset();
                                 for (size_t i = 0; i < prologue->events.units.size(); ++i)
                                 {
-                                    if ((skillMenu->healing1_in_range(prologue->events.units.at(size_t(selected)), prologue->events.units[i])) || skillMenu->hostile_in_range(prologue->events.units.at(size_t(selected)), prologue->events.units[i]))
+                                    const auto& candidate = prologue->events.units[i];
+                                    if (candidate.present(prologue->battle_turn()) && prologue->battle().skill_area_cell({ candidate.x, candidate.y })
+                                        && prologue->battle().target_visible(candidate, std::span(&actor, 1), 0)
+                                        && (skillMenu->healing1_in_range(actor, candidate) || skillMenu->hostile_in_range(actor, candidate)))
                                     {
                                         skillTarget = i;
                                         break;
                                     }
+                                }
+                                if (!skillMenu->selection_has_target(actor, prologue->events.units, prologue->battle_turn(), [&](int x, int y)
+                                        {
+                                            return prologue->battle().skill_area_cell({ x, y });
+                                        },
+                                        [&](const auto& target)
+                                        {
+                                            return prologue->battle().target_visible(target, std::span(&actor, 1), 0);
+                                        }))
+                                {
+                                    skillMenu->resume();
+                                    skillTarget.reset();
+                                    battleNoticeText = 84;
+                                    itemNoticeMilliseconds = 1;
                                 }
                             }
                         }
@@ -4897,7 +4974,7 @@ int s2ne::run_application(int argc, char** argv)
                         case SDLK_UP: prologue->move(-1); break;
                         case SDLK_DOWN: prologue->move(1); break;
                         case SDLK_LEFT:
-                            if (prologue->in_battle() && (prologue->battle_state() == s2ne::Battle::State::command || prologue->battle_state() == s2ne::Battle::State::attack_menu || prologue->battle_state() == s2ne::Battle::State::finish_confirm))
+                            if (prologue->in_battle() && (prologue->battle_state() == s2ne::Battle::State::command || prologue->battle_state() == s2ne::Battle::State::attack_menu || prologue->battle_state() == s2ne::Battle::State::item_menu || prologue->battle_state() == s2ne::Battle::State::finish_confirm))
                             {
                                 prologue->battle_cycle(-1);
                             }
@@ -4907,7 +4984,7 @@ int s2ne::run_application(int argc, char** argv)
                             }
                             break;
                         case SDLK_RIGHT:
-                            if (prologue->in_battle() && (prologue->battle_state() == s2ne::Battle::State::command || prologue->battle_state() == s2ne::Battle::State::attack_menu || prologue->battle_state() == s2ne::Battle::State::finish_confirm))
+                            if (prologue->in_battle() && (prologue->battle_state() == s2ne::Battle::State::command || prologue->battle_state() == s2ne::Battle::State::attack_menu || prologue->battle_state() == s2ne::Battle::State::item_menu || prologue->battle_state() == s2ne::Battle::State::finish_confirm))
                             {
                                 prologue->battle_cycle(1);
                             }
@@ -5259,38 +5336,64 @@ int s2ne::run_application(int argc, char** argv)
             {
                 if (auto request = prologue->interbattle_request(); request && request->option == 4)
                 {
-                    auto next = campaignAdapter.deploy_next(*rawSave);
-                    auto transitioned = initialization.try_transition_stage(root, *rawSave, next);
-                    if (!transitioned)
+                    if (!prologue->campaign_travel_pending())
                     {
-                        s2ne::report_error(transitioned.error());
-                        return EXIT_FAILURE;
+                        auto towns = s2ne::OriginalInn::try_load_towns(root);
+                        if (!towns)
+                        {
+                            s2ne::report_error(towns.error());
+                            return EXIT_FAILURE;
+                        }
+                        auto domain = s2ne::try_app_domain_for_save(*rawSave);
+                        if (!domain)
+                        {
+                            s2ne::report_error(domain.error());
+                            return EXIT_FAILURE;
+                        }
+                        auto travel = s2ne::OriginalWorldmap::create(root, domain.value(), std::move(towns).value(), *rawSave);
+                        if (!travel)
+                        {
+                            s2ne::report_error(travel.error());
+                            return EXIT_FAILURE;
+                        }
+                        prologue->begin_campaign_travel(std::move(travel).value());
+                        showPrologue();
                     }
-                    auto staged = std::move(transitioned).value();
-                    auto disc = s2ne::update_app_domain_for_stage(staged);
-                    auto restored = s2ne::OriginalSaveBridge::restore(root, staged);
-                    prologue->set_interbattle_adapter([](auto request)
-                        {
-                            return request.option == 4 ? s2ne::OriginalInterbattle::Result::enter_battle : s2ne::OriginalInterbattle::Result::unsupported;
-                        });
-                    prologue->campaign_scan(0);
-                    prologue->set_interbattle_adapter([](auto)
-                        {
-                            return s2ne::OriginalInterbattle::Result::unsupported;
-                        });
-                    prologue->set_resource_domain(disc);
-                    prologue->clear_autosave_requests();
-                    auto publication = prologue->try_resume_campaign_stage(std::move(restored.events));
-                    if (!publication)
+                    if (!prologue->campaign_travel_active())
                     {
-                        s2ne::report_error(publication.error());
-                        return EXIT_FAILURE;
+                        auto next = campaignAdapter.deploy_next(*rawSave);
+                        auto transitioned = initialization.try_transition_stage(root, *rawSave, next);
+                        if (!transitioned)
+                        {
+                            s2ne::report_error(transitioned.error());
+                            return EXIT_FAILURE;
+                        }
+                        auto staged = std::move(transitioned).value();
+                        auto disc = s2ne::update_app_domain_for_stage(staged);
+                        auto restored = s2ne::OriginalSaveBridge::restore(root, staged);
+                        prologue->set_interbattle_adapter([](auto request)
+                            {
+                                return request.option == 4 ? s2ne::OriginalInterbattle::Result::enter_battle : s2ne::OriginalInterbattle::Result::unsupported;
+                            });
+                        prologue->campaign_scan(0);
+                        prologue->set_interbattle_adapter([](auto)
+                            {
+                                return s2ne::OriginalInterbattle::Result::unsupported;
+                            });
+                        prologue->set_resource_domain(disc);
+                        prologue->clear_autosave_requests();
+                        auto publication = prologue->try_resume_campaign_stage(std::move(restored.events));
+                        if (!publication)
+                        {
+                            s2ne::report_error(publication.error());
+                            return EXIT_FAILURE;
+                        }
+                        using std::swap;
+                        swap(*rawSave, staged);
+                        prologue->mark_campaign_arrivals_inserted(1);
+                        autosaveBlocked = false;
+                        showPrologue();
                     }
-                    using std::swap;
-                    swap(*rawSave, staged);
-                    prologue->mark_campaign_arrivals_inserted(1);
-                    autosaveBlocked = false;
-                    showPrologue();
                 }
             }
             if (prologue && !rawSave && (prologue->deployment_requested() || !prologue->autosave_requests().empty()) && prologue->events.stage != 140)
@@ -5418,7 +5521,7 @@ int s2ne::run_application(int argc, char** argv)
                         {
                             const int selected = prologue->battle_selected();
                             if (selected < 0 || size_t(selected) >= rawSave->groups[0].units.size()) { return false; }
-                            return !itemUse.choices(*rawSave, size_t(selected)).empty();
+                            return true;
                         }
                         if (command != 4)
                         {
@@ -5458,19 +5561,22 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 showPrologue();
             }
-            if (prologue && rawSave && !battleMenu && !battleReports && !promotionMenu && !itemMenu && prologue->battle_requested_command() == 2)
+            if (prologue && rawSave && !battleMenu && !battleReports && !promotionMenu && !itemMenu && (prologue->battle_requested_command() == 2 || prologue->battle_requested_command() == 8))
             {
+                const bool useItems = prologue->battle_requested_command() == 2;
                 prologue->clear_battle_requested_command();
                 const int actor = prologue->battle_selected();
                 auto current = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                 if (!current) { s2ne::report_error(current.error()); }
                 else if (actor >= 0)
                 {
-                    auto page = s2ne::OriginalArmyEquipmentMenu::create(root, current.value(), true, s2ne::app_domain_for_save(*rawSave));
+                    auto page = s2ne::OriginalArmyEquipmentMenu::create(root, current.value(), useItems, s2ne::app_domain_for_save(*rawSave));
                     if (!page) { s2ne::report_error(page.error()); }
                     else
                     {
+                        *rawSave = std::move(current).value();
                         battleItems = std::move(page).value();
+                        battleEquipmentChanged = false;
                         battleItems->set_use_adapter(size_t(actor), [&](size_t role, unsigned id)
                             {
                                 if (itemUse.spell(id))
@@ -5493,7 +5599,7 @@ int s2ne::run_application(int argc, char** argv)
                                 itemTargetRequest = { role, id };
                                 return s2ne::Result<bool>::success(true);
                             });
-                        battleItems->refresh_items(current.value());
+                        battleItems->refresh_items(*rawSave);
                     }
                 }
                 showPrologue();
@@ -5505,8 +5611,9 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (prologue && !battleMenu && !battleReports && !promotionMenu && prologue->battle_requested_command() == 3)
             {
+                const int inspected = prologue->battle().requested_detail_unit();
                 prologue->clear_battle_requested_command();
-                openSelectedDetail();
+                openSelectedDetail(inspected);
             }
             if (prologue && prologueRedraw)
             {

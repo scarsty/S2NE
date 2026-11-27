@@ -1,6 +1,7 @@
 #pragma once
 #include "original_menu.hpp"
 #include "original_save.hpp"
+#include "original_stage_route.hpp"
 #include "title_image.hpp"
 #include <algorithm>
 namespace s2ne
@@ -24,6 +25,11 @@ class OriginalWorldmap
     bool waiting_{};
     bool presented_{};
     bool presentation_{}, entering_{}, leaving_{};
+    bool travelling_{}, travel_done_{}, travel_presented_{};
+    unsigned travel_elapsed_{};
+    unsigned arrival_frames_{};
+    int travel_x_{}, travel_y_{}, target_x_{}, target_y_{}, start_x_{}, start_y_{};
+    std::vector<std::pair<int, int>> trail_;
     unsigned fade_{ 63 };
     bool transition() const { return presentation_ && (leaving_ || entering_); }
     uint8_t channel(unsigned ink, unsigned component) const
@@ -94,6 +100,63 @@ class OriginalWorldmap
     }
 
 public:
+    void begin_travel()
+    {
+        auto point = [&](unsigned town)
+        {
+            const size_t p = 2 + (town - 1) * 14;
+            return std::pair{ int(word(towns_, p + 6)), int(word(towns_, p + 8)) };
+        };
+        const auto [sx, sy] = point(current_);
+        const auto [tx, ty] = point(destination_);
+        center((sx + tx) / 2, (sy + ty) / 2);
+        start_x_ = travel_x_ = sx;
+        start_y_ = travel_y_ = sy;
+        target_x_ = tx;
+        target_y_ = ty;
+        travel_done_ = travel_presented_ = false;
+        travel_elapsed_ = arrival_frames_ = 0;
+        trail_.clear();
+        travelling_ = true;
+    }
+    bool travel_done() const { return travel_done_; }
+    std::array<uint8_t, 3> text_color(unsigned ink) const { return { channel(ink, 0), channel(ink, 1), channel(ink, 2) }; }
+    void travel_presented() { travel_presented_ = true; }
+    void tick_travel(unsigned milliseconds)
+    {
+        travel_elapsed_ += milliseconds;
+        if (!travel_presented_ || travel_elapsed_ < 100 || travel_done_) { return; }
+        travel_elapsed_ = 0;
+        travel_presented_ = false;
+        if (travel_x_ == target_x_ && travel_y_ == target_y_)
+        {
+            if (arrival_frames_) { travel_done_ = true; }
+            ++arrival_frames_;
+            return;
+        }
+        trail_.emplace_back(travel_x_, travel_y_);
+        const int dx = target_x_ - start_x_, dy = target_y_ - start_y_;
+        if (!dx || !dy)
+        {
+            travel_x_ += std::clamp(target_x_ - travel_x_, -16, 16);
+            travel_y_ += std::clamp(target_y_ - travel_y_, -16, 16);
+        }
+        else if ((target_x_ - travel_x_) * (target_x_ - travel_x_) + (target_y_ - travel_y_) * (target_y_ - travel_y_) < 64)
+        {
+            travel_x_ = target_x_;
+            travel_y_ = target_y_;
+        }
+        else if ((std::abs(dy) * 100 / std::abs(dx)) > 50)
+        {
+            travel_y_ += std::clamp(target_y_ - travel_y_, -8, 8);
+            travel_x_ = start_x_ + dx * (travel_y_ - start_y_) / dy;
+        }
+        else
+        {
+            travel_x_ += std::clamp(target_x_ - travel_x_, -8, 8);
+            travel_y_ = start_y_ + dy * (travel_x_ - start_x_) / dx;
+        }
+    }
     static Result<OriginalWorldmap> create(const std::filesystem::path& root, OriginalDisc domain, std::vector<uint8_t> towns, const OriginalSave::State& state)
     {
         auto image = OriginalDiscResources(root).try_dat_entry(domain, 11);
@@ -223,8 +286,8 @@ public:
         }
         result.towns_ = std::move(towns);
         result.delay_ = dword(state.globals_4f7cd0, 32);
-        result.current_ = word(state.globals_4f7cd0, 24);
-        result.destination_ = word(state.globals_4f7cd0, 16);
+        result.current_ = original_stage_id(word(state.globals_4f7cd0, 24));
+        result.destination_ = original_stage_id(word(state.globals_4f7cd0, 16));
         if (!result.current_ || result.current_ > word(result.towns_, 0) || !result.destination_ || result.destination_ > word(result.towns_, 0))
         {
             return Result<OriginalWorldmap>::failure(make_error("World current/destination town"));
@@ -405,7 +468,7 @@ public:
             }
         }
     }
-    std::vector<uint8_t> draw(const OriginalMenu& font) const
+    std::vector<uint8_t> draw(const OriginalMenu& font, bool markers = true) const
     {
         std::vector<uint8_t> image(640 * 480 * 4);
         auto put = [&](int x, int y, unsigned ink)
@@ -450,11 +513,33 @@ public:
                 }
             }
         }
-        for (unsigned i = 0; i < 2; ++i)
+        for (unsigned marker = 0; markers && marker < 2; ++marker)
         {
+            const unsigned i = travelling_ ? 1 - marker : marker;
             unsigned town = i ? destination_ : current_;
             size_t p = 2 + (town - 1) * 14;
             int left = int(word(towns_, p + 6)) - x_ - 7, top = int(word(towns_, p + 8)) - y_ - (i ? 30 : 25);
+            if (travelling_ && i == 0)
+            {
+                left = travel_x_ - x_ - 7;
+                top = travel_y_ - y_ - 25;
+                auto trail = trail_;
+                trail.emplace_back(travel_x_, travel_y_);
+                for (const auto& [tx, ty] : trail)
+                {
+                    for (int yy = -3; yy <= 2; ++yy)
+                    {
+                        for (int xx = -3; xx <= 2; ++xx)
+                        {
+                            put(tx - x_ + xx, ty - y_ + yy, 9);
+                        }
+                    }
+                    for (int yy = -2; yy <= 1; ++yy)
+                    {
+                        for (int xx = -2; xx <= 1; ++xx) { put(tx - x_ + xx, ty - y_ + yy, 3); }
+                    }
+                }
+            }
             const auto& icon = icons_[i ? 0 : 1];
             for (unsigned y = 0; y < icon.height; ++y)
             {
@@ -464,6 +549,20 @@ public:
                     {
                         put(left + x, top + y, ink);
                     }
+                }
+            }
+        }
+        if (travelling_ && arrival_frames_)
+        {
+            const auto source = image;
+            const int left = std::clamp(target_x_ - x_ - 160, 0, 320);
+            const int top = std::clamp(target_y_ - y_ - 120, 0, 240);
+            for (int y = 0; y < 480; ++y)
+            {
+                for (int x = 0; x < 640; ++x)
+                {
+                    std::copy_n(source.begin() + (size_t(top + y / 2) * 640 + left + x / 2) * 4, 4,
+                        image.begin() + (size_t(y) * 640 + x) * 4);
                 }
             }
         }

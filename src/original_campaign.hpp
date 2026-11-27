@@ -495,6 +495,7 @@ public:
     }
     unsigned selected_route(const OriginalEvents& completed) const
     {
+        if (is_custom_stage(completed.stage) && (!completed.script_route || *completed.script_route < 201)) { return stage(completed.stage).next; }
         // 420DC3写入4F7CE0后，后续旗标可能已被消耗；优先使用事务保存的路由。
         if (completed.script_route && *completed.script_route > 0) { return unsigned(*completed.script_route); }
         OriginalEvents source = completed;

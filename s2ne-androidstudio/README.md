@@ -27,7 +27,11 @@ Saves and configuration are written there; the launcher does not replace resourc
 or delete existing saves. Optional `cheat` must be placed there explicitly by the user.
 SDL owns the entire immersive fullscreen surface, with no Java button overlays.
 GameActivity enforces landscape even when SDL requests another orientation.
-Normal touch maps to SDL mouse input; external mouse/keyboard input remains available.
+Touch first sends cursor motion only; another tap at the same position (within
+Android's touch slop, without a time limit) confirms with a left click. A different
+position selects again. Confirmation, drag, multi-touch, cancellation, backgrounding
+and right-click clear the pending selection. This applies to all touch targets,
+including map cells and dialogue; external mouse/keyboard retain ordinary input.
 Tap the bottom-right corner (rightmost 20% of screen width and bottom 20% of height)
 to send a right click at the current game cursor, without moving it to the corner.
 The whole corner touch gesture is consumed, so it does not also send a left click.

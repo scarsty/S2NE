@@ -200,6 +200,11 @@ public:
             return Result<RewardState>::failure(final.error());
         }
         raw = std::move(final).value();
+        if (is_custom_stage(events.stage))
+        {
+            events.script_route = int32_t(plan.next);
+            put(raw.globals_4f7cd0, 16, plan.next, 4);
+        }
         if (plan.next && campaign.stage(plan.next).mode != 3)
         {
             put(raw.globals_4f7cd0, 4, 1, 4);

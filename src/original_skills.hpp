@@ -1371,6 +1371,36 @@ public:
         return execute_pipeline(actor, targets, center, &events, nullptr, random, context, award);
     }
     bool hostile_supported() const { return page_ != Page::closed && selected().id == 32 && selected().group == 2 && selected().bit == 11 && selected().effect() == 34; }
+    template <class ValidCell, class Visible>
+    bool selection_has_target(const OriginalEvents::Unit& actor, const std::vector<OriginalEvents::Unit>& units, unsigned turn, ValidCell valid, Visible visible) const
+    {
+        if (summon_supported() || selected().id == 88 || transfer51_supported() || spirit45_supported() || reveal50_supported()) { return true; }
+        const bool area = status_area_supported();
+        if (area && selected().raw[31] != 2 && selected().raw[31] != 3) { return true; }
+        if (area)
+        {
+            const int radius = selected().raw[17];
+            for (int y = actor.y - radius; y <= actor.y + radius; ++y)
+            {
+                for (int x = actor.x - radius; x <= actor.x + radius; ++x)
+                {
+                    if (!valid(x, y) || !selection_cell_in_range(actor, x, y)) { continue; }
+                    auto center = actor;
+                    center.x = x;
+                    center.y = y;
+                    for (size_t target : collect_targets(actor, center, units, turn, valid))
+                    {
+                        if (visible(units[target])) { return true; }
+                    }
+                }
+            }
+            return false;
+        }
+        return std::any_of(units.begin(), units.end(), [&](const auto& target)
+            {
+                return target.present(turn) && valid(target.x, target.y) && visible(target) && (healing1_in_range(actor, target) || hostile_in_range(actor, target));
+            });
+    }
     // 401146 builds concentric diamond rings; record17 is the radius, not AP.
     bool hostile_in_range(const OriginalEvents::Unit& actor, const OriginalEvents::Unit& target) const
     {
@@ -1459,7 +1489,8 @@ public:
         std::vector<size_t> out;
         if (selected().raw[18] == 5 || selected().raw[18] == 6 || selected().raw[18] == 8)
         {
-            for (auto [x, y] : radial_cells(center))
+            const bool directed = ai_direction_ && (selected().raw[18] == 5 || selected().raw[18] == 8);
+            for (auto [x, y] : radial_cells(directed ? actor : center))
             {
                 if (!valid(x, y)) { continue; }
                 for (size_t n = 0; n < units.size(); ++n)

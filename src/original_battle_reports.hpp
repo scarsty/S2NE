@@ -93,7 +93,7 @@ private:
     }
     s2ne::Result<bool> large(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color) const { return font_.try_draw_original_large(image, text, x, y, color); }
     s2ne::Result<bool> small(std::vector<uint8_t>& image, const std::vector<uint8_t>& text, int x, int y, unsigned color) const { return font_.try_draw_small(image, text, x, y, color, true); }
-    s2ne::Result<bool> try_detail(std::vector<uint8_t>& image, FullWidthCanvas* canvas) const
+    s2ne::Result<bool> try_detail(std::vector<uint8_t>& image, FullWidthCanvas* canvas, uint64_t elapsed) const
     {
         ResourceReader palette_reader(pal_), archive(cel_);
         const size_t group = palette_reader.number(816, 4) - 57;
@@ -179,7 +179,7 @@ private:
             auto icon = draw_original_cel(image, cel_, pal_, id + 0x1EC, 0xFE, 0xA1 + int(i) * 0x23, OriginalZeroRun::transparent);
             if (!icon) { return icon; }
         }
-        palette_.cycle_rect(image, 0xFE, 0xA1, 0x40, 0x23 * int(unit.equipment.size()), texture_resources.elapsed());
+        palette_.cycle_rect(image, 0xFE, 0xA1, 0x40, 0x23 * int(unit.equipment.size()), elapsed);
         return skills_.try_draw_status_effects(image, unit);
     }
     s2ne::Result<bool> try_roster_row_validated(std::vector<uint8_t>& image, int row, const Entry& entry) const
@@ -708,6 +708,7 @@ public:
     }
     s2ne::Result<std::vector<uint8_t>> try_draw(FullWidthCanvas* canvas = nullptr) const
     {
+        const auto elapsed = texture_resources.elapsed();
         auto image = background_;
         if (page_ == Page::closed)
         {
@@ -770,7 +771,7 @@ public:
         }
         if (page_ == Page::abilities || page_ == Page::proficiencies)
         {
-            auto status = try_detail(image, canvas);
+            auto status = try_detail(image, canvas, elapsed);
             if (!status) { return s2ne::Result<std::vector<uint8_t>>::failure(status.error()); }
         }
         if (page_ == Page::proficiencies)
@@ -869,7 +870,7 @@ public:
         }
         if (page_ == Page::status || page_ == Page::equipment)
         {
-            auto detail = try_detail(image, canvas);
+            auto detail = try_detail(image, canvas, elapsed);
             if (!detail) { return s2ne::Result<std::vector<uint8_t>>::failure(detail.error()); }
             auto menu = skills_.try_draw_inspection(image, selected().unit, canvas);
             if (!menu) { return s2ne::Result<std::vector<uint8_t>>::failure(menu.error()); }
@@ -879,7 +880,7 @@ public:
         {
             // 456179 starts from CEL 0xDB and clears a complete dedicated
             // detail page; it does not draw into the fourth roster row.
-            auto status = try_detail(image, canvas);
+            auto status = try_detail(image, canvas, elapsed);
             if (!status)
             {
                 return s2ne::Result<std::vector<uint8_t>>::failure(status.error());

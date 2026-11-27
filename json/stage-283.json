@@ -98,28 +98,6 @@
       ]
     },
     {
-      "id": 12,
-      "appearance": 100,
-      "name": "南巡使",
-      "x": 11,
-      "y": 30,
-      "direction": 1,
-      "animation_action": 0,
-      "first_turn": 1,
-      "last_turn": 0,
-      "behavior": 1,
-      "hp": 200,
-      "max_hp": 112,
-      "equipment": [
-        34,
-        106,
-        148,
-        167,
-        0,
-        0
-      ]
-    },
-    {
       "id": 16,
       "appearance": 126,
       "name": "刑天",
@@ -1286,16 +1264,8 @@
       "raw_operands_semantics": "unconfirmed"
     },
     {
-      "type": 12,
-      "completion_flag": 0,
-      "condition": 25,
-      "raw_operands": {
-        "offset_3": 13,
-        "offset_5": 12,
-        "offset_7": 1,
-        "offset_9": 0
-      },
-      "raw_operands_semantics": "unconfirmed"
+      "type": 0,
+      "completion_flag": 0
     },
     {
       "type": 12,

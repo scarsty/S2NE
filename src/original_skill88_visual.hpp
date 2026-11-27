@@ -169,7 +169,8 @@ public:
         const auto* buff = NativeTimedBuffs::find(skill);
         const auto* damage = NativeDamageRecords::find(skill);
         const bool summon = skill >= 64 && skill <= 74;
-        if (cursor && ((skill != 108 && skill != 51) || cursor != 1)) { return Result<OriginalSkill88Visual>::failure(make_error("Unsupported spell resource cursor")); }
+        const bool directed = damage && damage->dispatch == 4;
+        if (cursor && !(directed && cursor < 4) && ((skill != 108 && skill != 51) || cursor != 1)) { return Result<OriginalSkill88Visual>::failure(make_error("Unsupported spell resource cursor")); }
         if (!summon && !damage && !buff && !NativeAbilityBuffs::find(skill) && skill != 51 && skill != 29 && skill != 18 && skill != 40 && skill != 45 && skill != 50 && skill != 8 && skill != 12 && skill != 35 && skill != 39 && skill != 48 && skill != 56 && skill != 60 && skill != 17 && skill != 25 && skill != 52 && skill != 61 && skill != 4 && skill != 5 && skill != 6 && skill != 9 && skill != 10 && skill != 13 && skill != 15 && skill != 53 && skill != 34 && skill != 38 && skill != 54 && skill != 96) { return Result<OriginalSkill88Visual>::failure(make_error("Unsupported support visual ID")); }
         const auto* ability = NativeAbilityBuffs::find(skill);
         unsigned color;
@@ -303,7 +304,15 @@ public:
             }
         }
 
-        if (cursor && skill != 51) { header = { 16, 155, 280, 312, 398, 0, 0, 4 }; }
+        if (directed)
+        {
+            constexpr std::array<std::array<unsigned, 8>, 4> headers{ { { 12, 257, 45, 258, 135, 10, 13, 5 },
+                { 12, 1, 45, 258, 135, 10, 13, 5 },
+                { 12, 1, 153, 258, 184, 10, 13, 5 },
+                { 13, 257, 153, 258, 184, 10, 13, 5 } } };
+            header = headers[cursor];
+        }
+        else if (cursor && skill != 51) { header = { 16, 155, 280, 312, 398, 0, 0, 4 }; }
         for (unsigned i = 0; i < 8; ++i)
         {
             if (reader.number(i * 2) != header[i]) { return Result<OriginalSkill88Visual>::failure(make_error("004/005 CEL header")); }

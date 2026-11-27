@@ -162,9 +162,10 @@ public:
         bool fixed{};
     };
     std::vector<DeploymentSlot> json_deployment_slots_;
+    bool json_deployment_loaded_{};
     std::vector<DeploymentSlot> deployment_slots() const
     {
-        if (!json_deployment_slots_.empty())
+        if (json_deployment_loaded_)
         {
             return json_deployment_slots_;
         }
@@ -1200,6 +1201,7 @@ public:
         json_line_overrides_.clear();
         json_event_overrides_.clear();
         json_deployment_slots_.clear();
+        json_deployment_loaded_ = false;
         json_stage_loaded_ = false;
         fantasy_stage = 0;
         interbattle_town_id = 0;
@@ -1815,15 +1817,12 @@ public:
                 }
                 json_deployment_slots_.push_back({ deployment.at("x").get<int>(), deployment.at("y").get<int>(), deployment.at("direction").get<unsigned>(), entry.at("role_id").get<int>(), false });
             }
-            if (json_deployment_slots_.size() != 8)
-            {
-                return Result<bool>::failure(make_error("Third-route player party requires eight core members: " + path.string()));
-            }
             if (!json.contains("deployment") || !json.at("deployment").is_array())
             {
                 return Result<bool>::failure(make_error("Third-route stage requires an original deployment field: " + path.string()));
             }
             json_deployment_slots_.clear();
+            json_deployment_loaded_ = true;
             for (const auto& slot : json.at("deployment"))
             {
                 if (!slot.is_object() || !slot.contains("x") || !slot.contains("y") || !slot.contains("direction")
@@ -1857,6 +1856,40 @@ public:
         }
         if (id >= 201)
         {
+            if (!json.contains("units") || !json.at("units").is_array())
+            {
+                return Result<bool>::failure(make_error("Invalid third-route JSON units: " + path.string()));
+            }
+            // JSON可删去原固定角色；其余模板按身份顺序匹配，不能把后一个角色套到被删角色的属性上。
+            std::vector<Unit> retained_units;
+            size_t source_index = 0;
+            for (const auto& unit : units)
+            {
+                if (unit.behavior == 0)
+                {
+                    if (unit.id != 12) { retained_units.push_back(unit); }
+                    continue;
+                }
+                if (source_index < json.at("units").size())
+                {
+                    const auto& source = json.at("units").at(source_index);
+                    if (!source.is_object() || !source.contains("id") || !source.at("id").is_number_unsigned()
+                        || !source.contains("appearance") || !source.at("appearance").is_number_unsigned())
+                    {
+                        return Result<bool>::failure(make_error("Invalid third-route unit identity: " + path.string()));
+                    }
+                    if (source.at("id").get<unsigned>() == unit.id && source.at("appearance").get<unsigned>() == unit.appearance)
+                    {
+                        retained_units.push_back(unit);
+                        ++source_index;
+                    }
+                }
+            }
+            if (source_index != json.at("units").size())
+            {
+                return Result<bool>::failure(make_error("Third-route JSON unit identity does not match stage data: " + path.string()));
+            }
+            units = std::move(retained_units);
             std::vector<size_t> json_unit_targets;
             for (size_t i = 0; i < units.size(); ++i)
             {

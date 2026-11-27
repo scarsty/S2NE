@@ -1,8 +1,11 @@
 #pragma once
 #include "original_menu.hpp"
 #include "title_image.hpp"
+#include <fstream>
 #include <functional>
+#include <limits>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <optional>
 
 namespace s2ne
@@ -118,14 +121,47 @@ public:
         if (!town || town > word(bin, table)) { return false; }
         return bin.at(table + 2 + (town - 1) * 14 + 10) == 1;
     }
-    void configure_town(const std::filesystem::path& root, unsigned town)
+    static s2ne::Result<unsigned> try_interbattle_town(const std::filesystem::path& root, unsigned town)
     {
-        services_allowed_ = town_services_allowed(root, town);
-        if (!services_allowed_)
+        if (town >= 201)
         {
-            selected_ = 4;
-            pending_ = true;
+            const auto path = root / "json" / ("stage-" + std::to_string(town) + ".json");
+            std::ifstream input(path, std::ios::binary);
+            if (!input) { return s2ne::Result<unsigned>::failure(make_error("Cannot open third-route interbattle JSON: " + path.string())); }
+            auto stage = nlohmann::json::parse(input, nullptr, false);
+            if (stage.is_discarded() || !stage.is_object())
+            {
+                return s2ne::Result<unsigned>::failure(make_error("Invalid third-route interbattle JSON: " + path.string()));
+            }
+            if (!stage.contains("route") || !stage.at("route").is_object()
+                || !stage.at("route").contains("interbattle_town_id")
+                || !stage.at("route").at("interbattle_town_id").is_number_unsigned()
+                || stage.at("route").at("interbattle_town_id").get<uint64_t>() > std::numeric_limits<unsigned>::max())
+            {
+                return s2ne::Result<unsigned>::failure(make_error("Missing or invalid route.interbattle_town_id: " + path.string()));
+            }
+            town = stage.at("route").at("interbattle_town_id").get<unsigned>();
         }
+        return s2ne::Result<unsigned>::success(town);
+    }
+    s2ne::Result<bool> try_configure_town(const std::filesystem::path& root, unsigned town)
+    {
+        const auto resolved = try_interbattle_town(root, town);
+        if (!resolved)
+        {
+            return s2ne::Result<bool>::failure(resolved.error());
+        }
+        town = resolved.value();
+        services_allowed_ = town_services_allowed(root, town);
+        selected_ = services_allowed_ ? 1 : 4;
+        pending_ = !services_allowed_;
+        return s2ne::Result<bool>::success(true);
+    }
+    bool configure_town(const std::filesystem::path& root, unsigned town)
+    {
+        auto result = try_configure_town(root, town);
+        if (!result) { fatal(result.error()); }
+        return result.value();
     }
     bool services_allowed() const { return services_allowed_; }
     void draw_caption(std::vector<uint8_t>& image, unsigned id, int x, int y) const { caption(image, id, x, y); }

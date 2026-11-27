@@ -67,7 +67,7 @@ class OriginalArmyEquipmentMenu
         for (size_t i = 0; i < state.groups[0].units.size(); ++i)
         {
             const auto& r = state.groups[0].units[i];
-            if (word(r, 8) != 1 && !(r[0x33] & 0x70)) { roles_.push_back(i); }
+            if ((state.battle_context() && !(r[0x33] & 0x60)) || (word(r, 8) != 1 && !(r[0x33] & 0x70))) { roles_.push_back(i); }
         }
         random_.initialize(uint32_t(std::time(nullptr)));
         closed_ = roles_.empty();

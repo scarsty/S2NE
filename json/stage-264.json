@@ -254,17 +254,6 @@
       "source": "save.group[0].units"
     },
     {
-      "slot": 4,
-      "role_id": 12,
-      "deployment": {
-        "x": 21,
-        "y": 36,
-        "direction": 0
-      },
-      "mandatory_role": false,
-      "source": "save.group[0].units"
-    },
-    {
       "slot": 5,
       "role_id": 16,
       "deployment": {
@@ -303,13 +292,6 @@
       "y": 38,
       "direction": 0,
       "role_id": 13,
-      "fixed": false
-    },
-    {
-      "x": 21,
-      "y": 36,
-      "direction": 0,
-      "role_id": 12,
       "fixed": false
     },
     {

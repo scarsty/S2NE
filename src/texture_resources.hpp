@@ -5,6 +5,7 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <cstdio>
 #include <cstring>
 #include <cwctype>
@@ -90,6 +91,21 @@ class TextureResources
 
     static Result<SDL_Surface*> load_png(const std::filesystem::path& path)
     {
+        if (path.parent_path().filename() == "portraits" && !std::filesystem::exists(path))
+        {
+            const auto stem = path.stem().string();
+            unsigned id{};
+            const auto parsed = std::from_chars(stem.data(), stem.data() + stem.size(), id);
+            if (parsed.ec == std::errc{} && parsed.ptr == stem.data() + stem.size() && (id & 1))
+            {
+                const auto large = path.parent_path() / (std::to_string(id - 1) + ".png");
+                std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> source(SDL_LoadPNG(large.string().c_str()), SDL_DestroySurface);
+                if (!source) { return Result<SDL_Surface*>::failure(make_error(large.string() + ": " + SDL_GetError())); }
+                auto* scaled = SDL_ScaleSurface(source.get(), 92, 111, SDL_SCALEMODE_LINEAR);
+                if (!scaled) { return Result<SDL_Surface*>::failure(make_error(path.string() + ": " + SDL_GetError())); }
+                return Result<SDL_Surface*>::success(scaled);
+            }
+        }
         auto* surface = SDL_LoadPNG(path.string().c_str());
         if (!surface) { return Result<SDL_Surface*>::failure(make_error(path.string() + ": " + SDL_GetError())); }
         return Result<SDL_Surface*>::success(surface);

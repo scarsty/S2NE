@@ -609,6 +609,40 @@ public:
             source.group = enemy ? 1 : 0;
             out.push_back(source);
         }
+        if (stage >= 201)
+        {
+            const auto path = root_ / "json" / ("stage-" + std::to_string(stage) + ".json");
+            std::ifstream input(path, std::ios::binary);
+            const auto json = nlohmann::json::parse(input, nullptr, false);
+            if (json.is_discarded() || !json.is_object() || !json.contains("units") || !json.at("units").is_array())
+            {
+                return Result<std::vector<Source>>::failure(make_error("Invalid third-route initialization units: " + path.string()));
+            }
+            // Keep source indices aligned with OriginalEvents after omitted roles are removed.
+            std::vector<Source> retained;
+            size_t index = 0;
+            for (const auto& source : out)
+            {
+                if (source.behavior() == 0)
+                {
+                    if (source.id() != 12) { retained.push_back(source); }
+                    continue;
+                }
+                if (index >= json.at("units").size()) { continue; }
+                const auto& item = json.at("units").at(index);
+                const unsigned appearance = unsigned(source.bytes[16]) | (unsigned(source.bytes[17]) << 8);
+                if (item.value("id", -1) == int(source.id()) && item.value("appearance", -1) == int(appearance))
+                {
+                    retained.push_back(source);
+                    ++index;
+                }
+            }
+            if (index != json.at("units").size())
+            {
+                return Result<std::vector<Source>>::failure(make_error("Third-route initialization source identity mismatch: " + path.string()));
+            }
+            out = std::move(retained);
+        }
         return Result<std::vector<Source>>::success(std::move(out));
     }
     std::vector<Source> sources(unsigned stage) const
@@ -1136,6 +1170,7 @@ public:
                 auto added = add_core_role(male_role ? male : female, male_role ? male_sources.value() : female_sources.value(), id);
                 if (!added) { return Result<OriginalSave::State>::failure(added.error()); }
             }
+            OriginalSaveBridge::order_third_route_roster(raw);
         }
         auto described = try_describe(raw, expanded);
         if (!described)

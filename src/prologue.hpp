@@ -22,6 +22,7 @@
 #include "original_sprite.hpp"
 #include "original_ui_timing.hpp"
 #include "original_unit_status.hpp"
+#include "original_worldmap.hpp"
 #include "wide_viewport.hpp"
 #include <deque>
 #include <map>
@@ -865,7 +866,7 @@ private:
                 }
                 return;
             }
-            if (events.type(i) == 12 && (events.condition(i) == 22 || events.condition(i) == 1 || events.condition(i) == 27 || events.condition(i) == 28))
+            if (events.type(i) == 12 && (events.condition(i) == 0 || events.condition(i) == 22 || events.condition(i) == 1 || events.condition(i) == 27 || events.condition(i) == 28))
             {
                 if (!apply_scripted_control(i))
                 {
@@ -1150,7 +1151,11 @@ private:
     }
     int selection_ = 0;
     std::vector<uint8_t> briefing_page_;
+    std::optional<OriginalWorldmap> travel_map_;
     size_t briefing_offset_ = 0;
+    size_t briefing_visible_{};
+    unsigned briefing_elapsed_{};
+    bool briefing_presented_{};
     size_t event_ = 0, line_ = 0, page_ = 0;
     struct Glyph
     {
@@ -1485,6 +1490,37 @@ private:
     void prepare_briefing()
     {
         briefing_page_.clear();
+        briefing_visible_ = briefing_elapsed_ = 0;
+        briefing_presented_ = false;
+        if (travel_map_)
+        {
+            unsigned row = 0, units = 0;
+            while (briefing_offset_ < events.briefing.size())
+            {
+                const auto c = events.briefing.at(briefing_offset_++);
+                if (!c || c == 10)
+                {
+                    briefing_offset_ = events.briefing.size();
+                    break;
+                }
+                briefing_page_.push_back(c);
+                if (c > 128 && briefing_offset_ < events.briefing.size())
+                {
+                    briefing_page_.push_back(events.briefing.at(briefing_offset_++));
+                    units += 2;
+                }
+                else
+                {
+                    ++units;
+                }
+                if (c == '*' || units >= 40)
+                {
+                    units = 0;
+                    if (++row == 9) { break; }
+                }
+            }
+            return;
+        }
         size_t end = std::min(events.briefing.size(), briefing_offset_ + 400);
         while (briefing_offset_ < end)
         {
@@ -2345,6 +2381,13 @@ public:
         phase_ = Phase::campaign_blocked;
     }
     const auto& autosave_requests() const { return autosave_requests_; }
+    bool campaign_travel_pending() const { return travel_map_.has_value(); }
+    bool campaign_travel_active() const { return travel_map_ && !travel_map_->travel_done(); }
+    void begin_campaign_travel(OriginalWorldmap map)
+    {
+        map.begin_travel();
+        travel_map_ = std::move(map);
+    }
     void clear_autosave_requests() { autosave_requests_.clear(); }
     void set_campaign_reward_adapter(std::function<bool(OriginalEvents&, const OriginalCampaign::Settlement&)> callback) { campaign_reward_adapter_ = std::move(callback); }
     void set_physical_loot_finish(std::function<Result<bool>(bool)> callback)
@@ -2471,12 +2514,14 @@ public:
     void set_interbattle_adapter(std::function<OriginalInterbattle::Result(OriginalInterbattle::Request)> callback) { interbattle_adapter_ = std::move(callback); }
     bool select_interbattle_option(unsigned index)
     {
+        if (campaign_travel_active()) { return false; }
         if (!interbattle_active() || !interbattle_ || !interbattle_->select_option(index)) { return false; }
         if (interbattle_adapter_) { interbattle_->dispatch(interbattle_adapter_); }
         return true;
     }
     void campaign_scan(unsigned scan)
     {
+        if (campaign_travel_active()) { return; }
         if (interbattle_ && interbattle_active())
         {
             interbattle_->scan(scan);
@@ -2555,7 +2600,9 @@ public:
         {
             return Result<bool>::failure(make_error("Campaign continuation not authorized"));
         }
+        auto completedTravel = std::move(travel_map_);
         restore_battle(std::move(restored), 1);
+        travel_map_ = std::move(completedTravel);
         restored_story_pending_ = false;
         phase_ = Phase::briefing;
         briefing_offset_ = 0;
@@ -2661,7 +2708,7 @@ public:
     bool choosing() const { return phase_ == Phase::choice; }
     bool in_battle() const { return phase_ == Phase::battle; }
     uint64_t idle_pose_time() const { return idle_clock_.pose_time(); }
-    bool palette_cycle_due() const { return !texture_resources.active() && palette_effects_ && palette_effects_->cycle_due(animation_elapsed_); }
+    bool palette_cycle_due() const { return palette_effects_ && palette_effects_->cycle_due(animation_elapsed_); }
     bool hostile_actions() const { return phase_ == Phase::hostile_actions; }
     bool automatic_actions() const { return phase_ == Phase::automatic_actions; }
     bool npc_actions() const { return phase_ == Phase::npc_actions; }
@@ -3096,7 +3143,7 @@ public:
     }
     bool spirit_sight_pending = false;
     bool invisibility_presentation_pending() const { return map_.invisibility_present_pending(); }
-    bool original_save_boundary_ready() const { return !temporary_text_ && !deployment_requested_ && !growth_active() && !summon_publish_ && !spirit_sight_pending && !map_.invisibility_present_pending() && !teleport_ && !skill_visual_active() && !synchronous_death_active() && !skill94_death_commit_ && (!battle_ || (!battle_->ai_skill_pending() && !battle_->combat_feedback_active() && !battle_->animating_movement())); }
+    bool original_save_boundary_ready() const { return !campaign_travel_active() && !temporary_text_ && !deployment_requested_ && !growth_active() && !summon_publish_ && !spirit_sight_pending && !map_.invisibility_present_pending() && !teleport_ && !skill_visual_active() && !synchronous_death_active() && !skill94_death_commit_ && (!battle_ || (!battle_->ai_skill_pending() && !battle_->combat_feedback_active() && !battle_->animating_movement())); }
     bool temporary_text_active() const { return temporary_text_.has_value(); }
     void observe_music(unsigned id)
     {
@@ -3292,6 +3339,8 @@ public:
     }
     void frame_presented()
     {
+        if (travel_map_ && phase_ == Phase::briefing) { briefing_presented_ = true; }
+        if (travel_map_) { travel_map_->travel_presented(); }
         if (campaign_defeated() && !defeat_finished()) { defeat_presented_ = true; }
         if (item_presentation_) { item_presentation_->presented = true; }
         if (synchronous_death_active() && synchronous_death_stack_->presentation_pending() && !death_camera_wait_ms_) { death_presentation_presented_ = true; }
@@ -3443,7 +3492,17 @@ public:
         };
         if (statusSkill != 51) { spell_transfer_visual_source_.reset(); }
         auto prepared = Result<OriginalSkill88Visual>::success(OriginalSkill88Visual{});
-        if (statusSkill) { prepared = OriginalSkill88Visual::create_strengthening_status(root_, statusSkill); }
+        unsigned resource_direction = 0;
+        const auto* record = NativeDamageRecords::find(statusSkill);
+        if (record && record->dispatch == 4)
+        {
+            if (caster >= events.units.size() || performer.value_or(caster) >= events.units.size()) { return reject("Directional visual actor or target out of range"); }
+            const auto& actor = events.units.at(performer.value_or(caster));
+            const auto& target = events.units.at(caster);
+            resource_direction = Battle::facing({ actor.x, actor.y }, { target.x, target.y }, actor.direction);
+            if (battle_->ai_skill_request() && battle_->ai_skill_request()->direction) { resource_direction = *battle_->ai_skill_request()->direction; }
+        }
+        if (statusSkill) { prepared = OriginalSkill88Visual::create_strengthening_status(root_, statusSkill, resource_direction); }
         else if (sleep2) { prepared = OriginalSkill88Visual::create_sleep2(root_); }
         else
         {
@@ -3493,6 +3552,11 @@ public:
                 context.suppress_second = events.flags[9] != 0;
                 menu.open(actor, context);
                 if (battle_->ai_skill_request()) { menu.set_ai_direction(battle_->ai_skill_request()->direction); }
+                else if (damage->raw[18] == 5)
+                {
+                    const auto& target = events.units.at(caster);
+                    menu.set_ai_direction(Battle::facing({ actor.x, actor.y }, { target.x, target.y }, actor.direction));
+                }
                 if (!menu.select_record(statusSkill))
                 {
                     return reject("AI damage visual learned record unavailable");
@@ -3604,9 +3668,10 @@ public:
             skill32_background_ = std::move(background).value();
             spell_shake_frame_ = spell_shake_source_;
             spell_shake_cursor_ = -1;
-            skill32_target_ = caster;
+            skill32_target_ = record && record->dispatch == 4 ? performer.value_or(caster) : caster;
             skill_area_center_ = (sleep2 || blessing3 || statusSkill == 29 || statusSkill == 18 || statusSkill == 40 || NativeDamageRecords::find(statusSkill) || NativeAbilityBuffs::find(statusSkill) || NativeTimedBuffs::find(statusSkill) || statusSkill == 8 || statusSkill == 12 || statusSkill == 35 || statusSkill == 39 || statusSkill == 48 || statusSkill == 56 || statusSkill == 60 || statusSkill == 4 || statusSkill == 6 || statusSkill == 9 || statusSkill == 13 || statusSkill == 15 || statusSkill == 53 || statusSkill == 34 || statusSkill == 38 || statusSkill == 54 || statusSkill == 96) ? center : std::nullopt;
             skill88_visual_ = std::move(visual);
+            if (record && record->dispatch == 4) { skill_area_center_.reset(); }
             std::vector<OriginalActionAudioCues::Cue> cues;
             if (damage && statusSkill <= skill_effect_sounds_.size())
             {
@@ -3815,6 +3880,32 @@ public:
     }
     Result<bool> try_tick(unsigned milliseconds)
     {
+        if (travel_map_ && !travel_map_->travel_done())
+        {
+            if (!presentation_driven_) { travel_map_->travel_presented(); }
+            travel_map_->tick_travel(milliseconds);
+            return Result<bool>::success(true);
+        }
+        if (travel_map_ && phase_ == Phase::briefing)
+        {
+            if (presentation_driven_ && !briefing_presented_) { return Result<bool>::success(true); }
+            briefing_elapsed_ += milliseconds;
+            if (briefing_visible_ < briefing_page_.size())
+            {
+                if (briefing_elapsed_ >= message_delay_ * 10)
+                {
+                    const auto c = briefing_page_[briefing_visible_++];
+                    if (c > 128 && briefing_visible_ < briefing_page_.size()) { ++briefing_visible_; }
+                    briefing_elapsed_ = 0;
+                    briefing_presented_ = false;
+                }
+            }
+            else if (briefing_elapsed_ >= 500)
+            {
+                return try_advance();
+            }
+            return Result<bool>::success(true);
+        }
         death_camera_wait_ms_ -= std::min(death_camera_wait_ms_, milliseconds);
         if (campaign_defeated() && !defeat_finished())
         {
@@ -4510,6 +4601,10 @@ public:
         }
         else
         {
+            if (auto request = OriginalCampaign::save_request(OriginalCampaign::SavePoint::before_battle, 0, battle_->turn()))
+            {
+                autosave_requests_.push_back(*request);
+            }
             phase_ = Phase::battle;
             select_ordered_player(true);
         }
@@ -4605,6 +4700,7 @@ public:
     }
     void mouse(float x, float y, bool click)
     {
+        if (campaign_travel_active()) { return; }
         if (interbattle_active())
         {
             interbattle_->mouse(int(x), int(y), click);
@@ -4670,7 +4766,7 @@ public:
                 return;
             }
             sync_movement_contexts();
-            if ((battle_->state() == Battle::State::command || battle_->state() == Battle::State::attack_menu || battle_->state() == Battle::State::finish_confirm)
+            if ((battle_->state() == Battle::State::command || battle_->state() == Battle::State::attack_menu || battle_->state() == Battle::State::item_menu || battle_->state() == Battle::State::finish_confirm)
                 && (battle_->selected() < 0 || size_t(battle_->selected()) >= events.units.size()))
             {
                 cancel_battle_selection();
@@ -4825,6 +4921,7 @@ public:
     std::pair<int, int> camera() const { return { map_.camera_x, map_.camera_y }; }
     void restore_battle(OriginalEvents restored, unsigned turn, bool resume_story = true, bool interbattle = false)
     {
+        travel_map_.reset();
         deployment_requested_ = false;
         deployment_completed_ = false;
         // 原4367CB／4293AF在载入、场景重建前停曲；不将普通模态关闭当场景重建。
@@ -4945,7 +5042,7 @@ public:
             return 0;
         }
         const auto& u = events.units[index];
-        if (!u.present(battle_->turn()) || !(u.status_flags & 0x80) || (u.status_flags & 0x20) || u.hostile() || (u.runtime_role_selector == 1 && !(army_metadata & 0x20)) || battle_->object_category({ u.x, u.y }) != 12)
+        if (!u.present(battle_->turn()) || !(u.status_flags & 0x80) || (u.status_flags & 0x20) || u.hostile() || (u.runtime_role_selector == 1 && !(army_metadata & 0x20)))
         {
             return 0;
         }
@@ -5022,6 +5119,7 @@ public:
     }
     Result<bool> try_advance()
     {
+        if (travel_map_ && !travel_map_->travel_done()) { return Result<bool>::success(true); }
         if (growth_active()) { return Result<bool>::success(true); }
         if (deployment_requested_) { return Result<bool>::success(true); }
         if (teleport_ || evacuation_.active() || death_location_)
@@ -5185,11 +5283,19 @@ public:
         }
         if (phase_ == Phase::briefing)
         {
+            if (travel_map_ && briefing_visible_ < briefing_page_.size())
+            {
+                briefing_visible_ = briefing_page_.size();
+                briefing_elapsed_ = 0;
+                briefing_presented_ = false;
+                return Result<bool>::success(true);
+            }
             if (briefing_offset_ < events.briefing.size())
             {
                 prepare_briefing();
                 return Result<bool>::success(true);
             }
+            travel_map_.reset();
             phase_ = Phase::dialogue;
             event_ = 0;
             while (event_ < events.event_count() && !events.turn_trigger(event_, 1))
@@ -5443,7 +5549,7 @@ public:
     }
     void cycle_frame(std::vector<uint8_t>& image) const
     {
-        if (!texture_resources.active() && palette_effects_ && phase_ != Phase::briefing && !interbattle_active() && !ending_active()) { palette_effects_->cycle(image, animation_elapsed_); }
+        if (palette_effects_ && phase_ != Phase::briefing && !interbattle_active() && !ending_active()) { palette_effects_->cycle(image, animation_elapsed_); }
     }
     Result<std::vector<uint8_t>> prepare_visual_background(const std::function<Result<std::vector<uint8_t>>(OriginalMap&)>& prepare, bool shake = false)
     {
@@ -5476,7 +5582,7 @@ public:
     }
     std::vector<uint8_t> wide_frame(const OriginalMenu& font, const std::vector<uint8_t>& center, bool cycle = true, const std::function<void(std::vector<uint8_t>&)>& groundOverlay = {}) const
     {
-        if (phase_ == Phase::briefing || interbattle_active() || ending_active() || temporary_text_ || campaign_defeated())
+        if (campaign_travel_active() || phase_ == Phase::briefing || interbattle_active() || ending_active() || temporary_text_ || campaign_defeated())
         {
             std::vector<uint8_t> image(WideViewport::bytes());
             paste_page_center(image, center);
@@ -5562,11 +5668,38 @@ public:
             map_.camera_x += offset;
             map_.camera_y += vertical;
             auto image = draw_uncycled(font, groundOverlay, false, true);
+            if (battle_intro())
+            {
+                palette_effects_->transform_rect(image, 0, 121 - vertical, 640, 1, 6);
+                palette_effects_->transform_rect(image, 0, 122 - vertical, 640, 176, 5);
+                palette_effects_->transform_rect(image, 0, 298 - vertical, 640, 1, 6);
+            }
             if (cycle) { cycle_frame(image); }
             return image;
         };
         auto image = WideViewport::render(side);
         paste_page_center(image, center);
+        if (battle_intro())
+        {
+            const auto pose = banner(presentation_driven_ ? banner_presentation_.pose() : intro_elapsed_ / banner_pose_duration_);
+            if (pose.strip == 320)
+            {
+                const int top = 234 + ui_offset_y();
+                const int height = int(word(cel_, sprite_offset(2, 152 - 142) + 2)) + 1;
+                for (int y = top; y < std::min(screen_height, top + height); ++y)
+                {
+                    const size_t row = size_t(y) * screen_width * 4;
+                    for (int x = 0; x < ui_offset_x(); ++x)
+                    {
+                        std::copy_n(image.begin() + row + size_t(ui_offset_x()) * 4, 4, image.begin() + row + size_t(x) * 4);
+                    }
+                    for (int x = ui_offset_x() + 640; x < screen_width; ++x)
+                    {
+                        std::copy_n(image.begin() + row + size_t(ui_offset_x() + 639) * 4, 4, image.begin() + row + size_t(x) * 4);
+                    }
+                }
+            }
+        }
         return image;
     }
     std::vector<uint8_t> draw_visual(const OriginalMap& map_, const std::vector<uint8_t>& skill32_background_, const std::vector<uint8_t>& spell_shake_source_, std::vector<uint8_t>& spell_shake_frame_, int& spell_shake_cursor_) const
@@ -5650,6 +5783,7 @@ public:
     }
     std::vector<uint8_t> draw_uncycled(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay, bool commandOverlay = true, bool worldOnly = false, FullWidthCanvas* canvas = nullptr) const
     {
+        if (travel_map_ && !travel_map_->travel_done()) { return travel_map_->draw(font); }
         if (texture_resources.active()) { texture_resources.set_elapsed(animation_elapsed_); }
         if (!worldOnly && temporary_text_) { return temporary_text_->draw(); }
         map_.set_army_modes(events.army_modes);
@@ -5740,9 +5874,10 @@ public:
             if (battle_intro())
             {
                 // sub_438719: one 50% edge, 176 rows at 60%, then the other edge.
-                palette_effects_->transform_rect(image, 0, 121, 640, 1, 6, canvas);
-                palette_effects_->transform_rect(image, 0, 122, 640, 176, 5, canvas);
-                palette_effects_->transform_rect(image, 0, 298, 640, 1, 6, canvas);
+                // 中央与侧片各自处理一次，避免canvas回调重建时漏掉或重复压暗侧片。
+                palette_effects_->transform_rect(image, 0, 121, 640, 1, 6);
+                palette_effects_->transform_rect(image, 0, 122, 640, 176, 5);
+                palette_effects_->transform_rect(image, 0, 298, 640, 1, 6);
                 auto b = banner(presentation_driven_ ? banner_presentation_.pose() : intro_elapsed_ / banner_pose_duration_);
                 sprite(image, sprite_offset(2, (battle_->hostile_side() ? 149 : 150) - 142), false, 208, b.y);
                 font.draw_banner_ascii(image, { 'T', 'U', 'R', 'N' }, b.turn_x, 250);
@@ -5920,7 +6055,7 @@ public:
                     });
             }
             if (worldOnly) { return image; }
-            if (!battle_menu_overlay_ && in_battle() && !battle_->animating_movement() && (battle_->state() == Battle::State::command || battle_->state() == Battle::State::attack_menu))
+            if (commandOverlay && !battle_menu_overlay_ && in_battle() && !battle_->animating_movement() && !battle_->combat_feedback_active() && !skill_visual_active() && !growth_active() && !synchronous_death_active() && (battle_->state() == Battle::State::command || battle_->state() == Battle::State::attack_menu || battle_->state() == Battle::State::item_menu))
             {
                 // sub_43AA52 uses CEL 143 (4F729C) at the opposite edge of the selected unit.
                 const auto& unit = events.units.at(size_t(battle_->selected()));
@@ -5932,7 +6067,17 @@ public:
                 draw_status_terrain(font, image, unit, panel_y);
                 auto origin = battle_command_origin();
                 bool submenu = battle_->state() == Battle::State::attack_menu;
-                if (commandOverlay && submenu)
+                if (battle_->state() == Battle::State::item_menu)
+                {
+                    for (int choice = 0; choice < 2; ++choice)
+                    {
+                        const unsigned id = choice ? 186u : 184u;
+                        const bool selected = choice == battle_->item_choice();
+                        sprite(image, sprite_offset(2, id - 142 + unsigned(selected)), false, origin.x + choice * 32, origin.y, true);
+                        if (selected) { OriginalBattleCaptions::draw(font, image, font.text_bytes(68 + choice), origin.x + choice * 32, origin.y); }
+                    }
+                }
+                else if (commandOverlay && submenu)
                 {
                     int slot = 0;
                     for (int attack = 0; attack < 8; ++attack)
@@ -5983,7 +6128,7 @@ public:
                     }
                 }
             }
-            if (!battle_menu_overlay_ && in_battle() && !battle_->animating_movement() && (battle_->state() == Battle::State::idle || battle_->state() == Battle::State::movement))
+            if (commandOverlay && !battle_menu_overlay_ && in_battle() && !battle_->animating_movement() && !battle_->combat_feedback_active() && !skill_visual_active() && (battle_->state() == Battle::State::idle || battle_->state() == Battle::State::movement))
             {
                 int status_unit = battle_->hovered_unit(events.units);
                 if (status_unit >= 0)
@@ -6051,16 +6196,54 @@ public:
         if (worldOnly) { return image; }
         if (phase_ == Phase::briefing)
         {
-            std::fill(image.begin(), image.end(), 0);
+            if (travel_map_) { image = travel_map_->draw(font, false); }
+            else
+            {
+                std::fill(image.begin(), image.end(), 0);
+            }
             for (size_t i = 3; i < image.size(); i += 4)
             {
                 image[i] = 255;
             }
             size_t p = 0;
             int x = 58, y = 150;
-            while (p < briefing_page_.size())
+            const size_t visible = travel_map_ ? briefing_visible_ : briefing_page_.size();
+            unsigned units = 0;
+            while (p < visible)
             {
                 unsigned lead = briefing_page_[p++];
+                if (travel_map_)
+                {
+                    if (lead == '*')
+                    {
+                        x = 58;
+                        y += 25;
+                        units = 0;
+                        continue;
+                    }
+                    std::vector<uint8_t> glyph{ uint8_t(lead) };
+                    if (lead > 128 && p < visible) { glyph.push_back(briefing_page_[p++]); }
+                    std::vector<uint8_t> mask(image.size());
+                    font.draw_original_large(mask, glyph, x, y, 10);
+                    const auto color = travel_map_->text_color(10);
+                    for (size_t pixel = 0; pixel < image.size(); pixel += 4)
+                    {
+                        const unsigned alpha = mask[pixel + 3];
+                        for (unsigned component = 0; component < 3; ++component)
+                        {
+                            image[pixel + component] = uint8_t((unsigned(color[component]) * alpha + unsigned(image[pixel + component]) * (255 - alpha) + 127) / 255);
+                        }
+                    }
+                    x += lead > 128 ? 24 : 16;
+                    units += lead > 128 ? 2 : 1;
+                    if (units >= 40)
+                    {
+                        x = 58;
+                        y += 25;
+                        units = 0;
+                    }
+                    continue;
+                }
                 if (lead <= 0x80)
                 {
                     continue;
@@ -6069,7 +6252,7 @@ public:
                 {
                     break;
                 }
-                font.draw_big5(image, { uint8_t(lead), briefing_page_.at(p++) }, x, y, 56);
+                font.draw_big5(image, { uint8_t(lead), briefing_page_.at(p++) }, x, y, travel_map_ ? 10 : 56);
                 x += 24;
                 if (x >= 538)
                 {

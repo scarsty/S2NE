@@ -2,6 +2,7 @@
   "map_id": 63,
   "music": 10,
   "route": {
+    "interbattle_town_id": 63,
     "next_stage": 264,
     "alternate_stage": 0,
     "mode": 1,

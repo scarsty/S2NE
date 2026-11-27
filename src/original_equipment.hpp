@@ -324,7 +324,8 @@ public:
         for (size_t i = 0; i < state.groups[0].units.size(); ++i)
         {
             const auto& r = state.groups[0].units[i];
-            if (!(r.at(0x33) & 0x70) && sw(r, 8) != 1 && eligible(r, id))
+            const bool available = state.battle_context() ? !(r.at(0x33) & 0x60) : !(r.at(0x33) & 0x70) && sw(r, 8) != 1;
+            if (available && eligible(r, id))
             {
                 out.push_back(i);
             }
@@ -339,7 +340,8 @@ public:
         }
         auto& role = state.groups[0].units[index];
         unsigned old = word(role, 0xCB + destination * 2);
-        if ((role[0x33] & 0x70) || sw(role, 8) == 1 || old > word(items_, 0))
+        const bool unavailable = state.battle_context() ? (role[0x33] & 0x60) != 0 : (role[0x33] & 0x70) != 0 || sw(role, 8) == 1;
+        if (unavailable || old > word(items_, 0))
         {
             return Result<bool>::failure(make_error("Original44D439 equipment recipient unavailable"));
         }

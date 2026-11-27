@@ -746,36 +746,36 @@ public:
                         pixel(left + 604, y, 40);
                     }
                 }
-                const unsigned ability = kinds_.at(record(selected().kind) + 19);
-                if (ability)
+            }
+            const unsigned ability = kinds_.at(record(selected().kind) + 19);
+            if (ability)
+            {
+                ResourceReader kinds(kinds_);
+                size_t offset = kinds.number(6, 4);
+                const unsigned count = kinds.number(10);
+                if (!kinds || ability >= count) { return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid promotion innate ability string")); }
+                for (unsigned index = 0; index < ability; ++index)
                 {
-                    ResourceReader kinds(kinds_);
-                    size_t offset = kinds.number(6, 4);
-                    const unsigned count = kinds.number(10);
-                    if (!kinds || ability >= count) { return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid promotion innate ability string")); }
-                    for (unsigned index = 0; index < ability; ++index)
-                    {
-                        while (offset < kinds_.size() && kinds_[offset]) { ++offset; }
-                        ++offset;
-                    }
-                    auto label = font_.text_bytes(158);
-                    label.push_back(' ');
-                    while (offset < kinds_.size() && kinds_[offset]) { label.push_back(kinds_[offset++]); }
-                    if (offset >= kinds_.size()) { return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Truncated promotion innate ability string")); }
-                    text(label, left + 370, top + 394, 54);
+                    while (offset < kinds_.size() && kinds_[offset]) { ++offset; }
+                    ++offset;
                 }
-                if (confirmation_hover_ == 11)
+                auto label = font_.text_bytes(158);
+                label.push_back(' ');
+                while (offset < kinds_.size() && kinds_[offset]) { label.push_back(kinds_[offset++]); }
+                if (offset >= kinds_.size()) { return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Truncated promotion innate ability string")); }
+                text(label, left + 370, top + 394, 54);
+            }
+            if (confirmation_hover_ == 11)
+            {
+                for (int x = left + 8; x <= left + 184; ++x)
                 {
-                    for (int x = left + 8; x <= left + 184; ++x)
-                    {
-                        pixel(x, top + 389, 40);
-                        pixel(x, top + 421, 40);
-                    }
-                    for (int y = top + 389; y <= top + 421; ++y)
-                    {
-                        pixel(left + 8, y, 40);
-                        pixel(left + 184, y, 40);
-                    }
+                    pixel(x, top + 389, 40);
+                    pixel(x, top + 421, 40);
+                }
+                for (int y = top + 389; y <= top + 421; ++y)
+                {
+                    pixel(left + 8, y, 40);
+                    pixel(left + 184, y, 40);
                 }
             }
         }
