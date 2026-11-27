@@ -9,8 +9,17 @@ namespace s2ne
 class OriginalProgression
 {
     int scale_{};
+    inline static bool cheat_enabled_{};
+    int action_reward(const OriginalEvents::Unit& unit, int raw, unsigned difficulty) const
+    {
+        if (raw && cheat_enabled_ && !unit.npc_class() && !unit.hostile() && !(unit.status_flags & 0x10)) { return 999; }
+        int reward = experience_award(unit, raw);
+        if (!unit.hostile()) { reward = apply_difficulty_reward(reward, difficulty); }
+        return reward;
+    }
 
 public:
+    static void initialize_cheat(const std::filesystem::path& working) { cheat_enabled_ = std::filesystem::is_regular_file(working / "cheat"); }
     struct GrowthStep
     {
         OriginalEvents::Unit before;
@@ -89,8 +98,7 @@ public:
     PendingGrowth stage(const OriginalEvents::Unit& unit, OriginalRandom random, int raw, bool hostile_reward = false, unsigned difficulty = 3, bool present_experience = false) const
     {
         auto staged = unit;
-        int reward = experience_award(staged, raw);
-        if (!unit.hostile()) { reward = apply_difficulty_reward(reward, difficulty); }
+        int reward = action_reward(staged, raw, difficulty);
         if (raw && (!unit.hostile() || hostile_reward)) { staged.experience = std::min(999u, unsigned(uint16_t(staged.experience + reward))); }
         PendingGrowth pending(staged, random, !unit.hostile() || hostile_reward);
         if (present_experience && !unit.hostile() && reward > 0) { pending.set_experience_notice(reward); }
@@ -162,8 +170,7 @@ public:
         auto staged = unit;
         auto staged_random = random;
         Result result;
-        result.experience_award = experience_award(staged, raw);
-        if (!unit.hostile()) { result.experience_award = apply_difficulty_reward(result.experience_award, difficulty); }
+        result.experience_award = action_reward(staged, raw, difficulty);
         if (raw)
         {
             staged.experience = std::min(999u, unsigned(uint16_t(staged.experience + result.experience_award)));

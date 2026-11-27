@@ -96,7 +96,10 @@ JSON 文件位于资源根目录的 `json` 文件夹。阶段文件命名为
 
 `towns.json` 是共享村庄表。`records` 中的 `id` 是村庄表编号，不是阶段编号；`name` 是
 UTF-8 村庄名称，`x`、`y` 是主地图坐标，`services_allowed` 是原村庄服务开关，
-`offers.weapons`、`offers.armor` 和 `offers.items` 是商店三个分类的原物品编号。运行时
+`offers.weapons`、`offers.armor` 和 `offers.items` 是商店三个分类的原物品编号。
+`rumors` 保存原BIN4的两段UTF-8旅店传闻，顺序对应原随机分支0／1，必须恰好两项。
+导出入口为 `tools/export-town-json.ps1`，同时更新资源根副本与工程内副本。
+运行时
 将这些语义字段重建为现有旅馆、商店和世界地图消费者需要的内部表；文件不再保存原始字节
 转储，也不对未由源码确认的字节自行命名。
 

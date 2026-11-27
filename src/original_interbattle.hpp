@@ -29,7 +29,9 @@ class OriginalInterbattle
                 {
                     for (unsigned k = 0; k < 3; ++k)
                     {
-                        image[p + k] = opening_palette_channel(uint8_t(caption_palette_[ink * 3 + k] >> 2));
+                        const unsigned color = opening_palette_channel(uint8_t(caption_palette_[ink * 3 + k] >> 2));
+                        const unsigned alpha = mask[p + 3];
+                        image[p + k] = uint8_t((color * alpha + unsigned(image[p + k]) * (255 - alpha) + 127) / 255);
                     }
                     image[p + 3] = 255;
                 }
@@ -75,7 +77,7 @@ public:
         auto dat = std::move(dat_result).value();
         if (dat.size() < 769 || dat[dat.size() - 769] != 12) { return s2ne::Result<bool>::failure(make_error("Missing hub caption palette")); }
         caption_palette_.assign(dat.end() - 768, dat.end());
-        auto external = texture_resources.load_image_scaled("interbattle", resource, 768, 480);
+        auto external = texture_resources.load_image_scaled("interbattle", resource, screen_width, screen_height);
         if (!external) { return s2ne::Result<bool>::failure(external.error()); }
         wide_background_ = external.value().pixels;
         set_fixed_page_background(wide_background_);

@@ -102,7 +102,8 @@ public:
             {
                 size_t p = (size_t(y) * 640 + x) * 4;
                 if (!layer[p + 3]) { continue; }
-                for (unsigned c = 0; c < 3; ++c) { image[p + c] = ink_[c]; }
+                const unsigned alpha = layer[p + 3];
+                for (unsigned c = 0; c < 3; ++c) { image[p + c] = uint8_t((unsigned(ink_[c]) * alpha + unsigned(image[p + c]) * (255 - alpha) + 127) / 255); }
             }
         }
         return image;

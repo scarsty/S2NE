@@ -675,8 +675,9 @@ public:
     {
         if (!position_)
         {
-            const std::vector<uint8_t> black(WideViewport::legacy_bytes);
-            return WideViewport::compose(center, black, black);
+            std::vector<uint8_t> image(WideViewport::bytes());
+            paste_page_center(image, center);
+            return image;
         }
         auto saved = map_;
         struct Restore
@@ -686,11 +687,15 @@ public:
             ~Restore() { map = std::move(saved); }
         } restore{ map_, std::move(saved) };
         const int camera = map_.camera_x;
-        map_.camera_x = camera - WideViewport::margin;
-        auto left = draw(true);
-        map_.camera_x = camera + WideViewport::margin;
-        auto right = draw(true);
-        return WideViewport::compose(center, left, right);
+        const int vertical = map_.camera_y;
+        auto image = WideViewport::render([&](int x, int y)
+            {
+                map_.camera_x = camera + x;
+                map_.camera_y = vertical + y;
+                return draw(true);
+            });
+        paste_page_center(image, center);
+        return image;
     }
     std::vector<uint8_t> draw(bool world_only = false, FullWidthCanvas* canvas = nullptr)
     {

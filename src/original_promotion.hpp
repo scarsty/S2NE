@@ -15,6 +15,7 @@ namespace s2ne
 class OriginalPromotion
 {
 public:
+    inline static bool protagonist_class_tree = false;
     static constexpr unsigned eligibility_address = 0x4409B7, selection_address = 0x45954D,
                               confirmation_address = 0x459FCF, commit_address = 0x45B5C4;
     struct Candidate
@@ -377,6 +378,33 @@ public:
                 result.push_back(candidate(kind));
             }
         }
+        if (protagonist_class_tree && (unit.id == 11 || unit.id == 1))
+        {
+            const unsigned base = unit.id == 11 ? 81u : 87u;
+            const unsigned first = unit.id == 11 ? 1u : 36u;
+            const bool exclusive_highest = unit.appearance >= base + 3 && unit.appearance <= base + 5;
+            const bool ordinary_highest = candidate(unit.appearance).tier == 5 && unit.appearance >= first && unit.appearance < first + 35;
+            if (exclusive_highest || ordinary_highest)
+            {
+                for (unsigned kind = first; kind < first + 9; ++kind)
+                {
+                    if (target_allowed(unit, kind) && std::none_of(result.begin(), result.end(), [kind](const auto& c)
+                            {
+                                return c.kind == kind;
+                            }))
+                    {
+                        result.push_back(candidate(kind));
+                    }
+                }
+                if (target_allowed(unit, base) && std::none_of(result.begin(), result.end(), [base](const auto& c)
+                        {
+                            return c.kind == base;
+                        }))
+                {
+                    result.push_back(candidate(base));
+                }
+            }
+        }
         return result;
     }
     bool open(OriginalEvents::Unit unit, unsigned runtime_threshold, Commit commit = {}, bool battlefield = true, int game_mode = 0)
@@ -568,10 +596,25 @@ public:
         if (page_ == Page::selection)
         {
             sprite(210, 0, 0);
+            const bool compact = choices_.size() > 8;
+            if (compact)
+            {
+                const auto original_panel = image;
+                for (int y = 55; y < 469; ++y)
+                {
+                    const int local = (y - 55) % 138;
+                    int source_y = 55 + local;
+                    if (local >= 38) { source_y = 93 + (local - 38) * 168 / 100; }
+                    std::copy_n(original_panel.begin() + (size_t(source_y) * 640 + 8) * 4, 620 * 4,
+                        image.begin() + (size_t(y) * 640 + 8) * 4);
+                }
+            }
             text(substitute(font_.text_bytes(178), { unit_.name }), 34, 14, 186);
+            const int row_height = compact ? 138 : 206;
+            const int cell_height = compact ? 132 : 200;
             for (size_t i = 0; i < choices_.size(); ++i)
             {
-                int x = 101 + int(i % 4) * 145, y = i < 4 ? 64 : 270;
+                int x = 101 + int(i % 4) * 145, y = 64 + int(i / 4) * row_height;
                 text(choices_[i].name, x - int(choices_[i].name.size()) * 6, y, i == selected_ ? 40 : 51);
                 ResourceReader palette(pal_), data(prg_);
                 const unsigned index_address = palette.number(1320, 4), frame_address = palette.number(1328, 4);
@@ -589,17 +632,38 @@ public:
                     return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Invalid promotion class frame"));
                 }
                 const unsigned w = data.number(frames + offset) + 1, h = data.number(frames + offset + 2) + 1;
-                auto rendered = draw_original_sprite(image, std::span<const uint8_t>(prg_).subspan(frames + offset, length), pal_, 0, false,
-                    x + (i == selected_ ? int(i % 4) : 0) - int(w / 2), y + 190 - int(h), OriginalZeroRun::transparent);
+                if (compact && (w > 640 || h > 480))
+                {
+                    return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Promotion class frame exceeds compact decode surface"));
+                }
+                std::vector<uint8_t> scaled_source;
+                if (compact) { scaled_source.resize(image.size()); }
+                auto rendered = draw_original_sprite(compact ? scaled_source : image, std::span<const uint8_t>(prg_).subspan(frames + offset, length), pal_, 0, false,
+                    compact ? 0 : x + (i == selected_ ? int(i % 4) : 0) - int(w / 2), compact ? 0 : y + 190 - int(h), OriginalZeroRun::transparent);
                 if (!rendered) { return s2ne::Result<std::vector<uint8_t>>::failure(rendered.error()); }
+                if (compact)
+                {
+                    const unsigned scale = std::max({ 110u, h, (w * 110 + 119) / 120 });
+                    const unsigned dw = std::max(1u, w * 110 / scale), dh = std::max(1u, h * 110 / scale);
+                    for (unsigned sy = 0; sy < dh; ++sy)
+                    {
+                        for (unsigned sx = 0; sx < dw; ++sx)
+                        {
+                            const size_t source = (size_t(sy * h / dh) * 640 + sx * w / dw) * 4;
+                            if (!scaled_source[source + 3]) { continue; }
+                            const size_t target = (size_t(y + 122 - int(dh) + int(sy)) * 640 + x - int(dw / 2) + sx) * 4;
+                            std::copy_n(scaled_source.begin() + source, 4, image.begin() + target);
+                        }
+                    }
+                }
                 if (i == selected_)
                 {
                     for (int xx = x - 65; xx <= x + 65; ++xx)
                     {
                         pixel(xx, y - 8, 40);
-                        pixel(xx, y + 192, 40);
+                        pixel(xx, y + cell_height - 8, 40);
                     }
-                    for (int yy = y - 8; yy <= y + 192; ++yy)
+                    for (int yy = y - 8; yy <= y + cell_height - 8; ++yy)
                     {
                         pixel(x - 65, yy, 40);
                         pixel(x + 65, yy, 40);
@@ -785,7 +849,10 @@ public:
             case 0x50:
                 if (choices_.size() > 4)
                 {
-                    selected_ = std::min(selected_ < 4 ? selected_ + 4 : selected_ - 4, choices_.size() - 1);
+                    const size_t rows = (choices_.size() + 3) / 4;
+                    const size_t row = selected_ / 4;
+                    const size_t next = e.scan == 0x48 ? (row + rows - 1) % rows : (row + 1) % rows;
+                    selected_ = std::min(next * 4 + selected_ % 4, choices_.size() - 1);
                 }
                 break;
             default: return {};
@@ -798,8 +865,9 @@ public:
         {
             for (size_t i = 0; i < choices_.size(); ++i)
             {
-                int x = 36 + int(i % 4) * 146, y = i < 4 ? 55 : 261;
-                if (e.x < x || e.x > x + 130 || e.y < y || e.y > y + 200)
+                const bool compact = choices_.size() > 8;
+                int x = 36 + int(i % 4) * 146, y = 55 + int(i / 4) * (compact ? 138 : 206);
+                if (e.x < x || e.x > x + 130 || e.y < y || e.y > y + (compact ? 132 : 200))
                 {
                     continue;
                 }

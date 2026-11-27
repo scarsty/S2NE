@@ -21,7 +21,7 @@ class OriginalMap
     std::shared_ptr<const OriginalPalette> palette_;
     std::vector<uint8_t> pixels_, terrain_names_;
     unsigned terrain_ground_names_{}, terrain_object_names_{};
-    int viewport_extension_{};
+    int viewport_extension_{}, viewport_extension_y_{};
     struct Image
     {
         unsigned w, h;
@@ -56,7 +56,7 @@ class OriginalMap
     unsigned invisibility_scratch_{};
     bool invisibility_present_pending_{};
     std::vector<std::vector<uint8_t>> invisibility_presentations_;
-    std::array<std::vector<std::vector<uint8_t>>, 2> invisibility_side_presentations_;
+    std::vector<std::vector<std::vector<uint8_t>>> invisibility_side_presentations_;
     size_t invisibility_presentation_cursor_{};
     mutable bool write_invisibility_world_{};
     mutable bool read_world_background_{};
@@ -1416,6 +1416,30 @@ public:
         return Result<std::pair<int, int>>::success({ x * 64 + (y & 1) * 32 - camera_x, y * 16 - camera_y - std::max(0, h - 1) * 16 });
     }
     std::pair<unsigned, unsigned> dimensions() const { return { width, height }; }
+    std::vector<uint8_t> overview(int output_width, int output_height)
+    {
+        if (output_width <= 0 || output_height <= 0 || !width || !height) { fatal("Invalid map overview dimensions"); }
+        const int saved_x = camera_x, saved_y = camera_y;
+        std::vector<uint8_t> result(size_t(output_width) * output_height * 4);
+        std::map<std::pair<int, int>, std::vector<uint8_t>> tiles;
+        for (int y = 0; y < output_height; ++y)
+        {
+            for (int x = 0; x < output_width; ++x)
+            {
+                const int sx = x * int(width * 64) / output_width, sy = y * int(height * 32) / output_height;
+                camera_x = (sx / 640) * 640;
+                camera_y = (sy / 480) * 480;
+                const auto key = std::pair{ camera_x, camera_y };
+                if (!tiles.contains(key)) { tiles.emplace(key, draw()); }
+                const auto& tile = tiles.at(key);
+                const size_t source = (size_t(sy - camera_y) * 640 + sx - camera_x) * 4;
+                std::copy_n(tile.begin() + source, 4, result.begin() + (size_t(y) * output_width + x) * 4);
+            }
+        }
+        camera_x = saved_x;
+        camera_y = saved_y;
+        return result;
+    }
     std::pair<int, int> screen_position(int x, int y) const { return try_screen_position(x, y).value(); }
     Result<std::pair<int, int>> try_completion_location(unsigned completion) const
     {
@@ -2445,13 +2469,18 @@ public:
         auto prepared = *this;
         if (wide)
         {
-            for (unsigned side = 0; side < 2; ++side)
+            prepared.invisibility_side_presentations_.clear();
+            for (int y = 0; y < screen_height; y += 480)
             {
-                auto slice = *this;
-                slice.camera_x += side == 0 ? -64 : 64;
-                auto result = slice.prepare_invisibility_buffers(baseline, staged, targets, turn, elapsed, false);
-                if (!result) { return result; }
-                prepared.invisibility_side_presentations_[side] = std::move(slice.invisibility_presentations_);
+                for (int x = 0; x < screen_width; x += 640)
+                {
+                    auto slice = *this;
+                    slice.camera_x += x - ui_offset_x();
+                    slice.camera_y += y - ui_offset_y();
+                    auto result = slice.prepare_invisibility_buffers(baseline, staged, targets, turn, elapsed, false);
+                    if (!result) { return result; }
+                    prepared.invisibility_side_presentations_.push_back(std::move(slice.invisibility_presentations_));
+                }
             }
         }
         prepared.invisibility_world_ = pixels_;
@@ -2854,7 +2883,13 @@ public:
             left += viewport_extension_;
             right -= viewport_extension_;
         }
-        return { std::clamp(x, left, right), std::clamp(y, 16, std::max(16, int(height * 32) - 480)) };
+        int top = 16, bottom = std::max(16, int(height * 32) - 480);
+        if (bottom - top >= viewport_extension_y_ * 2)
+        {
+            top += viewport_extension_y_;
+            bottom -= viewport_extension_y_;
+        }
+        return { std::clamp(x, left, right), std::clamp(y, top, bottom) };
     }
     void constrain_camera()
     {
@@ -2862,9 +2897,10 @@ public:
         camera_x = position.first;
         camera_y = position.second;
     }
-    void set_viewport_extension(int extension)
+    void set_viewport_extension(int extension, int vertical = 0)
     {
-        viewport_extension_ = std::max(0, extension);
+        viewport_extension_ = (std::max(0, extension) + 31) / 32 * 32;
+        viewport_extension_y_ = (std::max(0, vertical) + 15) / 16 * 16;
         constrain_camera();
     }
     void pan(int dx, int dy)

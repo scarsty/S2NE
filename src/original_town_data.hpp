@@ -75,17 +75,24 @@ inline Result<std::vector<uint8_t>> try_load_towns_json(const std::filesystem::p
                 values[category].push_back(item.get<unsigned>());
             }
         }
-        const auto utf8 = source.at("name").get<std::string>();
-        int wide_length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), nullptr, 0);
-        if (wide_length <= 0) { return Result<std::vector<uint8_t>>::failure(make_error("Invalid town JSON name: " + path.string())); }
-        std::wstring wide(size_t(wide_length), L'\0');
-        wide.resize(size_t(wide_length));
-        MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), wide.data(), wide_length);
-        int byte_length = WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide.data(), wide_length, nullptr, 0, nullptr, nullptr);
-        if (byte_length <= 0) { return Result<std::vector<uint8_t>>::failure(make_error("Town name is not CP950 encodable: " + path.string())); }
-        std::vector<uint8_t> name;
-        name.resize(size_t(byte_length));
-        WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide.data(), wide_length, reinterpret_cast<char*>(name.data()), byte_length, nullptr, nullptr);
+        auto encode = [&](const std::string& utf8) -> Result<std::vector<uint8_t>>
+        {
+            if (utf8.empty()) { return Result<std::vector<uint8_t>>::success({}); }
+            int wide_length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), nullptr, 0);
+            if (wide_length <= 0) { return Result<std::vector<uint8_t>>::failure(make_error("Invalid town JSON name: " + path.string())); }
+            std::wstring wide(size_t(wide_length), L'\0');
+            wide.resize(size_t(wide_length));
+            MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.data(), int(utf8.size()), wide.data(), wide_length);
+            int byte_length = WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide.data(), wide_length, nullptr, 0, nullptr, nullptr);
+            if (byte_length <= 0) { return Result<std::vector<uint8_t>>::failure(make_error("Town name is not CP950 encodable: " + path.string())); }
+            std::vector<uint8_t> name;
+            name.resize(size_t(byte_length));
+            WideCharToMultiByte(950, WC_NO_BEST_FIT_CHARS, wide.data(), wide_length, reinterpret_cast<char*>(name.data()), byte_length, nullptr, nullptr);
+            return Result<std::vector<uint8_t>>::success(std::move(name));
+        };
+        auto encoded = encode(source.at("name").get<std::string>());
+        if (!encoded) { return encoded; }
+        const auto& name = encoded.value();
         size_t pointer = result.size();
         result.insert(result.end(), name.begin(), name.end());
         result.push_back(0);
@@ -96,6 +103,18 @@ inline Result<std::vector<uint8_t>> try_load_towns_json(const std::filesystem::p
                 result.push_back(uint8_t(item));
                 result.push_back(uint8_t(item >> 8));
             }
+        }
+        if (!source.contains("rumors") || !source.at("rumors").is_array() || source.at("rumors").size() != 2)
+        {
+            return Result<std::vector<uint8_t>>::failure(make_error("Town JSON requires two rumors: " + path.string()));
+        }
+        for (const auto& rumor : source.at("rumors"))
+        {
+            if (!rumor.is_string()) { return Result<std::vector<uint8_t>>::failure(make_error("Invalid town JSON rumor: " + path.string())); }
+            auto text = encode(rumor.get<std::string>());
+            if (!text) { return text; }
+            result.insert(result.end(), text.value().begin(), text.value().end());
+            result.push_back(0);
         }
         size_t record = 2 + i * 14;
         if (!put_dword(record, pointer) || !put_word(record + 6, source.at("x").get<unsigned>()) || !put_word(record + 8, source.at("y").get<unsigned>()) || !put_word(record + 10, source.at("services_allowed").get<bool>() ? 1 : 0))

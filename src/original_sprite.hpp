@@ -76,7 +76,7 @@ inline Result<bool> draw_original_sprite(std::vector<uint8_t>& image, std::span<
                 // Keep the existing raw typed-image index mask distinct from RLE literals.
                 // 原版零游程始终表示底图透明，不能覆盖页面下方的已有像素。
                 bool skip = !ink && (type || (zero == OriginalZeroRun::transparent && !(op & 128)));
-                if (skip || dx < 0 || dx >= stride || dy < 0 || dy >= 480)
+                if (skip || dx < 0 || dx >= stride || dy < 0 || dy >= framebuffer_height(image))
                 {
                     continue;
                 }

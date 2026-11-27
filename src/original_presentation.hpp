@@ -1,4 +1,5 @@
 #pragma once
+#include "framebuffer.hpp"
 #include "runtime_error.hpp"
 #include <SDL3/SDL.h>
 #include <algorithm>
@@ -11,8 +12,8 @@ namespace s2ne
 inline std::vector<uint8_t> fixed_page_background;
 inline void paste_page_center(std::span<uint8_t> wide, std::span<const uint8_t> center)
 {
-    if (wide.size() != 768u * 480 * 4 || center.size() != 640u * 480 * 4) { fatal("Invalid full width canvas"); }
-    for (int y = 0; y < 480; ++y) { std::copy_n(center.begin() + size_t(y) * 640 * 4, 640 * 4, wide.begin() + (size_t(y) * 768 + 64) * 4); }
+    if (wide.size() != size_t(screen_width) * screen_height * 4 || center.size() != 640u * 480 * 4) { fatal("Invalid full width canvas"); }
+    for (int y = 0; y < 480; ++y) { std::copy_n(center.begin() + size_t(y) * 640 * 4, 640 * 4, wide.begin() + (size_t(y + ui_offset_y()) * screen_width + ui_offset_x()) * 4); }
 }
 class FullWidthCanvas
 {
@@ -38,7 +39,7 @@ public:
         auto wide = compose(center);
         auto result = effect(wide);
         if (!result) { return result; }
-        for (int y = 0; y < 480; ++y) { std::copy_n(wide.begin() + (size_t(y) * 768 + 64) * 4, 640 * 4, center.begin() + size_t(y) * 640 * 4); }
+        for (int y = 0; y < 480; ++y) { std::copy_n(wide.begin() + (size_t(y + ui_offset_y()) * screen_width + ui_offset_x()) * 4, 640 * 4, center.begin() + size_t(y) * 640 * 4); }
         pixels_ = std::move(wide);
         return result;
     }
@@ -65,14 +66,14 @@ inline void fade_full_width_canvas(std::vector<uint8_t>& image, unsigned intensi
 }
 inline void set_fixed_page_background(std::span<const uint8_t> pixels)
 {
-    if (pixels.size() != 768u * 480 * 4) { fatal("Invalid fixed page background"); }
+    if (pixels.size() != size_t(screen_width) * screen_height * 4) { fatal("Invalid fixed page background"); }
     fixed_page_background.assign(pixels.begin(), pixels.end());
 }
 inline std::vector<uint8_t> fixed_page_center()
 {
-    if (fixed_page_background.size() != 768u * 480 * 4) { fatal("Invalid fixed page background"); }
+    if (fixed_page_background.size() != size_t(screen_width) * screen_height * 4) { fatal("Invalid fixed page background"); }
     std::vector<uint8_t> result(640 * 480 * 4);
-    for (int y = 0; y < 480; ++y) { std::copy_n(fixed_page_background.begin() + (size_t(y) * 768 + 64) * 4, 640 * 4, result.begin() + size_t(y) * 640 * 4); }
+    for (int y = 0; y < 480; ++y) { std::copy_n(fixed_page_background.begin() + (size_t(y + ui_offset_y()) * screen_width + ui_offset_x()) * 4, 640 * 4, result.begin() + size_t(y) * 640 * 4); }
     return result;
 }
 inline std::vector<uint8_t> compose_fixed_page(std::span<const uint8_t> image)
@@ -96,7 +97,7 @@ inline Result<bool> configure_original_presentation(SDL_Renderer* renderer, SDL_
     {
         return Result<bool>::failure(make_error("Original presentation requires renderer and texture"));
     }
-    if (!SDL_SetRenderLogicalPresentation(renderer, 768, 480, SDL_LOGICAL_PRESENTATION_LETTERBOX) || !SDL_SetTextureScaleMode(texture, scale_mode) || !SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_NONE))
+    if (!SDL_SetRenderLogicalPresentation(renderer, screen_width, screen_height, SDL_LOGICAL_PRESENTATION_LETTERBOX) || !SDL_SetTextureScaleMode(texture, scale_mode) || !SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_NONE))
     {
         return Result<bool>::failure(make_error(SDL_GetError()));
     }
@@ -105,28 +106,34 @@ inline Result<bool> configure_original_presentation(SDL_Renderer* renderer, SDL_
 inline bool legacy_coordinates_from_window(SDL_Renderer* renderer, float x, float y, float* rx, float* ry)
 {
     if (!SDL_RenderCoordinatesFromWindow(renderer, x, y, rx, ry)) { return false; }
-    *rx -= 64;
+    *rx -= ui_offset_x();
+    *ry -= ui_offset_y();
     return true;
 }
 inline bool legacy_coordinates_to_window(SDL_Renderer* renderer, float x, float y, float* wx, float* wy)
 {
-    return SDL_RenderCoordinatesToWindow(renderer, x + 64, y, wx, wy);
+    return SDL_RenderCoordinatesToWindow(renderer, x + ui_offset_x(), y + ui_offset_y(), wx, wy);
 }
 inline bool legacy_event_coordinates(SDL_Renderer* renderer, SDL_Event* event)
 {
     if (!SDL_ConvertEventToRenderCoordinates(renderer, event)) { return false; }
     if (event->type == SDL_EVENT_MOUSE_MOTION)
     {
-        event->motion.x -= 64;
+        event->motion.x -= ui_offset_x();
+        event->motion.y -= ui_offset_y();
     }
-    else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN || event->type == SDL_EVENT_MOUSE_BUTTON_UP) { event->button.x -= 64; }
+    else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN || event->type == SDL_EVENT_MOUSE_BUTTON_UP)
+    {
+        event->button.x -= ui_offset_x();
+        event->button.y -= ui_offset_y();
+    }
     return true;
 }
 inline bool render_logical_frame(SDL_Renderer* renderer, SDL_Texture* texture)
 {
     float width{}, height{};
     if (!SDL_GetTextureSize(texture, &width, &height)) { return false; }
-    const SDL_FRect destination{ (768 - width) / 2, 0, width, height };
+    const SDL_FRect destination{ float(int(screen_width - width) / 2), float(int(screen_height - height) / 2), width, height };
     return SDL_RenderTexture(renderer, texture, nullptr, &destination);
 }
 }    //namespace s2ne

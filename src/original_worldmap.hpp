@@ -491,7 +491,8 @@ public:
                         {
                             for (unsigned k = 0; k < 3; ++k)
                             {
-                                image[p + k] = channel(ink, k);
+                                const unsigned alpha = mask[p + 3];
+                                image[p + k] = uint8_t((unsigned(channel(ink, k)) * alpha + unsigned(image[p + k]) * (255 - alpha) + 127) / 255);
                             }
                             image[p + 3] = 255;
                         }

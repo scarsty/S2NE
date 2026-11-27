@@ -78,6 +78,7 @@ int s2ne::run_application(int argc, char** argv)
     } textureCleanup;
     {
         const s2ne::AppOptions options(argc, argv);
+        s2ne::OriginalProgression::initialize_cheat(std::filesystem::current_path());
         s2ne::texture_resources.configure(std::filesystem::current_path());
         const bool diagnostics = options.stdio;
         s2ne::configure_terminal_output(diagnostics);
@@ -98,6 +99,10 @@ int s2ne::run_application(int argc, char** argv)
         }
 
         auto root = options.resource_root(argc, argv);
+        const auto displaySettings = s2ne::OriginalSettings::load_state(root);
+        s2ne::screen_width = displaySettings.screen_width;
+        s2ne::OriginalPromotion::protagonist_class_tree = displaySettings.protagonist_class_tree;
+        s2ne::screen_height = displaySettings.screen_height;
         std::vector<s2ne::Flic> clips;
         for (unsigned id : { 21u, 22u })
         {
@@ -147,7 +152,7 @@ int s2ne::run_application(int argc, char** argv)
         audio.set_diagnostics(diagnostics);
         startup.mark("sdl-init");
         bool audioAvailable = false;
-        if (!SDL_CreateWindowAndRenderer("Northern Envoy - original intro and menu", 1152, 720,
+        if (!SDL_CreateWindowAndRenderer("Northern Envoy - original intro and menu", s2ne::screen_width, s2ne::screen_height,
                 SDL_WINDOW_RESIZABLE, &window, &renderer))
         {
             s2ne::fatal(SDL_GetError());
@@ -227,13 +232,13 @@ int s2ne::run_application(int argc, char** argv)
         std::unique_ptr<SDL_Texture, decltype(&SDL_DestroyTexture)> wideTexture(nullptr, SDL_DestroyTexture);
         auto uploadSoftwareFrame = [&](const std::vector<uint8_t>& image)
         {
-            const int width = int(image.size() / (480 * 4));
+            const int width = s2ne::framebuffer_width(image);
             texture = ownedPresentationTexture;
-            if (width == 768)
+            if (image.size() == size_t(s2ne::screen_width) * s2ne::screen_height * 4)
             {
                 if (!wideTexture)
                 {
-                    wideTexture.reset(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, 768, 480));
+                    wideTexture.reset(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, s2ne::screen_width, s2ne::screen_height));
                     auto configured = s2ne::configure_original_presentation(renderer, wideTexture.get());
                     if (!configured) { s2ne::fatal(configured.error()); }
                 }
@@ -668,7 +673,7 @@ int s2ne::run_application(int argc, char** argv)
             {
                 presentedPrologue = prologue.get();
             }
-            if (battleMenu)
+            if (battleMenu && !battleReports)
             {
                 SDL_ShowCursor();
                 auto rendered = battleMenu->try_draw(image, &canvas);
@@ -842,12 +847,16 @@ int s2ne::run_application(int argc, char** argv)
                 image = std::move(panel).value();
             }
             if (stdio) { stdioLogicalFrame = image; }
-            if (canvas.empty() && wideMap && !s2ne::full_width_fixed_page(renderer) && uncycledWideFrame.size() == s2ne::WideViewport::bytes)
+            if (canvas.empty() && wideMap && !s2ne::full_width_fixed_page(renderer) && uncycledWideFrame.size() == s2ne::WideViewport::bytes())
             {
                 canvas.set_background(uncycledWideFrame);
                 prologue->cycle_frame(canvas.background());
             }
             if (!spiritSightImage) { image = canvas.compose(image); }
+            if (!battleMenu && !battleReports && !skillMenu && !promotionMenu && !saveMenu && !overwriteConfirmation && !spiritSightImage && !prologue->growth_active())
+            {
+                prologue->draw_battle_edge_hud(menu, image);
+            }
             if (s2ne::texture_resources.active())
             {
                 auto uploaded = s2ne::texture_resources.upload_frame(image);
@@ -1461,7 +1470,7 @@ int s2ne::run_application(int argc, char** argv)
             }
             const bool automatic = state.value("computer_actions", false) || state.value("movement_active", false)
                 || state.value("combat_feedback_active", false) || state.value("battle_intro", false)
-                || state.value("dialogue_scrolling", false) || bool(itemLearningPublish) || pendingSkillTarget.has_value() || (shopMenu && shopMenu->transitioning())
+                || state.value("dialogue_scrolling", false) || bool(itemLearningPublish) || pendingSkillTarget.has_value() || (shopMenu && shopMenu->transitioning()) || (innMenu && innMenu->transitioning())
                 || (prologue && prologue->diagnostic_phase() >= 11 && prologue->diagnostic_phase() <= 14);
             state["interaction"] = { { "mode", automatic ? "advancing" : "input" },
                 { "context", state["modal"] }, { "state_contract_supported", true } };
@@ -2368,7 +2377,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         else if (command == "end_turn")
                         {
-                            if (!prologue || !prologue->in_battle() || prologue->computer_actions() || battleMenu || prologue->battle_state() != s2ne::Battle::State::idle) { throw std::runtime_error("end turn requires idle player battle"); }
+                            if (!prologue || !prologue->in_battle() || prologue->computer_actions() || prologue->growth_active() || battleMenu || prologue->battle_state() != s2ne::Battle::State::idle) { throw std::runtime_error("end turn requires idle player battle with completed growth"); }
                             prologue->end_battle_turn();
                             response["semantic"] = "end_turn";
                             stdioPending = response;
@@ -3633,7 +3642,7 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 float x{}, y{}, rx{}, ry{};
                 SDL_GetMouseState(&x, &y);
-                bool edgeActive = !spiritSightImage && !battleMenu && !battleReports && !promotionMenu && !itemMenu && !saveMenu && !overwriteConfirmation && prologue->in_battle() && !prologue->battle().animating_movement() && (prologue->battle_state() == s2ne::Battle::State::idle || prologue->battle_state() == s2ne::Battle::State::movement || prologue->battle_state() == s2ne::Battle::State::attack_target) && SDL_GetMouseFocus() == window && s2ne::legacy_coordinates_from_window(renderer, x, y, &rx, &ry) && rx >= -64 && rx < 704 && ry >= 0 && ry < 480 && (rx < -54 || rx > 694 || ry < 10 || ry > 470);
+                bool edgeActive = !spiritSightImage && !battleMenu && !battleReports && !promotionMenu && !itemMenu && !saveMenu && !overwriteConfirmation && prologue->in_battle() && !prologue->battle().animating_movement() && (prologue->battle_state() == s2ne::Battle::State::idle || prologue->battle_state() == s2ne::Battle::State::movement || prologue->battle_state() == s2ne::Battle::State::attack_target) && SDL_GetMouseFocus() == window && s2ne::legacy_coordinates_from_window(renderer, x, y, &rx, &ry) && rx >= -s2ne::ui_offset_x() && rx < s2ne::screen_width - s2ne::ui_offset_x() && ry >= -s2ne::ui_offset_y() && ry < s2ne::screen_height - s2ne::ui_offset_y() && (rx < 10 - s2ne::ui_offset_x() || rx > s2ne::screen_width - s2ne::ui_offset_x() - 10 || ry < 10 - s2ne::ui_offset_y() || ry > s2ne::screen_height - s2ne::ui_offset_y() - 10);
                 if (edgeScrollTiming.due(nowUi, edgeActive, unsigned(std::max(0, settingsState.screen_delay)) * 10u))
                 {
                     prologue->edge_scroll(rx, ry);
@@ -5562,7 +5571,7 @@ int s2ne::run_application(int argc, char** argv)
                 startup.mark("first-present");
                 firstPresent = false;
             }
-            if (innMenu && innMenu->world_active())
+            if (innMenu && (innMenu->world_active() || innMenu->transitioning()))
             {
                 innMenu->frame_presented();
                 showPrologue();

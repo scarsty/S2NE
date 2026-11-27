@@ -236,9 +236,9 @@ public:
                 rotations[slot] = starts[i] + (c - starts[i] + counts[i] - cycle_offsets_[i]) % counts[i];
             }
         }
-        const int stride = int(image.size() / (480 * 4));
+        const int stride = framebuffer_width(image);
         const int right = std::min(stride, left + width);
-        const int bottom = std::min(480, top + height);
+        const int bottom = std::min(framebuffer_height(image), top + height);
         for (int y = std::max(0, top); y < bottom; ++y)
         {
             for (int x = std::max(0, left); x < right; ++x)
@@ -256,7 +256,7 @@ public:
             }
         }
     }
-    void cycle(std::vector<uint8_t>& image, uint64_t elapsed_ms) { cycle_rect(image, 0, 0, int(image.size() / (480 * 4)), 480, elapsed_ms); }
+    void cycle(std::vector<uint8_t>& image, uint64_t elapsed_ms) { cycle_rect(image, 0, 0, framebuffer_width(image), framebuffer_height(image), elapsed_ms); }
     uint8_t map(unsigned table, unsigned color) const { return maps_.at(table).at(color); }
     void transform(std::vector<uint8_t>& image, int first_row, int row_count, unsigned table) const
     {
@@ -273,10 +273,11 @@ public:
         {
             return canvas->transform(destination, [&](auto& wide)
                 {
-                    return try_transform_rect(wide, 0, top, 768, height, table);
+                    const bool full_height = top == 0 && height == 480;
+                    return try_transform_rect(wide, 0, full_height ? 0 : top + ui_offset_y(), screen_width, full_height ? screen_height : height, table);
                 });
         }
-        for (int y = std::max(0, top); y < std::min(480, top + height); ++y)
+        for (int y = std::max(0, top); y < std::min(framebuffer_height(destination), top + height); ++y)
         {
             for (int x = std::max(0, left); x < std::min(stride, left + width); ++x)
             {

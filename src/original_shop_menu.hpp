@@ -150,7 +150,11 @@ private:
     {
         unsigned portrait_index = 332;
         if (portrait) { portrait_index = portrait * 2 - 2; }
-        else if (buying_) { portrait_index = 86; }
+        else if (buying_)
+        {
+            constexpr std::array<unsigned, 3> portraits{ 47, 152, 44 };
+            portrait_index = portraits.at(option_ - 1) * 2 - 2;
+        }
         // 41144E ->426728(167,0): CEL group3 portrait pair, index332.
         size_t g = dword(pal_, 824) - 58, p = g + dword(cel_, g + 2 + portrait_index * 8);
         unsigned w = word(cel_, p + 1) + 1;
@@ -297,7 +301,7 @@ public:
     }
     s2ne::Result<bool> try_role_portrait(std::vector<uint8_t>& image, unsigned id, int x, int y) const
     {
-        size_t g = dword(pal_, 824) - 58, p = g + dword(cel_, g + 2 + (id * 2 - 2) * 8);
+        size_t g = dword(pal_, 824) - 58, p = g + dword(cel_, g + 2 + (id * 2 - 1) * 8);
         return draw_original_sprite(image, cel_, pal_, p, true, x, y, OriginalZeroRun::transparent);
     }
 
@@ -814,7 +818,7 @@ public:
             {
                 text(image, font_.text_bytes(100), 149, 42);
             }
-            auto title = font_.text_bytes(buying_ ? 198 : 194);
+            auto title = font_.text_bytes(194);
             text(image, title, 80 - int(title.size()) * 6, 176, 54);
             text(image, font_.text_bytes(205), 355, 205, 179);
             if (page_ == Page::sale)

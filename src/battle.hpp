@@ -2500,16 +2500,12 @@ public:
     void set_mask_surfaces(bool enabled) { mask_surfaces_ = enabled; }
     Point pick_surface(float x, float y, int cx, int cy) const
     {
-        if (x >= -64 && x < 0)
-        {
-            x += 64;
-            cx -= 64;
-        }
-        else if (x >= 640 && x < 704)
-        {
-            x -= 64;
-            cx += 64;
-        }
+        const int horizontal = (x < 0 || x >= 640) ? int(std::floor(x / 64.0f)) * 64 : 0;
+        const int vertical = (y < 0 || y >= 480) ? int(std::floor(y / 32.0f)) * 32 : 0;
+        x -= horizontal;
+        cx += horizontal;
+        y -= vertical;
+        cy += vertical;
         if (original_rules_)
         {
             // 42A2BD/42A3D2: integer division truncates toward zero, including negative edges.
@@ -2763,12 +2759,9 @@ public:
     static int executable_attack_slot(const OriginalEvents::ActionRecord& action)
     {
         int type = action.fields[0];
-        static constexpr std::array<int, 23> supported{ 40, -84, 114, -92, 98, 0, 0, 0, 0, 0, 3, 9, 90, 0, 0, 116, 0, 1, 65, 4, 0, 0, 1 };
-        static constexpr std::array<int, 23> alternate{ 40, -74, 87, -76, -25, 0, 0, 0, 0, 0, 4, 8, 70, 0, 2, -96, 0, 9, 50, 0, 0, 125, 1 };
-        static constexpr std::array<int, 23> ranged{ 40, -91, -49, -92, -30, -67, 98, 0, 0, 0, 3, 6, 70, 2, 6, 119, 0, 0, 0, 0, 2, 0, 2 };
         if (type == 5) { return 1; }
         else if (type >= 1 && type <= 7) { return 0; }
-        else if ((action.index == 163 && action.fields == supported) || (action.index == 130 && action.fields == alternate) || (action.index == 160 && action.fields == ranged)) { return 7; }
+        else if (type >= 21) { return 7; }
         else
         {
             return -1;

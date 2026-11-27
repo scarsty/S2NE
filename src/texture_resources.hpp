@@ -226,7 +226,7 @@ private:
             pixels.reset(SDL_ConvertSurface(pixels.get(), SDL_PIXELFORMAT_RGBA32));
             if (!pixels) { return Result<bool>::failure(make_error(SDL_GetError())); }
         }
-        if (pixels->w != width || pixels->h != 480) { return Result<bool>::failure(make_error("Invalid texture readback extent")); }
+        if (pixels->w != width || pixels->h != framebuffer_height(image)) { return Result<bool>::failure(make_error("Invalid texture readback extent")); }
         copy_surface_pixels(*pixels, image);
         return Result<bool>::success(true);
     }
@@ -234,17 +234,18 @@ private:
     Result<bool> prepare_canvas(std::span<const uint8_t> image)
     {
         const int width = framebuffer_width(image);
+        const int height = framebuffer_height(image);
         if (!renderer_ || !width) { return Result<bool>::failure(make_error("Invalid texture canvas framebuffer")); }
-        float old_width{};
-        if (target_ && (!SDL_GetTextureSize(target_.get(), &old_width, nullptr) || int(old_width) != width))
+        float old_width{}, old_height{};
+        if (target_ && (!SDL_GetTextureSize(target_.get(), &old_width, &old_height) || int(old_width) != width || int(old_height) != height))
         {
             if (batching_) { return Result<bool>::failure(make_error("Texture batch framebuffer changed")); }
             target_.reset();
             background_.reset();
         }
         if (batching_) { return Result<bool>::success(true); }
-        if (!target_) { target_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, width, 480)); }
-        if (!background_) { background_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, width, 480)); }
+        if (!target_) { target_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, width, height)); }
+        if (!background_) { background_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, width, height)); }
         if (!target_ || !background_) { return Result<bool>::failure(make_error(SDL_GetError())); }
         if (!SDL_SetTextureBlendMode(background_.get(), SDL_BLENDMODE_NONE) || !SDL_SetTextureBlendMode(target_.get(), SDL_BLENDMODE_NONE)
             || !SDL_UpdateTexture(background_.get(), nullptr, image.data(), width * 4) || !SDL_SetRenderTarget(renderer_, target_.get())
@@ -371,7 +372,7 @@ public:
                 for (unsigned x = 0; x < width; ++x)
                 {
                     const int dx = left + int(x), dy = top + int(y);
-                    if (dx < 0 || dx >= stride || dy < 0 || dy >= 480 || !(bits[size_t(y) * (width / 8) + x / 8] & (128 >> (x % 8)))) { continue; }
+                    if (dx < 0 || dx >= stride || dy < 0 || dy >= framebuffer_height(image) || !(bits[size_t(y) * (width / 8) + x / 8] & (128 >> (x % 8)))) { continue; }
                     const size_t p = (size_t(dy) * stride + dx) * 4;
                     for (unsigned k = 0; k < 3; ++k) { image[p + k] = uint8_t(unsigned(palette[color * 3 + k]) * 255 / 63); }
                     image[p + 3] = 255;
@@ -384,7 +385,7 @@ public:
             for (unsigned x = 0; x < width; ++x)
             {
                 const int dx = left + int(x), dy = top + int(y);
-                if (dx >= 0 && dx < stride && dy >= 0 && dy < 480 && (bits[size_t(y) * (width / 8) + x / 8] & (128 >> (x % 8)))) { indexed->at(size_t(dy) * stride + dx) = uint8_t(color); }
+                if (dx >= 0 && dx < stride && dy >= 0 && dy < framebuffer_height(image) && (bits[size_t(y) * (width / 8) + x / 8] & (128 >> (x % 8)))) { indexed->at(size_t(dy) * stride + dx) = uint8_t(color); }
             }
         }
         return result;
@@ -500,7 +501,7 @@ public:
         {
             auto* surface = text_surfaces_.at(key).get();
             if (!SDL_SetSurfaceColorMod(surface, color.r, color.g, color.b) || !SDL_SetSurfaceAlphaMod(surface, color.a) || !SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_BLEND)) { return Result<bool>::failure(make_error(SDL_GetError())); }
-            std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> destination(SDL_CreateSurfaceFrom(stride, 480, SDL_PIXELFORMAT_RGBA32, image.data(), stride * 4), SDL_DestroySurface);
+            std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> destination(SDL_CreateSurfaceFrom(stride, framebuffer_height(image), SDL_PIXELFORMAT_RGBA32, image.data(), stride * 4), SDL_DestroySurface);
             if (!destination) { return Result<bool>::failure(make_error(SDL_GetError())); }
             SDL_Rect rectangle{ left, top, surface->w, surface->h };
             if (!SDL_BlitSurface(surface, nullptr, destination.get(), &rectangle)) { return Result<bool>::failure(make_error(SDL_GetError())); }
@@ -541,7 +542,7 @@ public:
                 palette_indices_.emplace(rgb, uint8_t(c));
             }
         }
-        for (int y = std::max(0, top); y < std::min(480, top + int(height)); ++y)
+        for (int y = std::max(0, top); y < std::min(framebuffer_height(image), top + int(height)); ++y)
         {
             for (int x = std::max(0, left); x < std::min(stride, left + int(width)); ++x)
             {
@@ -641,12 +642,12 @@ public:
     Result<SDL_Texture*> upload_frame(std::span<const uint8_t> image)
     {
         if (!renderer_ || !framebuffer_width(image)) { return Result<SDL_Texture*>::failure(make_error("Invalid external frame upload")); }
-        const int width = int(image.size() / (480 * 4));
-        float previous_width{};
-        if (presentation_ && (!SDL_GetTextureSize(presentation_.get(), &previous_width, nullptr) || int(previous_width) != width)) { presentation_.reset(); }
+        const int width = framebuffer_width(image), height = framebuffer_height(image);
+        float previous_width{}, previous_height{};
+        if (presentation_ && (!SDL_GetTextureSize(presentation_.get(), &previous_width, &previous_height) || int(previous_width) != width || int(previous_height) != height)) { presentation_.reset(); }
         if (!presentation_)
         {
-            presentation_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, width, 480));
+            presentation_.reset(SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, width, height));
             if (!presentation_ || !SDL_SetTextureScaleMode(presentation_.get(), SDL_SCALEMODE_LINEAR)) { return Result<SDL_Texture*>::failure(make_error(SDL_GetError())); }
         }
         if (!SDL_UpdateTexture(presentation_.get(), nullptr, image.data(), width * 4))

@@ -65,10 +65,7 @@ public:
         {
             return Result<std::vector<uint8_t>>::failure(json_towns.error());
         }
-        if (!json_towns.value().empty())
-        {
-            return json_towns;
-        }
+        if (!json_towns.value().empty()) { return json_towns; }
         auto pal = read_shared_resource(root / "SUPERSP.PAL"), bin = read_shared_resource(root / "SUPERSP.BIN");
         if (!pal)
         {
@@ -131,6 +128,7 @@ public:
     bool reading() const { return reading_; }
     bool roster_active() const { return roster_.has_value(); }
     bool equipment_active() const { return equipment_menu_.has_value(); }
+    bool transitioning() const { return equipment_menu_ && equipment_menu_->transitioning(); }
     bool world_active() const { return world_.has_value(); }
     void tick(unsigned clock)
     {

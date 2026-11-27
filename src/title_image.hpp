@@ -21,14 +21,20 @@ inline constexpr uint8_t opening_palette_channel(uint8_t dac, unsigned fade = 60
 inline Result<std::vector<uint8_t>> try_load_title(const std::filesystem::path& root, unsigned resource = 19)
 {
     const auto external = root / "texture" / "opening" / (std::to_string(resource == 20 ? 19 : resource) + ".png");
-    if (!std::filesystem::exists(external))
+    static std::filesystem::path cached_path;
+    static int cached_width{}, cached_height{};
+    static std::vector<uint8_t> cached_image;
     {
-        return Result<std::vector<uint8_t>>::failure(make_error("Missing external opening texture: " + external.string()));
-    }
-    {
-        auto loaded = TextureResources::load_file_scaled(external, 768, 480);
-        if (!loaded) { return Result<std::vector<uint8_t>>::failure(loaded.error()); }
-        std::vector<uint8_t> image = loaded.value().pixels;
+        if (cached_image.empty() || cached_path != external || cached_width != screen_width || cached_height != screen_height)
+        {
+            auto loaded = TextureResources::load_file_scaled(external, screen_width, screen_height);
+            if (!loaded) { return Result<std::vector<uint8_t>>::failure(loaded.error()); }
+            cached_image = loaded.value().pixels;
+            cached_path = external;
+            cached_width = screen_width;
+            cached_height = screen_height;
+        }
+        std::vector<uint8_t> image = cached_image;
         if (resource == 20)
         {
             for (size_t p = 0; p < image.size(); p += 4)

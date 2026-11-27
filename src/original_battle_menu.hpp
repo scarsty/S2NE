@@ -458,7 +458,7 @@ public:
         {
             return s2ne::Result<std::vector<uint8_t>>::failure(make_error("Battlefield menu requires 640x480 RGBA"));
         }
-        if (page_ == Page::closed)
+        if (page_ == Page::closed || page_ == Page::operation)
         {
             return s2ne::Result<std::vector<uint8_t>>::success(battlefield);
         }

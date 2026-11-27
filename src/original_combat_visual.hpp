@@ -178,11 +178,19 @@ struct Feedback
     bool silhouette() const { return phase == Phase::flash; }
     unsigned silhouette_palette() const { return 0x3c; }
     bool text_visible() const { return phase == Phase::numbers && step < 7; }
-    std::string text() const { return miss ? "MISS" : std::to_string(damage); }
+    std::string text() const { return miss ? "MISS" : std::to_string(std::abs(damage)); }
     int text_x() const { return 32 - int(text().size()) * 8; }
     int text_y() const { return -64 - step * 8; }
-    unsigned text_foreground() const { return miss ? 0x68 : 0x3c; }
-    unsigned text_background() const { return miss ? 0x24 : 0x56; }
+    unsigned text_foreground() const
+    {
+        if (miss) { return 0x68; }
+        return damage < 0 ? 0x24 : 0x3c;
+    }
+    unsigned text_background() const
+    {
+        if (miss) { return 0x24; }
+        return damage < 0 ? 0xbe : 0x56;
+    }
     unsigned interval() const
     {
         if (miss) { return 30u; }

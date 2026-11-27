@@ -28,6 +28,8 @@ public:
         char drive = '@';
         bool memory_check = false, debug_enabled = false, debug_secondary = false;
         uint8_t simplified_chinese = 0;
+        bool protagonist_class_tree = false;
+        int screen_width = 768, screen_height = 480;
     };
     struct Event
     {
@@ -58,7 +60,7 @@ private:
     size_t password_cursor_ = 0;
     std::array<uint8_t*, 7> toggles() { return { &state_.masking, &state_.flag_4f7d05, &state_.animation, &state_.status_window, &state_.flag_4f7d0a, &state_.flag_4f7d09, &state_.cdda }; }
     std::array<uint8_t, 7> toggles() const { return { state_.masking, state_.flag_4f7d05, state_.animation, state_.status_window, state_.flag_4f7d0a, state_.flag_4f7d09, state_.cdda }; }
-    void pixel(std::vector<uint8_t>& image, int x, int y, unsigned color) const
+    void pixel(std::vector<uint8_t>& image, int x, int y, unsigned color, unsigned alpha = 255) const
     {
         if (x < 0 || x >= 640 || y < 0 || y >= 480)
         {
@@ -67,7 +69,8 @@ private:
         size_t p = (size_t(y) * 640 + x) * 4;
         for (unsigned c = 0; c < 3; ++c)
         {
-            image.at(p + c) = uint8_t(std::min(255u, unsigned(pal_.at(color * 3 + c)) * 255 / 63));
+            const unsigned ink = std::min(255u, unsigned(pal_.at(color * 3 + c)) * 255 / 63);
+            image.at(p + c) = uint8_t((ink * alpha + unsigned(image.at(p + c)) * (255 - alpha) + 127) / 255);
         }
         image.at(p + 3) = 255;
     }
@@ -133,6 +136,7 @@ private:
             }
 
             int w = glyphWidth, h = glyphHeight;
+            std::vector<uint8_t> outline(size_t(w + 2) * (h + 2));
             for (int yy = gy; yy < gy + h; ++yy)
             {
                 for (int xx = gx; xx < gx + w; ++xx)
@@ -143,15 +147,25 @@ private:
                     }
                     if (style == 1)
                     {
-                        pixel(image, xx + 1, yy + 1, edge);
+                        outline[size_t(yy - gy + 2) * (w + 2) + xx - gx + 2] = mask[(size_t(yy) * 640 + xx) * 4 + 3];
                     }
                     else if (style == 0)
                     {
-                        pixel(image, xx - 1, yy, edge);
-                        pixel(image, xx + 1, yy, edge);
-                        pixel(image, xx, yy - 1, edge);
-                        pixel(image, xx, yy + 1, edge);
+                        const auto alpha = mask[(size_t(yy) * 640 + xx) * 4 + 3];
+                        for (const auto [dx, dy] : std::array<std::pair<int, int>, 4>{ { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } } })
+                        {
+                            auto& coverage = outline[size_t(yy - gy + 1 + dy) * (w + 2) + xx - gx + 1 + dx];
+                            coverage = std::max(coverage, alpha);
+                        }
                     }
+                }
+            }
+            for (int yy = 0; yy < h + 2; ++yy)
+            {
+                for (int xx = 0; xx < w + 2; ++xx)
+                {
+                    const auto alpha = outline[size_t(yy) * (w + 2) + xx];
+                    if (alpha) { pixel(image, gx + xx - 1, gy + yy - 1, edge, alpha); }
                 }
             }
             for (int yy = gy; yy < gy + h; ++yy)
@@ -160,7 +174,7 @@ private:
                 {
                     if (xx >= 0 && xx < 640 && yy >= 0 && yy < 480 && mask[(size_t(yy) * 640 + xx) * 4 + 3])
                     {
-                        pixel(image, xx, yy, ink);
+                        pixel(image, xx, yy, ink, mask[(size_t(yy) * 640 + xx) * 4 + 3]);
                     }
                 }
             }
@@ -306,7 +320,21 @@ public:
                     if (!(values >> delimiter) || delimiter != ',') { fatal("Malformed CFG separator"); }
                 }
             };
-            if (line.starts_with("DEVICE="))
+            if (line.starts_with("PROTAGONIST_CLASS_TREE="))
+            {
+                integer(a, false);
+                if (a != 0 && a != 1) { fatal("CFG PROTAGONIST_CLASS_TREE must be0 or1"); }
+                state.protagonist_class_tree = a != 0;
+            }
+            else if (line.starts_with("RESOLUTION="))
+            {
+                integer(a, true);
+                integer(b, false);
+                if (a < 640 || a > 1920 || b < 480 || b > 1440) { fatal("CFG RESOLUTION must be within 640x480 and 1920x1440"); }
+                state.screen_width = a;
+                state.screen_height = b;
+            }
+            else if (line.starts_with("DEVICE="))
             {
                 integer(a, true);
                 integer(b, true);
@@ -362,7 +390,7 @@ public:
                 state.memory_check = true;
             }
             else if (line == "SIMPLIFIED_CHINESE=1" || line == "SIMPLIFIED_CHINESE=ON") { state.simplified_chinese = 1; }
-            if (line.starts_with("DEVICE=") || line.starts_with("VOLUME=") || line.starts_with("SET=") || line.starts_with("CDDA="))
+            if (line.starts_with("PROTAGONIST_CLASS_TREE=") || line.starts_with("RESOLUTION=") || line.starts_with("DEVICE=") || line.starts_with("VOLUME=") || line.starts_with("SET=") || line.starts_with("CDDA="))
             {
                 values >> std::ws;
                 if (!values.eof()) { fatal("Trailing original CFG setting data"); }
@@ -380,6 +408,8 @@ public:
     static std::string config_text(const State& state_)
     {
         std::ostringstream o;
+        o << "RESOLUTION=" << state_.screen_width << ',' << state_.screen_height << '\n';
+        o << "PROTAGONIST_CLASS_TREE=" << int(state_.protagonist_class_tree) << '\n';
         o << "DEVICE=" << state_.device << ',' << state_.small_font << ',' << state_.drive << "\nVOLUME="
           << state_.midi_volume << ',' << state_.cdda_volume << ',' << state_.effect_volume
           << "\nCDDA=" << (state_.flag_4f7d05 ? "ON" : "OFF") << "\nSET=" << state_.screen_delay << ',' << state_.message_delay
