@@ -44,7 +44,7 @@
 ## 2026-11-19 崩溃定位补充
 
 - 严格新建流程已实际进入 stage 140 第三项选择，并到达 stage 201 briefing；此前控制器在 `briefing_advance` 的同步处理阶段超时，不能据此宣称已进入第一回合。
-- 用户提供的崩溃位置为 `src/prologue.hpp:5427`。该行原先按 `story_group_units_` 数量访问 `story_group_->tracks()[i]`；原版路线失败时 `Group::begin()` 会跳过无法建立路径的角色，使轨道数量少于角色数量，形成越界访问。
+- 用户提供的崩溃位置为 `src/prologue.h:5427`。该行原先按 `story_group_units_` 数量访问 `story_group_->tracks()[i]`；原版路线失败时 `Group::begin()` 会跳过无法建立路径的角色，使轨道数量少于角色数量，形成越界访问。
 - 现已按 `min(story_group_units_.size(), tracks.size())` 遍历，并增加单位索引边界保护；Release x64 构建和 clang-format dry-run 通过。
 - 修复后严格流程仍在 `briefing_advance` 同步阶段超时，尚未取得自动部署成功响应或第一回合稳定证据。该阻塞与 5427 越界修复分开记录，不能把“构建通过”当作流程验收。
 - Debug 卡顿初步确认与 `--stdio` 详细诊断输出及同步资源加载有关；本轮未改变诊断级别，避免隐藏实际加载/保存错误。后续应在不带 stdio 诊断的 VS Debug 启动下单独采样重复资源加载和逐帧输出。

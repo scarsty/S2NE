@@ -14,7 +14,9 @@ foreach(library IN ITEMS SDL3 SDL3_ttf SDL3_mixer fluidsynth)
     add_library(${library} SHARED IMPORTED)
     set_target_properties(${library} PROPERTIES IMPORTED_LOCATION "${S2NE_DEPENDENCIES}/lib/lib${library}.so")
 endforeach()
+include("${S2NE_ROOT}/cmake/implementation-sources.cmake")
 add_library(main SHARED
+    ${S2NE_IMPLEMENTATION_SOURCES}
     "${S2NE_ROOT}/src/main.cpp"
     "${S2NE_ROOT}/src/app_runtime.cpp"
     "${S2NE_ROOT}/src/app_sdl.cpp"

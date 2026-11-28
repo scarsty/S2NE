@@ -4,44 +4,44 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include "app_runtime.hpp"
-#include "app_campaign.hpp"
-#include "app_options.hpp"
-#include "app_sdl.hpp"
+#include "app_runtime.h"
+#include "app_campaign.h"
+#include "app_options.h"
+#include "app_sdl.h"
 
-#include "flic.hpp"
-#include "new_game.hpp"
-#include "opening_audio.hpp"
-#include "original_ani_audio.hpp"
-#include "original_battle_menu.hpp"
-#include "original_battle_reports.hpp"
-#include "original_campaign_persistence.hpp"
-#include "original_church.hpp"
-#include "original_confirmation.hpp"
-#include "original_deployment.hpp"
-#include "original_growth_panel.hpp"
-#include "original_initialization.hpp"
-#include "original_inn.hpp"
-#include "original_menu.hpp"
-#include "original_presentation.hpp"
-#include "original_promotion_transaction.hpp"
-#include "original_save_bridge.hpp"
-#include "original_save_menu.hpp"
-#include "original_save_store.hpp"
-#include "original_settings.hpp"
-#include "original_shop_menu.hpp"
-#include "original_skill94_transaction.hpp"
-#include "original_skills.hpp"
+#include "flic.h"
+#include "new_game.h"
+#include "opening_audio.h"
+#include "original_ani_audio.h"
+#include "original_battle_menu.h"
+#include "original_battle_reports.h"
+#include "original_campaign_persistence.h"
+#include "original_church.h"
+#include "original_confirmation.h"
+#include "original_deployment.h"
+#include "original_growth_panel.h"
+#include "original_initialization.h"
+#include "original_inn.h"
+#include "original_menu.h"
+#include "original_presentation.h"
+#include "original_promotion_transaction.h"
+#include "original_save_bridge.h"
+#include "original_save_menu.h"
+#include "original_save_store.h"
+#include "original_settings.h"
+#include "original_shop_menu.h"
+#include "original_skill94_transaction.h"
+#include "original_skills.h"
 
-#include "original_spell_summon_candidate.hpp"
-#include "original_spirit_sight.hpp"
-#include "prologue.hpp"
-#include "runtime_diagnostics.hpp"
-#include "simple_cc.hpp"
-#include "startup_trace.hpp"
-#include "stdio_events.hpp"
-#include "stdio_protocol.hpp"
-#include "title_image.hpp"
+#include "original_spell_summon_candidate.h"
+#include "original_spirit_sight.h"
+#include "prologue.h"
+#include "runtime_diagnostics.h"
+#include "simple_cc.h"
+#include "startup_trace.h"
+#include "stdio_events.h"
+#include "stdio_protocol.h"
+#include "title_image.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_messagebox.h>
 #include <algorithm>
@@ -105,6 +105,8 @@ int s2ne::run_application(int argc, char** argv)
         const auto displaySettings = s2ne::OriginalSettings::load_state(root);
         s2ne::screen_width = displaySettings.screen_width;
         s2ne::OriginalPromotion::protagonist_class_tree = displaySettings.protagonist_class_tree;
+        s2ne::OriginalSettings::highlight_secrets = displaySettings.highlight_secrets;
+        s2ne::OriginalSettings::gameplay_assist = displaySettings.gameplay_assist;
         s2ne::screen_height = displaySettings.screen_height;
         std::vector<s2ne::Flic> clips;
         for (unsigned id : { 21u, 22u })
@@ -326,6 +328,7 @@ int s2ne::run_application(int argc, char** argv)
         std::optional<unsigned> itemSpellSource;
         unsigned itemNoticeMilliseconds{};
         unsigned battleNoticeText = 73;
+        std::deque<std::pair<size_t, unsigned>> pickupNotices;
         std::vector<std::vector<uint8_t>> itemLearningNotices;
         uint64_t itemLearningSince{};
         std::function<void()> itemLearningPublish;
@@ -431,6 +434,10 @@ int s2ne::run_application(int argc, char** argv)
         auto applySettings = [&](const s2ne::OriginalSettings::State& state, bool persist)
         {
             settingsState = state;
+            s2ne::OriginalPromotion::protagonist_class_tree = state.protagonist_class_tree;
+            s2ne::OriginalSettings::highlight_secrets = state.highlight_secrets;
+            s2ne::OriginalSettings::gameplay_assist = state.gameplay_assist;
+            menu.set_simplified_chinese(state.simplified_chinese != 0, root / "cc");
             menu.small_font = state.small_font != 0;
             if (prologue)
             {
@@ -784,6 +791,12 @@ int s2ne::run_application(int argc, char** argv)
                 const unsigned panel = s2ne::OriginalShopMenu::shared_sprite(0x4F72C8);
                 itemNoticeFont.draw_original_large(image, text, 176 + itemNoticeGraphics.panel_width(panel) / 2 - int(text.size()) * 6,
                     top + itemNoticeGraphics.panel_height(panel) / 2 - 12, 42);
+            }
+            if (!pickupNotices.empty())
+            {
+                const auto [unit, item] = pickupNotices.front();
+                auto drawn = prologue->draw_pickup_notice(itemNoticeFont, image, unit, item);
+                if (!drawn) { s2ne::fatal(drawn.error()); }
             }
             if (itemMenu && !usableItems.empty())
             {
@@ -2760,7 +2773,7 @@ int s2ne::run_application(int argc, char** argv)
                 campaignAdapter.connect();
                 connectedCampaign = prologue.get();
             }
-            if (prologue)
+            if (prologue && pickupNotices.empty())
             {
                 prologue->set_auto_selection(settingsState.status_window == 1);
                 prologue->set_mask_surfaces(settingsState.status_window == 1);
@@ -3068,7 +3081,7 @@ int s2ne::run_application(int argc, char** argv)
                                     sword.payment_state = context.skill_payment_state;
                                     auto a = prologue->battle().original_42c88f_bytes(prologue->events, actor), b = prologue->battle().original_42c88f_bytes(prologue->events, victim);
                                     sword.hit = { actor.learned_proficiency[9], victim.learned_proficiency[9], actor.fencing, victim.fencing, victim.tactics, int(int8_t(a[1])), int(int8_t(b[2])) };
-                                    sword.elevation = s2ne::original_combat::terrain_height_difference(prologue->battle().cell({ actor.x, actor.y }).elevation, prologue->battle().cell({ victim.x, victim.y }).elevation, prologue->events.difficulty == 1);
+                                    sword.elevation = s2ne::terrain_height_difference(prologue->battle().cell({ actor.x, actor.y }).elevation, prologue->battle().cell({ victim.x, victim.y }).elevation, prologue->events.difficulty == 1);
                                     auto status = [&](unsigned offset, unsigned cached)
                                     {
                                         return victim.action_status_runtime ? unsigned(victim.action_status_runtime->at(offset)) : cached;
@@ -3218,7 +3231,7 @@ int s2ne::run_application(int argc, char** argv)
                                         auto targetTerrain = prologue->battle().original_42c88f_bytes(prologue->events, victim);
                                         const auto group = menu.selected().group;
                                         damage.hit = { a.learned_proficiency[group], victim.learned_proficiency[group], a.fencing, victim.fencing, victim.tactics, int(int8_t(actorTerrain[1])), int(int8_t(targetTerrain[2])), a.st, victim.st };
-                                        damage.elevation = s2ne::original_combat::terrain_height_difference(prologue->battle().cell({ a.x, a.y }).elevation, prologue->battle().cell({ victim.x, victim.y }).elevation, prologue->events.difficulty == 1);
+                                        damage.elevation = s2ne::terrain_height_difference(prologue->battle().cell({ a.x, a.y }).elevation, prologue->battle().cell({ victim.x, victim.y }).elevation, prologue->events.difficulty == 1);
                                         const auto& runtime = victim.action_status_runtime;
                                         damage.damage.difficulty = context.difficulty;
                                         damage.damage.attack_mode = s2ne::Battle::attack_mode({ a.x, a.y }, { victim.x, victim.y }, victim.direction, context.difficulty == 1);
@@ -3366,8 +3379,7 @@ int s2ne::run_application(int argc, char** argv)
                                     if (caster == staged.units.end()) { return false; }
                                     a.animation_action = 0;
                                     *caster = std::move(a);
-                                    staged.units.at(summonedIndex).action_state = 2;
-                                    if (staged.units.at(summonedIndex).action_status_runtime) { staged.units.at(summonedIndex).action_status_runtime->at(0x2D) = 2; }
+                                    s2ne::OriginalSpellSummonCandidate::finish_action(staged.units.at(summonedIndex));
                                     staged.rebuild_army_modes(0);
                                     auto captured = s2ne::OriginalSaveBridge::try_capture(staged, prologue->battle_turn(), prologue->camera(), &*summonedSave);
                                     if (!captured)
@@ -3660,16 +3672,18 @@ int s2ne::run_application(int argc, char** argv)
                     {
                         if (auto id = prologue->pickup_at_unit(i, rawSave->groups[0].inventory, rawSave->groups[0].metadata[4]))
                         {
+                            pickupNotices.emplace_back(i, id);
                             prologue->battle().refresh_command_availability(prologue->events.units);
                             showPrologue();
                             std::print("Original category12 pickup item {} by unit {}\n", id, prologue->events.units[i].id);
+                            break;
                         }
                     }
                 }
                 float x{}, y{}, rx{}, ry{};
                 SDL_GetMouseState(&x, &y);
                 bool edgeActive = !spiritSightImage && !battleMenu && !battleReports && !promotionMenu && !itemMenu && !saveMenu && !overwriteConfirmation && prologue->in_battle() && !prologue->battle().animating_movement() && (prologue->battle_state() == s2ne::Battle::State::idle || prologue->battle_state() == s2ne::Battle::State::movement || prologue->battle_state() == s2ne::Battle::State::attack_target) && SDL_GetMouseFocus() == window && s2ne::legacy_coordinates_from_window(renderer, x, y, &rx, &ry) && rx >= -s2ne::ui_offset_x() && rx < s2ne::screen_width - s2ne::ui_offset_x() && ry >= -s2ne::ui_offset_y() && ry < s2ne::screen_height - s2ne::ui_offset_y() && (rx < 10 - s2ne::ui_offset_x() || rx > s2ne::screen_width - s2ne::ui_offset_x() - 10 || ry < 10 - s2ne::ui_offset_y() || ry > s2ne::screen_height - s2ne::ui_offset_y() - 10);
-                if (edgeScrollTiming.due(nowUi, edgeActive, unsigned(std::max(0, settingsState.screen_delay)) * 10u))
+                if (edgeScrollTiming.due(nowUi, edgeActive && pickupNotices.empty(), unsigned(std::max(0, settingsState.screen_delay)) * 10u))
                 {
                     prologue->edge_scroll(rx, ry);
                     showPrologue();
@@ -3732,6 +3746,15 @@ int s2ne::run_application(int argc, char** argv)
                     if (!running)
                     {
                         break;
+                    }
+                    continue;
+                }
+                if (!pickupNotices.empty())
+                {
+                    if ((event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat) || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+                    {
+                        pickupNotices.pop_front();
+                        showPrologue();
                     }
                     continue;
                 }
@@ -5745,4 +5768,4 @@ int s2ne::run_application(int argc, char** argv)
     }
 }
 
-#include "terminal_output.hpp"
+#include "terminal_output.h"

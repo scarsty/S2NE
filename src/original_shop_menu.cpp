@@ -1,0 +1,1029 @@
+﻿#include "original_shop_menu.h"
+
+namespace s2ne
+{
+auto OriginalShopMenu::begin_entry() -> void
+{
+    if (presentation_driven_)
+    {
+        fade_step_ = 0;
+    }
+    cached_first_ = -1;
+}
+
+auto OriginalShopMenu::fade(std::vector<uint8_t> image, FullWidthCanvas* canvas) const -> std::vector<uint8_t>
+{
+    if (!presentation_driven_)
+    {
+        return image;
+    }
+    unsigned intensity = std::min(fade_step_, 15u) * 16;
+    // 472EF1/47F5D2: (six-bit DAC component<<2)*(step<<2)/255.
+    fade_full_width_canvas(image, intensity, canvas);
+    return image;
+}
+
+auto OriginalShopMenu::recipient_up() -> void
+{
+    if (recipient_ > recipient_first_)
+    {
+        --recipient_;
+    }
+    else if (recipient_first_)
+    {
+        --recipient_first_;
+        --recipient_;
+    }
+}
+
+auto OriginalShopMenu::recipient_down() -> void
+{
+    if (recipient_ + 1 >= recipients_.size())
+    {
+        return;
+    }
+    ++recipient_;
+    if (recipient_ - recipient_first_ >= 5)
+    {
+        ++recipient_first_;
+    }
+}
+
+auto OriginalShopMenu::try_offers(const OriginalSave::State& state) const -> s2ne::Result<std::vector<unsigned>>
+{
+    // 411288 indexes town4F7CE8, not the battle stage4F7CD8.
+    unsigned town = unsigned(state.globals_4f7cd0[24]) | (unsigned(state.globals_4f7cd0[25]) << 8);
+    if (!town || town > word(towns_, 0) || option_ < 1 || option_ > 3)
+    {
+        return s2ne::Result<std::vector<unsigned>>::success({});
+    }
+    size_t record = 2 + size_t(town - 1) * 14;
+    unsigned count = towns_.at(record + 10 + option_);
+    size_t p = dword(towns_, record);
+    while (towns_.at(p))
+    {
+        ++p;
+    }
+    ++p;
+    for (int category = 1; category < option_; ++category)
+    {
+        p += 2u * towns_.at(record + 10 + category);
+    }
+    std::vector<unsigned> result;
+    for (unsigned i = 0; i < count; ++i)
+    {
+        unsigned id = word(towns_, p + 2 * i);
+        if (!id || id > state.groups[0].inventory.size())
+        {
+            return s2ne::Result<std::vector<unsigned>>::failure(make_error("Unsupported original town offer ID"));
+        }
+        result.push_back(id);
+    }
+    return s2ne::Result<std::vector<unsigned>>::success(result);
+}
+
+auto OriginalShopMenu::offers(const OriginalSave::State& state) const -> std::vector<unsigned>
+{
+    auto result = try_offers(state);
+    return std::move(result).value();
+}
+
+auto OriginalShopMenu::unit_price(const OriginalSave::State& state, unsigned id) const -> unsigned { return buying_ ? shop_.buy_price(state, id) : shop_.sale_price(state, id); }
+
+auto OriginalShopMenu::try_sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, OriginalZeroRun zero) const -> s2ne::Result<bool>
+{
+    return draw_original_cel(image, cel_, pal_, id, left, top, zero);
+}
+
+auto OriginalShopMenu::sprite(std::vector<uint8_t>& image, unsigned id, int left, int top, OriginalZeroRun zero) const -> void
+{
+    auto result = try_sprite(image, id, left, top, zero);
+    if (!result)
+    {
+        report_error(result.error());
+    }
+}
+
+auto OriginalShopMenu::try_merchant(std::vector<uint8_t>& image, unsigned portrait) const -> s2ne::Result<bool>
+{
+    unsigned portrait_index = 332;
+    if (portrait) { portrait_index = portrait * 2 - 2; }
+    else if (buying_)
+    {
+        constexpr std::array<unsigned, 3> portraits{ 47, 152, 44 };
+        portrait_index = portraits.at(option_ - 1) * 2 - 2;
+    }
+    // 41144E ->426728(167,0): CEL group3 portrait pair, index332.
+    size_t g = dword(pal_, 824) - 58, p = g + dword(cel_, g + 2 + portrait_index * 8);
+    unsigned w = word(cel_, p + 1) + 1;
+    return draw_original_sprite(image, cel_, pal_, p, true, 80 - int(w) / 2, 37, OriginalZeroRun::transparent);
+}
+
+auto OriginalShopMenu::merchant(std::vector<uint8_t>& image, unsigned portrait) const -> void
+{
+    auto result = try_merchant(image, portrait);
+    if (!result)
+    {
+        report_error(result.error());
+    }
+}
+
+auto OriginalShopMenu::text(std::vector<uint8_t>& image, const std::vector<uint8_t>& value, int x, int y, unsigned color) const -> void { font_.draw_original_large(image, value, x, y, color); }
+
+auto OriginalShopMenu::draw_help(std::vector<uint8_t>& image, const std::vector<uint8_t>& value) const -> void
+{
+    size_t p = 0;
+    for (int row = 0; row < 8; ++row)
+    {
+        int compensation = 0;
+        for (int cell = 0, units = 1; units < 18; ++cell)
+        {
+            if (p == value.size() || !value[p] || value[p] == '\n')
+            {
+                return;
+            }
+            unsigned lead = value[p++];
+            if (lead == '*')
+            {
+                if (!cell)
+                {
+                    --cell;
+                    continue;
+                }
+                break;
+            }
+            std::vector<uint8_t> glyph{ uint8_t(std::max(lead, 30u)) };
+            if (lead > 128)
+            {
+                if (p == value.size()) { return; }
+                glyph.push_back(value[p++]);
+                units += 2;
+            }
+            else
+            {
+                ++units;
+            }
+            font_.draw_small(image, glyph, 29 + cell * 16 - compensation, 302 + row * 16, 42, true);
+            if (lead <= 128) { compensation += 8; }
+        }
+    }
+}
+
+auto OriginalShopMenu::number(std::vector<uint8_t>& image, uint32_t value, int x, int y, unsigned color) const -> void
+{
+    auto s = std::to_string(value);
+    text(image, { s.begin(), s.end() }, x, y, color);
+}
+
+OriginalShopMenu::OriginalShopMenu(const std::filesystem::path& root, OriginalShop shop, OriginalMenu font, OriginalInterbattle background, SharedBytes cel, SharedBytes pal) : root_(root), shop_(std::move(shop)), font_(std::move(font)), background_(std::move(background)), cel_(std::move(cel)), pal_(std::move(pal)) {}
+
+auto OriginalShopMenu::initialize(const std::filesystem::path& root, OriginalDisc disc) -> s2ne::Result<bool>
+{
+    auto json_towns = try_load_towns_json(root);
+    if (!json_towns)
+    {
+        return s2ne::Result<bool>::failure(json_towns.error());
+    }
+    if (!json_towns.value().empty())
+    {
+        towns_ = std::move(json_towns).value();
+    }
+    else
+    {
+        auto binResult = read_shared_resource(root / "SUPERSP.BIN");
+        if (!binResult) { return s2ne::Result<bool>::failure(binResult.error()); }
+        auto bin = std::move(binResult).value();
+        size_t town = dword(pal_, 848 + 3 * 8) - 14, size = dword(pal_, 852 + 3 * 8) - 14;
+        if (town > bin.size() || size > bin.size() - town)
+        {
+            return s2ne::Result<bool>::failure(make_error("Invalid original town BIN4"));
+        }
+        towns_.assign(bin.begin() + town, bin.begin() + town + size);
+    }
+    auto bytesResult = OriginalDiscResources(root).try_dat_entry(disc, 3);
+    if (!bytesResult) { return s2ne::Result<bool>::failure(bytesResult.error()); }
+    auto bytes = std::move(bytesResult).value();
+    if (bytes.size() < 2) { return s2ne::Result<bool>::failure(make_error("Truncated shop help header")); }
+    size_t p = 2;
+    unsigned count = word(bytes, 0);
+    for (unsigned i = 0; i < count; ++i)
+    {
+        size_t start = p;
+        while (p < bytes.size() && bytes[p])
+        {
+            ++p;
+        }
+        if (p == bytes.size()) { return s2ne::Result<bool>::failure(make_error("Truncated shop help string")); }
+        help_.emplace_back(bytes.begin() + start, bytes.begin() + p);
+        ++p;
+    }
+
+    return s2ne::Result<bool>::success(true);
+}
+
+OriginalShopMenu::OriginalShopMenu(const std::filesystem::path& root, OriginalDisc disc) : OriginalShopMenu(std::move(*create(root, disc).value())) {}
+
+auto OriginalShopMenu::create(const std::filesystem::path& root, OriginalDisc disc) -> s2ne::Result<std::unique_ptr<OriginalShopMenu>>
+{
+    auto font = OriginalMenu::create(root);
+    if (!font) { return s2ne::Result<std::unique_ptr<OriginalShopMenu>>::failure(font.error()); }
+    auto shop = OriginalShop::create(root);
+    if (!shop) { return s2ne::Result<std::unique_ptr<OriginalShopMenu>>::failure(shop.error()); }
+    auto background = OriginalInterbattle::create(root, disc, 14);
+    if (!background) { return s2ne::Result<std::unique_ptr<OriginalShopMenu>>::failure(background.error()); }
+    auto cel = read_shared_resource(root / "SUPERSP.CEL"), pal = read_shared_resource(root / "SUPERSP.PAL");
+    if (!cel) { return s2ne::Result<std::unique_ptr<OriginalShopMenu>>::failure(cel.error()); }
+    if (!pal) { return s2ne::Result<std::unique_ptr<OriginalShopMenu>>::failure(pal.error()); }
+    auto result = std::unique_ptr<OriginalShopMenu>(new OriginalShopMenu(root, std::move(*shop.value()), std::move(font).value(), std::move(*background.value()), std::move(cel).value(), std::move(pal).value()));
+    auto ready = result->initialize(root, disc);
+    if (!ready)
+    {
+        return s2ne::Result<std::unique_ptr<OriginalShopMenu>>::failure(ready.error());
+    }
+    return s2ne::Result<std::unique_ptr<OriginalShopMenu>>::success(std::move(result));
+}
+
+auto OriginalShopMenu::service_panel(unsigned portrait, unsigned title, uint32_t cash, const OriginalInterbattle& background, bool show_cash) const -> std::vector<uint8_t>
+{
+    auto image = background.background();
+    sprite(image, 235, 6, 8, OriginalZeroRun::opaque);
+    if (show_cash)
+    {
+        sprite(image, 212, 352, 200, OriginalZeroRun::opaque);
+    }
+    merchant(image, portrait);
+    auto caption = font_.text_bytes(title);
+    text(image, caption, 80 - int(caption.size()) * 6, 176, 54);
+    if (show_cash)
+    {
+        text(image, font_.text_bytes(205), 355, 205, 179);
+        number(image, cash, 480, 205, 179);
+    }
+    return image;
+}
+
+auto OriginalShopMenu::try_role_portrait(std::vector<uint8_t>& image, unsigned id, int x, int y) const -> s2ne::Result<bool>
+{
+    size_t g = dword(pal_, 824) - 58, p = g + dword(cel_, g + 2 + (id * 2 - 1) * 8);
+    return draw_original_sprite(image, cel_, pal_, p, true, x, y, OriginalZeroRun::transparent);
+}
+
+auto OriginalShopMenu::role_portrait(std::vector<uint8_t>& image, unsigned id, int x, int y) const -> void
+{
+    auto result = try_role_portrait(image, id, x, y);
+    if (!result)
+    {
+        report_error(result.error());
+    }
+}
+
+auto OriginalShopMenu::role_bitmap(std::vector<uint8_t>& image, const std::vector<uint8_t>& pixels, int w, int h, int x, int y) const -> void
+{
+    for (int yy = 0; yy < h; ++yy)
+    {
+        for (int xx = 0; xx < w; ++xx)
+        {
+            unsigned ink = pixels.at(size_t(yy) * w + xx);
+            int dx = x + xx, dy = y + yy;
+            if (!ink || dx < 0 || dx >= 640 || dy < 0 || dy >= 480)
+            {
+                continue;
+            }
+            size_t q = (size_t(dy) * 640 + dx) * 4;
+            for (unsigned k = 0; k < 3; ++k)
+            {
+                image.at(q + k) = uint8_t(unsigned(pal_.at(ink * 3 + k)) * 255 / 63);
+            }
+            image.at(q + 3) = 255;
+        }
+    }
+}
+
+auto OriginalShopMenu::panel_width(unsigned id) const -> int
+{
+    size_t g = dword(pal_, 816) - 57;
+    return int(word(cel_, g + dword(cel_, g + 2 + (id - 142) * 8))) + 1;
+}
+
+auto OriginalShopMenu::panel_height(unsigned id) const -> int
+{
+    size_t g = dword(pal_, 816) - 57, p = g + dword(cel_, g + 2 + (id - 142) * 8);
+    return int(word(cel_, p + 2)) + 1;
+}
+
+auto OriginalShopMenu::panel(std::vector<uint8_t>& image, unsigned id, int x, int y) const -> void { sprite(image, id, x, y, OriginalZeroRun::transparent); }
+
+auto OriginalShopMenu::shadow(std::vector<uint8_t>& image, unsigned id, int x, int y) const -> void
+{
+    auto result = draw_original_cel_shadow(image, cel_, pal_, id, x, y);
+    if (!result) { report_error(result.error()); }
+}
+
+auto OriginalShopMenu::shared_panel(std::vector<uint8_t>& image, unsigned address, int x, int y) const -> void
+{
+    if (address == 0x4F72C8) { shadow(image, shared_sprite(address), x, y); }
+    sprite(image, shared_sprite(address), x, y, OriginalZeroRun::transparent);
+}
+
+auto OriginalShopMenu::outline(std::vector<uint8_t>& image, int left, int top, int right, int bottom, unsigned ink) const -> void
+{
+    for (int y = top; y <= bottom; ++y)
+    {
+        for (int x = left; x <= right; ++x)
+        {
+            if ((x != left && x != right && y != top && y != bottom) || x < 0 || x >= 640 || y < 0 || y >= 480) { continue; }
+            size_t p = (size_t(y) * 640 + x) * 4;
+            for (unsigned k = 0; k < 3; ++k) { image.at(p + k) = uint8_t(unsigned(pal_.at(ink * 3 + k)) * 255 / 63); }
+            image.at(p + 3) = 255;
+        }
+    }
+}
+
+auto OriginalShopMenu::page() const -> Page { return page_; }
+
+auto OriginalShopMenu::selected() const -> int { return option_; }
+
+auto OriginalShopMenu::listed_items() const -> const std::vector<unsigned int>& { return items_; }
+
+auto OriginalShopMenu::listed_price(const OriginalSave::State& state, unsigned id) const -> unsigned { return unit_price(state, id); }
+
+auto OriginalShopMenu::select_category(unsigned index, OriginalSave::State& state) -> bool
+{
+    if (transitioning() || page_ != Page::shop || index >= 4 || insufficient_) { return false; }
+    option_ = int(index + 1);
+    buying_ = option_ != 4;
+    auto items = buying_ ? offers(state) : shop_.sale_items(state);
+    if (buying_ && items.empty()) { return false; }
+    items_ = std::move(items);
+    first_ = row_ = 0;
+    page_ = Page::sale;
+    cursor_request_ = std::pair{ 224, 356 };
+    begin_entry();
+    return true;
+}
+
+auto OriginalShopMenu::return_parent() -> bool
+{
+    if (transitioning() || insufficient_) { return false; }
+    if (page_ == Page::quantity) { page_ = Page::sale; }
+    else if (page_ == Page::sale) { page_ = Page::shop; }
+    else if (page_ == Page::shop) { page_ = Page::closed; }
+    else
+    {
+        return false;
+    }
+    held_scroll_ = 0;
+    return true;
+}
+
+auto OriginalShopMenu::quantity() const -> unsigned { return quantity_; }
+
+auto OriginalShopMenu::select_item(unsigned id, OriginalSave::State& state) -> bool
+{
+    if (transitioning() || page_ != Page::sale || insufficient_) { return false; }
+    auto found = std::find(items_.begin(), items_.end(), id);
+    if (found == items_.end() || (buying_ && unit_price(state, id) > money(state))) { return false; }
+    first_ = int(found - items_.begin());
+    row_ = 0;
+    scan(0x1C, state);
+    return page_ == Page::quantity || page_ == Page::equipment;
+}
+
+auto OriginalShopMenu::commit_quantity(OriginalSave::State& state) -> bool
+{
+    if (page_ == Page::equipment && !transitioning() && item() && !equip_selected_)
+    {
+        scan(0x1C, state);
+        if (page_ != Page::equipment_confirm) { return false; }
+        return scan(0x1C, state);
+    }
+    if (page_ != Page::quantity || !item()) { return false; }
+    if (!(buying_ ? shop_.buy(state, item(), quantity_) : shop_.sell(state, item(), quantity_))) { return false; }
+    items_ = buying_ ? offers(state) : shop_.sale_items(state);
+    first_ = std::max(0, std::min(first_, int(items_.size()) - 8));
+    row_ = std::max(0, std::min(row_, int(items_.size()) - first_ - 1));
+    page_ = Page::sale;
+    return true;
+}
+
+auto OriginalShopMenu::item() const -> unsigned { return items_.empty() ? 0 : items_.at(size_t(first_ + row_)); }
+
+auto OriginalShopMenu::enable_presentation_timing() -> void { presentation_driven_ = true; }
+
+auto OriginalShopMenu::transitioning() const -> bool { return fade_step_ < 16; }
+
+auto OriginalShopMenu::fade_step() const -> unsigned { return fade_step_; }
+
+auto OriginalShopMenu::frame_presented() -> void
+{
+    if (fade_step_ < 16)
+    {
+        ++fade_step_;
+    }
+}
+
+auto OriginalShopMenu::wall_clock_cs() -> unsigned
+{
+    auto now = std::chrono::system_clock::now();
+    auto seconds = std::chrono::system_clock::to_time_t(now);
+    std::tm local{};
+#ifdef _WIN32
+    localtime_s(&local, &seconds);
+#else
+    localtime_r(&seconds, &local);
+#endif
+    auto fraction = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() % 1000;
+    return unsigned((local.tm_min * 60 + local.tm_sec) * 100 + fraction / 10);
+}
+
+auto OriginalShopMenu::centiseconds(uint64_t milliseconds) -> unsigned { return unsigned((milliseconds / 10) % 360000); }
+
+auto OriginalShopMenu::timer_pending(unsigned then, unsigned now, unsigned delay) -> bool { return std::abs(int(then) - int(now)) < int(delay); }
+
+auto OriginalShopMenu::take_cursor() -> std::optional<std::pair<int, int>>
+{
+    auto result = cursor_request_;
+    cursor_request_.reset();
+    return result;
+}
+
+auto OriginalShopMenu::release_scroll() -> void { held_scroll_ = 0; }
+
+auto OriginalShopMenu::clock(unsigned now) -> void { clock_cs_ = now; }
+
+auto OriginalShopMenu::tick(unsigned now, OriginalSave::State& state) -> void
+{
+    clock_cs_ = now;
+    if (page_ != Page::sale)
+    {
+        held_scroll_ = 0;
+        return;
+    }
+    if (held_scroll_ && !timer_pending(held_stamp_, now, 10))
+    {
+        scan(held_scroll_, state);
+        cursor_request_.reset();
+        held_stamp_ = now;
+    }
+}
+
+auto OriginalShopMenu::recipient_first() const -> size_t { return recipient_first_; }
+
+auto OriginalShopMenu::recipient_index() const -> size_t { return recipient_; }
+
+auto OriginalShopMenu::money(const OriginalSave::State& state) -> uint32_t
+{
+    uint32_t v = 0;
+    for (unsigned i = 0; i < 4; ++i)
+    {
+        v |= uint32_t(state.groups[0].metadata[i]) << (i * 8);
+    }
+    return v;
+}
+
+auto OriginalShopMenu::scan(unsigned code, OriginalSave::State& state) -> bool
+{
+    struct RestoreCursor
+    {
+        OriginalShopMenu& menu;
+        Page before;
+        ~RestoreCursor()
+        {
+            if (before != Page::sale && menu.page_ == Page::sale)
+            {
+                menu.cursor_request_ = std::pair{ 224 + 54 * menu.row_, 356 };
+                if (before == Page::shop)
+                {
+                    menu.begin_entry();
+                }
+            }
+            if (menu.page_ != Page::sale)
+            {
+                menu.held_scroll_ = 0;
+            }
+        }
+    } restore{ *this, page_ };
+    if (transitioning() || page_ == Page::closed)
+    {
+        return false;
+    }
+    if (insufficient_)
+    {
+        if (code)
+        {
+            insufficient_ = false;
+        }
+        return false;
+    }
+    if (page_ == Page::equipment_confirm)
+    {
+        if (code == 1)
+        {
+            confirmation_->cancel();
+        }
+        else if (code == 0x4B || code == 0x4D || code == 0x0F)
+        {
+            confirmation_->toggle();
+        }
+        else if (code == 0x1C || code == 0x39)
+        {
+            confirmation_->confirm();
+        }
+        if (auto result = confirmation_->result())
+        {
+            confirmation_.reset();
+            page_ = Page::equipment;
+            if (*result)
+            {
+                auto staged = state;
+                if (!shop_.buy(staged, item(), 1))
+                {
+                    return false;
+                }
+                if (equip_selected_ && !equipment_->equip(staged, recipients_.at(recipient_), item()))
+                {
+                    return false;
+                }
+                state = std::move(staged);
+                page_ = Page::sale;
+                return true;
+            }
+        }
+        return false;
+    }
+    if (page_ == Page::equipment)
+    {
+        if (code == 1)
+        {
+            page_ = Page::sale;
+            return false;
+        }
+        if (code == 0x48)
+        {
+            recipient_up();
+        }
+        if (code == 0x50)
+        {
+            recipient_down();
+        }
+        if (code == 0x0F)
+        {
+            equip_selected_ = !equip_selected_ && !recipients_.empty();
+        }
+        if (code == 0x1C || code == 0x39)
+        {
+            confirmation_.emplace(root_, font_, equip_selected_ ? 207 : 96, 212, 228, true);
+            page_ = Page::equipment_confirm;
+        }
+        return false;
+    }
+    if (code == 1)
+    {
+        return_parent();
+        return false;
+    }
+    if (page_ == Page::shop)
+    {
+        if (code == 0x4B || code == 0x4D || code == 0x0F)
+        {
+            option_ = option_ % 4 + 1;
+        }
+        if (code == 0x1C || code == 0x39)
+        {
+            select_category(unsigned(option_ - 1), state);
+        }
+    }
+    else if (page_ == Page::sale)
+    {
+        if (code == 0x4B)
+        {
+            if (row_ > 0)
+            {
+                --row_;
+            }
+            else if (first_ > 0)
+            {
+                --first_;
+            }
+        }
+        if (code == 0x4D && size_t(first_ + row_ + 1) < items_.size())
+        {
+            if (row_ < 7)
+            {
+                ++row_;
+            }
+            else
+            {
+                ++first_;
+            }
+        }
+        if ((code == 0x1C || code == 0x39) && item() && buying_ && unit_price(state, item()) > money(state))
+        {
+            insufficient_ = true;
+            return false;
+        }
+        if ((code == 0x1C || code == 0x39) && item() && (!buying_ || unit_price(state, item()) <= money(state)))
+        {
+            quantity_ = 1;
+            if (buying_ && option_ <= 2)
+            {
+                if (!equipment_)
+                {
+                    equipment_ = std::make_unique<OriginalEquipment>(root_);
+                }
+                recipients_ = equipment_->recipients(state, item());
+                recipient_ = recipient_first_ = 0;
+                equip_selected_ = false;
+                page_ = Page::equipment;
+            }
+            else
+            {
+                page_ = Page::quantity;
+            }
+        }
+    }
+    else if (page_ == Page::quantity)
+    {
+        if (code == 0x4B && quantity_ > 1)
+        {
+            --quantity_;
+        }
+        if (code == 0x4D && (!buying_ ? quantity_ < state.groups[0].inventory.at(item() - 1) : uint64_t(quantity_ + 1) * unit_price(state, item()) <= money(state)))
+        {
+            ++quantity_;
+        }
+        if (code == 0x1C || (buying_ && code == 0x39)) { return commit_quantity(state); }
+    }
+    if (page_ == Page::sale && (code == 0x4B || code == 0x4D))
+    {
+        cursor_request_ = std::pair{ 224 + 54 * row_, 356 };
+    }
+    return false;
+}
+
+auto OriginalShopMenu::mouse(int x, int y, bool left, bool right, OriginalSave::State& state) -> bool
+{
+    if (transitioning())
+    {
+        return false;
+    }
+    if (insufficient_)
+    {
+        if (left || right)
+        {
+            insufficient_ = false;
+        }
+        return false;
+    }
+    if (right)
+    {
+        return scan(1, state);
+    }
+    if (page_ == Page::equipment_confirm)
+    {
+        confirmation_->mouse(float(x), float(y), left);
+        return scan(0, state);
+    }
+    if (page_ == Page::equipment)
+    {
+        int top = 480 - panel_height(218);
+        if (left && x >= 239 && x <= 258 && y >= top + 51 && y <= top + 230 && !recipients_.empty())
+        {
+            if (y <= top + 74)
+            {
+                recipient_up();
+                equip_selected_ = true;
+            }
+            else if (y >= top + 207)
+            {
+                recipient_down();
+                equip_selected_ = true;
+            }
+            else if (y >= top + 76 && y <= top + 205 && recipients_.size() > 5)
+            {
+                size_t first = size_t((y - top - 76) * int(recipients_.size()) / 129);
+                recipient_first_ = std::min(first, recipients_.size() - 5);
+                recipient_ = recipient_first_ + (y >= top + 175 ? 4 : 0);
+                equip_selected_ = true;
+            }
+            return false;
+        }
+        if (x >= 262 && x <= 459 && y >= top + 17 && y <= top + 45)
+        {
+            equip_selected_ = false;
+            return left ? scan(0x1C, state) : false;
+        }
+        if (x >= 269 && x <= 453 && y >= top + 52 && y <= top + 227 && !recipients_.empty())
+        {
+            size_t first = recipient_first_, n = first + size_t((y - top - 52) / 35);
+            if (n < recipients_.size())
+            {
+                bool same = equip_selected_ && recipient_ == n;
+                recipient_ = n;
+                equip_selected_ = true;
+                if (same && left)
+                {
+                    return scan(0x1C, state);
+                }
+            }
+        }
+        return false;
+    }
+    if (page_ == Page::shop)
+    {
+        for (unsigned i = 0; i < 4; ++i)
+        {
+            auto r = rectangles[i];
+            if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom)
+            {
+                option_ = int(i) + 1;
+                if (left)
+                {
+                    return scan(0x1C, state);
+                }
+            }
+        }
+    }
+    else if (page_ == Page::sale)
+    {
+        if (x >= 196 && x < 628 && y >= 307 && y <= 379)
+        {
+            int row = (x - 196) / 54;
+            if (row < 8 && size_t(first_ + row) < items_.size())
+            {
+                row_ = row;
+                return left ? scan(0x1C, state) : false;
+            }
+        }
+        else if (left && x >= 196 && x <= 625 && y >= 382 && y <= 401)
+        {
+            if (x <= 221 || x >= 600)
+            {
+                held_scroll_ = x <= 221 ? 0x4B : 0x4D;
+                held_stamp_ = clock_cs_;
+                auto result = scan(held_scroll_, state);
+                cursor_request_.reset();
+                return result;
+            }
+            held_scroll_ = 0;
+            first_ = std::clamp((x - 222) * int(items_.size()) / 349, 0, std::max(0, int(items_.size()) - 8));
+            row_ = x >= 571 ? 7 : 0;
+            if (row_ >= int(items_.size()) - 1)
+            {
+                row_ = int(items_.size()) - 1;
+                first_ = 0;
+            }
+        }
+    }
+    else if (page_ == Page::quantity && left && y >= 413 && y <= 443)
+    {
+        int base = buying_ ? 258 : 198;
+        if (x >= base + 227 && x <= base + 292)
+        {
+            return scan(0x1C, state);
+        }
+        if (x >= base + 171 && x <= base + 195)
+        {
+            return scan(0x4B, state);
+        }
+        if (x >= base + 200 && x <= base + 225)
+        {
+            return scan(0x4D, state);
+        }
+    }
+    return false;
+}
+
+auto OriginalShopMenu::draw(const OriginalSave::State& state, FullWidthCanvas* canvas) const -> std::vector<uint8_t>
+{
+    auto image = background_.background();
+    if (page_ == Page::shop)
+    {
+        auto r = rectangles[size_t(option_ - 1)];
+        auto s = font_.text_bytes(unsigned(option_ == 4 ? 199 : 92 + option_));
+        background_.draw_caption(image, unsigned(option_ == 4 ? 199 : 92 + option_), (r.left + r.right) / 2 - int(s.size()) * 4, (r.top + r.bottom) / 2 - 30);
+        return image;
+    }
+    std::vector<uint8_t> key;
+    key.reserve(8 + state.groups[0].inventory.size());
+    for (unsigned i = 0; i < 4; ++i)
+    {
+        key.push_back(state.groups[0].metadata[i]);
+    }
+    key.push_back(uint8_t(option_));
+    key.insert(key.end(), state.groups[0].inventory.begin(), state.groups[0].inventory.end());
+    bool reuse = buying_ && page_ == Page::sale && cached_first_ == first_ && cached_key_ == key && !cached_panel_.empty();
+    if (reuse)
+    {
+        image = cached_panel_;
+    }
+    else
+    {
+        sprite(image, 235, 6, 8, OriginalZeroRun::opaque);
+        sprite(image, 212, 352, 200, OriginalZeroRun::opaque);
+        sprite(image, 211, 4, 236, OriginalZeroRun::opaque);
+        merchant(image);
+        if (buying_)
+        {
+            text(image, font_.text_bytes(100), 149, 42);
+        }
+        auto title = font_.text_bytes(194);
+        text(image, title, 80 - int(title.size()) * 6, 176, 54);
+        text(image, font_.text_bytes(205), 355, 205, 179);
+        if (page_ == Page::sale)
+        {
+            number(image, money(state), 480, 205, 179);
+        }
+        text(image, font_.text_bytes(buying_ ? 202 : 203), 410 - int(font_.text_bytes(buying_ ? 202 : 203).size()) * 6, 279, 139);
+        for (unsigned col = 0; col < 8 && size_t(first_) + col < items_.size(); ++col)
+        {
+            unsigned id = items_[size_t(first_) + col];
+            sprite(image, id + 492, 204 + int(col) * 54, 313, OriginalZeroRun::transparent);
+            auto price = std::to_string(unit_price(state, id));
+            // 411F5B uses 422402 in both buy and sale paths (8-pixel ASCII advance).
+            font_.draw_small(image, { price.begin(), price.end() }, 220 - int(price.size()) * 4 + int(col) * 54, 358, buying_ && unit_price(state, id) > money(state) ? 68 : 190, true);
+        }
+        if (buying_ && page_ == Page::sale)
+        {
+            cached_first_ = first_;
+            cached_key_ = std::move(key);
+            cached_panel_ = image;
+        }
+    }
+    if (item())
+    {
+        int thumb = 222;
+        if (first_ + row_ > 0)
+        {
+            thumb += (first_ + row_ + 1) * 349 / int(items_.size());
+        }
+        sprite(image, 213, thumb, 382, OriginalZeroRun::opaque);
+        // 413061:475970 rectangle, color60, native selected column bounds.
+        int left = 196 + row_ * 54, right = 247 + row_ * 54;
+        auto pixel = [&](int x, int y)
+        {
+            size_t q = (size_t(y) * 640 + x) * 4;
+            for (unsigned k = 0; k < 3; ++k)
+            {
+                image.at(q + k) = uint8_t(unsigned(pal_.at(60 * 3 + k)) * 255 / 63);
+            }
+            image.at(q + 3) = 255;
+        };
+        for (int x = left; x <= right; ++x)
+        {
+            pixel(x, 307);
+            pixel(x, 379);
+        }
+        for (int y = 307; y <= 379; ++y)
+        {
+            pixel(left, y);
+            pixel(right, y);
+        }
+        auto name = shop_.name(item());
+        text(image, name, 93 - int(name.size()) * 6, 267, 54);
+        const auto& help = help_.at(item());
+        // 411842 calls 4224F2: fixed small font, nine 16-pixel cells, eight rows.
+        draw_help(image, help);
+        if (page_ == Page::sale)
+        {
+            auto owned = font_.text_bytes(buying_ ? 251 : 110);
+            text(image, owned, 264, 416);
+            number(image, state.groups[0].inventory.at(item() - 1), buying_ ? 274 + int(owned.size()) * 12 : 400, 416);
+        }
+    }
+    if (insufficient_)
+    {
+        unsigned id = shared_sprite(0x4F72C8);
+        size_t g = dword(pal_, 816) - 57, p = g + dword(cel_, g + 2 + (id - 142) * 8);
+        sprite(image, id, 268, 382, OriginalZeroRun::opaque);
+        auto message = font_.text_bytes(104);
+        text(image, message, 268 + int(word(cel_, p) + 1) / 2 - int(message.size()) * 6, 382 + int(word(cel_, p + 2) + 1) / 2 - 12);
+    }
+    if (page_ == Page::equipment || page_ == Page::equipment_confirm)
+    {
+        int top = 480 - panel_height(218);
+        sprite(image, 218, 0, top, OriginalZeroRun::opaque);
+        number(image, money(state) - unit_price(state, item()), 480, 205, 179);
+        auto prompt = font_.text_bytes(208), name = shop_.name(item());
+        for (size_t i = 0; i + 1 < prompt.size(); ++i)
+        {
+            if (prompt[i] == '%')
+            {
+                auto n = std::to_string(unit_price(state, item()));
+                auto v = prompt[i + 1] == 's' ? name : std::vector<uint8_t>(n.begin(), n.end());
+                prompt.erase(prompt.begin() + i, prompt.begin() + i + 2);
+                prompt.insert(prompt.begin() + i, v.begin(), v.end());
+                i += v.size();
+            }
+        }
+        text(image, prompt, 149, 90);
+        text(image, font_.text_bytes(204), 277, top + 20, equip_selected_ ? 45 : 242);
+        size_t first = recipient_first_;
+        for (size_t i = 0; i < 5 && first + i < recipients_.size(); ++i)
+        {
+            const auto& r = state.groups[0].units.at(recipients_[first + i]);
+            std::vector<uint8_t> n;
+            for (size_t p = 0x10; p < 0x23 && r.at(p); ++p)
+            {
+                n.push_back(r[p]);
+            }
+            text(image, n, 305, top + 59 + 35 * int(i), equip_selected_ && first + i == recipient_ ? 242 : 52);
+        }
+        if (!recipients_.empty())
+        {
+            int thumb = top + 76;
+            if (recipient_)
+            {
+                thumb += int((recipient_ + 1) * 100 / recipients_.size());
+            }
+            sprite(image, shared_sprite(0x4F72AC), 239, thumb, OriginalZeroRun::transparent);
+        }
+        if (equip_selected_ && !recipients_.empty())
+        {
+            const auto& r = state.groups[0].units.at(recipients_[recipient_]);
+            unsigned old = word(r, 0xCB + 2 * equipment_->slot(item()));
+            for (unsigned i = 0; i < 6; ++i)
+            {
+                unsigned id = word(r, 0xCB + 2 * i);
+                if (id)
+                {
+                    sprite(image, id + 492, 70, top + 20 + 35 * int(i), OriginalZeroRun::transparent);
+                    text(image, shop_.name(id), 104, top + 25 + 35 * int(i), 233);
+                }
+            }
+            int y = top + 80;
+            std::array<unsigned, 7> offsets{ 17, 21, 22, 16, 19, 20, 23 }, labels{ 7, 8, 11, 119, 116, 117, 118 };
+            for (unsigned i = 0; i < 7; ++i)
+            {
+                int a = equipment_->field(old, offsets[i], i == 0), b = equipment_->field(item(), offsets[i], i == 0);
+                if (a == b)
+                {
+                    continue;
+                }
+                font_.draw_small(image, font_.text_bytes(labels[i]), 491, y, 137, true);
+                if (i == 3)
+                {
+                    a = unsigned(a) & 255;
+                    b = unsigned(b) & 255;
+                    a %= 10;
+                    b %= 10;
+                }
+                else if (i >= 4)
+                {
+                    a = unsigned(a) & 255;
+                    b = unsigned(b) & 255;
+                }
+                int value;
+                if (i == 0) { value = word(r, 0xC3); }
+                else if (i == 1) { value = word(r, 0xC5); }
+                else
+                {
+                    value = a;
+                }
+
+                auto n = std::to_string(value), next = std::to_string(i < 2 ? std::max(0, value + b - a) : b);
+                font_.draw_small(image, { n.begin(), n.end() }, 532, y, 109, true);
+                sprite(image, shared_sprite(0x4F72B0), 560, y + 4, OriginalZeroRun::transparent);
+                font_.draw_small(image, { next.begin(), next.end() }, 588, y, a > b ? 59 : 167, true);
+                y += 24;
+            }
+            if (y > top + 80)
+            {
+                text(image, font_.text_bytes(120), 503, top + 37, 233);
+            }
+        }
+        if (confirmation_)
+        {
+            confirmation_->draw(image, font_);
+        }
+        return image;
+    }
+    if (page_ == Page::quantity)
+    {
+        sprite(image, 216, buying_ ? 258 : 198, 413, OriginalZeroRun::opaque);
+        auto prompt = font_.text_bytes(buying_ ? 200 : 201), name = shop_.name(item());
+        for (size_t i = 0; i + 1 < prompt.size(); ++i)
+        {
+            if (prompt[i] == '%' && prompt[i + 1] == 's')
+            {
+                prompt.erase(prompt.begin() + i, prompt.begin() + i + 2);
+                prompt.insert(prompt.begin() + i, name.begin(), name.end());
+                break;
+            }
+        }
+        text(image, prompt, 149, 90);
+        if (!buying_)
+        {
+            // 413BA0 draws remaining stock only for selling; 411FA1 has no stock field.
+            text(image, font_.text_bytes(110), 530, 416);
+            number(image, state.groups[0].inventory.at(item() - 1) - quantity_, 540 + int(font_.text_bytes(110).size()) * 12, 416);
+        }
+        number(image, quantity_, buying_ ? 272 : 212, 415, 59);
+        auto amount = std::string("$") + std::to_string(quantity_ * unit_price(state, item()));
+        text(image, { amount.begin(), amount.end() }, buying_ ? 328 : 268, 415, 59);
+        text(image, font_.text_bytes(206), buying_ ? 488 : 428, 416);
+        number(image, buying_ ? money(state) - quantity_ * unit_price(state, item()) : money(state) + quantity_ * unit_price(state, item()), 480, 205, 179);
+    }
+    return fade(std::move(image), canvas);
+}
+}    //namespace s2ne

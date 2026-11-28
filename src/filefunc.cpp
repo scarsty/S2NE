@@ -1,5 +1,5 @@
 #include "filefunc.h"
-#include "terminal_output.hpp"
+#include "terminal_output.h"
 
 #include <cctype>
 #include <cstdio>

@@ -1,6 +1,6 @@
-#include "app_runtime.hpp"
-#include "runtime_diagnostics.hpp"
-#include "terminal_output.hpp"
+#include "app_runtime.h"
+#include "runtime_diagnostics.h"
+#include "terminal_output.h"
 #include <SDL3/SDL_main.h>
 #include <exception>
 int main(int argc, char** argv)

@@ -1,4 +1,4 @@
-#include "app_options.hpp"
+#include "app_options.h"
 #include <SDL3/SDL.h>
 #include <stdexcept>
 namespace s2ne

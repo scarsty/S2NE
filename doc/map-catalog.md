@@ -151,9 +151,9 @@ PRG 地图总数：**132**；BIN 关卡总数：**168**；逻辑 payload 基址�
 
 ## 复核依据
 
-- [battle.hpp](../src/battle.hpp)
-- [original_map.hpp](../src/original_map.hpp)
-- [original_events.hpp](../src/original_events.hpp)
+- [battle.h](../src/battle.h)
+- [original_map.h](../src/original_map.h)
+- [original_events.h](../src/original_events.h)
 - [event-instructions.md](event-instructions.md)
 
 

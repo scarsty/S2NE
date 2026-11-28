@@ -6,7 +6,7 @@
 
 专用二进制事件表，由原生引擎解释；不是 x86 模拟器，也不是 Lua 等通用语言。回合、死亡、胜利、旗标变化等入口按原顺序扫描记录，条件成立后调用原生函数。对白、选择、移动和演出可以挂起执行，完成后继续；不能简单将全部事件展平成对白列表。死亡入口存在同步调用链及专用返回值，复刻的显式调用栈是保持该语义的实现，不证明资源中存在通用函数调用指令。
 
-原分派：`41B5DF`；旗标扫描／消耗：`41B9A3`、`41BA56`；死亡：`41C02A → 41CA6E → 41FF30`。源码导航：[事件解析](../src/original_events.hpp)、[事件控制](../src/prologue.hpp)、[谓词](../src/original_script_predicates.hpp)、[死亡执行栈](../src/original_death_dispatch.hpp)、[关卡结算](../src/original_campaign.hpp)。
+原分派：`41B5DF`；旗标扫描／消耗：`41B9A3`、`41BA56`；死亡：`41C02A → 41CA6E → 41FF30`。源码导航：[事件解析](../src/original_events.h)、[事件控制](../src/prologue.h)、[谓词](../src/original_script_predicates.h)、[死亡执行栈](../src/original_death_dispatch.h)、[关卡结算](../src/original_campaign.h)。
 
 ## 2. 关卡与事件位置
 
@@ -31,7 +31,7 @@
 
 关卡逻辑并不是从单个独立的“关卡文件”读取，而是先通过`SUPERSP.PAL`建立逻辑目录，
 再从同目录下的`SUPERSP.BIN`和按资源域分区的`SUPERSP.DAT`/`SUPERSP.PRG`取数据。
-当前合并资源读取器的入口是[resource_bundle.hpp](../src/resource_bundle.hpp)：
+当前合并资源读取器的入口是[resource_bundle.h](../src/resource_bundle.h)：
 
 1. `SUPERSP.PAL`保存目录及偏移/长度索引；读取器校验目录表、资源域、逻辑长度和哈希。
 2. `SUPERSP.BIN`、`KINDSP.BIN`、`ITEMSP.BIN`是共享逻辑表，不按战场地图号直接从DAT取。

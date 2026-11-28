@@ -5,6 +5,217 @@
 <a id="current-status"></a>
 ## 当前状态
 
+### 2026-11-28 MLCC 来源核查与命名空间例外
+
+- 对全部 195 个 `src` 文件（92 cpp、103 h，含 generated）与只读
+  `C:\project\mlcc` 的 36 个 C++ 文件逐一比较名称和去空白内容，并人工核查
+  `SimpleCC`、`strcvt` 等相近功能及 git 历史，避免只凭文件名判断来源。
+  确认直接复制的只有 `ZipFile2.cpp/.h`、`filefunc.cpp/.h`：ZIP 实现
+  147/149 条有区分度的上游长行匹配，filefunc 实现 142/185 条匹配，
+  两个头文件分别 13/13、43/43 匹配；ArchiveFile/ZipFile 的少量声明匹配
+  属共享归档接口，不是额外复制文件。
+- 恢复 `ZipFile2` 全局命名空间、`filefunc` 原命名空间与实现定义形式，
+  保留原 `.h` 名称及匿名命名空间；修正 ZIP 的两个 filefunc 调用。
+  四文件未被此前头文件拆分迁出实现，无需合并新文件。相对 HEAD，ZIP
+  两文件及 filefunc.h 已完全恢复；filefunc.cpp 仅保留此前终端输出头文件
+  从 `.hpp` 到 `.h` 的必要引用更新。未用上游覆盖本地文件，保留原有
+  `std::print` 终端适配及既有平台/路径逻辑；索引中 ZipFile2.h 的错误闭括号
+  不恢复。上游原目录完全不改。
+- `simple_cc.cpp/.h` 来自项目原 `simple_cc.hpp`（历史 `d7ee364` 已是
+  `s2ne::SimpleCC`），虽同样采用词典 Trie/最长匹配思路，但接口、类型、实现
+  与 MLCC `SimpleCC::conv`/`Tire` 不同；保留游戏配置、Big5 转换和运行时开关。
+  `text_encoding.cpp/.h` 是项目 Big5/UTF-8 严格转换及 Android JNI 适配，
+  不是 MLCC `strcvt` 的 ACP/codecvt/UTF-16 工具改名。两组独立游戏实现仍为
+  `s2ne`，不冒充上游复制品，也不改为上游 API。
+- 上述复制来源例外已写入工作区 C++ 规则；下方此前“全部合并／自有 ZipFile2”
+  记录已由本条纠正。原样指保留上游命名空间、文件名、实现边界与功能，
+  不要求覆盖必要适配；本轮触及 C++ 仍按本机指定 clang-format 校验，少量
+  早于本轮的上游格式差异保留，不手工反覆盖格式化结果。
+- 验证：5 个触及的 C++ 文件指定 clang-format dry-run/Werror 通过，BOM
+  与修改前一致，VS Problems 无错误。Windows x64 Release MSBuild 成功
+  （仅既有 fopen/chdir 弃用警告）；`run-standalone-test.ps1` 的
+  `resource_read_test`（新增全局 ZIP/filefunc 创建、压缩内容读回、追加保留
+  条目链路）和 `original_shared_disc_test` 均通过，后者验证全部 100 个
+  DAT/PRG 映射及损坏输入。既有 Android 目录中的 `text_encoding_test.cpp`
+  在 Windows 编译并运行通过，涵盖 Big5 往返、非法 UTF-8、空输入及 ASCII；
+  不代表 Android 构建／JNI 实机验收。发布 EXE 与构建输出 SHA256 一致：
+  `8473C478E7C7F400A1CD62B77D248191EEEC0AD434E9EE74F42B55D96A6090A1`。
+
+### 2026-11-28 项目头文件与命名空间统一
+
+- 108 个项目自有 `.hpp` 已改为 `.h`（src 101、tests 7），同步 Windows
+  vcxproj/filters、桌面与 Android 引用、生成器、审计工具、测试和文档。
+  外部 `nlohmann/json.hpp` 保持不变；analysis 中历史 libclang AST JSON 快照的
+  文件名属于当时的审计原始记录，不作为源码／构建输入，不改写该历史证据。
+- 项目命名空间 original、original_ai、original_combat、original_movement、
+  original_scripted_movement、filefunc、battle_render_test、exit_test、smoke_exit
+  全部合并到 s2ne，引用点同步；自有 ZipFile2 也归入 s2ne。
+  97 个有项目命名空间的 cpp 均仅一个 s2ne 块，平台条件放在块内；filefunc 与
+  ZIP 解码的匿名命名空间仍保留内部链接，static、嵌套类型及模板不改语义。
+  include、main、外部 ABI 不包入命名空间，也不改外部库／std 名称。
+- 删除此前 tests 的宽泛反忽略规则，恢复 `/tests/` 忽略；测试文件全部保留，
+  无新增未跟踪 tests，无暂存、撤销暂存或提交操作。
+- 404 个修改的 C/C++ 文件经指定 clang-format 格式化及 dry-run/Werror；
+  410 个源／头文件的 BOM 与迁移前一致。libclang 对 65 个超限头文件审计通过。
+  Windows Release 构建成功，发布 EXE 与构建输出 SHA256 一致。
+- 12 个完整专项通过：settings、battle_reports、map、skills、ai、combat、
+  movement_bitmap、combat_visual、promotion、promotion_transaction、progression、
+  wide_viewport。scripted_movement 与 ai_skill 均编译／链接成功，但运行所需
+  历史存档不存在（Cannot open original save），不能声称其运行验收通过。
+  Android 仅同步构建输入，没有执行 Android 构建。
+  另通过 battle `--assist-rest` 与 reports `--terrain-bonuses` 两个 focused 路径。
+  本次发布 SHA256：`F6B5B8DC491B067D45FB024BE542030BA65CFEF4978421A8AB7EB35C34EE8CD4`。
+
+### 2026-11-28 全量 1024-byte 头文件编译边界审计
+
+按文件字节数而非行数检查全部项目自有 `src`（含 generated）与 `tests` 头文件。
+初始 src 91 个、测试辅助 7 个超过 1024 bytes；本轮从 83 个 src 头文件迁出
+1870 个非模板函数，另迁出非 Windows 堆栈实现 2 个、7 个测试辅助头文件的
+23 个函数。此前 settings/reports 的 64 个实现继续保持独立 cpp。没有将头文件
+人为切成小片；原模板、constexpr、默认成员与 inline 全局变量保留原语义。
+返回类型改为显式类型（迭代器使用标准别名，不暴露 MSVC 私有类型）；默认参数
+仅留声明，嵌套类型在类作用域解析。runtime_error/runtime_diagnostics 的平台分支
+一并迁移，避免仅 Windows 可编译。所有已暂存／未暂存的原有功能改动保留。
+
+Windows vcxproj 与桌面／Android CMake 已包含全部实现；后两者共享
+`cmake/implementation-sources.cmake`，测试链接 s2ne-ui 与 s2ne-test-support。
+独立 cl 测试使用 `tools\run-standalone-test.ps1 -Name <test_name>`，从当前
+Release 对象建立实现静态库，并链接分离的测试辅助 cpp，不再假设业务头文件自带实现。
+可执行审计：VS x64 developer prompt 下运行
+`python tools\split-header-implementations.py --check`；libclang 源码范围识别而非
+正则判定函数／模板，超限头文件中任何非模板运行时函数体都会报错。平台未激活
+分支另行核查；Android 源列表已同步，但本机没有执行 Android 构建。
+
+最终验证：剩余 65 个超限头文件，AST 审计通过，无非模板运行时函数体；182 个
+本轮相关 C++ 文件通过指定 clang-format 的 `--dry-run --Werror`，86 个原有
+跟踪 C++ 文件逐个与索引比较 BOM／UTF-8 保持一致。Windows Release 构建通过，
+输出与资源目录 S2NE.exe SHA256 一致。settings、battle_reports（完整及
+`--terrain-bonuses`）、promotion、promotion_transaction、progression、map、skills
+及 battle `--assist-rest` 通过；地图资源／技能七场景亦通过。没有声称完整 battle
+历史套件或 Android 实机已验收。真实修改 original_map.cpp 后重建耗时 4.90 秒，
+93 个对象中仅 original_map.obj 时间戳改变，app_runtime.obj 不变；测试后恢复
+探针空行，业务源内容保持最终格式。VS Problems 无错误。
+
+以下为本轮最终仍超过 1024 bytes 的**全部**头文件及保留理由（名称相对仓库）：
+
+| 头文件 | 保留理由 |
+|---|---|
+| `src\app_campaign.h` | 声明／类型／数据布局；无非模板运行时函数体 |
+| `src\app_sdl.h` | 声明／类型／数据布局；编译期定义／常量；默认成员／比较；无非模板运行时函数体 |
+| `src\battle.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；编译期定义／常量；默认成员／比较；无非模板运行时函数体 |
+| `src\filefunc.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；无非模板运行时函数体 |
+| `src\flic.h` | 声明／类型／数据布局；默认成员／比较；无非模板运行时函数体 |
+| `src\generated\functions.h` | 声明／类型／数据布局；无非模板运行时函数体 |
+| `src\native_ability_buffs.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；编译期定义／常量；无非模板运行时函数体 |
+| `src\native_damage_records.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；编译期定义／常量；无非模板运行时函数体 |
+| `src\native_invisibility.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；无非模板运行时函数体 |
+| `src\native_timed_buffs.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；编译期定义／常量；无非模板运行时函数体 |
+| `src\opening_audio.h` | 声明／类型／数据布局；无非模板运行时函数体 |
+| `src\original_action_audio.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；inline 共享状态保留身份；无非模板运行时函数体 |
+| `src\original_ai.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；默认成员／比较；无非模板运行时函数体 |
+| `src\original_ani_audio.h` | 声明／类型／数据布局；无非模板运行时函数体 |
+| `src\original_army_equipment_menu.h` | 声明／类型／数据布局；无非模板运行时函数体 |
+| `src\original_battle_menu.h` | 声明／类型／数据布局；编译期定义／常量；无非模板运行时函数体 |
+| `src\original_battle_reports.h` | 声明／类型／数据布局；编译期定义／常量；无非模板运行时函数体 |
+| `src\original_campaign.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；默认成员／比较；无非模板运行时函数体 |
+| `src\original_campaign_persistence.h` | 声明／类型／数据布局；默认成员／比较；无非模板运行时函数体 |
+| `src\original_church.h` | 声明／类型／数据布局；编译期定义／常量；无非模板运行时函数体 |
+| `src\original_combat.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；无非模板运行时函数体 |
+| `src\original_combat_visual.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；无非模板运行时函数体 |
+| `src\original_death_dispatch.h` | 声明／类型／数据布局；默认成员／比较；无非模板运行时函数体 |
+| `src\original_deployment.h` | 声明／类型／数据布局；无非模板运行时函数体 |
+| `src\original_drain.h` | 声明／类型／数据布局；无非模板运行时函数体 |
+| `src\original_effect_audio.h` | 声明／类型／数据布局；默认成员／比较；无非模板运行时函数体 |
+| `src\original_ending.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；无非模板运行时函数体 |
+| `src\original_equipment.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；无非模板运行时函数体 |
+| `src\original_events.h` | 声明／类型／数据布局；默认成员／比较；无非模板运行时函数体 |
+| `src\original_initialization.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；默认成员／比较；无非模板运行时函数体 |
+| `src\original_inn.h` | 声明／类型／数据布局；编译期定义／常量；无非模板运行时函数体 |
+| `src\original_interbattle.h` | 声明／类型／数据布局；编译期定义／常量；无非模板运行时函数体 |
+| `src\original_item_use.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；无非模板运行时函数体 |
+| `src\original_map.h` | 声明／类型／数据布局；默认成员／比较；无非模板运行时函数体 |
+| `src\original_menu.h` | 声明／类型／数据布局；编译期定义／常量；默认成员／比较；无非模板运行时函数体 |
+| `src\original_palette.h` | 声明／类型／数据布局；编译期定义／常量；无非模板运行时函数体 |
+| `src\original_presentation.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；inline 共享状态保留身份；无非模板运行时函数体 |
+| `src\original_progression.h` | 声明／类型／数据布局；默认成员／比较；inline 共享状态保留身份；无非模板运行时函数体 |
+| `src\original_promotion.h` | 声明／类型／数据布局；编译期定义／常量；默认成员／比较；inline 共享状态保留身份；无非模板运行时函数体 |
+| `src\original_promotion_transaction.h` | 声明／类型／数据布局；默认成员／比较；无非模板运行时函数体 |
+| `src\original_save.h` | 声明／类型／数据布局；编译期定义／常量；无非模板运行时函数体 |
+| `src\original_save_bridge.h` | 声明／类型／数据布局；编译期定义／常量；无非模板运行时函数体 |
+| `src\original_save_menu.h` | 声明／类型／数据布局；编译期定义／常量；无非模板运行时函数体 |
+| `src\original_scripted_movement.h` | 声明／类型／数据布局；无非模板运行时函数体 |
+| `src\original_settings.h` | 声明／类型／数据布局；编译期定义／常量；inline 共享状态保留身份；无非模板运行时函数体 |
+| `src\original_shop.h` | 声明／类型／数据布局；无非模板运行时函数体 |
+| `src\original_shop_menu.h` | 声明／类型／数据布局；编译期定义／常量；无非模板运行时函数体 |
+| `src\original_skill88_visual.h` | 声明／类型／数据布局；默认成员／比较；无非模板运行时函数体 |
+| `src\original_skill94_formula.h` | 声明／类型／数据布局；默认成员／比较；无非模板运行时函数体 |
+| `src\original_skill94_resolution.h` | 声明／类型／数据布局；默认成员／比较；无非模板运行时函数体 |
+| `src\original_skill94_transaction.h` | 声明／类型／数据布局；默认成员／比较；无非模板运行时函数体 |
+| `src\original_skill_visual.h` | 声明／类型／数据布局；默认成员／比较；无非模板运行时函数体 |
+| `src\original_skills.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；默认成员／比较；无非模板运行时函数体 |
+| `src\original_spirit_sight.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；无非模板运行时函数体 |
+| `src\original_sprite.h` | 声明／类型／数据布局；无非模板运行时函数体 |
+| `src\original_unit_status.h` | 声明／类型／数据布局；无非模板运行时函数体 |
+| `src\original_worldmap.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；无非模板运行时函数体 |
+| `src\prologue.h` | 声明／类型／数据布局；编译期定义／常量；无非模板运行时函数体 |
+| `src\resource_bundle.h` | 声明／类型／数据布局；默认成员／比较；无非模板运行时函数体 |
+| `src\resource_result.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；inline 共享状态保留身份；无非模板运行时函数体 |
+| `src\runtime_error.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；无非模板运行时函数体 |
+| `src\stdio_protocol.h` | 声明／类型／数据布局；无非模板运行时函数体 |
+| `src\texture_resources.h` | 声明／类型／数据布局；必要模板定义（含 auto 形参）；无非模板运行时函数体 |
+| `src\ZipFile2.h` | 声明／类型／数据布局；默认成员／比较；无非模板运行时函数体 |
+| `tests\original_smoke_exit.h` | 声明／类型／数据布局；无非模板运行时函数体 |
+
+
+2026-11-28 编译边界首批拆分：频繁改动的original_settings和较大的
+original_battle_reports保留hpp声明，64个方法实现迁到同名cpp；Windows、
+桌面CMake测试静态库及Android CMake源列表同步。设置与报告回归、
+地形／拾取专项、Windows Release及格式校验通过。实现文件单点改动实测
+约4.83秒，仅重编original_settings.obj后链接，不重编app_runtime。
+未测拆分前对照耗时，未执行Android构建。后续频繁修改或超过约1000行的
+非模板实现优先采用hpp/cpp分离；模板、constexpr及简短访问器可留头文件，
+不为达到行数阈值机械拆分。独立cl测试需链接这两个cpp或s2ne-ui静态库。
+
+2026-11-28 地面拾取提示：按原版455324恢复CEL209阴影面板、角色名及原文
+第38项、物品图标、名称与x  1；位置按角色屏幕坐标、身高及原边界计算。
+取消临时2.5秒提示，改为阻塞战斗并等待按键或鼠标确认；逐个拾取，避免
+同一帧连续拾取覆盖面板，不改变拾取条件或随机结果。
+原版完整拾取面板（真实物品301）绘制专项、Windows Release及格式校验通过，
+EXE已同步；未做实际移动拾取的桌面录像或Android验收。
+
+2026-11-28 游戏内扩展设置：原设置页右上新增入口，子页提供主角扩展
+转职、简体中文、隐藏地点提示及规则辅助四项，不提供分辨率或cheat文件
+开关。返回原设置页再关闭设置时复用原保存路径，同时更新运行时辅助、
+转职及繁简转换状态；不追溯已获得成长。Esc／右键在子页仅返回，原三个
+设置上下文及分辨率保持不变。设置专项覆盖四开关、绘制及返回路径。
+
+2026-11-28 可选辅助：新增CFG的HIGHLIGHT_SECRETS与GAMEPLAY_ASSIST，
+均默认0并随设置保存。前者只绘提示菱形：尚有动态物品链的格子为黄色，
+地图6／11类入口出口为青色，不更改事件旗标、拾取或通关条件。
+后者仅我方：升级随机成长取理论上限但保留原RNG调用；召唤完成后行动
+状态为0；休息取原20%上限且保留恢复封顶、装备及状态规则；10级即可
+转职；转职保留max(0,旧经验-旧一级门槛)，新职业仍1级、不立即结算余额。
+CFG往返、成长公式及生产成长、转职事务40例、休息专项、召唤行动状态、
+真实物品点消耗后标记消失及入口高亮专项通过。Windows Release编译并
+同步游戏目录EXE、格式校验通过；未做Android构建或实际施法触控验收。
+广域battle_test在既有“452450 class5 skips AP12Eh and130h writeback”
+断言失败，未改无关移动逻辑；本次休息专项已单独通过。
+
+2026-11-28 空地地形区左边框：原CEL143在x=514／515为深色分隔边，
+此前从x=520截取右侧120像素，裁掉了该边框。现空地预览与宽屏边缘HUD
+统一从x=514截取126像素，保留原图边框，不额外绘制或修改资源。
+上下位置逐像素专项、768×480／960×540宽屏回归及格式校验通过。
+Windows Release编译链接完成，但游戏目录S2NE.exe被运行中的进程57144
+占用，自动复制失败；新EXE位于out/x64/Release/S2NE.exe，未终止游戏。
+
+2026-11-28 人物地形攻防加成恢复：核查原42BEED的42C3AB—42C4FD，
+仅人物上下文且42C8D1返回1时，在地形区绘CEL190／191和有符号攻防值；
+空地预览不绘。git确认9fc3e81（2026-11-18）增加空地预览时删除了
+draw_status_terrain原有攻防绘制，现恢复该独立分支，不改战斗数值计算。
+真实首关地形专项逐像素验证正值、负值、不显示分支及上下两种面板位置，
+Windows Release构建及游戏目录EXE同步、clang-format/dry-run通过。
+未做原版截图逐像素比对或Android构建。
+
 2026-11-28 战果报告阴影纠错：重新逐段检查46243A，原函数取CEL207并
 直接474E3E绘制，没有424D47调用。上一轮将通用弹框阴影误加给报告，
 造成额外偏移暗边；现删除战果报告及共用CEL207的条件／目标页误加阴影，

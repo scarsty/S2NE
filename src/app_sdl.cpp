@@ -1,4 +1,4 @@
-#include "app_sdl.hpp"
+#include "app_sdl.h"
 namespace s2ne
 {
 AppSdlSession::~AppSdlSession()

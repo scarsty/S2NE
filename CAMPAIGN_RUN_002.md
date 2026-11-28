@@ -44,7 +44,7 @@ KINDSP文件头：分支表offset36，每职业8字节；职业记录offset1355�
 - 娜塔莉雅领导路线：87→88→91或87→89→91；两条均可达且目标无装备／能力门槛。91固有能力索引19，对应`1 << 18 = 0x40000`。原攻略《职业表及特殊能力说明》明确91为「最高领主[领导]」，能力说明可控制我方NPC但不含使用／装备物品。优先87→88→91，保留89备用；到时仍只选原菜单合法候选，不直接写职业。水月刀圣／女王暂缓，通用女剑士路线不是她的专属可达表。
 - 开锁来源：5盜賊固有能力索引22，对应`0x200000`；攻略明确「开锁－打开上锁的宝箱」。6→5为直接合法分支；其它培养应在取得后核查能力保持。当前仅研究，没有转职。
 - 资格原`4409B7`（asm111233起）：等级>10，或等级=10且经验≥当前运行阈值；模式1拒绝；原职业有分支。等级小于10绝不通过。原`45B491`（asm157657起）：目标能力掩码为0或与角色能力相交，且必要装备为0或装备栏六项中存在。
-- 保留机制原`45B5C4→45B973`（asm158198–158214）：新职业+13h非0才计算能力位，使用`or [unit+115h],ecx`而非替换，故既有领导／开锁位保留。对应实现`original_promotion_transaction.hpp`约711行`u.abilities |= ...`；转后等级1、经验0、阈值换为目标职业。
+- 保留机制原`45B5C4→45B973`（asm158198–158214）：新职业+13h非0才计算能力位，使用`or [unit+115h],ecx`而非替换，故既有领导／开锁位保留。对应实现`original_promotion_transaction.h`约711行`u.abilities |= ...`；转后等级1、经验0、阈值换为目标职业。
 
 ### 3. 男队友开锁路线候选与取舍（原攻略＋原资源，待新队伍实测）
 
@@ -89,7 +89,7 @@ KINDSP文件头：分支表offset36，每职业8字节；职业记录offset1355�
 | 9–12 小孩（各4人） | 小孩 | 各1／0 | 各60 | 0 | 0 | 均存活到场 |
 | 13 大長老 | 部落長老 | 30／0 | 600 | 0 | 0 | 存活到场 |
 
-穆尔与泰普男性身份现由新开局原SAV记录+2Eh性别字节交叉核实：主队依次娜塔莉雅1、穆尔0、泰普0、苏1；与`original_equipment.hpp`性别分组0→男性装备mask8、1→女性mask16及攻略男性职业路径一致。没有按名字猜。正式首选穆尔6→5，仅一次转职；穆尔到10级仍须当前65阈值或>10才可转，不提前强选。泰普的多段1→6→5是备选，培养暂后。
+穆尔与泰普男性身份现由新开局原SAV记录+2Eh性别字节交叉核实：主队依次娜塔莉雅1、穆尔0、泰普0、苏1；与`original_equipment.h`性别分组0→男性装备mask8、1→女性mask16及攻略男性职业路径一致。没有按名字猜。正式首选穆尔6→5，仅一次转职；穆尔到10级仍须当前65阈值或>10才可转，不提前强选。泰普的多段1→6→5是备选，培养暂后。
 
 ### 可靠checkpoint／另进程重载
 
@@ -146,8 +146,8 @@ KINDSP文件头：分支表offset36，每职业8字节；职业记录offset1355�
 
 ## 2026-11-15 经营核实与第72关《青色草原》入场
 
-- 核源码确认旅馆option10是原451ABC自动装备确认，不是住宿，不能凭旅馆名字扣费或补HP。原换关`44A4A9→45DDA6`（`original_campaign_persistence.hpp`约289起）恢复当前HP／MP／ST／SP及临时状态；故苏HP40无需购买不存在的旅馆住宿。先原旅馆自动装备，再按原出发观察恢复，不写SAV／资源数值。
-- 补最小语义`inn_auto_equipment`／`inn_auto_confirm`：原旅馆根页确认实例→既有finish_auto→OriginalEquipment::try_auto_equip；不生成键鼠，库存／装备资格不改。README更新。停止源码写入后对app_runtime.cpp、original_inn.hpp执行指定clang-format及dry-run Werror；保留各自已有编码（runtime BOM，inn原无BOM）。原生Release独立`out\verify-run002-inn`／`obj-run002-inn`构建成功，不发布根目录。EXE SHA=`2BA57ADD57B92014A2130139C46E1CF666437E4B2AFD9F5550733220FC99F91F`。
+- 核源码确认旅馆option10是原451ABC自动装备确认，不是住宿，不能凭旅馆名字扣费或补HP。原换关`44A4A9→45DDA6`（`original_campaign_persistence.h`约289起）恢复当前HP／MP／ST／SP及临时状态；故苏HP40无需购买不存在的旅馆住宿。先原旅馆自动装备，再按原出发观察恢复，不写SAV／资源数值。
+- 补最小语义`inn_auto_equipment`／`inn_auto_confirm`：原旅馆根页确认实例→既有finish_auto→OriginalEquipment::try_auto_equip；不生成键鼠，库存／装备资格不改。README更新。停止源码写入后对app_runtime.cpp、original_inn.h执行指定clang-format及dry-run Werror；保留各自已有编码（runtime BOM，inn原无BOM）。原生Release独立`out\verify-run002-inn`／`obj-run002-inn`构建成功，不发布根目录。EXE SHA=`2BA57ADD57B92014A2130139C46E1CF666437E4B2AFD9F5550733220FC99F91F`。
 - 实测目录`out\campaign002-start-7fa7cc7737c640d991cc13cfd95138a2`：加载71战后UJ05→原旅馆→自动装备确认→返回经营→slot6保存→原出发→72原对白／部署／动画／条件→T1 slot5。无支付／购物／复活，资金仍1500。equipped.json保留装备前后，苏到72 HP136／MP71／ST0，恢复确实发生在原出发，不称旅馆治疗。
 - 原胜利`1.清除此地的所有妖物。`；失败仍`娜塔莉雅、穆爾或泰普或蘇任何一人陣亡。`；保四主队，无额外可牺牲NPC。上关六名非关键友军阵亡原因是独立NPC在敌方接触／攻击中HP归0，并非剧情必须死亡；未有领导无法操纵他们，初次控制器亦未主动治疗其全员，不能说已尽力救全。本关未预设任何牺牲对象。
 
@@ -166,7 +166,7 @@ KINDSP文件头：分支表offset36，每职业8字节；职业记录offset1355�
 
 ### 尝试A（明确失败，不计胜利）
 
-`out\semantic-campaign-41f8ecf00051444d856464a43f404347`从72T1源推进。穆尔优先取宝，T4原移动结算到(14,29)化石草260库存1→2，T7到(23,20)力量辉石274库存0→1；均request await_state正常动画后提交（170／320），selected=穆尔index1，原对象消失，treasure-moves.jsonl保留目标和移动前库存。无强加库存、开锁支付或金钱消耗；上锁与否尚未新增marker只读观察，不能把这两个宝箱称为已验证锁箱。原pickup_at_unit（prologue.hpp4796起）条件：存活登场我方、object category12、marker低8位合法链；marker0x100才要求能力0x200000；成功清链／移对象、库存+1（99上限），不消耗开锁能力或金钱。此处仅核源码，未逐个资源marker验证，不声称实测所有拒绝。
+`out\semantic-campaign-41f8ecf00051444d856464a43f404347`从72T1源推进。穆尔优先取宝，T4原移动结算到(14,29)化石草260库存1→2，T7到(23,20)力量辉石274库存0→1；均request await_state正常动画后提交（170／320），selected=穆尔index1，原对象消失，treasure-moves.jsonl保留目标和移动前库存。无强加库存、开锁支付或金钱消耗；上锁与否尚未新增marker只读观察，不能把这两个宝箱称为已验证锁箱。原pickup_at_unit（prologue.h4796起）条件：存活登场我方、object category12、marker低8位合法链；marker0x100才要求能力0x200000；成功清链／移对象、库存+1（99上限），不消耗开锁能力或金钱。此处仅核源码，未逐个资源marker验证，不声称实测所有拒绝。
 
 尝试A T15苏阵亡，原失败返回标题，立即停止而非重开盲刷。失败前：娜HP121、穆尔42、泰普344，苏0／25／0，status0xA0；尚存敌人原攻击94。诊断控制器仅HP<30%撤离，苏T14 HP90/176虽超过30%，却低于一次面板威胁，继续近敌导致失败。未申请经验，未改RNG。保留每回合合法checkpoint，改002威胁保护：HP<最大65%且低于现场最强敌两次面板攻击也优先合法撤离，避免把旧强角色策略套弱法师；这不是改命中伤害规则。
 
@@ -249,7 +249,7 @@ KINDSP文件头：分支表offset36，每职业8字节；职业记录offset1355�
 
 ## 2026-11-15 第74关《邊城提那》现场入场复核（行动前）
 
-最小只读观察补`stage_name_bytes`及item_cells.marker／locked／item_candidates，直接原map.dynamic_marker及events.dynamic_object_chains，不改地图／RNG／拾取；README更新。app_runtime.cpp／prologue.hpp指定clang-format及dry-run Werror通过，UTF-8 BOM保留；停写后原生独立Release `out\verify-run002-treasure`／`obj-run002-treasure`构建成功，EXE SHA=`0C697EE1554B96534A244E1CCE42440FFBC8FC00CC606AE3C04BC2B545109CFD`。`out\run002-stage74-observe\stage74-observe.json`现场验证：原名Big5确为《邊城提那》，四主队及古斯塔夫／黛西六人全员身份／职业／等级／HP MP ST与上一近点一致；两人已到场0x80，不是只存在名单。161无选择，原加入对白／原保存继承已在上节记录，不回滚重打。
+最小只读观察补`stage_name_bytes`及item_cells.marker／locked／item_candidates，直接原map.dynamic_marker及events.dynamic_object_chains，不改地图／RNG／拾取；README更新。app_runtime.cpp／prologue.h指定clang-format及dry-run Werror通过，UTF-8 BOM保留；停写后原生独立Release `out\verify-run002-treasure`／`obj-run002-treasure`构建成功，EXE SHA=`0C697EE1554B96534A244E1CCE42440FFBC8FC00CC606AE3C04BC2B545109CFD`。`out\run002-stage74-observe\stage74-observe.json`现场验证：原名Big5确为《邊城提那》，四主队及古斯塔夫／黛西六人全员身份／职业／等级／HP MP ST与上一近点一致；两人已到场0x80，不是只存在名单。161无选择，原加入对白／原保存继承已在上节记录，不回滚重打。
 
 原条件沿上节：清除本区守兵／娜塔莉雅阵亡失败。实物：(16,12) marker257=`0x101`，locked=true，原四项链全279无名剑谱；(6,12) marker3，locked=false，四项全130锁子甲；(3,32) marker2，locked=false，四项全3阔剑。穆尔开锁位2097152，279当前库存0。先穆尔向锁箱，成功必须查原移动后279+1、对象消失及能力／支付，无此证据不算专项通过。泰普也有开锁但不替代首选穆尔。无隐藏对象预查，非必要宝物不优先于娜存活。
 
@@ -311,7 +311,7 @@ KINDSP文件头：分支表offset36，每职业8字节；职业记录offset1355�
 
 74泰普index0真实进入75，原胜利「1.打倒護衛武師。」失败「娜塔莉雅陣亡。」不是全灭关。原攻略确认本支后接撤退保护战，尚未进入。首次无武器出发观察后未下战斗动作，回原出发前UJ06（与74最终同SHA AEE44F09…）经营分支，不回滚战斗抽RNG。库存武器只有61战斧1，原KINDSP weapon table30：长弓手13 type5（弓），忍者14 type3/1（刀／剑），故自动装备不能凭空变出弓刀，不该空手继续。
 
-原商店index1（误以index2打开教会的只读探查正常退出，无事务）武器实际报价：3阔剑180、18毒杀刀320、33法杖120、47长弓200、61战斧250、74长枪210。选择长弓1／毒杀刀1共520，钱8500→7980，库存各0→1；没有卖物／辅助。既有stdio shop_commit只支持消耗品quantity而装备停equipment：补复用原scan确认两次、保持“不立即装备”购入库存，不增加规则／绕过资金资格。独立Release `out\verify-run002-shop\S2NE.exe` SHA939026828FB037654C9EDEA4DFAAD425587C340F21CC705FB4F15554FE7934A2；仅改original_shop_menu.hpp原无BOM仍无，clang-format和dry-run Werror通过，MSBuild成功，Problems无错误。实际购买／原自动装备验证通过：娜18、穆47、泰17，均非空手，其他32／62／48不变；自动装备将毒杀刀给娜、原刀17给泰，不能假称泰直接拿18。日志`out\campaign002-weapons-33bc0516ba7449c98a8e62a1f0a5a7d4`。
+原商店index1（误以index2打开教会的只读探查正常退出，无事务）武器实际报价：3阔剑180、18毒杀刀320、33法杖120、47长弓200、61战斧250、74长枪210。选择长弓1／毒杀刀1共520，钱8500→7980，库存各0→1；没有卖物／辅助。既有stdio shop_commit只支持消耗品quantity而装备停equipment：补复用原scan确认两次、保持“不立即装备”购入库存，不增加规则／绕过资金资格。独立Release `out\verify-run002-shop\S2NE.exe` SHA939026828FB037654C9EDEA4DFAAD425587C340F21CC705FB4F15554FE7934A2；仅改original_shop_menu.h原无BOM仍无，clang-format和dry-run Werror通过，MSBuild成功，Problems无错误。实际购买／原自动装备验证通过：娜18、穆47、泰17，均非空手，其他32／62／48不变；自动装备将毒杀刀给娜、原刀17给泰，不能假称泰直接拿18。日志`out\campaign002-weapons-33bc0516ba7449c98a8e62a1f0a5a7d4`。
 
 原出发恢复无需费用：娜272/54/5，穆278/6/1，泰407/7/0，苏193/105/0，古300/1/1，黛209/3/1；等级经验沿74奖励后4/36、1/30、3/85、8/34、3/34、2/76，职业88／13／14／43／10／54；全员0x80，无NPC／白志超，当前六人均promotion_eligible=false。新入场档见顶部；先前无武器75T1 SHA40DE…作废分支保留不混用。
 
@@ -451,7 +451,7 @@ T14 request676原movement观察reachable_cells0，新增报警立即停，未休
 
 ### 只读原图证据与D根因
 
-补最小只读`observe_movement_graph(index,occupied)`，边为原交错邻接、直接原step_cost、不含回合预算；occupied=true复用player_route_passable，false仅地形，不修改任何占格或单位。控制器采用反向Dijkstra（原有向成本），落点必须仍在原reachable_cells，实际move_select照原执行。无几何距离作出口路径替代，无自造通行规则。C++仅battle.hpp/app_runtime.cpp，保BOM EF-BB-BF，clang-format/dry-run Werror通过，原生独立Release成功／Problems无错误；EXE `out\verify-run002-graph\S2NE.exe` SHA `7149CDE3171A22DC996325F5B44CFD2CCD0C01A3B77683070C4FF056B73DD6D4`，未覆盖运行／根EXE。README同步协议。
+补最小只读`observe_movement_graph(index,occupied)`，边为原交错邻接、直接原step_cost、不含回合预算；occupied=true复用player_route_passable，false仅地形，不修改任何占格或单位。控制器采用反向Dijkstra（原有向成本），落点必须仍在原reachable_cells，实际move_select照原执行。无几何距离作出口路径替代，无自造通行规则。C++仅battle.h/app_runtime.cpp，保BOM EF-BB-BF，clang-format/dry-run Werror通过，原生独立Release成功／Problems无错误；EXE `out\verify-run002-graph\S2NE.exe` SHA `7149CDE3171A22DC996325F5B44CFD2CCD0C01A3B77683070C4FF056B73DD6D4`，未覆盖运行／根EXE。README同步协议。
 
 D T14只读图`out\campaign002-route-18b6610f46ab4e38b4936dae963e87dd`：静态到出口成本393，敌占格图无路径，**不是静态地形彻底断开，也不据此判必死**。静态首段(0,27)→(1,26)→(1,27)→(2,28)→(2,29)→(3,30)，沿线活敌index23 HP193(1,26)、14 HP192(2,28)、17 HP141(3,30)，再19 HP141(5,34)、10 HP200(5,35)、27 HP201(6,37)等。必须原清敌才能穿行，未把false图用于实际穿敌；当前四人分散、苏黛已死且单回合不能保证清尽，故不继续D。D向北是局部合法格无法降低直线分数时选了反向绕行，缺少全局连通／成本约束，HP变化又掩盖往返；不修游戏门禁、不靠经验掩盖。
 
@@ -484,9 +484,9 @@ T2只读图`out\campaign002-route-cb61beddcc9a434b9211eb1c4296aa76`：娜(15,43)
 
 ### 先核真实入口：发现且修复错误79，不把北路当南路
 
-从78经营档出发实际误入79《暹族部落》，立刻T1停，源／证据`out\campaign002-start-f8f9346419434e049f418f12b8c67516`，档SHA21971C05DF9F0A9431311CB6290984C083A44C65F1B7B2DB87AF3C79D8DD1B72，未推进其战斗、不记正式关卡。78原资源event6 type9 condition6 flag61 target80，event7同类型flag62 target79；南选择对白实际正确，但无对白route事件在prologue.hpp dispatch_campaign中仅complete未写script_route，最终存0而落入header默认79。
+从78经营档出发实际误入79《暹族部落》，立刻T1停，源／证据`out\campaign002-start-f8f9346419434e049f418f12b8c67516`，档SHA21971C05DF9F0A9431311CB6290984C083A44C65F1B7B2DB87AF3C79D8DD1B72，未推进其战斗、不记正式关卡。78原资源event6 type9 condition6 flag61 target80，event7同类型flag62 target79；南选择对白实际正确，但无对白route事件在prologue.h dispatch_campaign中仅complete未写script_route，最终存0而落入header默认79。
 
-原asm `loc_420DC3`读取record+5有符号word写4F7CE0，再返回成功；最小修复无对白condition6时先写原route，再complete，不改选择、地图、旗标、SAV或路线常量。从E同T5 SHA34A10555…AE0CE5续相同南index1，非重打抽RNG，奖励仍一次，修复后结算目录`out\semantic-campaign-117228a2f39f421a9c104b15d182df5b`；独立重载实际进入80采石场，构成失败前／修复后针对验证。C++ prologue.hpp保BOM EF-BB-BF，指定clang-format及dry-run Werror通过，Problems无错；原生独立Release日志`out\build-run002-route.log` exit0（既有warning），EXE `out\verify-run002-route\S2NE.exe` SHA `56CBEE76CD8112D6C3C5AE7A076C5BF51B1F2596D6BF2BDB1EB24CE1D026B201`。不覆盖任何旧运行EXE。
+原asm `loc_420DC3`读取record+5有符号word写4F7CE0，再返回成功；最小修复无对白condition6时先写原route，再complete，不改选择、地图、旗标、SAV或路线常量。从E同T5 SHA34A10555…AE0CE5续相同南index1，非重打抽RNG，奖励仍一次，修复后结算目录`out\semantic-campaign-117228a2f39f421a9c104b15d182df5b`；独立重载实际进入80采石场，构成失败前／修复后针对验证。C++ prologue.h保BOM EF-BB-BF，指定clang-format及dry-run Werror通过，Problems无错；原生独立Release日志`out\build-run002-route.log` exit0（既有warning），EXE `out\verify-run002-route\S2NE.exe` SHA `56CBEE76CD8112D6C3C5AE7A076C5BF51B1F2596D6BF2BDB1EB24CE1D026B201`。不覆盖任何旧运行EXE。
 
 补78只读原图依据：asm loc477DE4敌占格拒绝、477E50友方只拒终点，成本直接复用Battle::step_cost而非几何距离；源码graph、README协议、两组原图及E global-route-progress即相关运行验证。graph构建独立obj-run002-graph／verify-run002-graph，EXE SHA7149…6D4；format/BOM检查已述。只读图不改变原通行／占格／AP。后续撤离／取宝／集结应复用动态原图，不再用局部距离代替完整路，但当前全局执行仅78分支启用，不能冒称已泛化其他关。
 
@@ -796,11 +796,11 @@ controller将原selectable的宝儿纳入可选列表，实际`select_unit index
 
 原调用：`sub_41B5DF` jump表0041B98B case14在`loc_41B8E6`调用**sub_42189F**（asm56841–57152）。42189F先读record+3检查旗1..80且非0，再45CDF3按身份先主军后对军查27，cond0在421944校验other1..40，42196B读取关系有符号字节，加record+9并钳[-128,127]，4219AB写`unit+141h+other`；cond1在4219C5／4219EC调用**462DD0**，遍历主军控制类型0且非40h成员，其对subject27关系+record7，同样钳位。两支不写行为WORD8、行动AP、坐标、敌目标、领导位、死亡旗。421B5C返回成功；原呈现／消耗由41BA1E/41BA56及**41C33E→loc_41C4E9/41C527**完成（置record type0，完成旗如有效则1），不是施法或NPC改控。
 
-对应实现`prologue.hpp::dispatch_original_flag_operations`先旗13非0才进入type14；cond0改`relationships[other-1]`，cond1改主军成员`relationships[26]`，随后有line_count才入原script队列，否则complete。同步死亡续接共享`original_script_predicates.hpp::original_death_state_handler`同关系逻辑；**它能在死亡链被调用不代表89额外存在死亡触发**，本关这些记录仍受旗13约束。原handler与当前实现对本关cond0/1吻合，无需修补。
+对应实现`prologue.h::dispatch_original_flag_operations`先旗13非0才进入type14；cond0改`relationships[other-1]`，cond1改主军成员`relationships[26]`，随后有line_count才入原script队列，否则complete。同步死亡续接共享`original_script_predicates.h::original_death_state_handler`同关系逻辑；**它能在死亡链被调用不代表89额外存在死亡触发**，本关这些记录仍受旗13约束。原handler与当前实现对本关cond0/1吻合，无需修补。
 
 ### 旗13唯一上游是原胜利，不是接近或对话
 
-全20条记录逐一查completion byte11：只有event3写13；event0写16，event8写14，event9写15，event18写16，其余0。原stage条件区正确解码：胜利组1=[0]、组2空、失败=[1,27]。之前初次脚本忘跳过失败文本而打印21166,-3914是**错误解码不作规则证据**，本次按`OriginalCampaign::try_stage`顺序修正读取，不改资源。原`438381`胜败分派→`OriginalCampaign::evaluate`中0为活敌全灭（非只杀ID65拳师），失败为娜ID1或宝儿ID27死亡；`victory_events`只在决策victory后将type2 cond0／对应胜利组入队，`prologue.hpp`约2021行才触发event3。胜利前没有另一type9或接近条件写旗13，故不能通过站近宝儿提前触发type14。
+全20条记录逐一查completion byte11：只有event3写13；event0写16，event8写14，event9写15，event18写16，其余0。原stage条件区正确解码：胜利组1=[0]、组2空、失败=[1,27]。之前初次脚本忘跳过失败文本而打印21166,-3914是**错误解码不作规则证据**，本次按`OriginalCampaign::try_stage`顺序修正读取，不改资源。原`438381`胜败分派→`OriginalCampaign::evaluate`中0为活敌全灭（非只杀ID65拳师），失败为娜ID1或宝儿ID27死亡；`victory_events`只在决策victory后将type2 cond0／对应胜利组入队，`prologue.h`约2021行才触发event3。胜利前没有另一type9或接近条件写旗13，故不能通过站近宝儿提前触发type14。
 
 **持久实测**：原SAV flags位置=9字节magic+50描述+255署名=314；只读取不改写。89T1未强化源、E-T3合法档、E-T4合法档三者flag13/14/15均0、flag16均1。旗13确未提前触发；原宝儿仍behavior1，自行AI行动，非因为漏执行“救援切换”事件。type14没有战中成功触发实测，因为前提原胜利尚未达；不能强设旗／清敌来测试它。
 
@@ -808,7 +808,7 @@ event6十二行是胜后询问爷爷欧西德被抓、娜考虑带宝儿，不�
 
 ### 个人传送器230的个人机动帮助另行确认
 
-明确修正边界：**如果合法装备230，它确实可能改变前卫路径，不能因不是目标传送就说无用。** `original_events.hpp::movement_class`原equipment_special15令移动class2（在原步行／飞行等优先门禁之后），原图与实际移动按该class成本／占格执行；可改善部分地形和高差，但不是任意地图落点、不能无条件停障碍或超AP。个人与51目标传送区别如前节。
+明确修正边界：**如果合法装备230，它确实可能改变前卫路径，不能因不是目标传送就说无用。** `original_events.h::movement_class`原equipment_special15令移动class2（在原步行／飞行等优先门禁之后），原图与实际移动按该class成本／占格执行；可改善部分地形和高差，但不是任意地图落点、不能无条件停障碍或超AP。个人与51目标传送区别如前节。
 
 但本条真实可用来源为零：89T1 observed.inventory[229]=0，六人equipment数组均不含230；88战前原商店三分类完整货单（前节证据5b4734…）不含230、也无另一effect15替代。已知本线87原锁箱230未取；不能回写历史成绩、跨失败叉携带、从别线物品来源生成。当前战前／入场源没有现成合法可购／可装230，所以**当前方案无法用个人机动试验**；不宣称整个游戏绝无其他来源、不假装现有装备已经传送。本次无购买／金钱变化。
 
@@ -822,7 +822,7 @@ event6十二行是胜后询问爷爷欧西德被抓、娜考虑带宝儿，不�
 
 `tools\start-campaign-002.ps1 -InspectDeployment`按原经营、剧情抵达89部署就退出，不调用auto／不进入战斗。证据`out\campaign002-start-998a6628155842b99cf045ebe233355f\deployment-observe.json`及原请求。原允许六个槽精确为(20,48)、(20,50)、(20,46)、(19,50)、(19,48)、(21,48)，**全是南侧，仅y46–50**；capacity6，roles0–5，六槽fixed=false，无宝儿可部署候选。初assignment[0,-1,-1,-1,-1,-1]只是默认娜占第一格，不是强制标记。
 
-`original_deployment.hpp`原44AED2：select_role→begin_position从原候选移出，select_cell逐一检查空槽且精确xy相等，**不是任意地图可通格均可部署**；北侧／屋顶非六槽一律不接受。确认yes才assign，no→cancel_position恢复before_position和原槽；结束option2部署人数>1可直接完成，≤1出现原确认，不必须填六格；此不等于少部署可突破保护条件。槽无fixed意味着可互换，不能推断娜一定可不部署而不会任务失败，本次未尝试该漏洞。若把穆／苏换到最前(20,46)，相对旧穆／苏只前移4y、相对原已在此的泰没有新增北槽；不足把T1全移动到拳师最短≥15的距离缩到原3–6射程并保45AP。因此**排除“部署到北屋顶附近”机制，不声称任意六槽排列战术全无效**。本次没有为这四格差异再跑失败，也没有改坐标／槽表／RNG。
+`original_deployment.h`原44AED2：select_role→begin_position从原候选移出，select_cell逐一检查空槽且精确xy相等，**不是任意地图可通格均可部署**；北侧／屋顶非六槽一律不接受。确认yes才assign，no→cancel_position恢复before_position和原槽；结束option2部署人数>1可直接完成，≤1出现原确认，不必须填六格；此不等于少部署可突破保护条件。槽无fixed意味着可互换，不能推断娜一定可不部署而不会任务失败，本次未尝试该漏洞。若把穆／苏换到最前(20,46)，相对旧穆／苏只前移4y、相对原已在此的泰没有新增北槽；不足把T1全移动到拳师最短≥15的距离缩到原3–6射程并保45AP。因此**排除“部署到北屋顶附近”机制，不声称任意六槽排列战术全无效**。本次没有为这四格差异再跑失败，也没有改坐标／槽表／RNG。
 
 ### 原传送：技能51，不是个人传送器230
 
@@ -834,7 +834,7 @@ ITEMSP230「個人傳送器」效果15是**装备移动方式**，不是把宝�
 
 ### 宝儿／任务与尚未排除项
 
-89T1原宝儿ID27，小孩，172HP／80MP／45AP，(14,22)，behavior1／旗0x80，无死亡；原context0x4C未领导20h，不强选。领导可控原链见申请节，仍未批准420。本关原现场胜利文本为“将此地兵丁全部打败”，败娜或宝儿阵亡；不把拳师7当指定唯一胜利头目。原89二进制按`original_events.hpp::load`解出20个event records：event3 type2 cond0，event4–6 type14关联角色27，event12/13后续宝儿加入／999经验，event14/15角色3／6离队，event16/17两条route；目前**type2cond0与type14的完整触发执行链仍未逐项复核，不以文本代替全部事件证明**。现有记录没有现场“只杀7即胜”的验证，不能按此跳过其余。原攻略也只说援救NPC、T4左骑弓手三增援、过关带宝儿与否分支，没有找到指定站位／先对话即救援的建议；屋顶策略确需现无的51。
+89T1原宝儿ID27，小孩，172HP／80MP／45AP，(14,22)，behavior1／旗0x80，无死亡；原context0x4C未领导20h，不强选。领导可控原链见申请节，仍未批准420。本关原现场胜利文本为“将此地兵丁全部打败”，败娜或宝儿阵亡；不把拳师7当指定唯一胜利头目。原89二进制按`original_events.h::load`解出20个event records：event3 type2 cond0，event4–6 type14关联角色27，event12/13后续宝儿加入／999经验，event14/15角色3／6离队，event16/17两条route；目前**type2cond0与type14的完整触发执行链仍未逐项复核，不以文本代替全部事件证明**。现有记录没有现场“只杀7即胜”的验证，不能按此跳过其余。原攻略也只说援救NPC、T4左骑弓手三增援、过关带宝儿与否分支，没有找到指定站位／先对话即救援的建议；屋顶策略确需现无的51。
 
 本阶段结论：原北侧部署不可用；当下商店／库存／已学技能没有现成合法屋顶传送方案，未为此再开失败战斗。不同南侧排列、更早自然幻术训练／原AI牵制、事件type14仍不是已穷尽的全部战术，不能宣称自然无解。**420经验备选仍未授权，严禁执行**；保留精确申请及未强化源，向监督提交此有界证据结果。两个工具仅加显式Inspect开关，默认行为保持；本次正常退出全部进程、没有战斗／奖励／物品变化。
 
@@ -865,7 +865,7 @@ C-T2选用最早已有协调北推近档`out\semantic-campaign-70185df4f974451ca
 
 ### 其它原机制复核和边界
 
-原攻略精简版89明确“援救NPC、敌人还有增援、抓紧行动”，特殊建议是**留拳法家，把宝儿传送屋顶**；现六人已学技能没有传送、库存也没有传送道具，飘浮不是传送。NaTaLiYa.htm此次匹配只命中路线表关名，没有找到指定救援站位／额外对话文字，不能捏造触发。T4三骑兵弩手已由E现场确认，不是救援友军。`original_ai.hpp::original_target`原4394ED/43948D按原列表、存活旗／runtime条件／最小原距离选择，优先可杀伤目标另有原预估权重，说明牵制可能改变目标但**不能保证堵一格即放弃宝儿**；C宝儿活而娜苏死、D／E宝儿死已现场反证简单拦截的保证。完整89事件二进制及宝儿专用AI调用链仍未逐项解码，本次不宣称不存在隐藏对话机制。
+原攻略精简版89明确“援救NPC、敌人还有增援、抓紧行动”，特殊建议是**留拳法家，把宝儿传送屋顶**；现六人已学技能没有传送、库存也没有传送道具，飘浮不是传送。NaTaLiYa.htm此次匹配只命中路线表关名，没有找到指定救援站位／额外对话文字，不能捏造触发。T4三骑兵弩手已由E现场确认，不是救援友军。`original_ai.h::original_target`原4394ED/43948D按原列表、存活旗／runtime条件／最小原距离选择，优先可杀伤目标另有原预估权重，说明牵制可能改变目标但**不能保证堵一格即放弃宝儿**；C宝儿活而娜苏死、D／E宝儿死已现场反证简单拦截的保证。完整89事件二进制及宝儿专用AI调用链仍未逐项解码，本次不宣称不存在隐藏对话机制。
 
 本次完成的是具体移动后控制**不可行交集／原AP证据**，因此遵指令没有盲跑另一个敌阶段。没有新增失败或取宝，原89T1及全部分支保持；下一机制调查应针对可提前接敌的合法部署／原AI目标与宝儿行为，而不是继续同落点后补法术。420申请仍未批准，严格未调用。调查脚本仅增加可选MoveActor/MoveX/MoveY与原图输出，普通只读调查不变。
 
@@ -922,7 +922,7 @@ E最终：娜魔刃使7/99 HP163 MP20 ST11(22,39)；穆德鲁依3/38 HP561 MP77 
 
 所有T1攻击菜单`attack-*.json`预估均空；苏全技能逐项检查：1治疗8MP、2催眠18、3祝福12、4魔力强化20、5天神护体30、6群治32、7圣言30、8祈求20、33诅咒7、34定身13、35狂乱20、36金蚕14、43幻之箭12、44幻术攻击18、45灵视15、46心灵护盾15、53眩光15、54冰冻20、55飘浮12、56平静20、57鼓励25。催眠／诅咒／定身／金蚕／幻箭／眩光／冰冻／圣言T1敌目标全部空；灵视／护盾／飘浮／平静／鼓励／祈求只有己方0–5，不含NPC6；幻术攻击仅自己3。**飘浮不是传送**，不能把攻略传送屋顶偷换为已有技能。完整合法中心坐标保存在每个skill-N-ID.json，不把中心数量当射程／命中成功证明。T2原范围与C-T3控制范围见下一节；本次未在移动后逐一穷举所有角色所有格×技能，故没有伪造联合必杀次序，也不宣称自然无解。
 
-库存逐件核原ITEMSP：药草247×3效果33／100HP、疗伤草248×1／250HP，魔草251×1效果34／30MP、闻香瓶254×1／140MP，解毒259×2效果36，化石260×1效果37；上述均射程1。力量辉石274×2效果44永久攻击+5、无名剑谱279×1效果49，以及库存刀17／弓47／斧61／皮裘100／皮帽148×2不是远程救援药。没有传送／伤害／睡眠道具库存；未消耗辉石等永久增强物。`original_item_use.hpp::target_allowed`用原交错距离≤BYTE16，T1所有合法最北落点仍远离宝儿(14,22)，不能远距离投药；原NPC不能作使用者，不等于其他人永不可对其用药，仍需目标资格与距离逐次检查。
+库存逐件核原ITEMSP：药草247×3效果33／100HP、疗伤草248×1／250HP，魔草251×1效果34／30MP、闻香瓶254×1／140MP，解毒259×2效果36，化石260×1效果37；上述均射程1。力量辉石274×2效果44永久攻击+5、无名剑谱279×1效果49，以及库存刀17／弓47／斧61／皮裘100／皮帽148×2不是远程救援药。没有传送／伤害／睡眠道具库存；未消耗辉石等永久增强物。`original_item_use.h::target_allowed`用原交错距离≤BYTE16，T1所有合法最北落点仍远离宝儿(14,22)，不能远距离投药；原NPC不能作使用者，不等于其他人永不可对其用药，仍需目标资格与距离逐次检查。
 
 ### 具体保护方案边界与选择
 
@@ -931,8 +931,8 @@ E最终：娜魔刃使7/99 HP163 MP20 ST11(22,39)；穆德鲁依3/38 HP561 MP77 
 ### 【备选申请：仅娜增加420经验，待用户单独批准】
 
 - 角色：娜塔莉雅ID1／index0，魔刃使88，**7级XP60，原阈值120**；源89T1六人全活无强化档，完整SHA `09912FA78FEC1DA1FF2B2C034FCC89EEA42AC273509FC0D1A342301196A48D48`，路径`out\campaign002-start-c775d7ede05b476aaa1f3d6df039050b\session\SAVE\UJ05.SAV`。不选择死人失败档，也不继承107法衣。
-- 目标：原合法转91最高领主，得到领导0x40000；**最小一次连续成长增量420**：从7/60到11/0需要`4×120−60=420`。只加300会到10/0，仍不合格；10/120在完成原连续升级时自动成为11/0，不能人为停在未确认升级中骗转职。`original_promotion.hpp::eligible`原4409B7门槛level>10或10且XP≥120；`original_progression.hpp::PendingGrowth::prepare/confirm`每次等级+1、扣120并原随机成长，阈值不随同职业等级改变。KINDSP offset18职业表37字节：88+14阈值120，88分支字节90,91；91必要装备0／能力门槛0／固有能力19／training_mask12（组2或3）。最终用当时原候选91，不直接写职业能力，训练选合法组2，转职后再原自动装备检查退还武器及库存。
-- 领导可控链本次补核：原asm `sub_441143`／`loc_4411EF`，单位117h bit4（即0x40000）且控制类型不是NPC1，向军表DEh OR20h；`original_events.hpp::rebuild_army_modes`同逻辑。`app_runtime.cpp select_unit`把真实army_modes[0]传入`Battle::select_unit`；`battle.hpp::player_selection_eligible`允许behavior1并context&0x20，仍要求活／在场／状态／未耗尽行动等原门禁。T1实测context76(0x4C)，**没有20h**，宝儿behavior1旗0x80 HP172，当前不可控；取得领导后预计context0x6C，应现场observe并原select_unit验证，若拒绝不改位绕过。领导仅让合法选择NPC，不保证免伤，也不允许NPC物品操作。
+- 目标：原合法转91最高领主，得到领导0x40000；**最小一次连续成长增量420**：从7/60到11/0需要`4×120−60=420`。只加300会到10/0，仍不合格；10/120在完成原连续升级时自动成为11/0，不能人为停在未确认升级中骗转职。`original_promotion.h::eligible`原4409B7门槛level>10或10且XP≥120；`original_progression.h::PendingGrowth::prepare/confirm`每次等级+1、扣120并原随机成长，阈值不随同职业等级改变。KINDSP offset18职业表37字节：88+14阈值120，88分支字节90,91；91必要装备0／能力门槛0／固有能力19／training_mask12（组2或3）。最终用当时原候选91，不直接写职业能力，训练选合法组2，转职后再原自动装备检查退还武器及库存。
+- 领导可控链本次补核：原asm `sub_441143`／`loc_4411EF`，单位117h bit4（即0x40000）且控制类型不是NPC1，向军表DEh OR20h；`original_events.h::rebuild_army_modes`同逻辑。`app_runtime.cpp select_unit`把真实army_modes[0]传入`Battle::select_unit`；`battle.h::player_selection_eligible`允许behavior1并context&0x20，仍要求活／在场／状态／未耗尽行动等原门禁。T1实测context76(0x4C)，**没有20h**，宝儿behavior1旗0x80 HP172，当前不可控；取得领导后预计context0x6C，应现场observe并原select_unit验证，若拒绝不改位绕过。领导仅让合法选择NPC，不保证免伤，也不允许NPC物品操作。
 - 若批准，入口仅原`assist_experience index=0 amount=420`：`app_runtime.cpp:2181`要求idle headless原存档边界、无技能／战斗菜单／敌动作，直接加420而非难度奖励×3；随后正常`growth_confirm`依原随机顺序连续确认四次成长及实际学习／通知，**不重抽、不改RNG**，保存未转和原转职后档。此处仅列待批准参数，**本次没有调用**。既有002控制器仍拒`VerifyExperienceAssistance`，不能借001开关绕过；授权若来只限此人此420，不扩大至队友。
 - 获领导后的验证策略：T1先原选宝儿，使用其原可达图向南侧与六人会合的最小敌覆盖格撤移，避免原自动朝追击者走；娜／苏留南侧受护卫位置，泰古黛清最近堵路敌。之后再核T2/3原范围联合攻击并确认每敌阶段宝儿／娜／苏存活。它降低反复失败实验成本，**不是已经证明自然无解／不是已获批准／不是已经通关**。
 
@@ -942,7 +942,7 @@ E最终：娜魔刃使7/99 HP163 MP20 ST11(22,39)；穆德鲁依3/38 HP561 MP77 
 
 2026-11-15本次唯一写者继续；没有经验辅助、修改SAV／RNG／敌占格、发布新EXE。沿用4FC6582636F44BF235B337FAA67741BAA00FDD44E371B43B270E2AB531BEC7C4。原攻略`北方密使精简攻略+路线图 Ver.1.5.txt`娜线明确本关NPC援救、T4左骑弓手x3增援；原入场已直接显示全灭胜、娜或宝儿阵亡败。攻略传送到屋顶只是建议，不代表现队已有传送；已学技能逐项查无传送。隐藏212猫眼石(19,23)亦不优先。
 
-**T2原只读证据** `out\campaign002-rescue-probe-8ac8a5f6787c4ee6bd4da8996fcb268a`：只开选单／取消，未移动攻击结束回合。穆原可达75格；定身34目标空、迟缓25空、冰锥21只有南侧9；苏治疗1／护体5／群治6仅1,3（穆／苏），不能作用宝儿6，护甲22娜仅0,2,4,5、穆1,2,3,5，皆不含宝儿。娜／泰冰锥只能南9/10/14；古／黛原可达99／130格，不是已能攻击北7/11。因而原T2当前位置直接治疗／护甲／控制北追杀者均不合法，不冒称命中保证。宝儿behavior1、controllable=false；原`battle.hpp:1593 player_selection_eligible`要求NPC context0x20，娜abilities0没有领导，未伪造context强选；**领导到context的完整调用链本次尚未核完，不能认定加领导一定解题**。
+**T2原只读证据** `out\campaign002-rescue-probe-8ac8a5f6787c4ee6bd4da8996fcb268a`：只开选单／取消，未移动攻击结束回合。穆原可达75格；定身34目标空、迟缓25空、冰锥21只有南侧9；苏治疗1／护体5／群治6仅1,3（穆／苏），不能作用宝儿6，护甲22娜仅0,2,4,5、穆1,2,3,5，皆不含宝儿。娜／泰冰锥只能南9/10/14；古／黛原可达99／130格，不是已能攻击北7/11。因而原T2当前位置直接治疗／护甲／控制北追杀者均不合法，不冒称命中保证。宝儿behavior1、controllable=false；原`battle.h:1593 player_selection_eligible`要求NPC context0x20，娜abilities0没有领导，未伪造context强选；**领导到context的完整调用链本次尚未核完，不能认定加领导一定解题**。
 
 独立B `out\semantic-campaign-5f15ba2da7c444aa9d8800f249a043bd` 从89T1 SHA09912F…A48D48重走，暂停全部宝物，选人近宝儿优先、攻击目标按宝儿威胁加权、原图朝宝儿接近，但移动仍排在南侧攻击之后。T3宝儿死；六主队活（娜150、穆434、泰285、苏301、古245、黛220），北7/11未伤。这证明只改目标权重不足。B-T2 SHA7BD013A4C9BFE5D444ACE96579A723630D76C2F445E6EFB8F9287E4C5A91A35D随后单独救援叉`out\semantic-campaign-13786eabd26a4a668c7eaa0fda638cb3`：改为攻击之前原图截7，泰114／古78／黛103剩余成本，实际到14,35／12,35／14,36；娜也被错误前压15,41，娜及古死，宝儿172活，明确不是宝儿死。这叉不计成功。
 
@@ -1386,7 +1386,7 @@ T16本阶段实际boss417→332→166→135，敌阶段宝儿233→119但存活�
 
 ### 96“无村”原asm调查：已定位移植门禁缺项，未宣称原一致
 
-`analysis\ida\opening.idb.asm`27879–27969 `sub_410478`：下一关mode3直41610D；否则loc_4104DD读取当前town的14字节记录`[record+0Ah]`，**只有值1才到loc_410514→sub_410C86经营**；不等1则loc_410551→sub_414243／sub_416333直接续战。移植`prologue.hpp`领奖路径目前仅检查terminal／next_story，所有其它均`staged_hub.emplace`，缺该town+0Ah门禁；`OriginalInterbattle`四选项也不自行限制。这是具体原入口差异，不能把先前菜单实际可开认原教会一致。
+`analysis\ida\opening.idb.asm`27879–27969 `sub_410478`：下一关mode3直41610D；否则loc_4104DD读取当前town的14字节记录`[record+0Ah]`，**只有值1才到loc_410514→sub_410C86经营**；不等1则loc_410551→sub_414243／sub_416333直接续战。移植`prologue.h`领奖路径目前仅检查terminal／next_story，所有其它均`staged_hub.emplace`，缺该town+0Ah门禁；`OriginalInterbattle`四选项也不自行限制。这是具体原入口差异，不能把先前菜单实际可开认原教会一致。
 
 尚需精确读取96结算原town和BIN4记录值确认本档是否确走非1，未擅自按攻略推定／改SAV。黛实际163支付、原换关恢复已发生，证据保持，不反向改钱／死flag撤销；本分支存在该原经营入口待核风险，**97胜利即使后续完成也不得掩盖该源身份问题**。若核town flag非1，需要从96原胜前/奖励源最小修复门禁并按原无教会路线再续，不拿改SAV抵消。此次未改生产C++，故未构建；两PS最终ParseFile零错，全部进程已退出。
 
@@ -1398,7 +1398,7 @@ T16本阶段实际boss417→332→166→135，敌阶段宝儿233→119但存活�
 
 最小生产修复：OriginalInterbattle新增共享原BIN4 town服务查询，configure_town在无村时不接受任意村操作，并挂原出发request4；Prologue原奖励后与原存档经营恢复两入口均配置当前town，键盘/鼠标/stdio共享同门禁；app_runtime观察增加interbattle_services_allowed和available_options，无村空数组，direct指令明确拒绝，后台仅走既有原出发事务。不新增菜单、不改奖励/复活公式/军表/伤害。旧保存存在经营phase而无村，重载自动续原出发，不伪装可访问村服务。mode3原剧情分支保持。
 
-停止源码写入后指定clang-format及--dry-run --Werror通过；original_interbattle.hpp原无BOM保持，prologue.hpp/app_runtime.cpp原EFBBBF保持。独立原生MSBuild Release `out\verify-run002-town-gate\S2NE.exe` SHA `B719E34B0430A251BF01C269FDB9AD8E76272A784340569DB83C6804C496F92F`，IntDir独立obj-run002-town-gate、PublishGameRuntime=false，旧生产EXE未覆盖。构建成功，仅既有警告；三个编辑文件IDE Problems零错。
+停止源码写入后指定clang-format及--dry-run --Werror通过；original_interbattle.h原无BOM保持，prologue.h/app_runtime.cpp原EFBBBF保持。独立原生MSBuild Release `out\verify-run002-town-gate\S2NE.exe` SHA `B719E34B0430A251BF01C269FDB9AD8E76272A784340569DB83C6804C496F92F`，IntDir独立obj-run002-town-gate、PublishGameRuntime=false，旧生产EXE未覆盖。构建成功，仅既有警告；三个编辑文件IDE Problems零错。
 
 直接相关回归工具`tools\check-campaign002-town-gate.ps1`：有村用93真实胜利C7C…档，观察available4项、教会打开／复活名单读取／离开均成功，并保存、独立重载d16d1…；证据town-gate-test-5c0f208…；无村用96真实F8F…源，观察services=false/options空，0/1/2直接指令全部拒绝，拒绝前后units/inventory一致，无支付无清死亡，自动出发97。证据town-gate-test-a9a2a08…；初版77aac…测试误在剧情中要求checkpoint被正常拒绝，修测试而非放松存档门禁。原钱从96到新97仍52563，未出现−163；黛death仍0x20。完整原存读在安全T1才保存，不冒称剧情中允许存。
 
@@ -1667,9 +1667,9 @@ T29近档 `out\semantic-campaign-ec85f6c0323e42d691bb1d49d50dc455\checkpoints\st
 |欧西德／盗贼5|7/69|0/151/0|(18,25)，死|
 |米兰黛／玫瑰骑士47|30/84|408/0/0|(9,57)|
 
-T30失败独立目录 `out\semantic-campaign-9bda20f09b9b41efbf10614eb89a689a`，非正式通关结算。具体待核：106原事件choice后胜利旗／谓词／角色身份条件；现实现prologue.hpp runtime.special_condition仅处理31且protagonist_at_exit，必须结合原106条件和asm确认，**尚不能认定根因，不能自行把“我方”改成任意角色或直接加胜利**。保留T19/T22/T29近档及失败，不自动回滚死亡。
+T30失败独立目录 `out\semantic-campaign-9bda20f09b9b41efbf10614eb89a689a`，非正式通关结算。具体待核：106原事件choice后胜利旗／谓词／角色身份条件；现实现prologue.h runtime.special_condition仅处理31且protagonist_at_exit，必须结合原106条件和asm确认，**尚不能认定根因，不能自行把“我方”改成任意角色或直接加胜利**。保留T19/T22/T29近档及失败，不自动回滚死亡。
 
-进一步只读原资源：PAL字节848指向战役表，106第一胜利组实际唯一条件为 **35**（第二组空）；而original_campaign.hpp evaluate仅有0、33、34及1..20／31／32特殊谓词路径，35没有可满足分支。这是已定位的具体实现缺口，不是把我方任意占旗当充分原条件；下一必须核原asm条件35精确含义再最小修复及针对回归，不能擅自用抵旗直接替代。T30现实现原失败阈值为turn>=30，亦须按原条件检查而非误称可以行动到31。
+进一步只读原资源：PAL字节848指向战役表，106第一胜利组实际唯一条件为 **35**（第二组空）；而original_campaign.h evaluate仅有0、33、34及1..20／31／32特殊谓词路径，35没有可满足分支。这是已定位的具体实现缺口，不是把我方任意占旗当充分原条件；下一必须核原asm条件35精确含义再最小修复及针对回归，不能擅自用抵旗直接替代。T30现实现原失败阈值为turn>=30，亦须按原条件检查而非误称可以行动到31。
 
 稳定EXE一直为 `out\verify-run002-town-gate\S2NE.exe` SHA `B719E34B0430A251BF01C269FDB9AD8E76272A784340569DB83C6804C496F92F`，没有生产C++修改／新构建／根发布。仅控制器改显式原文本分支和占格回退；ParseFile零错误。仅娜88历史420XP辅助，其余0。历史无村服务待审范围不变，不宣称整轮完全原合法；当前所有运行均结束，下一步应调查具体原胜利衔接而非再跑到时限。
 
@@ -1681,9 +1681,9 @@ T30失败独立目录 `out\semantic-campaign-9bda20f09b9b41efbf10614eb89a689a`�
 
 原41B9A3／41BA56按记录顺序：predicate成功→完整对白→记录type清0→record+11完成旗写1。原420A3B/c0仅检查有效触发旗非0。移植曾在扫描type9无对白/对白链之前先开type5选择，导致e4尚未完成就消耗13，丢flag20；即使以后穆再抵旗，e3已消耗不可重触发。因此T29实际flags8=1、14=1、20=0、4=0；e3=0/e4=9/e5=0/e9=0，e12及六物品仍待。**无法在不改档／补旗的前提下从该T29恢复丢失链**。本轮不添加例外恢复、不直接complete旧记录、不改SAV。旧T30分支独立不重跑。
 
-最小修复：prologue.hpp在原对象旗结算后先执行共享original_flag_predicate顺序链，再处理选择；保留原对白及完成旗。补同链type11/c8原462CB7主军身份0＋80h的200XP，复用PendingGrowth／原逐级确认／原RNG，不走简单×3，死亡位保留。原421460→462CB7→462D2E先WORD加XP再459309成长，故死亡部署成员亦有原经验，不复活。补type10/c0原420E88→44CC15／44CC9F发物原共享事务，合法一基ID、库存小于99才+1，99及以上不改；app_campaign.cpp adapter复用capture/prepare/commit，不写原资源。六物品含原11光聚集成剑、25碧磷刀、41魔力权杖、68银梭流星弓、56大地之斧、82饮血魔枪；实际T29尚未发，不能将测试中发放冒认正式库存。
+最小修复：prologue.h在原对象旗结算后先执行共享original_flag_predicate顺序链，再处理选择；保留原对白及完成旗。补同链type11/c8原462CB7主军身份0＋80h的200XP，复用PendingGrowth／原逐级确认／原RNG，不走简单×3，死亡位保留。原421460→462CB7→462D2E先WORD加XP再459309成长，故死亡部署成员亦有原经验，不复活。补type10/c0原420E88→44CC15／44CC9F发物原共享事务，合法一基ID、库存小于99才+1，99及以上不改；app_campaign.cpp adapter复用capture/prepare/commit，不写原资源。六物品含原11光聚集成剑、25碧磷刀、41魔力权杖、68银梭流星弓、56大地之斧、82饮血魔枪；实际T29尚未发，不能将测试中发放冒认正式库存。
 
-源码写入停止后统一格式及独立原生Release：`out\verify-run002-port-chain\S2NE.exe` SHA **B1FE988E2B48DEF19007B02034A23922114E95588386990AE774319D31A8B04D**。构建日志 `out\port-chain-build.log`，编译通过（既有battle.hpp签名比较／u8path警告未改）。指定clang-format `--style=file:C:\project\_clang-format --dry-run --Werror`四触及C++文件通过；BOM保留prologue EFBBBF，其余原无BOM仍无BOM；无根发布。
+源码写入停止后统一格式及独立原生Release：`out\verify-run002-port-chain\S2NE.exe` SHA **B1FE988E2B48DEF19007B02034A23922114E95588386990AE774319D31A8B04D**。构建日志 `out\port-chain-build.log`，编译通过（既有battle.h签名比较／u8path警告未改）。指定clang-format `--style=file:C:\project\_clang-format --dry-run --Werror`四触及C++文件通过；BOM保留prologue EFBBBF，其余原无BOM仍无BOM；无根发布。
 
 验证：`original_campaign_test`通过，日志`out\port-chain-evaluator.log`；`original_death_continuation_test.exe port`针对无到达拒绝、顺序e3/e4先于选择、e31真实flag4、真实T29不可补造、原200XP及六物品事件仅一次、死亡保留通过，日志`out\port-chain-regression-focused.log`。测试以原资源构造受控正例，不当正式流程成绩；多Prologue fixture需链接STACK16777216。完整旧continuation suite另有既有stage15“generic dispatcher side effects must preflight reject”断言失败，未宣称全套通过，未为本轮放松该断言。
 
@@ -1727,7 +1727,7 @@ T30失败独立目录 `out\semantic-campaign-9bda20f09b9b41efbf10614eb89a689a`�
 
 先核原44CC9F：一基item减1后越界直接return；原库存byte<63h则inc，>=99直接return，**不是拒绝事件、不是将100截到99**。将原生产适配器的同一段操作提取为OriginalSaveBridge::grant_scripted_item供真实适配器与夹具共享。测试仅内存副本，未污染正式SAV：98→99；99不变；既有100不变；0/303越界不变；物品已暂存但适配器返回nullopt时不发布库存、不消耗当前事件、不调度后续事件；200XP未确认期间不发布等级/XP、不完成event12、不发六武器；完整确认后再tick10次，原已完成门禁不重复200或物品。原契约是**逐事件／逐人成长提交，不是整组200XP加六物品全有全无**，不自加全组回滚规则。未注入实际noexcept swap中途抛异常；这不是原可失败点。物品获得文字/背景展示差异仍为前文边界。
 
-`out\port-transaction-test.log` focused通过；`out\port-transaction-build.log`编译成功；`out\port-transaction-release.log`独立原生Release成功。改动仅src/original_save_bridge.hpp、src/app_campaign.cpp、tests/original_death_continuation_test.cpp，指定clang-format及dry-run Werror通过；首文件EFBBBF、后二者无BOM均保留。新EXE `out\verify-run002-port-transaction\S2NE.exe` SHA **9EA35028988A71E11779455266F537EACDDACBDFD7EAA7F58568FA18F1EE8351**；无覆盖旧运行EXE。
+`out\port-transaction-test.log` focused通过；`out\port-transaction-build.log`编译成功；`out\port-transaction-release.log`独立原生Release成功。改动仅src/original_save_bridge.h、src/app_campaign.cpp、tests/original_death_continuation_test.cpp，指定clang-format及dry-run Werror通过；首文件EFBBBF、后二者无BOM均保留。新EXE `out\verify-run002-port-transaction\S2NE.exe` SHA **9EA35028988A71E11779455266F537EACDDACBDFD7EAA7F58568FA18F1EE8351**；无覆盖旧运行EXE。
 
 从正式15B6…原经营续，教会无死者不重复支付，原商店248购买80：86918→86838（不是奖励）；原106村资格仍+0A=1。自动原进入109《高科技战士》，原对白娜问志超状况／志超请来帮忙，无选择。胜全灭巡逻队，败**志超或娜死亡**；入场item_cells空，未见传送/提交物门禁，不将攻略路线图当完整事件证明。攻略NaTaLiYa原HTML实体解码核路线“奥尔登军港→高科技战士→城内混战”。
 
@@ -1788,7 +1788,7 @@ T30失败独立目录 `out\semantic-campaign-9bda20f09b9b41efbf10614eb89a689a`�
 
 原status34已移位、当前AP不足仍要拒绝。地形/部署/控制/剧情不构成本例原因：娜present/80h活、主队behavior可控、命令攻击/物品/转职/休息可用；原全局移动图有合法格，旧仅移动budget拒绝。前卫泰/古/黛及苏原当前AP79/80/80/73，菜单已有合法可达，北端y41/40/41/39，至少多回合才能接敌；娜修正后同样可开移动菜单，不表示已经在敌射程内或已有联合伤害总额。
 
-最小修复仅 `src\battle.hpp` 一行：max_action_points改action_points，保留原moved_/status34/费用/类别/路径门禁。紧耦合回归 `tests\original_death_continuation_test.cpp` 加载真实T50fixture：83current/11max允许；0current/110max拒绝；status34已移仍拒绝。临时修改只在测试内存，未改任何流程源。连同原port/200XP/库存事务focused全部通过 `out\move-gate-test.log`，编译 `out\move-gate-test-build.log`。指定clang-format及dry-run Werror通过；battle.hpp BOM EFBBBF保留、测试无BOM保留。独立原生Release `out\verify-run002-move-gate\S2NE.exe` SHA **0A960C63605C3D9F02714B1A30FD08ED9C6EE337EFC00A0B0E204CF07858C5A8**，日志 `out\move-gate-release.log` 成功，不覆盖旧EXE。
+最小修复仅 `src\battle.h` 一行：max_action_points改action_points，保留原moved_/status34/费用/类别/路径门禁。紧耦合回归 `tests\original_death_continuation_test.cpp` 加载真实T50fixture：83current/11max允许；0current/110max拒绝；status34已移仍拒绝。临时修改只在测试内存，未改任何流程源。连同原port/200XP/库存事务focused全部通过 `out\move-gate-test.log`，编译 `out\move-gate-test-build.log`。指定clang-format及dry-run Werror通过；battle.h BOM EFBBBF保留、测试无BOM保留。独立原生Release `out\verify-run002-move-gate\S2NE.exe` SHA **0A960C63605C3D9F02714B1A30FD08ED9C6EE337EFC00A0B0E204CF07858C5A8**，日志 `out\move-gate-release.log` 成功，不覆盖旧EXE。
 
 真实T50新EXE只读验证 `out\campaign002-direct-58d4bc94abae470d8de7f9377d304de1`：核stage112/T50/hash后observe敌图→选娜→command_select1成功，**未选move格、未攻击、未保存新档、未end_turn**；旧同操作证据cbf13…明确disabled。已有合法绕行不必清旗，使用修复EXE续当前T50即可。此阶段不越过用户只读指令继续战斗。
 
@@ -1848,7 +1848,7 @@ T63全员HP/MP/ST：娜1247/267/117，穆1416/42/74，泰1180/35/171，苏529/29
 
 【决策模式】AI直接选择穆85及泰85，对照原stdio中心(15,18) targets严格为[10]才执行；脚本仅传输/动画/成长确认/保存。没有继续自动首魔法或推进敌回合。仍未胜，三死不变。
 
-只读工具补齐与battle.hpp:4169同路径：terrain_effect取actor.bytes[1]/target.bytes[2]有符号，结果5/0；原408455简单difficulty1方向固定1，使用Battle::attack_mode，不猜朝向；状态用physical_status读runtime非旧缓存。原42C88F asm77576读取形象stride转42C8D1，46D431 asm187460先46D496命中为0则伤害0，否则46E058，未另造算法。新输出out/campaign002-preview-t63-full.log；指定format及dry-run通过，独立native helper编译通过，没有修改运行生产EXE。
+只读工具补齐与battle.h:4169同路径：terrain_effect取actor.bytes[1]/target.bytes[2]有符号，结果5/0；原408455简单difficulty1方向固定1，使用Battle::attack_mode，不猜朝向；状态用physical_status读runtime非旧缓存。原42C88F asm77576读取形象stride转42C8D1，46D431 asm187460先46D496命中为0则伤害0，否则46E058，未另造算法。新输出out/campaign002-preview-t63-full.log；指定format及dry-run通过，独立native helper编译通过，没有修改运行生产EXE。
 
 完整上下文非随机预估仍是：娜24 50%/117、27 60%/97；穆85 90%/120；泰24 50%/151、85 90%/114；苏43 53%/51。当前原stdio全部selected_skill_failure=none，中心(15,18)均仅敌10，故不须先移动或冒险登高。高度差5仅使物攻槽不可用，不能推法术一律非法。27/30有多中心可带友，仍以实际中心targets为准；工具遍历无友中心只筛选，实际提交前用stdio证据闭环。单项法术命中不保证，联合非随机期望约296（娜24、穆85、泰85、苏43），大于最大单次休息146；未保证每一随机序列必净正。
 
@@ -1892,7 +1892,7 @@ T63娜30实际148，敌461→313，MP267→222、AP88→43。苏43预估53%/51�
 
 【决策模式】AI先读原状态和preview；脚本负责语义传输/等待/成长/原对白/存档，不新增战术硬编码或原游戏随机修改。旧T64所有未保存击杀、奖励隔离仍不计正式成绩。
 
-根因：invoke-campaign002-actions.ps1的finally无条件quit，命令返回ok=false即throw且此前不保留error.state，因此对白阶段save_checkpoint合法拒绝也毁掉仍活的未持久化事务；不是游戏丢奖励或存档随机坏。原app_runtime.cpp:2121仅战斗安全边界、reward_report或interbattle允许checkpoint，拒绝growth/skillMenu/battleMenu；不支持保存对白/动画任意运行栈。reward前try_capture保存的是战斗源，不是整个UI事务continuation；reward后hub保存rawSave正式结算，重载恢复interbattle。原prologue.hpp:4940 campaign_settled_防重复，先staged和adapter成功再发布events，随后进关间；无需改游戏契约。
+根因：invoke-campaign002-actions.ps1的finally无条件quit，命令返回ok=false即throw且此前不保留error.state，因此对白阶段save_checkpoint合法拒绝也毁掉仍活的未持久化事务；不是游戏丢奖励或存档随机坏。原app_runtime.cpp:2121仅战斗安全边界、reward_report或interbattle允许checkpoint，拒绝growth/skillMenu/battleMenu；不支持保存对白/动画任意运行栈。reward前try_capture保存的是战斗源，不是整个UI事务continuation；reward后hub保存rawSave正式结算，重载恢复interbattle。原prologue.h:4940 campaign_settled_防重复，先staged和adapter成功再发布events，随后进关间；无需改游戏契约。
 
 最小修复只改传输PS1：失败响应也落state并保留最后状态；异常进入同一PID恢复邮箱resume.json，不自动quit、不自动重复原动作；仅成功checkpoint后允许关闭。超时ReadLineAsync保留，发下一命令前先收旧响应，防串包/重发。FinishVictory识别原死亡对白后短暂battle，正常tick到reward_report，slot4保留奖励前证据，rewards_confirm后slot5保存并停在关间，不把phase19当待动画盲等。不改C++/EXE/命中/RNG/奖励逻辑。
 
@@ -2192,7 +2192,7 @@ T12奖励前原状态全员字段如下；表中不写未公开经验数：
 
 ### 126 分支后继根因核验（2026-11-16）
 
-93c0现场的请求链不是“分支后应自动进战斗”：request 21 的 `story_choose` 后，request 22—26 是 event 7 的五段对白；request 27 将原事件切换为 event 11/line 0，request 28—31 完成 event 11 五段对白，request 31 才进入 `phase=campaign_rewards`。源代码 `prologue.hpp` 的 `try_advance()` 明确：剧情关由 `story_stage()` 判断，剧情对白完成后走 `dispatch_story()`，不会调用 `enter_stage_battle()`；完成事件后进入 `campaign_rewards` 是原分支终点。原 `OriginalCampaign::selected_route()` 再从已完成事件旗标解析后继路线；因此 event11/line4 是剧情结算边界，不是等待战斗的中间状态。此前误把 `stage=126/scene=prologue` 当作战斗入口，属于控制器断言错误，不是原游戏缺少 `dialogue_advance`。
+93c0现场的请求链不是“分支后应自动进战斗”：request 21 的 `story_choose` 后，request 22—26 是 event 7 的五段对白；request 27 将原事件切换为 event 11/line 0，request 28—31 完成 event 11 五段对白，request 31 才进入 `phase=campaign_rewards`。源代码 `prologue.h` 的 `try_advance()` 明确：剧情关由 `story_stage()` 判断，剧情对白完成后走 `dispatch_story()`，不会调用 `enter_stage_battle()`；完成事件后进入 `campaign_rewards` 是原分支终点。原 `OriginalCampaign::selected_route()` 再从已完成事件旗标解析后继路线；因此 event11/line4 是剧情结算边界，不是等待战斗的中间状态。此前误把 `stage=126/scene=prologue` 当作战斗入口，属于控制器断言错误，不是原游戏缺少 `dialogue_advance`。
 
 独立运行 `out\campaign002-diagnose126-200ae8d9ae6746afb7c20b3d32c33c0c\trace.json` 复核了同一现象：部署后原选择为 event1，提交 index1 后仍处于 branch 选择直到原对白完成；无合法 `scene=battle` 转换。93c0正式现场则已完整完成 event7→event11→奖励边界。`rewards_confirm` 只能在 `campaign_reward_report()` 为真时提交；此前直接对 UJ52 临时档发送该命令得到原协议 `reward report unavailable`，故未形成正式结算，不能伪称通关。
 
@@ -2248,7 +2248,7 @@ T12奖励前原状态全员字段如下；表中不写未公开经验数：
 - **苏／古斯塔夫**：state-99中苏ID4为HP1065/MP737/ST5/flags128，古斯塔夫ID5为HP1002/MP124/ST89/flags0，二人均`present=true`；127没有新的旅店恢复事务。`present`只说明HP和出场回合范围，不证明古斯塔夫实际部署／行动；不得由此宣称二人均参战。换关`try_deploy_next`原恢复路径将HP/MP/ST重置为上限，教会本身不补HP；未新增旅店费用或直接改HP。
 - **宝物／装备／资金**：正式interaction未提交地图宝物或购物事务；奖励状态未公开可核实金币／奖励物品字段，不编造金额。
 - **保存与168辨识**：D64A实际是127/T8、贝洛HP264、reward=false的胜利前战斗档，已经独立原复存同SHA。最终f6fe同进程重新完成胜利及一次奖励确认，168无保存边界、原剧情自动进入129后请求56合法保存DA80；7a176独立加载129/T1后原复存同SHA。奖励提交与无战斗168剧情完成已经闭合到129首个合法边界，不声称存在独立168奖励后SAV。
-- **根因与修复**：state-67为`battle/modal=none/interaction=none,input/response_required=true/computer_actions=false/ai_skill_pending=false`；可控单位`status_flags=0/action_state=0`，原选择门禁按`0x80`登场位拒绝。代码追踪确认无部署槽时`try_deploy_next`清除了持久角色登场位；已在`src\original_campaign_persistence.hpp`修正无部署槽时保留可部署持久角色登场位。文件保持UTF-8 BOM；VS18 LLVM clang-format按`C:\project\_clang-format`格式化并`--dry-run --Werror`通过；Release MSBuild构建成功、0错误。
+- **根因与修复**：state-67为`battle/modal=none/interaction=none,input/response_required=true/computer_actions=false/ai_skill_pending=false`；可控单位`status_flags=0/action_state=0`，原选择门禁按`0x80`登场位拒绝。代码追踪确认无部署槽时`try_deploy_next`清除了持久角色登场位；已在`src\original_campaign_persistence.h`修正无部署槽时保留可部署持久角色登场位。文件保持UTF-8 BOM；VS18 LLVM clang-format按`C:\project\_clang-format`格式化并`--dry-run --Werror`通过；Release MSBuild构建成功、0错误。
 - **证据**：`out\campaign002-direct-f2af0e83d8b040299359daab5c39547a\interaction.jsonl`、`state-67.json`、`state-99.json`、`round-1.json`至`round-7.json`；f2af request 100/101及`recovery-timeout.json`为独立诊断证据，不计168成绩。
 - **下一关衔接**：连续核验已完成，当前续档为f6fe的UJ05、DA80完整SHA见下；7a176独立重载原复存一致。129尚未计成绩；登场位规则须先通过focused回归／构建才推进。旧f2af保存误解和失败入口仅作下方历史勘误。
 

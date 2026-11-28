@@ -1,4 +1,4 @@
-#include "app_campaign.hpp"
+#include "app_campaign.h"
 #include <iostream>
 namespace s2ne
 {
@@ -301,4 +301,6 @@ bool AppCampaignAdapter::commit_promotion(int selected, const OriginalPromotion:
         return true;
     }
 }
+
+AppCampaignAdapter::AppCampaignAdapter(const std::filesystem::path& root, std::unique_ptr<Prologue>& prologue, std::optional<OriginalSave::State>& rawSave) : root(root), prologue(prologue), rawSave(rawSave), initialization(root), campaignPersistence(root) {}
 }    //namespace s2ne
