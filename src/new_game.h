@@ -1,6 +1,6 @@
 #pragma once
-#include "original_menu.h"
-#include "original_sprite.h"
+#include "menu.h"
+#include "sprite.h"
 #include "title_image.h"
 namespace s2ne
 {
@@ -21,6 +21,6 @@ public:
     void move(int d);
     bool mouse(float x, float y, bool left_click);
     void confirm();
-    std::vector<uint8_t> draw(const std::vector<uint8_t>& background, const OriginalMenu& font) const;
+    std::vector<uint8_t> draw(const std::vector<uint8_t>& background, const Menu& font) const;
 };
 }    //namespace s2ne

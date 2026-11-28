@@ -13,7 +13,7 @@ auto NewGameSetup::try_sprite(std::vector<uint8_t>& image, unsigned id, int left
     {
         return Result<bool>::failure(make_error("Invalid setup sprite"));
     }
-    return draw_original_sprite(image, std::span<const uint8_t>(dat).subspan(offset, size), pal, 0, true, left, top, OriginalZeroRun::transparent);
+    return draw_original_sprite(image, std::span<const uint8_t>(dat).subspan(offset, size), pal, 0, true, left, top, ZeroRun::transparent);
 }
 
 auto NewGameSetup::sprite(std::vector<uint8_t>& image, unsigned id, int left, int top) const -> void
@@ -28,7 +28,7 @@ auto NewGameSetup::sprite(std::vector<uint8_t>& image, unsigned id, int left, in
 auto NewGameSetup::create(const std::filesystem::path& root) -> Result<NewGameSetup>
 {
     NewGameSetup result;
-    auto dat = OriginalDiscResources(root).try_dat_entry(OriginalDisc::one, 7);
+    auto dat = DiscResources(root).try_dat_entry(Disc::one, 7);
     if (!dat)
     {
         return Result<NewGameSetup>::failure(dat.error());
@@ -97,7 +97,7 @@ auto NewGameSetup::mouse(float x, float y, bool left_click) -> bool
 
 auto NewGameSetup::confirm() -> void { confirmed = unsigned(difficulty + 1); }
 
-auto NewGameSetup::draw(const std::vector<uint8_t>& background, const OriginalMenu& font) const -> std::vector<uint8_t>
+auto NewGameSetup::draw(const std::vector<uint8_t>& background, const Menu& font) const -> std::vector<uint8_t>
 {
     // 0x40E31E restores DAT 20, not the bright DAT 19 used by the title menu.
     auto image = backdrop_;

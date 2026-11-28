@@ -2,9 +2,9 @@
 #include <iostream>
 namespace s2ne
 {
-Result<ResourceDomain> try_app_domain_for_save(const OriginalSave::State& state)
+Result<ResourceDomain> try_app_domain_for_save(const Save::State& state)
 {
-    auto selected = int32_t(OriginalSaveBridge::get(state.stage_4fb478, 16, 4));
+    auto selected = int32_t(SaveBridge::get(state.stage_4fb478, 16, 4));
     if (selected < 0 || selected > 1)
     {
         return Result<ResourceDomain>::failure(make_error("Invalid saved logical resource domain"));
@@ -12,17 +12,17 @@ Result<ResourceDomain> try_app_domain_for_save(const OriginalSave::State& state)
     return Result<ResourceDomain>::success(static_cast<ResourceDomain>(selected));
 }
 
-ResourceDomain app_domain_for_save(const OriginalSave::State& state) { return try_app_domain_for_save(state).value(); }
+ResourceDomain app_domain_for_save(const Save::State& state) { return try_app_domain_for_save(state).value(); }
 
-ResourceDomain update_app_domain_for_stage(OriginalSave::State& state)
+ResourceDomain update_app_domain_for_stage(Save::State& state)
 {
-    auto domain = resource_domain_for_campaign(int32_t(OriginalSaveBridge::get(state.stage_4fb478, 12, 4)),
-        int32_t(OriginalSaveBridge::get(state.stage_4fb478, 8, 4)), int32_t(OriginalSaveBridge::get(state.globals_4f7cd0, 16, 4)));
-    OriginalSaveBridge::put(state.stage_4fb478, 16, uint32_t(domain), 4);
+    auto domain = resource_domain_for_campaign(int32_t(SaveBridge::get(state.stage_4fb478, 12, 4)),
+        int32_t(SaveBridge::get(state.stage_4fb478, 8, 4)), int32_t(SaveBridge::get(state.globals_4f7cd0, 16, 4)));
+    SaveBridge::put(state.stage_4fb478, 16, uint32_t(domain), 4);
     return domain;
 }
 
-OriginalEvents AppCampaignAdapter::deploy_next(const OriginalSave::State& captured) const
+Events AppCampaignAdapter::deploy_next(const Save::State& captured) const
 {
     return campaignPersistence.deploy_next(prologue->events, captured);
 }
@@ -35,7 +35,7 @@ void AppCampaignAdapter::connect()
         {
             if (commit && physicalLoot)
             {
-                auto captured = OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*physicalLoot);
+                auto captured = SaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*physicalLoot);
                 if (!captured) { return Result<bool>::failure(captured.error()); }
                 rawSave = std::move(captured).value();
             }
@@ -46,11 +46,11 @@ void AppCampaignAdapter::connect()
         {
             if (!rawSave) { return Result<bool>::failure(make_error("Original physical loot requires save baseline")); }
             auto staged = *rawSave;
-            auto equipment = OriginalPromotionTransaction::create(root);
+            auto equipment = PromotionTransaction::create(root);
             if (!equipment) { return Result<bool>::failure(equipment.error()); }
             for (size_t group = 0; group < 2; ++group)
             {
-                std::vector<OriginalEvents::Unit> members;
+                std::vector<Events::Unit> members;
                 std::vector<int> roles;
                 for (const auto& unit : units)
                 {
@@ -66,7 +66,7 @@ void AppCampaignAdapter::connect()
             for (const auto& award : awards)
             {
                 if (!award.killed || !(units[award.target].status_flags & 0x20)) { continue; }
-                auto collected = OriginalCampaignPersistence::try_collect_physical_loot(staged, units[award.actor], units[award.target]);
+                auto collected = CampaignPersistence::try_collect_physical_loot(staged, units[award.actor], units[award.target]);
                 if (!collected) { return collected; }
             }
             physicalLoot = std::move(staged);
@@ -78,14 +78,14 @@ void AppCampaignAdapter::connect()
             {
                 return std::nullopt;
             }
-            auto captureResult = OriginalSaveBridge::try_capture(current, turn, prologue->camera(), &*rawSave);
+            auto captureResult = SaveBridge::try_capture(current, turn, prologue->camera(), &*rawSave);
             if (!captureResult)
             {
                 report_error(captureResult.error());
                 return std::nullopt;
             }
             auto captured = std::move(captureResult).value();
-            s2ne::OriginalEvents expanded(root, current.difficulty);
+            s2ne::Events expanded(root, current.difficulty);
             expanded.load_stage(current.stage);
             auto mapResult = initialization.try_placement_map(root, expanded.map_id);
             if (!mapResult)
@@ -100,14 +100,14 @@ void AppCampaignAdapter::connect()
                 return std::nullopt;
             }
             auto inserted = std::move(insertResult).value();
-            auto restoreResult = OriginalSaveBridge::try_restore(root, inserted);
+            auto restoreResult = SaveBridge::try_restore(root, inserted);
             if (!restoreResult)
             {
                 report_error(restoreResult.error());
                 return std::nullopt;
             }
             auto arrivals = std::move(restoreResult).value();
-            auto pending = std::make_shared<s2ne::OriginalSave::State>(std::move(inserted));
+            auto pending = std::make_shared<s2ne::Save::State>(std::move(inserted));
             return s2ne::Prologue::ArrivalTransaction{ std::move(arrivals.events), [this, pending]() noexcept
                 {
                     using std::swap;
@@ -121,7 +121,7 @@ void AppCampaignAdapter::connect()
             {
                 return std::nullopt;
             }
-            auto captureResult = OriginalSaveBridge::try_capture(current, prologue->battle_turn(), prologue->camera(), &*rawSave);
+            auto captureResult = SaveBridge::try_capture(current, prologue->battle_turn(), prologue->camera(), &*rawSave);
             if (!captureResult)
             {
                 report_error(captureResult.error());
@@ -130,8 +130,8 @@ void AppCampaignAdapter::connect()
             auto captured = std::move(captureResult).value();
             if (current.type(eventIndex) == 10 && current.condition(eventIndex) == 0)
             {
-                OriginalSaveBridge::grant_scripted_item(captured, current.event_word(eventIndex, 5));
-                auto pending = std::make_shared<s2ne::OriginalSave::State>(std::move(captured));
+                SaveBridge::grant_scripted_item(captured, current.event_word(eventIndex, 5));
+                auto pending = std::make_shared<s2ne::Save::State>(std::move(captured));
                 return s2ne::Prologue::ArrivalTransaction{ current, [this, pending]() noexcept
                     {
                         using std::swap;
@@ -143,7 +143,7 @@ void AppCampaignAdapter::connect()
                         swap(*rawSave, *pending);
                     } };
             }
-            s2ne::OriginalEvents expanded(root, current.difficulty);
+            s2ne::Events expanded(root, current.difficulty);
             expanded.load_stage(current.stage);
             auto mapResult = initialization.try_placement_map(root, expanded.map_id);
             if (!mapResult)
@@ -158,14 +158,14 @@ void AppCampaignAdapter::connect()
                 return std::nullopt;
             }
             auto inserted = std::move(insertResult).value();
-            auto restoreResult = OriginalSaveBridge::try_restore(root, inserted);
+            auto restoreResult = SaveBridge::try_restore(root, inserted);
             if (!restoreResult)
             {
                 report_error(restoreResult.error());
                 return std::nullopt;
             }
             auto restored = std::move(restoreResult).value();
-            auto pending = std::make_shared<s2ne::OriginalSave::State>(std::move(inserted));
+            auto pending = std::make_shared<s2ne::Save::State>(std::move(inserted));
             return s2ne::Prologue::ArrivalTransaction{ std::move(restored.events), [this, pending]() noexcept
                 {
                     using std::swap;
@@ -200,10 +200,10 @@ void AppCampaignAdapter::connect()
         });
     prologue->set_interbattle_adapter([](auto)
         {
-            return s2ne::OriginalInterbattle::Result::unsupported;
+            return s2ne::Interbattle::Result::unsupported;
         });
 }
-bool AppCampaignAdapter::commit_promotion(int selected, const OriginalPromotion::Request& request, size_t saveItems, const OriginalPromotionTransaction& promotionTransaction, const OriginalMap& promotionMap)
+bool AppCampaignAdapter::commit_promotion(int selected, const Promotion::Request& request, size_t saveItems, const PromotionTransaction& promotionTransaction, const Map& promotionMap)
 {
     {
         if (selected < 0 || size_t(selected) >= prologue->events.units.size())
@@ -218,11 +218,11 @@ bool AppCampaignAdapter::commit_promotion(int selected, const OriginalPromotion:
         auto stagedEvents = prologue->events;
         auto stagedBattle = prologue->battle();
         auto stagedSave = *rawSave;
-        bool committed = stagedBattle.mutate_random([&](s2ne::OriginalRandom& random, uint32_t seconds)
+        bool committed = stagedBattle.mutate_random([&](s2ne::RandomStream& random, uint32_t seconds)
             {
-                s2ne::OriginalPromotionTransaction::State before{ stagedEvents.units.at(size_t(selected)), stagedSave.groups[0].inventory, random };
+                s2ne::PromotionTransaction::State before{ stagedEvents.units.at(size_t(selected)), stagedSave.groups[0].inventory, random };
                 uint8_t metadata = stagedSave.groups[0].metadata[4];
-                s2ne::OriginalPromotionTransaction::Context context;
+                s2ne::PromotionTransaction::Context context;
                 context.game_mode = int(stagedSave.globals_4f7cd0[0]);
                 context.rebuild = [&](auto& next)
                 {
@@ -249,7 +249,7 @@ bool AppCampaignAdapter::commit_promotion(int selected, const OriginalPromotion:
                     {
                         return false;
                     }
-                    auto allies = std::span<const s2ne::OriginalEvents::Unit>(stagedEvents.units).first(roles.size());
+                    auto allies = std::span<const s2ne::Events::Unit>(stagedEvents.units).first(roles.size());
                     auto aggregate = promotionTransaction.try_aggregate_army_metadata(metadata, allies, roles);
                     if (!aggregate)
                     {
@@ -271,14 +271,14 @@ bool AppCampaignAdapter::commit_promotion(int selected, const OriginalPromotion:
                 {
                     return false;
                 }
-                auto captured = OriginalSaveBridge::try_capture_promotion(stagedEvents, prologue->battle_turn(), prologue->camera(), stagedSave, size_t(selected), request.source_kind, next->inventory, metadata);
+                auto captured = SaveBridge::try_capture_promotion(stagedEvents, prologue->battle_turn(), prologue->camera(), stagedSave, size_t(selected), request.source_kind, next->inventory, metadata);
                 if (!captured)
                 {
                     report_error(captured.error());
                     return false;
                 }
                 stagedSave = std::move(captured).value();
-                auto encoded = OriginalSave::try_encode(stagedSave, saveItems);
+                auto encoded = Save::try_encode(stagedSave, saveItems);
                 if (!encoded)
                 {
                     report_error(encoded.error());
@@ -293,7 +293,7 @@ bool AppCampaignAdapter::commit_promotion(int selected, const OriginalPromotion:
         {
             return false;
         }
-        static_assert(std::is_nothrow_swappable_v<s2ne::OriginalEvents> && std::is_nothrow_swappable_v<s2ne::Battle> && std::is_nothrow_swappable_v<s2ne::OriginalSave::State>);
+        static_assert(std::is_nothrow_swappable_v<s2ne::Events> && std::is_nothrow_swappable_v<s2ne::Battle> && std::is_nothrow_swappable_v<s2ne::Save::State>);
         using std::swap;
         swap(prologue->events, stagedEvents);
         swap(prologue->battle(), stagedBattle);
@@ -302,5 +302,5 @@ bool AppCampaignAdapter::commit_promotion(int selected, const OriginalPromotion:
     }
 }
 
-AppCampaignAdapter::AppCampaignAdapter(const std::filesystem::path& root, std::unique_ptr<Prologue>& prologue, std::optional<OriginalSave::State>& rawSave) : root(root), prologue(prologue), rawSave(rawSave), initialization(root), campaignPersistence(root) {}
+AppCampaignAdapter::AppCampaignAdapter(const std::filesystem::path& root, std::unique_ptr<Prologue>& prologue, std::optional<Save::State>& rawSave) : root(root), prologue(prologue), rawSave(rawSave), initialization(root), campaignPersistence(root) {}
 }    //namespace s2ne

@@ -143,13 +143,13 @@ auto OpeningAudio::mixer_handle() const -> MIX_Mixer* { return mixer; }
 
 auto OpeningAudio::start_effects(const std::filesystem::path& root) -> Result<bool>
 {
-    auto candidate = std::make_unique<OriginalEffectAudio>();
+    auto candidate = std::make_unique<EffectAudio>();
     auto started = candidate->start(mixer, root);
     if (started) { effects_ = std::move(candidate); }
     return started;
 }
 
-auto OpeningAudio::effects() const -> OriginalEffectAudio* { return effects_.get(); }
+auto OpeningAudio::effects() const -> EffectAudio* { return effects_.get(); }
 
 OpeningAudio::OpeningAudio()
 {

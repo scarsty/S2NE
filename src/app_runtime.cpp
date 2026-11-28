@@ -9,35 +9,35 @@
 #include "app_options.h"
 #include "app_sdl.h"
 
+#include "ani_audio.h"
+#include "battle_menu.h"
+#include "battle_reports.h"
+#include "campaign_persistence.h"
+#include "church.h"
+#include "confirmation.h"
+#include "deployment.h"
 #include "flic.h"
+#include "growth_panel.h"
+#include "initialization.h"
+#include "inn.h"
+#include "menu.h"
 #include "new_game.h"
 #include "opening_audio.h"
-#include "original_ani_audio.h"
-#include "original_battle_menu.h"
-#include "original_battle_reports.h"
-#include "original_campaign_persistence.h"
-#include "original_church.h"
-#include "original_confirmation.h"
-#include "original_deployment.h"
-#include "original_growth_panel.h"
-#include "original_initialization.h"
-#include "original_inn.h"
-#include "original_menu.h"
-#include "original_presentation.h"
-#include "original_promotion_transaction.h"
-#include "original_save_bridge.h"
-#include "original_save_menu.h"
-#include "original_save_store.h"
-#include "original_settings.h"
-#include "original_shop_menu.h"
-#include "original_skill94_transaction.h"
-#include "original_skills.h"
+#include "presentation.h"
+#include "promotion_transaction.h"
+#include "save_bridge.h"
+#include "save_menu.h"
+#include "save_store.h"
+#include "settings.h"
+#include "shop_menu.h"
+#include "skill94_transaction.h"
+#include "skills.h"
 
-#include "original_spell_summon_candidate.h"
-#include "original_spirit_sight.h"
 #include "prologue.h"
 #include "runtime_diagnostics.h"
 #include "simple_cc.h"
+#include "spell_summon_candidate.h"
+#include "spirit_sight.h"
 #include "startup_trace.h"
 #include "stdio_events.h"
 #include "stdio_protocol.h"
@@ -81,7 +81,7 @@ int s2ne::run_application(int argc, char** argv)
         std::filesystem::current_path(std::filesystem::absolute(options.resource_root(argc, argv)));
         SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "1");
 #endif
-        s2ne::OriginalProgression::initialize_cheat(std::filesystem::current_path());
+        s2ne::Progression::initialize_cheat(std::filesystem::current_path());
         s2ne::texture_resources.configure(std::filesystem::current_path());
         const bool diagnostics = options.stdio;
         s2ne::configure_terminal_output(diagnostics);
@@ -102,11 +102,11 @@ int s2ne::run_application(int argc, char** argv)
         }
 
         auto root = options.resource_root(argc, argv);
-        const auto displaySettings = s2ne::OriginalSettings::load_state(root);
+        const auto displaySettings = s2ne::Settings::load_state(root);
         s2ne::screen_width = displaySettings.screen_width;
-        s2ne::OriginalPromotion::protagonist_class_tree = displaySettings.protagonist_class_tree;
-        s2ne::OriginalSettings::highlight_secrets = displaySettings.highlight_secrets;
-        s2ne::OriginalSettings::gameplay_assist = displaySettings.gameplay_assist;
+        s2ne::Promotion::protagonist_class_tree = displaySettings.protagonist_class_tree;
+        s2ne::Settings::highlight_secrets = displaySettings.highlight_secrets;
+        s2ne::Settings::gameplay_assist = displaySettings.gameplay_assist;
         s2ne::screen_height = displaySettings.screen_height;
         std::vector<s2ne::Flic> clips;
         for (unsigned id : { 21u, 22u })
@@ -128,7 +128,7 @@ int s2ne::run_application(int argc, char** argv)
         }
         auto title = std::move(titleResult).value();
         startup.mark("title");
-        auto menuResult = s2ne::OriginalMenu::create(root);
+        auto menuResult = s2ne::Menu::create(root);
         if (!menuResult)
         {
             s2ne::report_error(menuResult.error());
@@ -223,7 +223,7 @@ int s2ne::run_application(int argc, char** argv)
         std::vector<uint8_t> rgba(640 * 480 * 4);
         size_t clip = 0;
         bool running = true, paused = true, inMenu = false, inSetup = false;
-        std::optional<s2ne::OriginalAniAudio> aniAudio;
+        std::optional<s2ne::AniAudio> aniAudio;
         unsigned aniFrame = 1;
         auto stopEffects = [&]() -> s2ne::Result<bool>
         {
@@ -310,20 +310,20 @@ int s2ne::run_application(int argc, char** argv)
         };
         showMenu();
         std::unique_ptr<s2ne::Prologue> prologue;
-        std::optional<s2ne::OriginalSettings> settings;
-        std::optional<s2ne::OriginalBattleMenu> battleMenu;
-        std::optional<s2ne::OriginalSaveMenu> saveMenu;
+        std::optional<s2ne::Settings> settings;
+        std::optional<s2ne::BattleMenu> battleMenu;
+        std::optional<s2ne::SaveMenu> saveMenu;
         bool saveMenuRedraw = true;
-        std::optional<s2ne::OriginalBattleReports> battleReports;
-        std::optional<s2ne::OriginalSave::State> rawSave;
-        std::optional<s2ne::OriginalShopMenu> shopMenu;
-        std::optional<s2ne::OriginalChurch> churchMenu;
-        std::optional<s2ne::OriginalInn> innMenu;
-        std::optional<s2ne::OriginalDeployment> deployment;
-        std::optional<s2ne::OriginalPromotion> promotionMenu;
-        std::optional<s2ne::OriginalArmyEquipmentMenu> battleItems;
+        std::optional<s2ne::BattleReports> battleReports;
+        std::optional<s2ne::Save::State> rawSave;
+        std::optional<s2ne::ShopMenu> shopMenu;
+        std::optional<s2ne::Church> churchMenu;
+        std::optional<s2ne::Inn> innMenu;
+        std::optional<s2ne::Deployment> deployment;
+        std::optional<s2ne::Promotion> promotionMenu;
+        std::optional<s2ne::ArmyEquipmentMenu> battleItems;
         bool battleEquipmentChanged = false;
-        s2ne::OriginalItemUse itemUse(root);
+        s2ne::ItemUse itemUse(root);
         std::optional<std::pair<size_t, unsigned>> itemTargetRequest;
         std::optional<unsigned> itemSpellSource;
         unsigned itemNoticeMilliseconds{};
@@ -332,8 +332,8 @@ int s2ne::run_application(int argc, char** argv)
         std::vector<std::vector<uint8_t>> itemLearningNotices;
         uint64_t itemLearningSince{};
         std::function<void()> itemLearningPublish;
-        s2ne::OriginalShopMenu itemNoticeGraphics(root);
-        s2ne::OriginalMenu itemNoticeFont(root);
+        s2ne::ShopMenu itemNoticeGraphics(root);
+        s2ne::Menu itemNoticeFont(root);
         auto publishItemSpell = [&]()
         {
             if (!itemSpellSource || !rawSave) { return; }
@@ -345,22 +345,22 @@ int s2ne::run_application(int argc, char** argv)
         std::vector<unsigned> usableItems;
         size_t usableItemSelection{};
         bool itemMenu = false, itemConfirmation = false;
-        std::optional<s2ne::OriginalSkills> skillMenu;
+        std::optional<s2ne::Skills> skillMenu;
         std::optional<size_t> skillTarget;
         struct SkillGrowthPause
         {
-            s2ne::OriginalProgression::PendingGrowth pending;
+            s2ne::Progression::PendingGrowth pending;
             uint32_t seconds;
         };
         struct SkillGrowthAward
         {
-            s2ne::OriginalEvents::Unit unit;
-            s2ne::OriginalRandom::State random;
+            s2ne::Events::Unit unit;
+            s2ne::RandomStream::State random;
         };
         std::vector<SkillGrowthAward> skillGrowthAwards;
         std::vector<SkillGrowthPause> skillGrowthNotices;
         std::optional<uint32_t> skillGrowthSeconds;
-        std::optional<s2ne::OriginalSpellSummonCandidate> skillGrowthSummon;
+        std::optional<s2ne::SpellSummonCandidate> skillGrowthSummon;
         std::optional<size_t> pendingSkillTarget;
         std::optional<s2ne::Battle::Point> sleepCenter;
         std::optional<size_t> transferSource;
@@ -372,51 +372,51 @@ int s2ne::run_application(int argc, char** argv)
         std::optional<unsigned> screenshotSequence;
         std::function<void()> spiritSightCommit;
         bool skillCastVerified = false;
-        s2ne::OriginalSkills skillRules(root);
+        s2ne::Skills skillRules(root);
         startup.mark("skill-rules");
-        s2ne::OriginalSkill94Transaction sword94(root);
-        auto drain = s2ne::OriginalDrain::create(root);
+        s2ne::Skill94Transaction sword94(root);
+        auto drain = s2ne::Drain::create(root);
         if (!drain) { s2ne::fatal(drain.error()); }
         startup.mark("sword94");
         bool autosaveBlocked = false;
         s2ne::Prologue* connectedCampaign = nullptr;
-        s2ne::OriginalInitialization initialization(root);
+        s2ne::Initialization initialization(root);
         startup.mark("initialization");
         s2ne::AppCampaignAdapter campaignAdapter(root, prologue, rawSave);
         startup.mark("campaign-adapter");
-        s2ne::OriginalPromotionTransaction promotionTransaction(root);
+        s2ne::PromotionTransaction promotionTransaction(root);
         startup.mark("promotion-transaction");
-        s2ne::OriginalPromotion promotionRules(root);
+        s2ne::Promotion promotionRules(root);
         startup.mark("promotion-rules");
-        std::optional<s2ne::OriginalMap> promotionMap;
-        std::optional<s2ne::OriginalConfirmation> overwriteConfirmation;
+        std::optional<s2ne::Map> promotionMap;
+        std::optional<s2ne::Confirmation> overwriteConfirmation;
         std::ifstream itemFile(root / "ITEMSP.BIN", std::ios::binary);
         std::vector<uint8_t> itemBytes{ std::istreambuf_iterator<char>(itemFile), {} };
-        const size_t saveItems = s2ne::OriginalSave::item_count(itemBytes);
+        const size_t saveItems = s2ne::Save::item_count(itemBytes);
 
-        auto settingsState = s2ne::OriginalSettings::load_state(root);
-        auto writeCampaignSave = [&](const std::filesystem::path& directory, unsigned slot, s2ne::OriginalSave::State state) -> s2ne::Result<s2ne::OriginalSave::State>
+        auto settingsState = s2ne::Settings::load_state(root);
+        auto writeCampaignSave = [&](const std::filesystem::path& directory, unsigned slot, s2ne::Save::State state) -> s2ne::Result<s2ne::Save::State>
         {
             auto described = initialization.try_describe(state, prologue->events);
-            if (!described) { return s2ne::Result<s2ne::OriginalSave::State>::failure(described.error()); }
-            auto written = s2ne::OriginalSaveStore::try_write(directory, slot, state, saveItems);
-            if (!written) { return s2ne::Result<s2ne::OriginalSave::State>::failure(written.error()); }
-            return s2ne::Result<s2ne::OriginalSave::State>::success(std::move(state));
+            if (!described) { return s2ne::Result<s2ne::Save::State>::failure(described.error()); }
+            auto written = s2ne::SaveStore::try_write(directory, slot, state, saveItems);
+            if (!written) { return s2ne::Result<s2ne::Save::State>::failure(written.error()); }
+            return s2ne::Result<s2ne::Save::State>::success(std::move(state));
         };
-        auto captureCampaignSave = [&](unsigned slot, const s2ne::OriginalSave::State* baseline, unsigned turn) -> s2ne::Result<s2ne::OriginalSave::State>
+        auto captureCampaignSave = [&](unsigned slot, const s2ne::Save::State* baseline, unsigned turn) -> s2ne::Result<s2ne::Save::State>
         {
-            auto captured = s2ne::OriginalSaveBridge::try_capture(prologue->events, turn, prologue->camera(), baseline);
+            auto captured = s2ne::SaveBridge::try_capture(prologue->events, turn, prologue->camera(), baseline);
             if (!captured) { return captured; }
             auto written = writeCampaignSave(isolatedSaveRoot ? *isolatedSaveRoot : root, slot, std::move(captured).value());
             if (written) { rawSave = written.value(); }
             return written;
         };
-        auto restoreCampaign = [&](s2ne::Prologue& target, s2ne::OriginalSaveBridge::Restored restored) -> s2ne::Result<bool>
+        auto restoreCampaign = [&](s2ne::Prologue& target, s2ne::SaveBridge::Restored restored) -> s2ne::Result<bool>
         {
             auto domain = s2ne::try_app_domain_for_save(restored.raw);
             if (!domain) { return s2ne::Result<bool>::failure(domain.error()); }
             target.set_resource_domain(domain.value());
-            if (s2ne::OriginalCampaign(root).stage(restored.events.stage).mode == 3)
+            if (s2ne::Campaign(root).stage(restored.events.stage).mode == 3)
             {
                 target.restore_campaign_story(std::move(restored.events));
             }
@@ -431,12 +431,12 @@ int s2ne::run_application(int argc, char** argv)
             autosaveBlocked = false;
             return s2ne::Result<bool>::success(true);
         };
-        auto applySettings = [&](const s2ne::OriginalSettings::State& state, bool persist)
+        auto applySettings = [&](const s2ne::Settings::State& state, bool persist)
         {
             settingsState = state;
-            s2ne::OriginalPromotion::protagonist_class_tree = state.protagonist_class_tree;
-            s2ne::OriginalSettings::highlight_secrets = state.highlight_secrets;
-            s2ne::OriginalSettings::gameplay_assist = state.gameplay_assist;
+            s2ne::Promotion::protagonist_class_tree = state.protagonist_class_tree;
+            s2ne::Settings::highlight_secrets = state.highlight_secrets;
+            s2ne::Settings::gameplay_assist = state.gameplay_assist;
             menu.set_simplified_chinese(state.simplified_chinese != 0, root / "cc");
             menu.small_font = state.small_font != 0;
             if (prologue)
@@ -446,13 +446,13 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (persist)
             {
-                auto saved = s2ne::OriginalSettings::try_save_state(root, state);
+                auto saved = s2ne::Settings::try_save_state(root, state);
                 if (!saved) { s2ne::fatal(saved.error()); }
             }
         };
         const bool simplifiedChinese = settingsState.simplified_chinese != 0;
         menu.set_simplified_chinese(simplifiedChinese, root / "cc");
-        auto currentSettings = [&]() -> const s2ne::OriginalSettings::State&
+        auto currentSettings = [&]() -> const s2ne::Settings::State&
         {
             if (settings) { return settings->state(); }
             if (battleMenu) { return battleMenu->settings_state(); }
@@ -479,7 +479,7 @@ int s2ne::run_application(int argc, char** argv)
             if (!started) { s2ne::report_error(started.error()); }
             else if (!paused && options.stdioInitialSave.empty())
             {
-                auto loaded = s2ne::OriginalAniAudio::create(root);
+                auto loaded = s2ne::AniAudio::create(root);
                 if (!loaded) { s2ne::report_error(loaded.error()); }
                 else
                 {
@@ -541,7 +541,7 @@ int s2ne::run_application(int argc, char** argv)
         };
         auto beginSettings = [&]
         {
-            auto created = s2ne::OriginalSettings::create(root, 0, settingsState);
+            auto created = s2ne::Settings::create(root, 0, settingsState);
             if (!created)
             {
                 s2ne::report_error(created.error());
@@ -616,11 +616,11 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (innMenu)
             {
-                innMenu->tick(options.headlessSpeed ? unsigned(gameTicks() / 10) : s2ne::OriginalShopMenu::wall_clock_cs());
+                innMenu->tick(options.headlessSpeed ? unsigned(gameTicks() / 10) : s2ne::ShopMenu::wall_clock_cs());
             }
             if (shopMenu && rawSave)
             {
-                shopMenu->tick(options.headlessSpeed ? unsigned(gameTicks() / 10) : s2ne::OriginalShopMenu::wall_clock_cs(), *rawSave);
+                shopMenu->tick(options.headlessSpeed ? unsigned(gameTicks() / 10) : s2ne::ShopMenu::wall_clock_cs(), *rawSave);
                 if (auto point = shopMenu->take_cursor())
                 {
                     float x{}, y{};
@@ -648,7 +648,7 @@ int s2ne::run_application(int argc, char** argv)
                 {
                     auto groundOverlay = [&](auto& ground)
                     {
-                        if (!skillMenu || pendingSkillTarget || skillMenu->page() != s2ne::OriginalSkills::Page::requested || prologue->battle_selected() < 0) { return; }
+                        if (!skillMenu || pendingSkillTarget || skillMenu->page() != s2ne::Skills::Page::requested || prologue->battle_selected() < 0) { return; }
                         auto actor = prologue->events.units.at(size_t(prologue->battle_selected()));
                         auto camera = prologue->camera();
                         prologue->battle().draw_skill_cells(ground, camera.first, camera.second, 0, [&](auto cell)
@@ -734,7 +734,7 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (skillMenu && !pendingSkillTarget)
             {
-                if (skillMenu->page() == s2ne::OriginalSkills::Page::requested && prologue->battle_selected() >= 0)
+                if (skillMenu->page() == s2ne::Skills::Page::requested && prologue->battle_selected() >= 0)
                 {
                     auto actor = prologue->events.units.at(size_t(prologue->battle_selected()));
                     auto camera = prologue->camera();
@@ -788,7 +788,7 @@ int s2ne::run_application(int argc, char** argv)
                 const int top = battleNoticeText == 84 ? 40 : 80;
                 itemNoticeGraphics.shared_panel(image, 0x4F72C8, 176, top);
                 const auto text = itemNoticeFont.text_bytes(battleNoticeText);
-                const unsigned panel = s2ne::OriginalShopMenu::shared_sprite(0x4F72C8);
+                const unsigned panel = s2ne::ShopMenu::shared_sprite(0x4F72C8);
                 itemNoticeFont.draw_original_large(image, text, 176 + itemNoticeGraphics.panel_width(panel) / 2 - int(text.size()) * 6,
                     top + itemNoticeGraphics.panel_height(panel) / 2 - 12, 42);
             }
@@ -851,7 +851,7 @@ int s2ne::run_application(int argc, char** argv)
                     return;
                 }
                 auto panel = s2ne::draw_original_cel_shadow(image, cel.value(), pal.value(), 208, 128, 180);
-                if (panel) { panel = s2ne::draw_original_cel(image, cel.value(), pal.value(), 208, 128, 180, s2ne::OriginalZeroRun::transparent); }
+                if (panel) { panel = s2ne::draw_original_cel(image, cel.value(), pal.value(), 208, 128, 180, s2ne::ZeroRun::transparent); }
                 if (panel) { panel = menu.try_draw_original_large(image, text, 144, 198, 42); }
                 if (!panel)
                 {
@@ -862,7 +862,7 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (auto step = prologue->growth_step())
             {
-                auto panel = s2ne::OriginalGrowthPanel::draw(root, std::move(image), *step);
+                auto panel = s2ne::GrowthPanel::draw(root, std::move(image), *step);
                 if (!panel)
                 {
                     prologue->reject_growth();
@@ -905,9 +905,9 @@ int s2ne::run_application(int argc, char** argv)
                 return;
             }
             const auto& unit = prologue->events.units[size_t(selected)];
-            std::vector<s2ne::OriginalBattleReports::Entry> entries{ { unit, unit.hostile(), unit.npc_class() ? 1 : 0, false } };
+            std::vector<s2ne::BattleReports::Entry> entries{ { unit, unit.hostile(), unit.npc_class() ? 1 : 0, false } };
             auto report_background = prologue->draw(menu);
-            battleReports.emplace(root, s2ne::OriginalBattleReports::Page::roster, prologue->events, std::move(entries), std::move(report_background), nullptr, settingsState.small_font != 0);
+            battleReports.emplace(root, s2ne::BattleReports::Page::roster, prologue->events, std::move(entries), std::move(report_background), nullptr, settingsState.small_font != 0);
             battleReports->detail();
             battleReports->close_to_battle();
             SDL_ShowCursor();
@@ -936,7 +936,7 @@ int s2ne::run_application(int argc, char** argv)
                 {
                     if (!promotionMap)
                     {
-                        auto created = s2ne::OriginalMap::create(root);
+                        auto created = s2ne::Map::create(root);
                         if (!created)
                         {
                             s2ne::report_error(created.error());
@@ -953,11 +953,11 @@ int s2ne::run_application(int argc, char** argv)
             }
             else
             {
-                promotionMenu->set_preview_source([&](unsigned target) -> s2ne::Result<s2ne::OriginalPromotion::Preview>
+                promotionMenu->set_preview_source([&](unsigned target) -> s2ne::Result<s2ne::Promotion::Preview>
                     {
-                        std::optional<s2ne::OriginalPromotion::Preview> preview;
+                        std::optional<s2ne::Promotion::Preview> preview;
                         std::optional<s2ne::Error> error;
-                        const bool applied = prologue->interbattle_random([&](s2ne::OriginalRandom& random, uint32_t seconds)
+                        const bool applied = prologue->interbattle_random([&](s2ne::RandomStream& random, uint32_t seconds)
                             {
                                 auto result = promotionMenu->try_preview(target, random, [seconds]
                                     {
@@ -971,9 +971,9 @@ int s2ne::run_application(int argc, char** argv)
                                 preview = result.value();
                                 return true;
                             });
-                        if (error) { return s2ne::Result<s2ne::OriginalPromotion::Preview>::failure(*error); }
-                        if (!applied || !preview) { return s2ne::Result<s2ne::OriginalPromotion::Preview>::failure(s2ne::make_error("Promotion preview random stream unavailable")); }
-                        return s2ne::Result<s2ne::OriginalPromotion::Preview>::success(*preview);
+                        if (error) { return s2ne::Result<s2ne::Promotion::Preview>::failure(*error); }
+                        if (!applied || !preview) { return s2ne::Result<s2ne::Promotion::Preview>::failure(s2ne::make_error("Promotion preview random stream unavailable")); }
+                        return s2ne::Result<s2ne::Promotion::Preview>::success(*preview);
                     });
                 playEffect(123);
                 showPrologue();
@@ -1003,7 +1003,7 @@ int s2ne::run_application(int argc, char** argv)
         uint64_t next = gameTicks() + s2ne::original_ani_frame_ms(0xAF12, clips.front().delay);
         unsigned presented = 0;
         uint64_t lastUiTick = gameTicks();
-        s2ne::OriginalEdgeScrollTiming edgeScrollTiming;
+        s2ne::EdgeScrollTiming edgeScrollTiming;
         startup.mark("event-loop");
         bool firstPresent = true;
         bool firstEvent = true;
@@ -1018,8 +1018,8 @@ int s2ne::run_application(int argc, char** argv)
         std::vector<SDL_Event> stdioInputEvents;
         if (stdio && !options.stdioInitialSave.empty())
         {
-            auto initial = s2ne::OriginalSave::load(options.stdioInitialSave, saveItems);
-            auto restored = s2ne::OriginalSaveBridge::restore(root, initial);
+            auto initial = s2ne::Save::load(options.stdioInitialSave, saveItems);
+            auto restored = s2ne::SaveBridge::restore(root, initial);
             prologue = std::make_unique<s2ne::Prologue>(root, restored.events.difficulty);
             auto applied = restoreCampaign(*prologue, std::move(restored));
             if (!applied)
@@ -1027,7 +1027,7 @@ int s2ne::run_application(int argc, char** argv)
                 s2ne::report_error(applied.error());
                 return EXIT_FAILURE;
             }
-            s2ne::OriginalSaveStore::write(*isolatedSaveRoot, 1, *rawSave, saveItems);
+            s2ne::SaveStore::write(*isolatedSaveRoot, 1, *rawSave, saveItems);
             inMenu = inSetup = false;
             showPrologue();
         }
@@ -1170,9 +1170,9 @@ int s2ne::run_application(int argc, char** argv)
                     state["church_page"] = int(churchMenu->page());
                     if (rawSave)
                     {
-                        state["money"] = s2ne::OriginalShopMenu::money(*rawSave);
+                        state["money"] = s2ne::ShopMenu::money(*rawSave);
                         state["revival_recipients"] = churchMenu->revival_recipients();
-                        if (churchMenu->page() == s2ne::OriginalChurch::Page::recipients || churchMenu->page() == s2ne::OriginalChurch::Page::resurrection_confirm)
+                        if (churchMenu->page() == s2ne::Church::Page::recipients || churchMenu->page() == s2ne::Church::Page::resurrection_confirm)
                         {
                             state["revival_selected"] = churchMenu->revival_selected();
                             state["revival_cost"] = churchMenu->revival_price(*rawSave);
@@ -1188,7 +1188,7 @@ int s2ne::run_application(int argc, char** argv)
                     state["shop_items"] = Json::array();
                     if (rawSave)
                     {
-                        state["money"] = s2ne::OriginalShopMenu::money(*rawSave);
+                        state["money"] = s2ne::ShopMenu::money(*rawSave);
                         for (const auto id : shopMenu->listed_items()) { state["shop_items"].push_back({ { "id", id }, { "price", shopMenu->listed_price(*rawSave, id) }, { "owned", rawSave->groups[0].inventory.at(id - 1) } }); }
                     }
                 }
@@ -1262,12 +1262,12 @@ int s2ne::run_application(int argc, char** argv)
                         state["battle_menu_selected"] = battleMenu->selected();
                         state["battle_menu_items"] = Json::array();
                         const auto page = battleMenu->page();
-                        std::span<const unsigned> ids = s2ne::OriginalBattleMenu::overview_ids;
-                        if (page == s2ne::OriginalBattleMenu::Page::root) { ids = s2ne::OriginalBattleMenu::root_ids; }
-                        else if (page == s2ne::OriginalBattleMenu::Page::system) { ids = s2ne::OriginalBattleMenu::system_ids; }
+                        std::span<const unsigned> ids = s2ne::BattleMenu::overview_ids;
+                        if (page == s2ne::BattleMenu::Page::root) { ids = s2ne::BattleMenu::root_ids; }
+                        else if (page == s2ne::BattleMenu::Page::system) { ids = s2ne::BattleMenu::system_ids; }
                         for (size_t i = 0; i < battleMenu->rows(); ++i)
                         {
-                            const auto bytes = s2ne::OriginalMenu(root).text_bytes(ids[i]);
+                            const auto bytes = s2ne::Menu(root).text_bytes(ids[i]);
                             state["battle_menu_items"].push_back({ { "index", i }, { "id", ids[i] }, { "name_bytes", bytes }, { "enabled", true } });
                         }
                     }
@@ -1372,7 +1372,7 @@ int s2ne::run_application(int argc, char** argv)
                         for (const auto& record : group.records)
                         {
                             auto failure = skillMenu->resource_failure(unit, record);
-                            if (failure == s2ne::OriginalSkills::Failure::none)
+                            if (failure == s2ne::Skills::Failure::none)
                             {
                                 auto eligibility = *skillMenu;
                                 eligibility.select_record(record.id);
@@ -1390,7 +1390,7 @@ int s2ne::run_application(int argc, char** argv)
                     state["skill_page"] = int(skillMenu->page());
                     state["skill_area_supported"] = skillMenu->status_area_supported();
                     state["skill_targets"] = Json::array();
-                    if (skillMenu->page() == s2ne::OriginalSkills::Page::requested && prologue->battle_selected() >= 0)
+                    if (skillMenu->page() == s2ne::Skills::Page::requested && prologue->battle_selected() >= 0)
                     {
                         const auto& actor = prologue->events.units.at(size_t(prologue->battle_selected()));
                         for (size_t i = 0; i < prologue->events.units.size(); ++i)
@@ -1404,7 +1404,7 @@ int s2ne::run_application(int argc, char** argv)
                         {
                             return prologue->battle().cell({ x, y }).elevation;
                         });
-                    const s2ne::OriginalEvents::Unit* partnerUnit = nullptr;
+                    const s2ne::Events::Unit* partnerUnit = nullptr;
                     if (partner) { partnerUnit = &prologue->events.units[*partner]; }
                     bool summonReady = false;
                     if (skillMenu->summon_supported() && prologue->events.army_status)
@@ -1418,10 +1418,10 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     static constexpr const char* failures[]{ "none", "mp", "st", "action_points", "hp", "partner_unresolved", "world_unresolved", "unsupported_execution", "stale_unit" };
                     auto selectionFailure = probe.resource_failure(unit, probe.selected());
-                    if (probe.page() == s2ne::OriginalSkills::Page::list) { selectionFailure = probe.select(unit, partnerUnit, summonReady); }
+                    if (probe.page() == s2ne::Skills::Page::list) { selectionFailure = probe.select(unit, partnerUnit, summonReady); }
                     state["selected_skill_failure"] = failures[int(selectionFailure)];
                     state["skill_target"] = skillTarget ? Json(*skillTarget) : Json(nullptr);
-                    if (skillMenu->page() == s2ne::OriginalSkills::Page::requested && prologue->battle_selected() >= 0)
+                    if (skillMenu->page() == s2ne::Skills::Page::requested && prologue->battle_selected() >= 0)
                     {
                         const auto& caster = prologue->events.units.at(size_t(prologue->battle_selected()));
                         state["skill_cells"] = Json::array();
@@ -1518,25 +1518,25 @@ int s2ne::run_application(int argc, char** argv)
                 Json entries = Json::array();
                 for (const auto id : ids)
                 {
-                    entries.push_back({ { "index", first++ }, { "id", id }, { "name_bytes", s2ne::OriginalMenu(root).text_bytes(id) } });
+                    entries.push_back({ { "index", first++ }, { "id", id }, { "name_bytes", s2ne::Menu(root).text_bytes(id) } });
                 }
                 return entries;
             };
             if (prologue && prologue->interbattle_active())
             {
-                state["interbattle_items"] = menuItems(s2ne::OriginalInterbattle::labels);
+                state["interbattle_items"] = menuItems(s2ne::Interbattle::labels);
                 for (size_t i = 0; i < state["interbattle_items"].size(); ++i)
                 {
                     state["interbattle_items"][i]["enabled"] = prologue->interbattle_services_allowed() || i == 3;
-                    state["interbattle_items"][i]["address"] = s2ne::OriginalInterbattle::targets[i];
+                    state["interbattle_items"][i]["address"] = s2ne::Interbattle::targets[i];
                 }
             }
             if (innMenu) { state["inn_items"] = menuItems(std::array<unsigned, 10>{ 193, 194, 128, 129, 195, 192, 80, 131, 123, 190 }, 1); }
-            if (churchMenu && churchMenu->page() == s2ne::OriginalChurch::Page::menu) { state["church_items"] = menuItems(std::array<unsigned, 3>{ 196, 197, 198 }, 1); }
+            if (churchMenu && churchMenu->page() == s2ne::Church::Page::menu) { state["church_items"] = menuItems(std::array<unsigned, 3>{ 196, 197, 198 }, 1); }
             if (shopMenu)
             {
-                if (shopMenu->page() == s2ne::OriginalShopMenu::Page::shop) { state["shop_options"] = menuItems(std::array<unsigned, 4>{ 93, 94, 95, 199 }); }
-                s2ne::OriginalShop names(root);
+                if (shopMenu->page() == s2ne::ShopMenu::Page::shop) { state["shop_options"] = menuItems(std::array<unsigned, 4>{ 93, 94, 95, 199 }); }
+                s2ne::Shop names(root);
                 for (auto& item : state["shop_items"]) { item["name_bytes"] = names.name(item.at("id").get<unsigned>()); }
             }
             if (deployment) { state["deployment_items"] = menuItems(std::array<unsigned, 5>{ 187, 188, 189, 190, 191 }); }
@@ -1544,11 +1544,11 @@ int s2ne::run_application(int argc, char** argv)
             {
                 state["settings_items"] = menuItems(std::array<unsigned, 12>{ 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143 });
             }
-            if (battleMenu && battleMenu->page() == s2ne::OriginalBattleMenu::Page::confirmation)
+            if (battleMenu && battleMenu->page() == s2ne::BattleMenu::Page::confirmation)
             {
-                state["confirmation"] = { { "id", battleMenu->confirmation_id() }, { "text_bytes", s2ne::OriginalMenu(root).text_bytes(battleMenu->confirmation_id()) } };
+                state["confirmation"] = { { "id", battleMenu->confirmation_id() }, { "text_bytes", s2ne::Menu(root).text_bytes(battleMenu->confirmation_id()) } };
             }
-            if (battleMenu && battleMenu->page() == s2ne::OriginalBattleMenu::Page::root)
+            if (battleMenu && battleMenu->page() == s2ne::BattleMenu::Page::root)
             {
                 static constexpr std::array<int, 6> returns{ 0, 0, 0, 6, 3, 15 };
                 for (auto& item : state["battle_menu_items"])
@@ -1571,7 +1571,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     if (state.contains("usable_items"))
                     {
-                        s2ne::OriginalShop names(root);
+                        s2ne::Shop names(root);
                         state["usable_item_options"] = Json::array();
                         for (const auto& item : state["usable_items"])
                         {
@@ -1601,7 +1601,7 @@ int s2ne::run_application(int argc, char** argv)
                 if (textId)
                 {
                     entry["id"] = *textId;
-                    entry["name_bytes"] = s2ne::OriginalMenu(root).text_bytes(*textId);
+                    entry["name_bytes"] = s2ne::Menu(root).text_bytes(*textId);
                 }
                 state["semantic_actions"].push_back(std::move(entry));
             };
@@ -1672,7 +1672,7 @@ int s2ne::run_application(int argc, char** argv)
         std::optional<size_t> semanticItemTarget;
         auto useOriginalItemTarget = [&](size_t actor, unsigned id, size_t target)
         {
-            auto snapshot = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+            auto snapshot = s2ne::SaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
             if (!snapshot)
             {
                 s2ne::report_error(snapshot.error());
@@ -1692,7 +1692,7 @@ int s2ne::run_application(int argc, char** argv)
                         s2ne::report_error(next.error());
                         return false;
                     }
-                    auto restored = s2ne::OriginalSaveBridge::try_restore(root, next.value());
+                    auto restored = s2ne::SaveBridge::try_restore(root, next.value());
                     if (!restored)
                     {
                         s2ne::report_error(restored.error());
@@ -2037,7 +2037,7 @@ int s2ne::run_application(int argc, char** argv)
                             else if (command == "shop_commit")
                             {
                                 accepted = shopMenu->commit_quantity(*rawSave);
-                                if (accepted) { s2ne::OriginalChurch::sync_roster(*rawSave, prologue->events); }
+                                if (accepted) { s2ne::Church::sync_roster(*rawSave, prologue->events); }
                             }
                             else
                             {
@@ -2050,17 +2050,17 @@ int s2ne::run_application(int argc, char** argv)
                                 }
                             }
                             if (!accepted) { throw std::runtime_error("shop operation rejected by original conditions"); }
-                            if (shopMenu->page() == s2ne::OriginalShopMenu::Page::closed)
+                            if (shopMenu->page() == s2ne::ShopMenu::Page::closed)
                             {
                                 shopMenu.reset();
                                 prologue->set_interbattle_adapter([](auto request)
                                     {
-                                        return request.option == 2 ? s2ne::OriginalInterbattle::Result::returned : s2ne::OriginalInterbattle::Result::unsupported;
+                                        return request.option == 2 ? s2ne::Interbattle::Result::returned : s2ne::Interbattle::Result::unsupported;
                                     });
                                 prologue->campaign_scan(0);
                                 prologue->set_interbattle_adapter([](auto)
                                     {
-                                        return s2ne::OriginalInterbattle::Result::unsupported;
+                                        return s2ne::Interbattle::Result::unsupported;
                                     });
                             }
                             showPrologue();
@@ -2069,7 +2069,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         else if (command == "church_revival" || command == "church_recipient" || command == "church_confirm" || command == "church_leave")
                         {
-                            using Page = s2ne::OriginalChurch::Page;
+                            using Page = s2ne::Church::Page;
                             if (!churchMenu || !rawSave || !prologue) { throw std::runtime_error("original church unavailable"); }
                             if (command == "church_revival")
                             {
@@ -2085,14 +2085,14 @@ int s2ne::run_application(int argc, char** argv)
                                 if (std::find(candidates.begin(), candidates.end(), index) == candidates.end()) { throw std::runtime_error("ineligible revival recipient"); }
                                 for (size_t i = 0; i < candidates.size(); ++i) { churchMenu->scan(0x48, *rawSave); }
                                 while (churchMenu->revival_selected() != index) { churchMenu->scan(0x50, *rawSave); }
-                                if (churchMenu->revival_price(*rawSave) > s2ne::OriginalShopMenu::money(*rawSave)) { throw std::runtime_error("insufficient money for original revival fee"); }
+                                if (churchMenu->revival_price(*rawSave) > s2ne::ShopMenu::money(*rawSave)) { throw std::runtime_error("insufficient money for original revival fee"); }
                                 churchMenu->scan(0x1C, *rawSave);
                             }
                             else if (command == "church_confirm")
                             {
                                 if (churchMenu->page() != Page::resurrection_confirm) { throw std::runtime_error("revival confirmation required"); }
                                 if (!churchMenu->scan(0x1C, *rawSave)) { throw std::runtime_error("original revival transaction refused"); }
-                                s2ne::OriginalChurch::sync_roster(*rawSave, prologue->events);
+                                s2ne::Church::sync_roster(*rawSave, prologue->events);
                             }
                             else
                             {
@@ -2102,12 +2102,12 @@ int s2ne::run_application(int argc, char** argv)
                                 churchMenu.reset();
                                 prologue->set_interbattle_adapter([](auto request)
                                     {
-                                        return request.option == 3 ? s2ne::OriginalInterbattle::Result::returned : s2ne::OriginalInterbattle::Result::unsupported;
+                                        return request.option == 3 ? s2ne::Interbattle::Result::returned : s2ne::Interbattle::Result::unsupported;
                                     });
                                 prologue->campaign_scan(0);
                                 prologue->set_interbattle_adapter([](auto)
                                     {
-                                        return s2ne::OriginalInterbattle::Result::unsupported;
+                                        return s2ne::Interbattle::Result::unsupported;
                                     });
                             }
                             showPrologue();
@@ -2124,7 +2124,7 @@ int s2ne::run_application(int argc, char** argv)
                                 accepted = innMenu->confirm_auto_equipment(*rawSave);
                             }
                             if (!accepted) { throw std::runtime_error("original inn auto equipment rejected"); }
-                            if (innMenu->take_equipment_changed()) { s2ne::OriginalChurch::sync_roster(*rawSave, prologue->events); }
+                            if (innMenu->take_equipment_changed()) { s2ne::Church::sync_roster(*rawSave, prologue->events); }
                             showPrologue();
                             stdioPending = response;
                             stdioReadyAt = nowUi;
@@ -2135,12 +2135,12 @@ int s2ne::run_application(int argc, char** argv)
                             innMenu.reset();
                             prologue->set_interbattle_adapter([](auto request)
                                 {
-                                    return request.option == 1 ? s2ne::OriginalInterbattle::Result::returned : s2ne::OriginalInterbattle::Result::unsupported;
+                                    return request.option == 1 ? s2ne::Interbattle::Result::returned : s2ne::Interbattle::Result::unsupported;
                                 });
                             prologue->campaign_scan(0);
                             prologue->set_interbattle_adapter([](auto)
                                 {
-                                    return s2ne::OriginalInterbattle::Result::unsupported;
+                                    return s2ne::Interbattle::Result::unsupported;
                                 });
                             showPrologue();
                             stdioPending = response;
@@ -2152,7 +2152,7 @@ int s2ne::run_application(int argc, char** argv)
                             const auto [actor, id] = *itemTargetRequest;
                             const int target = request->value("index", -1);
                             if (target < 0 || size_t(target) >= prologue->events.units.size()) { throw std::runtime_error("invalid original item target index"); }
-                            auto snapshot = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                            auto snapshot = s2ne::SaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                             if (!snapshot || !itemUse.target_allowed(snapshot.value(), actor, size_t(target), id)) { throw std::runtime_error("original item target rejected"); }
                             semanticItemTarget = size_t(target);
                             stdioPending = response;
@@ -2187,7 +2187,7 @@ int s2ne::run_application(int argc, char** argv)
                             if (!request->contains("slot") || !request->at("slot").is_number_integer()) { throw std::runtime_error("save_checkpoint requires integer slot"); }
                             const int slot = request->at("slot").get<int>();
                             if (slot < 1 || slot > 50) { throw std::runtime_error("checkpoint slot must be 1..50"); }
-                            auto captured = hub_boundary ? s2ne::Result<s2ne::OriginalSave::State>::success(*rawSave) : s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                            auto captured = hub_boundary ? s2ne::Result<s2ne::Save::State>::success(*rawSave) : s2ne::SaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                             if (!captured) { throw std::runtime_error(captured.error().message); }
                             auto written = writeCampaignSave(*isolatedSaveRoot, unsigned(slot), std::move(captured).value());
                             if (!written) { throw std::runtime_error(written.error().message); }
@@ -2261,21 +2261,21 @@ int s2ne::run_application(int argc, char** argv)
                             if (!unit.controllable() || unit.hostile() || !unit.present(prologue->battle_turn()) || unit.hp <= 0 || (unit.status_flags & 0x20) || unit.level >= 99) { throw std::runtime_error("experience assistance requires a living player character below level 99"); }
                             const auto beforeExperience = unit.experience;
                             unit.experience = std::min(999u, unit.experience + unsigned(amount));
-                            const bool started = prologue->battle().mutate_random([&](s2ne::OriginalRandom& random, uint32_t seconds)
+                            const bool started = prologue->battle().mutate_random([&](s2ne::RandomStream& random, uint32_t seconds)
                                 {
-                                    return prologue->begin_reward_growth(s2ne::OriginalProgression::PendingGrowth(unit, random), seconds, [&, index, hub](bool commit)
+                                    return prologue->begin_reward_growth(s2ne::Progression::PendingGrowth(unit, random), seconds, [&, index, hub](bool commit)
                                         {
                                             if (!commit) { return; }
                                             const auto completed = prologue->reward_growth();
                                             prologue->events.units.at(size_t(index)) = completed.unit();
-                                            prologue->battle().mutate_random([&](s2ne::OriginalRandom& current, uint32_t)
+                                            prologue->battle().mutate_random([&](s2ne::RandomStream& current, uint32_t)
                                                 {
                                                     current.restore(completed.random().state());
                                                     return true;
                                                 });
                                             if (hub)
                                             {
-                                                auto captured = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                                auto captured = s2ne::SaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                                                 if (!captured) { s2ne::fatal(captured.error()); }
                                                 *rawSave = std::move(captured).value();
                                             }
@@ -2388,7 +2388,7 @@ int s2ne::run_application(int argc, char** argv)
                             if (command == "promotion_choose")
                             {
                                 int index = request->value("index", -1);
-                                if (promotionMenu->page() != s2ne::OriginalPromotion::Page::selection || index < 0 || size_t(index) >= promotionMenu->choices().size()) { throw std::runtime_error("invalid promotion candidate"); }
+                                if (promotionMenu->page() != s2ne::Promotion::Page::selection || index < 0 || size_t(index) >= promotionMenu->choices().size()) { throw std::runtime_error("invalid promotion candidate"); }
                                 promotionMenu->choose(size_t(index));
                                 promotionMenu->inspect();
                             }
@@ -2404,7 +2404,7 @@ int s2ne::run_application(int argc, char** argv)
                             {
                                 promotionMenu->cancel();
                             }
-                            if (promotionMenu->page() == s2ne::OriginalPromotion::Page::closed) { promotionMenu.reset(); }
+                            if (promotionMenu->page() == s2ne::Promotion::Page::closed) { promotionMenu.reset(); }
                             response["semantic"] = command;
                             stdioPending = response;
                             stdioReadyAt = nowUi;
@@ -2445,7 +2445,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         else if (command == "menu_select")
                         {
-                            if (!battleMenu || (battleMenu->page() != s2ne::OriginalBattleMenu::Page::root && battleMenu->page() != s2ne::OriginalBattleMenu::Page::system))
+                            if (!battleMenu || (battleMenu->page() != s2ne::BattleMenu::Page::root && battleMenu->page() != s2ne::BattleMenu::Page::system))
                             {
                                 throw std::runtime_error("battle root menu is not open");
                             }
@@ -2461,7 +2461,7 @@ int s2ne::run_application(int argc, char** argv)
                             }
                             const int current = int(battleMenu->selected());
                             const int delta = requested - current;
-                            if (battleMenu->page() == s2ne::OriginalBattleMenu::Page::root && requested == 5 && item_count < 6)
+                            if (battleMenu->page() == s2ne::BattleMenu::Page::root && requested == 5 && item_count < 6)
                             {
                                 throw std::runtime_error("automatic battle is unavailable in current original menu");
                             }
@@ -2485,7 +2485,7 @@ int s2ne::run_application(int argc, char** argv)
                                 stdioReadyAt = nowUi;
                                 continue;
                             }
-                            if (!skillMenu || skillMenu->page() != s2ne::OriginalSkills::Page::requested)
+                            if (!skillMenu || skillMenu->page() != s2ne::Skills::Page::requested)
                             {
                                 throw std::runtime_error("skill target selection is unavailable");
                             }
@@ -2510,7 +2510,7 @@ int s2ne::run_application(int argc, char** argv)
                                 throw std::runtime_error("target is not selectable by original skill rules");
                             }
                             if (skillMenu->transfer51_supported()) { throw std::runtime_error("transfer requires separate source and destination selection"); }
-                            if (skillMenu->selected().id == 94 && !s2ne::OriginalSkill94Transaction::target_supported(prologue->events, unit)) { throw std::runtime_error("original skill94 target runtime unsupported"); }
+                            if (skillMenu->selected().id == 94 && !s2ne::Skill94Transaction::target_supported(prologue->events, unit)) { throw std::runtime_error("original skill94 target runtime unsupported"); }
                             if (!prologue->battle().target_visible(unit, std::span(&caster, 1), 0)) { throw std::runtime_error("original skill target is hidden"); }
                             prologue->battle().set_hostile_resources(prologue->events);
                             if (!prologue->battle().present_skill32_preparation(prologue->events.units, size_t(actor), size_t(target), skillMenu->selected().id == 88 || skillMenu->selected().id == 94)) { throw std::runtime_error("original skill preparation rejected"); }
@@ -2560,7 +2560,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         else if (command == "target_options")
                         {
-                            if (!skillMenu || skillMenu->page() != s2ne::OriginalSkills::Page::requested || prologue->battle_selected() < 0)
+                            if (!skillMenu || skillMenu->page() != s2ne::Skills::Page::requested || prologue->battle_selected() < 0)
                             {
                                 throw std::runtime_error("target options unavailable in current state");
                             }
@@ -2578,7 +2578,7 @@ int s2ne::run_application(int argc, char** argv)
                         else if (command == "skill_cancel")
                         {
                             if (!skillMenu || pendingSkillTarget || itemSpellSource) { throw std::runtime_error("skill cancellation unavailable"); }
-                            if (skillMenu->page() == s2ne::OriginalSkills::Page::requested) { skillMenu->resume(); }
+                            if (skillMenu->page() == s2ne::Skills::Page::requested) { skillMenu->resume(); }
                             else
                             {
                                 skillMenu.reset();
@@ -2593,7 +2593,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         else if (command == "skill_area_select")
                         {
-                            if (!prologue || !skillMenu || skillMenu->page() != s2ne::OriginalSkills::Page::requested || !skillMenu->status_area_supported() || skillMenu->directional_skill() || prologue->battle_selected() < 0 || pendingSkillTarget) { throw std::runtime_error("area skill selection unavailable"); }
+                            if (!prologue || !skillMenu || skillMenu->page() != s2ne::Skills::Page::requested || !skillMenu->status_area_supported() || skillMenu->directional_skill() || prologue->battle_selected() < 0 || pendingSkillTarget) { throw std::runtime_error("area skill selection unavailable"); }
                             if (!request->contains("x") || !request->contains("y") || !request->at("x").is_number_integer() || !request->at("y").is_number_integer()) { throw std::runtime_error("skill_area_select requires integer x and y"); }
                             const s2ne::Battle::Point cell{ request->at("x").get<int>(), request->at("y").get<int>() };
                             const auto actor = size_t(prologue->battle_selected());
@@ -2651,7 +2651,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         else if (command == "skill_select")
                         {
-                            if (!skillMenu || skillMenu->page() != s2ne::OriginalSkills::Page::list || !prologue || prologue->battle_selected() < 0) { throw std::runtime_error("skill list unavailable"); }
+                            if (!skillMenu || skillMenu->page() != s2ne::Skills::Page::list || !prologue || prologue->battle_selected() < 0) { throw std::runtime_error("skill list unavailable"); }
                             if (!request->contains("skill_id") || !request->at("skill_id").is_number_integer()) { throw std::runtime_error("skill_select requires integer skill_id"); }
                             const int id = request->at("skill_id").get<int>();
                             auto candidate = *skillMenu;
@@ -2662,7 +2662,7 @@ int s2ne::run_application(int argc, char** argv)
                                     return prologue->battle().cell({ x, y }).elevation;
                                 });
                             const auto failure = candidate.select(actor, partner ? &prologue->events.units[*partner] : nullptr, candidate.ai_summon_available(actor, prologue->events));
-                            if (failure != s2ne::OriginalSkills::Failure::none) { throw std::runtime_error("original skill selection rejected: " + std::to_string(int(failure))); }
+                            if (failure != s2ne::Skills::Failure::none) { throw std::runtime_error("original skill selection rejected: " + std::to_string(int(failure))); }
                             *skillMenu = std::move(candidate);
                             sleepCenter.reset();
                             skillTarget.reset();
@@ -2813,8 +2813,8 @@ int s2ne::run_application(int argc, char** argv)
                 {
                     if (!prologue->events.ending_statistics)
                     {
-                        auto captured = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
-                        auto restored = s2ne::OriginalSaveBridge::restore(root, captured);
+                        auto captured = s2ne::SaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                        auto restored = s2ne::SaveBridge::restore(root, captured);
                         prologue->events = std::move(restored.events);
                         prologue->restore_terminal_ending();
                     }
@@ -2840,7 +2840,7 @@ int s2ne::run_application(int argc, char** argv)
                     const auto proposal = *prologue->battle().ai_skill_request();
                     const auto actorIndex = prologue->battle().ai_skill_actor().value_or(size_t(prologue->battle_selected()));
                     const auto& actor = prologue->events.units.at(actorIndex);
-                    s2ne::OriginalSkills::Context context{};
+                    s2ne::Skills::Context context{};
                     context.second = proposal.second;
                     context.computer = true;
                     context.army_da_nonzero = prologue->events.army_modes && (*prologue->events.army_modes)[actor.hostile() ? 1 : 0] != 0;
@@ -2858,8 +2858,8 @@ int s2ne::run_application(int argc, char** argv)
                                 return prologue->battle().cell({ x, y }).elevation;
                             });
                     }
-                    const auto selectionFailure = found ? skillMenu->select(actor, partner ? &prologue->events.units[*partner] : nullptr, skillMenu->ai_summon_available(actor, prologue->events)) : s2ne::OriginalSkills::Failure::world_unresolved;
-                    if (selectionFailure != s2ne::OriginalSkills::Failure::none)
+                    const auto selectionFailure = found ? skillMenu->select(actor, partner ? &prologue->events.units[*partner] : nullptr, skillMenu->ai_summon_available(actor, prologue->events)) : s2ne::Skills::Failure::world_unresolved;
+                    if (selectionFailure != s2ne::Skills::Failure::none)
                     {
                         s2ne::report_error(s2ne::make_error("470EF6 selected AI skill failed live eligibility: skill=" + std::to_string(proposal.id)
                             + " failure=" + std::to_string(int(selectionFailure)) + " ap=" + std::to_string(actor.action_points)
@@ -2931,7 +2931,7 @@ int s2ne::run_application(int argc, char** argv)
                             std::optional<unsigned> partnerVisual;
                             if (partner) { partnerVisual = unsigned(*partner); }
                             std::vector<unsigned> targets;
-                            if (status_skill == 78 || (NativeDamageRecords::find(status_skill) && NativeDamageRecords::find(status_skill)->dispatch == 9))
+                            if (status_skill == 78 || (DamageRecords::find(status_skill) && DamageRecords::find(status_skill)->dispatch == 9))
                             {
                                 const auto& actor = prologue->events.units.at(performer);
                                 const auto& center = prologue->events.units.at(*pendingSkillTarget);
@@ -2943,7 +2943,7 @@ int s2ne::run_application(int argc, char** argv)
                                     targets.push_back(unsigned(i));
                                 }
                             }
-                            visualStarted = prologue->begin_skill88_visual(visual_target, skillMenu->selected().id == 1, skillMenu->selected().id == 2, sleepCenter, skillMenu->selected().id == 3, status_skill, (partner || skillMenu->fissure29_supported() || skillMenu->drain_supported() || NativeDamageRecords::find(status_skill)) ? performer : visual_target, partnerVisual, std::move(targets), &visualError);
+                            visualStarted = prologue->begin_skill88_visual(visual_target, skillMenu->selected().id == 1, skillMenu->selected().id == 2, sleepCenter, skillMenu->selected().id == 3, status_skill, (partner || skillMenu->fissure29_supported() || skillMenu->drain_supported() || DamageRecords::find(status_skill)) ? performer : visual_target, partnerVisual, std::move(targets), &visualError);
                         }
                         else
                         {
@@ -2999,7 +2999,7 @@ int s2ne::run_application(int argc, char** argv)
                     int selected = prologue->battle_selected();
                     auto target = *pendingSkillTarget;
                     pendingSkillTarget.reset();
-                    s2ne::OriginalSkills::HostileResult result;
+                    s2ne::Skills::HostileResult result;
                     bool swordFeedbackPending = false;
                     size_t growthAwardCursor = 0;
                     bool applied = false;
@@ -3010,7 +3010,7 @@ int s2ne::run_application(int argc, char** argv)
                             {
                                 if (!skillGrowthSeconds) { skillGrowthSeconds = seconds; }
                                 seconds = *skillGrowthSeconds;
-                                s2ne::OriginalSkills::ExecutionContext context;
+                                s2ne::Skills::ExecutionContext context;
                                 context.difficulty = prologue->events.difficulty;
                                 context.friendly_army = !prologue->events.units.at(size_t(selected)).hostile();
                                 context.seconds = seconds;
@@ -3030,8 +3030,8 @@ int s2ne::run_application(int argc, char** argv)
                                     // 原4659BD电脑施法跳熟练；458B03军DA==1仍累积经验并调用459309。
                                     if (!aiSkillActive && !skillMenu->item_source()) { promotionTransaction.award_proficiency(unit, 6 + group, unsigned(proficiency)); }
                                     auto learnedName = promotionTransaction.newly_learned_name(beforeLearning, unit, group);
-                                    s2ne::OriginalRandom native({ stream.seed_state(), stream.draw_count() });
-                                    s2ne::OriginalProgression progression(root);
+                                    s2ne::RandomStream native({ stream.seed_state(), stream.draw_count() });
+                                    s2ne::Progression progression(root);
                                     const bool hostileReward = unit.hostile() && prologue->events.army_modes && (*prologue->events.army_modes)[1] == 1;
                                     if (unit.hostile() && !hostileReward)
                                     {
@@ -3068,11 +3068,11 @@ int s2ne::run_application(int argc, char** argv)
                                 {
                                     auto& actor = prologue->events.units.at(size_t(selected));
                                     auto& victim = prologue->events.units.at(target);
-                                    if (!rawSave || !s2ne::OriginalSkill94Transaction::target_supported(prologue->events, victim))
+                                    if (!rawSave || !s2ne::Skill94Transaction::target_supported(prologue->events, victim))
                                     {
                                         return false;
                                     }
-                                    s2ne::OriginalSkill94Transaction::Context sword;
+                                    s2ne::Skill94Transaction::Context sword;
                                     sword.player_controlled = prologue->battle().player_controlled(actor, size_t(selected));
                                     sword.original_second_partition = true;
                                     sword.target_runtime_known = true;
@@ -3106,8 +3106,8 @@ int s2ne::run_application(int argc, char** argv)
                                     {
                                         // The accepted transaction remains unpublished through468BAC's
                                         // numbers. Do not invoke physical settlement/reward a second time.
-                                        auto finalActor = std::make_shared<s2ne::OriginalEvents::Unit>(std::move(stagedActor));
-                                        auto finalVictim = std::make_shared<s2ne::OriginalEvents::Unit>(std::move(stagedVictim));
+                                        auto finalActor = std::make_shared<s2ne::Events::Unit>(std::move(stagedActor));
+                                        auto finalVictim = std::make_shared<s2ne::Events::Unit>(std::move(stagedVictim));
                                         auto inventory = std::make_shared<std::vector<uint8_t>>(std::move(stagedInventory));
                                         auto seed = stagedRandom.seed_state(), calls = stagedRandom.draw_count();
                                         swordFeedbackPending = prologue->battle().begin_skill94_feedback(size_t(selected), target, victim.hp, outcome.damage, [&, selected, target, finalActor, finalVictim, inventory, seed, calls, outcome]()
@@ -3126,7 +3126,7 @@ int s2ne::run_application(int argc, char** argv)
                                                     publishItemSpell();
                                                     prologue->battle().commit_external_action();
                                                     skillCastVerified = true;
-                                                    *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                                    *rawSave = s2ne::SaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                                                     std::print("Original94 feedback/death complete; staged HP/reward/ST/AP/inventory/RNG published once\n");
                                                 };
                                                 if (finalVictim->hp == 0)
@@ -3196,29 +3196,29 @@ int s2ne::run_application(int argc, char** argv)
                                     });
                                 auto stream = rng;
                                 const auto handler = menu.handler(menu.summon_supported());
-                                const bool healing = handler == s2ne::OriginalSkills::Handler::healing465C14;
-                                const bool status = handler == s2ne::OriginalSkills::Handler::status4668F0;
+                                const bool healing = handler == s2ne::Skills::Handler::healing465C14;
+                                const bool status = handler == s2ne::Skills::Handler::status4668F0;
                                 auto indices = menu.collect_targets(a, center, prologue->events.units, prologue->battle_turn(), [&](int x, int y)
                                     {
                                         return prologue->battle().skill_area_cell({ x, y });
                                     });
-                                if (handler == s2ne::OriginalSkills::Handler::army4666C5) { indices.clear(); }
-                                if (handler == s2ne::OriginalSkills::Handler::summon465E04) { indices.clear(); }
-                                if (handler == s2ne::OriginalSkills::Handler::transfer4665D8) { indices = { target }; }
-                                std::vector<s2ne::OriginalEvents::Unit> victims;
+                                if (handler == s2ne::Skills::Handler::army4666C5) { indices.clear(); }
+                                if (handler == s2ne::Skills::Handler::summon465E04) { indices.clear(); }
+                                if (handler == s2ne::Skills::Handler::transfer4665D8) { indices = { target }; }
+                                std::vector<s2ne::Events::Unit> victims;
                                 for (auto i : indices) { victims.push_back(prologue->events.units[i]); }
                                 auto partnerIndex = menu.cooperative_partner(a, prologue->events.units, prologue->battle_turn(), [&](int x, int y)
                                     {
                                         return prologue->battle().cell({ x, y }).elevation;
                                     });
-                                std::optional<s2ne::OriginalEvents::Unit> partner;
+                                std::optional<s2ne::Events::Unit> partner;
                                 if (partnerIndex) { partner = prologue->events.units[*partnerIndex]; }
                                 if (menu.damage_supported())
                                 {
-                                    std::vector<s2ne::OriginalSkill94Transaction::Context> contexts;
+                                    std::vector<s2ne::Skill94Transaction::Context> contexts;
                                     for (const auto& victim : victims)
                                     {
-                                        s2ne::OriginalSkill94Transaction::Context damage;
+                                        s2ne::Skill94Transaction::Context damage;
                                         damage.computer = aiSkillActive;
                                         damage.player_controlled = prologue->battle().player_controlled(a, size_t(selected));
                                         damage.damage.friendly_army = !a.hostile();
@@ -3290,18 +3290,18 @@ int s2ne::run_application(int argc, char** argv)
                                             publishItemSpell();
                                             prologue->battle().commit_external_action();
                                             skillCastVerified = true;
-                                            *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                            *rawSave = s2ne::SaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                                             std::print("Original466082 area damage published once targets={}\n", indices.size());
                                         });
                                     if (!swordFeedbackPending) { s2ne::fatal("466082 feedback staging rejected"); }
                                     return false;
                                 }
                                 auto drainInventory = rawSave->groups[a.hostile() ? 1 : 0].inventory;
-                                std::optional<s2ne::OriginalSave::State> summonedSave;
-                                std::optional<s2ne::OriginalEvents> summonedEvents;
+                                std::optional<s2ne::Save::State> summonedSave;
+                                std::optional<s2ne::Events> summonedEvents;
                                 unsigned summonedIndex = 0;
-                                s2ne::OriginalSkills::SummonAdapter summonAdapter;
-                                if (handler == s2ne::OriginalSkills::Handler::summon465E04)
+                                s2ne::Skills::SummonAdapter summonAdapter;
+                                if (handler == s2ne::Skills::Handler::summon465E04)
                                 {
                                     summonAdapter = [&](const auto& caster, unsigned slot, auto& stagedRandom)
                                     {
@@ -3316,19 +3316,19 @@ int s2ne::run_application(int argc, char** argv)
                                         const unsigned appearance = slots[slot * 3 + 1] | unsigned(slots[slot * 3 + 2]) << 8;
                                         const auto destination = prologue->battle().spell_summon_destination(caster, appearance, prologue->events.units);
                                         if (!destination) { return false; }
-                                        auto before = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                        auto before = s2ne::SaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                                         if (!before)
                                         {
                                             s2ne::report_error(before.error());
                                             return false;
                                         }
-                                        s2ne::OriginalInitialization initialization(root);
-                                        s2ne::OriginalPromotion promotion(root);
-                                        s2ne::OriginalRandom growth({ stagedRandom.seed_state(), stagedRandom.draw_count() });
+                                        s2ne::Initialization initialization(root);
+                                        s2ne::Promotion promotion(root);
+                                        s2ne::RandomStream growth({ stagedRandom.seed_state(), stagedRandom.draw_count() });
                                         unsigned control = caster.behavior == 0 ? 0 : 1;
                                         if (caster.action_status_runtime) { control = unsigned(caster.action_status_runtime->at(8)) | unsigned(caster.action_status_runtime->at(9)) << 8; }
                                         // MOV [caster+128h],SAR16 reads signed WORD12Ah (SP), not ST128h.
-                                        auto created = initialization.try_summon_role(before.value(), prologue->events, army, slot, s2ne::OriginalSkills::summon_level(caster), destination->x, destination->y, control ? 1 : 0, growth, promotion, [seconds]
+                                        auto created = initialization.try_summon_role(before.value(), prologue->events, army, slot, s2ne::Skills::summon_level(caster), destination->x, destination->y, control ? 1 : 0, growth, promotion, [seconds]
                                             {
                                                 return seconds;
                                             });
@@ -3337,7 +3337,7 @@ int s2ne::run_application(int argc, char** argv)
                                             s2ne::report_error(created.error());
                                             return false;
                                         }
-                                        auto restored = s2ne::OriginalSaveBridge::try_restore(root, created.value());
+                                        auto restored = s2ne::SaveBridge::try_restore(root, created.value());
                                         if (!restored)
                                         {
                                             s2ne::report_error(restored.error());
@@ -3353,7 +3353,7 @@ int s2ne::run_application(int argc, char** argv)
                                         summonedSave = std::move(created).value();
                                         summonedEvents = std::move(restored).value().events;
                                         stagedRandom.restore_stream(growth.state().seed, growth.state().calls);
-                                        skillGrowthSummon = s2ne::OriginalSpellSummonCandidate{ *summonedSave, *summonedEvents, summonedIndex, growth.state().seed, growth.state().calls };
+                                        skillGrowthSummon = s2ne::SpellSummonCandidate{ *summonedSave, *summonedEvents, summonedIndex, growth.state().seed, growth.state().calls };
                                         return true;
                                     };
                                 }
@@ -3365,7 +3365,7 @@ int s2ne::run_application(int argc, char** argv)
                                     return false;
                                 }
                                 result = packet.value();
-                                if (handler == s2ne::OriginalSkills::Handler::summon465E04)
+                                if (handler == s2ne::Skills::Handler::summon465E04)
                                 {
                                     if (!summonedSave || !summonedEvents) { return false; }
                                     const auto seed = stream.seed_state(), calls = stream.draw_count();
@@ -3379,9 +3379,9 @@ int s2ne::run_application(int argc, char** argv)
                                     if (caster == staged.units.end()) { return false; }
                                     a.animation_action = 0;
                                     *caster = std::move(a);
-                                    s2ne::OriginalSpellSummonCandidate::finish_action(staged.units.at(summonedIndex));
+                                    s2ne::SpellSummonCandidate::finish_action(staged.units.at(summonedIndex));
                                     staged.rebuild_army_modes(0);
-                                    auto captured = s2ne::OriginalSaveBridge::try_capture(staged, prologue->battle_turn(), prologue->camera(), &*summonedSave);
+                                    auto captured = s2ne::SaveBridge::try_capture(staged, prologue->battle_turn(), prologue->camera(), &*summonedSave);
                                     if (!captured)
                                     {
                                         s2ne::report_error(captured.error());
@@ -3415,7 +3415,7 @@ int s2ne::run_application(int argc, char** argv)
                                     swordFeedbackPending = true;
                                     return false;
                                 }
-                                if (handler == s2ne::OriginalSkills::Handler::transfer4665D8)
+                                if (handler == s2ne::Skills::Handler::transfer4665D8)
                                 {
                                     if (!transferSource || !transferDestination || indices.size() != 1 || indices[0] != *transferSource) { return false; }
                                     const auto destinations = prologue->battle().spell_transfer_destinations(prologue->events.units.at(size_t(selected)), prologue->events.units.at(*transferSource), prologue->events.units);
@@ -3447,7 +3447,7 @@ int s2ne::run_application(int argc, char** argv)
                                                 publishItemSpell();
                                                 prologue->battle().commit_external_action();
                                                 skillCastVerified = true;
-                                                *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                                *rawSave = s2ne::SaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                                                 std::print("Original45DB10 transfer arrival published once\n");
                                             }))
                                     {
@@ -3456,7 +3456,7 @@ int s2ne::run_application(int argc, char** argv)
                                     swordFeedbackPending = true;
                                     return false;
                                 }
-                                if (handler == s2ne::OriginalSkills::Handler::drain467625 || handler == s2ne::OriginalSkills::Handler::fissure467625)
+                                if (handler == s2ne::Skills::Handler::drain467625 || handler == s2ne::Skills::Handler::fissure467625)
                                 {
                                     auto presentation = std::make_shared<std::vector<s2ne::Prologue::DamagePresentation>>();
                                     for (size_t n = 0; n < indices.size(); ++n)
@@ -3466,7 +3466,7 @@ int s2ne::run_application(int argc, char** argv)
                                         presentation->push_back({ unsigned(indices[n]), prologue->events.units[indices[n]].hp, outcome.damage,
                                             outcome.healing, outcome.snapshot, outcome.killed, outcome.revived, outcome.reverse, victims[n],
                                             skillMenu->selected().effect(), outcome.caster_before, a.max_hp, outcome.reversed_damage, outcome.hit,
-                                            handler == s2ne::OriginalSkills::Handler::fissure467625 && outcome.hit });
+                                            handler == s2ne::Skills::Handler::fissure467625 && outcome.hit });
                                     }
                                     const auto seed = stream.seed_state(), calls = stream.draw_count();
                                     swordFeedbackPending = prologue->begin_damage_area_feedback(unsigned(selected), presentation, 0,
@@ -3491,7 +3491,7 @@ int s2ne::run_application(int argc, char** argv)
                                             publishItemSpell();
                                             prologue->battle().commit_external_action();
                                             skillCastVerified = true;
-                                            *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                            *rawSave = s2ne::SaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                                             std::print("Original467625 drain feedback/payment/reward published once\n");
                                         });
                                     if (!swordFeedbackPending) { s2ne::fatal("467625 drain feedback staging rejected"); }
@@ -3502,7 +3502,7 @@ int s2ne::run_application(int argc, char** argv)
                                 {
                                     const auto& viewed = prologue->events.units.at(target);
                                     const auto camera = prologue->camera();
-                                    s2ne::OriginalMenu sightFont(root);
+                                    s2ne::Menu sightFont(root);
                                     auto panelTarget = viewed;
 
                                     auto background = prologue->prepare_spirit_sight_background();
@@ -3512,7 +3512,7 @@ int s2ne::run_application(int argc, char** argv)
                                         return false;
                                     }
                                     auto indices = std::move(background.value().second);
-                                    auto panel = s2ne::OriginalSpiritSight(root).draw(std::move(background.value().first), sightFont, prologue->events, panelTarget,
+                                    auto panel = s2ne::SpiritSight(root).draw(std::move(background.value().first), sightFont, prologue->events, panelTarget,
                                         viewed.x * 64 + (viewed.y & 1) * 32 - camera.first, &indices);
                                     if (!panel)
                                     {
@@ -3534,13 +3534,13 @@ int s2ne::run_application(int argc, char** argv)
                                         publishItemSpell();
                                         prologue->battle().commit_external_action();
                                         skillCastVerified = true;
-                                        *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                        *rawSave = s2ne::SaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                                     };
                                     swordFeedbackPending = true;
                                     showPrologue();
                                     return false;
                                 }
-                                std::optional<s2ne::OriginalMap> preparedInvisibility;
+                                std::optional<s2ne::Map> preparedInvisibility;
                                 if (revealArmy)
                                 {
                                     auto prepared = prologue->prepare_army_reveal_world(a.hostile(), false);
@@ -3592,7 +3592,7 @@ int s2ne::run_application(int argc, char** argv)
                                         publishItemSpell();
                                         prologue->battle().commit_external_action();
                                         skillCastVerified = true;
-                                        *rawSave = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                                        *rawSave = s2ne::SaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                                         std::print("Original area feedback complete; all statuses/timers/payment/reward/RNG published once targets={}\n", indices.size());
                                     },
                                     healing || status || revealArmy, result.target_amounts, healing);
@@ -3637,7 +3637,7 @@ int s2ne::run_application(int argc, char** argv)
                         publishItemSpell();
                         prologue->battle().commit_external_action();
                         skillCastVerified = true;
-                        auto snapshot = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                        auto snapshot = s2ne::SaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
 
                         *rawSave = std::move(snapshot);
                     }
@@ -3769,7 +3769,7 @@ int s2ne::run_application(int argc, char** argv)
                 {
                     if (!event.key.repeat)
                     {
-                        auto saved = s2ne::OriginalSpiritSight(root).save_screenshot(isolatedSaveRoot ? *isolatedSaveRoot : root, *spiritSightImage, screenshotSequence, spiritSightIndices);
+                        auto saved = s2ne::SpiritSight(root).save_screenshot(isolatedSaveRoot ? *isolatedSaveRoot : root, *spiritSightImage, screenshotSequence, spiritSightIndices);
                         if (!saved) { s2ne::report_error(saved.error()); }
                     }
                     continue;
@@ -3864,7 +3864,7 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     if (innMenu->take_equipment_changed())
                     {
-                        s2ne::OriginalChurch::sync_roster(*rawSave, prologue->events);
+                        s2ne::Church::sync_roster(*rawSave, prologue->events);
                     }
                     if (auto loaded = innMenu->take_loaded())
                     {
@@ -3900,12 +3900,12 @@ int s2ne::run_application(int argc, char** argv)
                         innMenu.reset();
                         prologue->set_interbattle_adapter([](auto request)
                             {
-                                return request.option == 1 ? s2ne::OriginalInterbattle::Result::returned : s2ne::OriginalInterbattle::Result::unsupported;
+                                return request.option == 1 ? s2ne::Interbattle::Result::returned : s2ne::Interbattle::Result::unsupported;
                             });
                         prologue->campaign_scan(0);
                         prologue->set_interbattle_adapter([](auto)
                             {
-                                return s2ne::OriginalInterbattle::Result::unsupported;
+                                return s2ne::Interbattle::Result::unsupported;
                             });
                     }
                     showPrologue();
@@ -3934,7 +3934,7 @@ int s2ne::run_application(int argc, char** argv)
                     {
                         battleEquipmentChanged = true;
                         const auto live = prologue->events.units;
-                        auto synced = s2ne::OriginalChurch::try_sync_roster(*rawSave, prologue->events);
+                        auto synced = s2ne::Church::try_sync_roster(*rawSave, prologue->events);
                         if (!synced) { s2ne::report_error(synced.error()); }
                         else
                         {
@@ -3983,7 +3983,7 @@ int s2ne::run_application(int argc, char** argv)
                         {
                             if (!selfUse) { s2ne::legacy_event_coordinates(renderer, &event); }
                             auto [actor, id] = *itemTargetRequest;
-                            auto snapshot = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                            auto snapshot = s2ne::SaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                             if (!snapshot) { s2ne::report_error(snapshot.error()); }
                             else
                             {
@@ -4025,7 +4025,7 @@ int s2ne::run_application(int argc, char** argv)
                         auto code = s2ne::original_menu_scan(event.key.key, s2ne::MenuKeys::tabbed_navigation);
                         if (churchMenu->scan(code, *rawSave))
                         {
-                            s2ne::OriginalChurch::sync_roster(*rawSave, prologue->events);
+                            s2ne::Church::sync_roster(*rawSave, prologue->events);
                         }
                     }
                     else if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
@@ -4033,24 +4033,24 @@ int s2ne::run_application(int argc, char** argv)
                         float x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x, y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y, rx{}, ry{};
                         if (s2ne::legacy_coordinates_from_window(renderer, x, y, &rx, &ry) && churchMenu->mouse(int(rx), int(ry), event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT, *rawSave))
                         {
-                            s2ne::OriginalChurch::sync_roster(*rawSave, prologue->events);
+                            s2ne::Church::sync_roster(*rawSave, prologue->events);
                         }
                     }
                     if (!churchMenu->blocker().empty())
                     {
                         std::print(stderr, "Original church unavailable: {}\n", churchMenu->blocker());
                     }
-                    if (churchMenu->page() == s2ne::OriginalChurch::Page::closed)
+                    if (churchMenu->page() == s2ne::Church::Page::closed)
                     {
                         churchMenu.reset();
                         prologue->set_interbattle_adapter([](auto request)
                             {
-                                return request.option == 3 ? s2ne::OriginalInterbattle::Result::returned : s2ne::OriginalInterbattle::Result::unsupported;
+                                return request.option == 3 ? s2ne::Interbattle::Result::returned : s2ne::Interbattle::Result::unsupported;
                             });
                         prologue->campaign_scan(0);
                         prologue->set_interbattle_adapter([](auto)
                             {
-                                return s2ne::OriginalInterbattle::Result::unsupported;
+                                return s2ne::Interbattle::Result::unsupported;
                             });
                     }
                     showPrologue();
@@ -4063,7 +4063,7 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 if (shopMenu && rawSave)
                 {
-                    shopMenu->clock(options.headlessSpeed ? unsigned(gameTicks() / 10) : s2ne::OriginalShopMenu::wall_clock_cs());
+                    shopMenu->clock(options.headlessSpeed ? unsigned(gameTicks() / 10) : s2ne::ShopMenu::wall_clock_cs());
                     if (event.type == SDL_EVENT_MOUSE_BUTTON_UP)
                     {
                         shopMenu->release_scroll();
@@ -4073,7 +4073,7 @@ int s2ne::run_application(int argc, char** argv)
                         auto code = s2ne::original_menu_scan(event.key.key, s2ne::MenuKeys::tabbed_navigation);
                         if (shopMenu->scan(code, *rawSave))
                         {
-                            s2ne::OriginalChurch::sync_roster(*rawSave, prologue->events);
+                            s2ne::Church::sync_roster(*rawSave, prologue->events);
                         }
                     }
                     else if (event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
@@ -4081,20 +4081,20 @@ int s2ne::run_application(int argc, char** argv)
                         float x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x, y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y, rx{}, ry{};
                         if (s2ne::legacy_coordinates_from_window(renderer, x, y, &rx, &ry) && shopMenu->mouse(int(rx), int(ry), event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT, *rawSave))
                         {
-                            s2ne::OriginalChurch::sync_roster(*rawSave, prologue->events);
+                            s2ne::Church::sync_roster(*rawSave, prologue->events);
                         }
                     }
-                    if (shopMenu->page() == s2ne::OriginalShopMenu::Page::closed)
+                    if (shopMenu->page() == s2ne::ShopMenu::Page::closed)
                     {
                         shopMenu.reset();
                         prologue->set_interbattle_adapter([](auto request)
                             {
-                                return request.option == 2 ? s2ne::OriginalInterbattle::Result::returned : s2ne::OriginalInterbattle::Result::unsupported;
+                                return request.option == 2 ? s2ne::Interbattle::Result::returned : s2ne::Interbattle::Result::unsupported;
                             });
                         prologue->campaign_scan(0);
                         prologue->set_interbattle_adapter([](auto)
                             {
-                                return s2ne::OriginalInterbattle::Result::unsupported;
+                                return s2ne::Interbattle::Result::unsupported;
                             });
                     }
                     showPrologue();
@@ -4174,7 +4174,7 @@ int s2ne::run_application(int argc, char** argv)
                                 showPrologue();
                                 continue;
                             }
-                            if (skillMenu->page() == s2ne::OriginalSkills::Page::requested && !itemSpellSource)
+                            if (skillMenu->page() == s2ne::Skills::Page::requested && !itemSpellSource)
                             {
                                 skillMenu->resume();
                                 sleepCenter.reset();
@@ -4195,7 +4195,7 @@ int s2ne::run_application(int argc, char** argv)
                             showPrologue();
                             continue;
                         }
-                        if (skillMenu->page() == s2ne::OriginalSkills::Page::list)
+                        if (skillMenu->page() == s2ne::Skills::Page::list)
                         {
                             if (event.key.key == SDLK_F1)
                             {
@@ -4225,7 +4225,7 @@ int s2ne::run_application(int argc, char** argv)
                         {
                             confirm = true;
                         }
-                        if (event.key.key == SDLK_TAB && skillMenu->selected().id != 88 && skillMenu->page() == s2ne::OriginalSkills::Page::requested)
+                        if (event.key.key == SDLK_TAB && skillMenu->selected().id != 88 && skillMenu->page() == s2ne::Skills::Page::requested)
                         {
                             const auto& actor = prologue->events.units.at(size_t(selected));
                             for (size_t n = 1; n <= prologue->events.units.size(); ++n)
@@ -4256,7 +4256,7 @@ int s2ne::run_application(int argc, char** argv)
                                 showPrologue();
                                 continue;
                             }
-                            if (skillMenu->page() == s2ne::OriginalSkills::Page::requested && !itemSpellSource)
+                            if (skillMenu->page() == s2ne::Skills::Page::requested && !itemSpellSource)
                             {
                                 skillMenu->resume();
                                 sleepCenter.reset();
@@ -4278,7 +4278,7 @@ int s2ne::run_application(int argc, char** argv)
                             continue;
                         }
                         int x = int(click ? event.button.x : event.motion.x), y = int(click ? event.button.y : event.motion.y);
-                        if (skillMenu->page() == s2ne::OriginalSkills::Page::list)
+                        if (skillMenu->page() == s2ne::Skills::Page::list)
                         {
                             const auto oldGroup = skillMenu->selected_group();
                             const auto oldSkill = skillMenu->selected_skill();
@@ -4332,14 +4332,14 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     if (confirm && selected >= 0)
                     {
-                        if (skillMenu->page() == s2ne::OriginalSkills::Page::list)
+                        if (skillMenu->page() == s2ne::Skills::Page::list)
                         {
                             const auto& actor = prologue->events.units.at(size_t(selected));
                             auto partner = skillMenu->cooperative_partner(actor, prologue->events.units, prologue->battle_turn(), [&](int x, int y)
                                 {
                                     return prologue->battle().cell({ x, y }).elevation;
                                 });
-                            const s2ne::OriginalEvents::Unit* partnerUnit = nullptr;
+                            const s2ne::Events::Unit* partnerUnit = nullptr;
                             if (partner) { partnerUnit = &prologue->events.units[*partner]; }
                             bool summonReady = false;
                             if (skillMenu->summon_supported() && prologue->events.army_status)
@@ -4352,7 +4352,7 @@ int s2ne::run_application(int argc, char** argv)
                                 }
                             }
                             auto failure = skillMenu->select(actor, partnerUnit, summonReady);
-                            if (failure != s2ne::OriginalSkills::Failure::none)
+                            if (failure != s2ne::Skills::Failure::none)
                             {
                                 std::print(stderr, "Original spell selection rejected reason={}\n", int(failure));
                             }
@@ -4410,7 +4410,7 @@ int s2ne::run_application(int argc, char** argv)
                             }
                             const auto& caster = prologue->events.units.at(size_t(selected));
                             const auto& target = prologue->events.units.at(*skillTarget);
-                            if (skillMenu->selected().id == 94 && !s2ne::OriginalSkill94Transaction::target_supported(prologue->events, target))
+                            if (skillMenu->selected().id == 94 && !s2ne::Skill94Transaction::target_supported(prologue->events, target))
                             {
                                 std::print("Original94 unsupported death/runtime target rejected before preparation/payment\n");
                                 continue;
@@ -4484,7 +4484,7 @@ int s2ne::run_application(int argc, char** argv)
                             if (selected >= 0 && prologue->in_battle())
                             {
                                 auto& unit = prologue->events.units.at(size_t(selected));
-                                s2ne::OriginalPromotionTransaction::State candidate{ unit, rawSave->groups[0].inventory, s2ne::OriginalRandom({ 1, 0 }) };
+                                s2ne::PromotionTransaction::State candidate{ unit, rawSave->groups[0].inventory, s2ne::RandomStream({ 1, 0 }) };
                                 if (promotionTransaction.use_learning_item(candidate, usableItems.at(usableItemSelection)))
                                 {
                                     unit = std::move(candidate.unit);
@@ -4502,7 +4502,7 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 if (settings)
                 {
-                    s2ne::OriginalSettings::Event input;
+                    s2ne::Settings::Event input;
                     if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
                     {
                         input.type = 1;
@@ -4559,7 +4559,7 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 if (saveMenu && !battleMenu)
                 {
-                    s2ne::OriginalSaveMenu::Event input;
+                    s2ne::SaveMenu::Event input;
                     if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
                     {
                         input.type = 1;
@@ -4595,14 +4595,14 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     auto result = saveMenu->event(input);
                     saveMenuRedraw = saveMenuRedraw || result.changed;
-                    if (result.action == s2ne::OriginalSaveMenu::Action::load)
+                    if (result.action == s2ne::SaveMenu::Action::load)
                     {
                         saveMenuRedraw = true;
-                        auto loadResult = s2ne::OriginalSave::try_load(s2ne::OriginalSave::slot_path(isolatedSaveRoot ? *isolatedSaveRoot : root, result.slot), saveItems);
+                        auto loadResult = s2ne::Save::try_load(s2ne::Save::slot_path(isolatedSaveRoot ? *isolatedSaveRoot : root, result.slot), saveItems);
                         if (loadResult)
                         {
                             auto state = std::move(loadResult).value();
-                            auto restoreResult = s2ne::OriginalSaveBridge::try_restore(root, state);
+                            auto restoreResult = s2ne::SaveBridge::try_restore(root, state);
                             if (!restoreResult)
                             {
                                 s2ne::report_error(restoreResult.error());
@@ -4656,7 +4656,7 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 if (battleReports && !battleMenu)
                 {
-                    s2ne::OriginalSettings::Event input;
+                    s2ne::Settings::Event input;
                     if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
                     {
                         input.type = 1;
@@ -4688,7 +4688,7 @@ int s2ne::run_application(int argc, char** argv)
                         input.buttons = mouseButtons;
                     }
                     battleReports->event(input);
-                    if (battleReports->page() == s2ne::OriginalBattleReports::Page::closed)
+                    if (battleReports->page() == s2ne::BattleReports::Page::closed)
                     {
                         battleReports.reset();
                     }
@@ -4697,7 +4697,7 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 if (promotionMenu)
                 {
-                    s2ne::OriginalSettings::Event input;
+                    s2ne::Settings::Event input;
                     if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
                     {
                         input.type = 1;
@@ -4728,7 +4728,7 @@ int s2ne::run_application(int argc, char** argv)
                         input.buttons = mouseButtons;
                     }
                     promotionMenu->event(input);
-                    if (promotionMenu->page() == s2ne::OriginalPromotion::Page::closed)
+                    if (promotionMenu->page() == s2ne::Promotion::Page::closed)
                     {
                         auto stopped = stopEffects();
                         if (!stopped) { s2ne::report_error(stopped.error()); }
@@ -4742,7 +4742,7 @@ int s2ne::run_application(int argc, char** argv)
                     if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_MOUSE_MOTION || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
                     }
-                    s2ne::OriginalSettings::Event input;
+                    s2ne::Settings::Event input;
                     if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
                     {
                         input.type = 1;
@@ -4778,7 +4778,7 @@ int s2ne::run_application(int argc, char** argv)
                         {
                             input.ascii = 13;
                         }
-                        s2ne::OriginalSaveMenu::Result result;
+                        s2ne::SaveMenu::Result result;
                         if (overwriteConfirmation)
                         {
                             if (input.scan == 1 || (input.buttons & 2))
@@ -4809,13 +4809,13 @@ int s2ne::run_application(int argc, char** argv)
                         {
                             result = saveMenu->event({ input.type, input.x, input.y, input.buttons, input.ascii, input.scan });
                         }
-                        if (result.action == s2ne::OriginalSaveMenu::Action::confirm_overwrite)
+                        if (result.action == s2ne::SaveMenu::Action::confirm_overwrite)
                         {
                             overwriteConfirmation.emplace(root, menu, 253, 176, 76 + 30 * saveMenu->row(), true);
                             auto stopped = stopEffects();
                             if (!stopped) { s2ne::report_error(stopped.error()); }
                         }
-                        if (result.action == s2ne::OriginalSaveMenu::Action::load || result.action == s2ne::OriginalSaveMenu::Action::save)
+                        if (result.action == s2ne::SaveMenu::Action::load || result.action == s2ne::SaveMenu::Action::save)
                         {
                             auto saveResult = [&]() -> s2ne::Result<bool>
                             {
@@ -4823,16 +4823,16 @@ int s2ne::run_application(int argc, char** argv)
                                 {
                                     return s2ne::Result<bool>::failure(s2ne::make_error("Original synchronous settlement in progress"));
                                 }
-                                auto path = s2ne::OriginalSave::slot_path(isolatedSaveRoot ? *isolatedSaveRoot : root, result.slot);
-                                if (result.action == s2ne::OriginalSaveMenu::Action::load)
+                                auto path = s2ne::Save::slot_path(isolatedSaveRoot ? *isolatedSaveRoot : root, result.slot);
+                                if (result.action == s2ne::SaveMenu::Action::load)
                                 {
-                                    auto loaded = s2ne::OriginalSave::try_load(path, saveItems);
+                                    auto loaded = s2ne::Save::try_load(path, saveItems);
                                     if (!loaded)
                                     {
                                         return s2ne::Result<bool>::failure(loaded.error());
                                     }
                                     auto state = std::move(loaded).value();
-                                    auto restoreResult = s2ne::OriginalSaveBridge::try_restore(root, state);
+                                    auto restoreResult = s2ne::SaveBridge::try_restore(root, state);
                                     if (!restoreResult)
                                     {
                                         return s2ne::Result<bool>::failure(restoreResult.error());
@@ -4866,7 +4866,7 @@ int s2ne::run_application(int argc, char** argv)
                     else if (battleReports)
                     {
                         battleReports->event(input);
-                        if (battleReports->page() == s2ne::OriginalBattleReports::Page::closed)
+                        if (battleReports->page() == s2ne::BattleReports::Page::closed)
                         {
                             if (auto location = battleReports->location())
                             {
@@ -4887,18 +4887,18 @@ int s2ne::run_application(int argc, char** argv)
                         {
                             applySettings(battleMenu->settings_state(), true);
                         }
-                        if ((oldPage == s2ne::OriginalBattleMenu::Page::root || oldPage == s2ne::OriginalBattleMenu::Page::overview || oldPage == s2ne::OriginalBattleMenu::Page::system) && battleMenu->page() == oldPage && battleMenu->selected() != oldSelection) { playEffect(100); }
-                        if (oldPage != s2ne::OriginalBattleMenu::Page::confirmation && battleMenu->page() == s2ne::OriginalBattleMenu::Page::confirmation)
+                        if ((oldPage == s2ne::BattleMenu::Page::root || oldPage == s2ne::BattleMenu::Page::overview || oldPage == s2ne::BattleMenu::Page::system) && battleMenu->page() == oldPage && battleMenu->selected() != oldSelection) { playEffect(100); }
+                        if (oldPage != s2ne::BattleMenu::Page::confirmation && battleMenu->page() == s2ne::BattleMenu::Page::confirmation)
                         {
                             auto stopped = stopEffects();
                             if (!stopped) { s2ne::report_error(stopped.error()); }
                         }
-                        if (oldPage == s2ne::OriginalBattleMenu::Page::confirmation && input.type == 1 && (input.scan == 0x39 || input.scan == 0x0f)) { playEffect(100); }
+                        if (oldPage == s2ne::BattleMenu::Page::confirmation && input.type == 1 && (input.scan == 0x39 || input.scan == 0x0f)) { playEffect(100); }
                     }
                     auto request = battleMenu->request();
-                    if (!battleReports && (request.action == s2ne::OriginalBattleMenu::Action::conditions || request.action == s2ne::OriginalBattleMenu::Action::inspect_characters || request.action == s2ne::OriginalBattleMenu::Action::inspect_map))
+                    if (!battleReports && (request.action == s2ne::BattleMenu::Action::conditions || request.action == s2ne::BattleMenu::Action::inspect_characters || request.action == s2ne::BattleMenu::Action::inspect_map))
                     {
-                        std::vector<s2ne::OriginalBattleReports::Entry> entries;
+                        std::vector<s2ne::BattleReports::Entry> entries;
                         for (const auto& unit : prologue->events.units)
                         {
                             if (unit.present(prologue->battle_turn()))
@@ -4906,16 +4906,16 @@ int s2ne::run_application(int argc, char** argv)
                                 entries.push_back({ unit, unit.hostile(), unit.npc_class() ? 1 : 0, false });
                             }
                         }
-                        s2ne::OriginalBattleReports::Page page;
-                        if (request.action == s2ne::OriginalBattleMenu::Action::conditions) { page = s2ne::OriginalBattleReports::Page::conditions; }
-                        else if (request.action == s2ne::OriginalBattleMenu::Action::inspect_map) { page = s2ne::OriginalBattleReports::Page::map; }
+                        s2ne::BattleReports::Page page;
+                        if (request.action == s2ne::BattleMenu::Action::conditions) { page = s2ne::BattleReports::Page::conditions; }
+                        else if (request.action == s2ne::BattleMenu::Action::inspect_map) { page = s2ne::BattleReports::Page::map; }
                         else
                         {
-                            page = s2ne::OriginalBattleReports::Page::roster;
+                            page = s2ne::BattleReports::Page::roster;
                         }
 
-                        std::optional<s2ne::OriginalMap> overview;
-                        if (page == s2ne::OriginalBattleReports::Page::map)
+                        std::optional<s2ne::Map> overview;
+                        if (page == s2ne::BattleReports::Page::map)
                         {
                             overview.emplace(root);
                             overview->set_dynamic_object_chains(prologue->events.dynamic_object_chains);
@@ -4925,9 +4925,9 @@ int s2ne::run_application(int argc, char** argv)
                         auto report_background = prologue->draw(menu);
                         battleReports.emplace(root, page, prologue->events, std::move(entries), std::move(report_background), overview ? &*overview : nullptr, settingsState.small_font != 0);
                     }
-                    if (!saveMenu && (request.action == s2ne::OriginalBattleMenu::Action::load || request.action == s2ne::OriginalBattleMenu::Action::save))
+                    if (!saveMenu && (request.action == s2ne::BattleMenu::Action::load || request.action == s2ne::BattleMenu::Action::save))
                     {
-                        saveMenu.emplace(root, request.action == s2ne::OriginalBattleMenu::Action::save ? 1 : 0, s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root));
+                        saveMenu.emplace(root, request.action == s2ne::BattleMenu::Action::save ? 1 : 0, s2ne::SaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root));
                     }
                     if (auto code = battleMenu->return_code())
                     {
@@ -4962,8 +4962,8 @@ int s2ne::run_application(int argc, char** argv)
                         {
                             auto stopped = stopEffects();    // 原431DE8入口停止效果音，并非所有模态窗口都停止。
                             if (!stopped) { s2ne::report_error(stopped.error()); }
-                            auto slots = s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root);
-                            s2ne::OriginalBattleMenu::Context context;
+                            auto slots = s2ne::SaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root);
+                            s2ne::BattleMenu::Context context;
                             context.saves_present = std::any_of(slots.begin(), slots.end(), [](const auto& slot)
                                 {
                                     return slot.occupied();
@@ -5117,7 +5117,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (menu.selected == 1)
                         {
-                            saveMenu.emplace(root, 0, s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root));
+                            saveMenu.emplace(root, 0, s2ne::SaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root));
                             continue;
                         }
                         if (menu.selected == 4)
@@ -5186,7 +5186,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (menu.selected == 1)
                         {
-                            saveMenu.emplace(root, 0, s2ne::OriginalSaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root));
+                            saveMenu.emplace(root, 0, s2ne::SaveMenu::scan(isolatedSaveRoot ? *isolatedSaveRoot : root));
                             continue;
                         }
                         if (menu.selected == 4)
@@ -5262,11 +5262,11 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (prologue && rawSave && prologue->pending_story_route())
             {
-                auto captured = s2ne::OriginalSaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                auto captured = s2ne::SaveBridge::capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                 auto next = campaignAdapter.deploy_next(captured);
                 auto staged = initialization.transition_stage(root, captured, next);
                 auto disc = s2ne::update_app_domain_for_stage(staged);
-                auto restored = s2ne::OriginalSaveBridge::restore(root, staged);
+                auto restored = s2ne::SaveBridge::restore(root, staged);
                 prologue->set_resource_domain(disc);
                 prologue->clear_autosave_requests();
                 auto publication = prologue->try_resume_campaign_story_route(std::move(restored.events));
@@ -5289,7 +5289,7 @@ int s2ne::run_application(int argc, char** argv)
                     {
                         innMenu.emplace(root, s2ne::app_domain_for_save(*rawSave));
                         innMenu->set_save_root(isolatedSaveRoot ? *isolatedSaveRoot : root);
-                        innMenu->set_save_writer([&](unsigned slot, const s2ne::OriginalSave::State& baseline) -> s2ne::Result<s2ne::OriginalSave::State>
+                        innMenu->set_save_writer([&](unsigned slot, const s2ne::Save::State& baseline) -> s2ne::Result<s2ne::Save::State>
                             {
                                 return captureCampaignSave(slot, &baseline, prologue->battle_turn());
                             });
@@ -5314,19 +5314,19 @@ int s2ne::run_application(int argc, char** argv)
                                 return prologue->interbattle_random([&](auto& rng, uint32_t seconds)
                                     {
                                         auto candidateRandom = rng;
-                                        auto captured = s2ne::OriginalChurch::try_promote(root, save, index, request, candidateRandom, seconds);
+                                        auto captured = s2ne::Church::try_promote(root, save, index, request, candidateRandom, seconds);
                                         if (!captured)
                                         {
                                             s2ne::report_error(captured.error());
                                             return false;
                                         }
-                                        auto validated = s2ne::OriginalSaveBridge::try_restore(root, captured.value());
+                                        auto validated = s2ne::SaveBridge::try_restore(root, captured.value());
                                         if (!validated)
                                         {
                                             s2ne::report_error(validated.error());
                                             return false;
                                         }
-                                        auto encoded = s2ne::OriginalSave::try_encode(captured.value(), saveItems);
+                                        auto encoded = s2ne::Save::try_encode(captured.value(), saveItems);
                                         if (!encoded)
                                         {
                                             s2ne::report_error(encoded.error());
@@ -5341,19 +5341,19 @@ int s2ne::run_application(int argc, char** argv)
                             });
                         churchMenu->set_donation([&](auto& save)
                             {
-                                if (s2ne::OriginalChurch::supported(save))
+                                if (s2ne::Church::supported(save))
                                 {
-                                    return s2ne::OriginalChurch::donate(save);
+                                    return s2ne::Church::donate(save);
                                 }
                                 return prologue->interbattle_random([&](auto& rng, uint32_t seconds)
                                     {
                                         auto stagedSave = save;
                                         auto stagedEvents = prologue->events;
-                                        if (!s2ne::OriginalChurch::donate_native(root, stagedSave, rng, seconds))
+                                        if (!s2ne::Church::donate_native(root, stagedSave, rng, seconds))
                                         {
                                             return false;
                                         }
-                                        auto synced = s2ne::OriginalChurch::try_sync_roster(stagedSave, stagedEvents);
+                                        auto synced = s2ne::Church::try_sync_roster(stagedSave, stagedEvents);
                                         if (!synced)
                                         {
                                             s2ne::report_error(synced.error());
@@ -5375,7 +5375,7 @@ int s2ne::run_application(int argc, char** argv)
                 {
                     if (!prologue->campaign_travel_pending())
                     {
-                        auto towns = s2ne::OriginalInn::try_load_towns(root);
+                        auto towns = s2ne::Inn::try_load_towns(root);
                         if (!towns)
                         {
                             s2ne::report_error(towns.error());
@@ -5387,7 +5387,7 @@ int s2ne::run_application(int argc, char** argv)
                             s2ne::report_error(domain.error());
                             return EXIT_FAILURE;
                         }
-                        auto travel = s2ne::OriginalWorldmap::create(root, domain.value(), std::move(towns).value(), *rawSave);
+                        auto travel = s2ne::Worldmap::create(root, domain.value(), std::move(towns).value(), *rawSave);
                         if (!travel)
                         {
                             s2ne::report_error(travel.error());
@@ -5407,15 +5407,15 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         auto staged = std::move(transitioned).value();
                         auto disc = s2ne::update_app_domain_for_stage(staged);
-                        auto restored = s2ne::OriginalSaveBridge::restore(root, staged);
+                        auto restored = s2ne::SaveBridge::restore(root, staged);
                         prologue->set_interbattle_adapter([](auto request)
                             {
-                                return request.option == 4 ? s2ne::OriginalInterbattle::Result::enter_battle : s2ne::OriginalInterbattle::Result::unsupported;
+                                return request.option == 4 ? s2ne::Interbattle::Result::enter_battle : s2ne::Interbattle::Result::unsupported;
                             });
                         prologue->campaign_scan(0);
                         prologue->set_interbattle_adapter([](auto)
                             {
-                                return s2ne::OriginalInterbattle::Result::unsupported;
+                                return s2ne::Interbattle::Result::unsupported;
                             });
                         prologue->set_resource_domain(disc);
                         prologue->clear_autosave_requests();
@@ -5436,7 +5436,7 @@ int s2ne::run_application(int argc, char** argv)
             if (prologue && !rawSave && (prologue->deployment_requested() || !prologue->autosave_requests().empty()) && prologue->events.stage != 140)
             {
                 if (diagnostics) { std::print(stderr, "Campaign deployment init begin stage={}\n", prologue->events.stage); }
-                auto initialized = initialization.try_fresh(root, prologue->events.stage, prologue->events.difficulty, prologue->events.flags, s2ne::OriginalInitialization::setup_from_settings(settingsState, 0));
+                auto initialized = initialization.try_fresh(root, prologue->events.stage, prologue->events.difficulty, prologue->events.flags, s2ne::Initialization::setup_from_settings(settingsState, 0));
                 if (!initialized)
                 {
                     s2ne::report_error(initialized.error());
@@ -5444,7 +5444,7 @@ int s2ne::run_application(int argc, char** argv)
                 }
                 auto staged = std::move(initialized).value();
                 if (diagnostics) { std::print(stderr, "Campaign deployment init fresh complete stage={}\n", prologue->events.stage); }
-                auto restoredResult = s2ne::OriginalSaveBridge::try_restore(root, staged);
+                auto restoredResult = s2ne::SaveBridge::try_restore(root, staged);
                 if (!restoredResult)
                 {
                     s2ne::report_error(restoredResult.error());
@@ -5465,7 +5465,7 @@ int s2ne::run_application(int argc, char** argv)
             if (prologue && rawSave && prologue->deployment_requested() && !deployment)
             {
                 if (diagnostics) { std::print(stderr, "Campaign deployment object begin stage={}\n", prologue->events.stage); }
-                auto captured = s2ne::OriginalSaveBridge::try_capture(prologue->events, 1, prologue->camera(), &*rawSave);
+                auto captured = s2ne::SaveBridge::try_capture(prologue->events, 1, prologue->camera(), &*rawSave);
                 if (!captured)
                 {
                     s2ne::report_error(captured.error());
@@ -5483,7 +5483,7 @@ int s2ne::run_application(int argc, char** argv)
                     s2ne::report_error(committed.error());
                     return EXIT_FAILURE;
                 }
-                auto restored = s2ne::OriginalSaveBridge::try_restore(root, committed.value());
+                auto restored = s2ne::SaveBridge::try_restore(root, committed.value());
                 if (!restored)
                 {
                     s2ne::report_error(restored.error());
@@ -5546,7 +5546,7 @@ int s2ne::run_application(int argc, char** argv)
                         }
                         if (command == 7)
                         {
-                            s2ne::OriginalSkills::Context context;
+                            s2ne::Skills::Context context;
                             context.second = true;
                             return skillRules.executable_available(unit, context, true);
                         }
@@ -5578,7 +5578,7 @@ int s2ne::run_application(int argc, char** argv)
             }
             if (prologue && rawSave && !battleMenu && !battleReports && !promotionMenu && !itemMenu && !skillMenu && (prologue->battle_requested_command() == 6 || prologue->battle_requested_command() == 7))
             {
-                s2ne::OriginalSkills::Context context{};
+                s2ne::Skills::Context context{};
                 context.second = prologue->battle_requested_command() == 7;
                 prologue->clear_battle_requested_command();
                 skillMenu.emplace(root);
@@ -5592,7 +5592,7 @@ int s2ne::run_application(int argc, char** argv)
                         return prologue->battle().skill_area_cell({ x, y });
                     });
                 skillMenu->open(prologue->events.units.at(size_t(prologue->battle_selected())), context);
-                if (skillMenu->page() == s2ne::OriginalSkills::Page::closed)
+                if (skillMenu->page() == s2ne::Skills::Page::closed)
                 {
                     skillMenu.reset();
                 }
@@ -5603,11 +5603,11 @@ int s2ne::run_application(int argc, char** argv)
                 const bool useItems = prologue->battle_requested_command() == 2;
                 prologue->clear_battle_requested_command();
                 const int actor = prologue->battle_selected();
-                auto current = s2ne::OriginalSaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
+                auto current = s2ne::SaveBridge::try_capture(prologue->events, prologue->battle_turn(), prologue->camera(), &*rawSave);
                 if (!current) { s2ne::report_error(current.error()); }
                 else if (actor >= 0)
                 {
-                    auto page = s2ne::OriginalArmyEquipmentMenu::create(root, current.value(), useItems, s2ne::app_domain_for_save(*rawSave));
+                    auto page = s2ne::ArmyEquipmentMenu::create(root, current.value(), useItems, s2ne::app_domain_for_save(*rawSave));
                     if (!page) { s2ne::report_error(page.error()); }
                     else
                     {
@@ -5625,7 +5625,7 @@ int s2ne::run_application(int argc, char** argv)
                                         return s2ne::Result<bool>::failure(s2ne::make_error("46527D item spell cooperative or invalid source rejected"));
                                     }
                                     const auto& actorUnit = prologue->events.units.at(role);
-                                    if (skillMenu->select(actorUnit, nullptr, skillMenu->ai_summon_available(actorUnit, prologue->events)) != s2ne::OriginalSkills::Failure::none)
+                                    if (skillMenu->select(actorUnit, nullptr, skillMenu->ai_summon_available(actorUnit, prologue->events)) != s2ne::Skills::Failure::none)
                                     {
                                         skillMenu.reset();
                                         return s2ne::Result<bool>::failure(s2ne::make_error("46527D item spell world condition rejected"));

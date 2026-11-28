@@ -71,13 +71,13 @@ auto Flic::create(std::vector<uint8_t> bytes) -> Result<Flic>
     return Result<Flic>::success(std::move(result));
 }
 
-auto Flic::try_from_disc(const std::filesystem::path& root, unsigned id, OriginalDisc disc) -> Result<Flic>
+auto Flic::try_from_disc(const std::filesystem::path& root, unsigned id, Disc disc) -> Result<Flic>
 {
     if (id < 21 || id > 25)
     {
         return Result<Flic>::failure(make_error("Invalid original movie resource ID"));
     }
-    auto loaded = OriginalDiscResources(root).try_dat_entry(disc, id);
+    auto loaded = DiscResources(root).try_dat_entry(disc, id);
     if (!loaded)
     {
         return Result<Flic>::failure(loaded.error());
@@ -109,7 +109,7 @@ auto Flic::try_from_disc(const std::filesystem::path& root, unsigned id, Origina
     return create(std::move(bytes));
 }
 
-auto Flic::from_disc(const std::filesystem::path& root, unsigned id, OriginalDisc disc) -> Flic
+auto Flic::from_disc(const std::filesystem::path& root, unsigned id, Disc disc) -> Flic
 {
     auto result = try_from_disc(root, id, disc);
     if (!result)

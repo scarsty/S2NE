@@ -5,6 +5,37 @@
 <a id="current-status"></a>
 ## 当前状态
 
+### 2026-11-29 模块与类型去除来源前缀
+
+- 重命名 331 个项目自有代码文件：src 143、tests 188；对应 66 个类型去除
+  Native/Original。`Battle` 控制器保持原名，菜单、报告、字幕分别为
+  `BattleMenu`、`BattleReports`、`BattleCaptions`，没有合并或覆盖文件。
+  `OriginalRandom` 改为 `RandomStream`，文件为 `random_stream.h/.cpp`；
+  战斗百分比表随机器 `Random` 保持原名，两套随机流的状态、算法和调用不变。
+- Windows 工程、filters、共享实现清单、桌面 CMake 测试目标、工具与当前文档
+  引用同步；Android 通过共享清单使用新名称。runner 使用新名称生成 EXE，
+  兼容旧 original_/native_ 测试名输入。生成器仍保留历史函数表 original_name 字段。
+  自有命名规则已更新；tests 仍被 git 忽略。未执行暂存、撤销暂存或提交。
+- MLCC 的 ZipFile2.cpp/.h、filefunc.cpp/.h 未改动；analysis/ASM 和此前历史
+  PROGRESS 记录不改写。保存格式、资源标识、协议键、既有函数名以及说明原行为
+  的 original/native 普通词不做机械替换。
+- 357 个触及的 C++ 文件指定 clang-format 格式化及 dry-run/Werror 通过，
+  BOM 与迁移前一致。libclang 审计 64 个超限头文件通过（7 个编译期定义）。
+  Windows x64 Release MSBuild 成功；桌面 CMake 的编辑器诊断仍缺 SDL3 配置，
+  未执行 CMake 或 Android 构建，不宣称其通过。
+- runner 完整通过 settings、battle_reports、map、skills、ai、combat、
+  movement_bitmap、combat_visual、promotion、promotion_transaction、progression、
+  wide_viewport、resource_read、shared_disc、random、save_store、stdio_protocol，
+  另通过 battle `--assist-rest` 和旧名输入 original_battle_reports
+  `--terrain-bonuses`。归档读写及全部 100 个 DAT/PRG 映射验证通过。
+- 未通过项如实保留：scripted_movement、ai_skill 已编译链接但缺历史存档；
+  scroll_text 缺激活纹理资源，dialogue_layout 缺 SDL_ttf 初始化，save_test 的
+  旧断言引用不存在的 Error.stack，均属现有专项环境／接口缺口，未扩大本轮修复。
+  texture_resources 无参数运行返回用法错误，未作为通过证据。
+- 发布脚本已复制 EXE／DLL 后因资源目录缺 texture/ui 拒绝完整资源发布；随后
+  单独同步 EXE 并核对构建／工作目录 SHA256 一致：
+  `F186341A103056F11E313F9A54B9FFFF4D939A1307234CD7E34A5C2E49775F4B`。
+
 ### 2026-11-28 MLCC 来源核查与命名空间例外
 
 - 对全部 195 个 `src` 文件（92 cpp、103 h，含 generated）与只读

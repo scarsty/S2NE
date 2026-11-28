@@ -1,5 +1,5 @@
 #pragma once
-#include "original_disc.h"
+#include "disc.h"
 #include "resource_result.h"
 #include <array>
 #include <cstdint>
@@ -26,8 +26,8 @@ public:
     unsigned frames{}, delay{};
     Flic() = default;
     static Result<Flic> create(std::vector<uint8_t> bytes);
-    static Result<Flic> try_from_disc(const std::filesystem::path& root, unsigned id, OriginalDisc disc = OriginalDisc::one);
-    static Flic from_disc(const std::filesystem::path& root, unsigned id, OriginalDisc disc = OriginalDisc::one);
+    static Result<Flic> try_from_disc(const std::filesystem::path& root, unsigned id, Disc disc = Disc::one);
+    static Flic from_disc(const std::filesystem::path& root, unsigned id, Disc disc = Disc::one);
     static std::vector<uint8_t> read(const std::filesystem::path& path);
     explicit Flic(const std::filesystem::path& path);
     explicit Flic(std::vector<uint8_t> bytes);

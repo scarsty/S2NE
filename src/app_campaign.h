@@ -1,28 +1,28 @@
 #pragma once
-#include "original_campaign_persistence.h"
-#include "original_initialization.h"
-#include "original_promotion_transaction.h"
-#include "original_save_bridge.h"
+#include "campaign_persistence.h"
+#include "initialization.h"
 #include "prologue.h"
+#include "promotion_transaction.h"
+#include "save_bridge.h"
 namespace s2ne
 {
-Result<ResourceDomain> try_app_domain_for_save(const OriginalSave::State& state);
-ResourceDomain app_domain_for_save(const OriginalSave::State& state);
-ResourceDomain update_app_domain_for_stage(OriginalSave::State& state);
+Result<ResourceDomain> try_app_domain_for_save(const Save::State& state);
+ResourceDomain app_domain_for_save(const Save::State& state);
+ResourceDomain update_app_domain_for_stage(Save::State& state);
 class AppCampaignAdapter
 {
 public:
-    AppCampaignAdapter(const std::filesystem::path& root, std::unique_ptr<Prologue>& prologue, std::optional<OriginalSave::State>& rawSave);
+    AppCampaignAdapter(const std::filesystem::path& root, std::unique_ptr<Prologue>& prologue, std::optional<Save::State>& rawSave);
     void connect();
-    bool commit_promotion(int selected, const OriginalPromotion::Request& request, size_t saveItems, const OriginalPromotionTransaction& promotionTransaction, const OriginalMap& promotionMap);
-    OriginalEvents deploy_next(const OriginalSave::State& captured) const;
+    bool commit_promotion(int selected, const Promotion::Request& request, size_t saveItems, const PromotionTransaction& promotionTransaction, const Map& promotionMap);
+    Events deploy_next(const Save::State& captured) const;
 
 private:
     const std::filesystem::path& root;
     std::unique_ptr<Prologue>& prologue;
-    std::optional<OriginalSave::State>& rawSave;
-    OriginalInitialization initialization;
-    OriginalCampaignPersistence campaignPersistence;
-    std::optional<OriginalSave::State> physicalLoot;
+    std::optional<Save::State>& rawSave;
+    Initialization initialization;
+    CampaignPersistence campaignPersistence;
+    std::optional<Save::State> physicalLoot;
 };
 }    //namespace s2ne

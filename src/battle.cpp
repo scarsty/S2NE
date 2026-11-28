@@ -2,14 +2,14 @@
 
 namespace s2ne
 {
-auto Battle::set_ai_skills(const OriginalSkills& rules) -> void
+auto Battle::set_ai_skills(const Skills& rules) -> void
 {
-    if (!ai_skills_) { ai_skills_ = std::make_shared<OriginalSkills>(rules); }
+    if (!ai_skills_) { ai_skills_ = std::make_shared<Skills>(rules); }
 }
 
-auto Battle::set_ai_damage(const OriginalSkill94Transaction& rules) -> void
+auto Battle::set_ai_damage(const Skill94Transaction& rules) -> void
 {
-    if (!ai_damage_) { ai_damage_ = std::make_shared<OriginalSkill94Transaction>(rules); }
+    if (!ai_damage_) { ai_damage_ = std::make_shared<Skill94Transaction>(rules); }
 }
 
 auto Battle::set_ai_skill_camera(std::pair<int, int> camera) -> void { ai_skill_camera_ = camera; }
@@ -51,7 +51,7 @@ auto Battle::finish_ai_skill() -> void
     ai_skill_replan_ = true;
 }
 
-auto Battle::movement_sound(const OriginalEvents::Unit& pose) -> void
+auto Battle::movement_sound(const Events::Unit& pose) -> void
 {
     if (!effect_audio_) { return; }
     unsigned cls = 0;
@@ -67,7 +67,7 @@ auto Battle::movement_sound(const OriginalEvents::Unit& pose) -> void
 
 auto Battle::set_effect_audio(std::function<unsigned(unsigned, unsigned)> callback) -> void { effect_audio_ = std::move(callback); }
 
-auto Battle::scripted_movement_sound_id(const OriginalEvents::Unit& pose) const -> unsigned
+auto Battle::scripted_movement_sound_id(const Events::Unit& pose) const -> unsigned
 {
     if (!hostile_resources_) { return 0; }
     const auto& tile = cell({ pose.x, pose.y });
@@ -98,14 +98,14 @@ auto Battle::clear_requested_command() -> void
 
 auto Battle::commit_external_action() -> void { acted_ = true; }
 
-auto Battle::commit_equipment_action(OriginalEvents::Unit& actor) -> void
+auto Battle::commit_equipment_action(Events::Unit& actor) -> void
 {
     actor.action_points = int(int16_t(actor.action_points - ai_config_[0xF2]));
     actor.carry_points = std::min(actor.carry_points, actor.action_points);
     actor.status34 |= 0x20;
 }
 
-auto Battle::set_command_request_availability(std::function<bool(const OriginalEvents::Unit&, int)> available) -> void { command_request_available_ = std::move(available); }
+auto Battle::set_command_request_availability(std::function<bool(const Events::Unit&, int)> available) -> void { command_request_available_ = std::move(available); }
 
 auto Battle::random_seconds() const -> uint32_t { return random_seconds_.value_or(uint32_t(std::time(nullptr))); }
 
@@ -113,12 +113,12 @@ auto Battle::percent() -> int { return random_.percent(random_seconds()); }
 
 auto Battle::roll(int n) -> int { return random_.bounded(n, random_seconds()); }
 
-auto Battle::recover_rest(std::vector<OriginalEvents::Unit>& units, size_t index) -> void
+auto Battle::recover_rest(std::vector<Events::Unit>& units, size_t index) -> void
 {
     auto& unit = units.at(index);
     if (physical_status(unit, 0x3E) & 1) { return; }
     int percentage = roll(11) + 10;
-    if (OriginalSettings::gameplay_assist && !unit.hostile()) { percentage = 20; }
+    if (Settings::gameplay_assist && !unit.hostile()) { percentage = 20; }
     auto restore = [percentage](int& current, int maximum, int limit, bool doubled)
     {
         if (maximum <= 0 || current >= maximum) { return 0; }
@@ -144,7 +144,7 @@ auto Battle::recover_rest(std::vector<OriginalEvents::Unit>& units, size_t index
     }
     if (unit.hostile() && hostile_resources_ && hostile_resources_->army_modes && (*hostile_resources_->army_modes)[1] == 1)
     {
-        std::vector<OriginalEvents::Unit> observers;
+        std::vector<Events::Unit> observers;
         for (const auto& observer : units)
         {
             if (!observer.hostile()) { observers.push_back(observer); }
@@ -166,7 +166,7 @@ Battle::Battle(unsigned w, unsigned h, std::vector<Cell> cells) : width_(w), hei
         });
 }
 
-auto Battle::try_load(const std::filesystem::path& root, unsigned map, OriginalDisc disc) -> Result<Battle>
+auto Battle::try_load(const std::filesystem::path& root, unsigned map, Disc disc) -> Result<Battle>
 {
     auto prgResult = read_shared_resource(root / "SUPERSP.PRG"), palResult = read_shared_resource(root / "SUPERSP.PAL");
     if (!prgResult)
@@ -256,7 +256,7 @@ auto Battle::try_load(const std::filesystem::path& root, unsigned map, OriginalD
             result.sealed_cells_.push_back({ int(int16_t(word(prg, p))), int(int16_t(word(prg, p + 2))) });
         }
     }
-    OriginalDiscResources disc_resources(root);
+    DiscResources disc_resources(root);
     auto datResult = disc_resources.try_dat_entry(disc, 5);
     if (!datResult)
     {
@@ -393,7 +393,7 @@ auto Battle::try_load(const std::filesystem::path& root, unsigned map, OriginalD
     }
     result.effect_palette_.assign(pal.begin(), pal.begin() + 768);
     result.effect_palette_[0] = result.effect_palette_[1] = result.effect_palette_[2] = 0;
-    auto eventsResult = OriginalEvents::create(root, 1);
+    auto eventsResult = Events::create(root, 1);
     if (!eventsResult)
     {
         return Result<Battle>::failure(eventsResult.error());
@@ -401,10 +401,10 @@ auto Battle::try_load(const std::filesystem::path& root, unsigned map, OriginalD
     auto events = std::move(eventsResult).value();
     result.config_ = events.battle_config;
     result.original_rules_ = true;
-    result.hostile_resources_ = std::make_shared<OriginalEvents>(events);
-    auto equipment = OriginalPromotionTransaction::create(root);
+    result.hostile_resources_ = std::make_shared<Events>(events);
+    auto equipment = PromotionTransaction::create(root);
     if (!equipment) { return Result<Battle>::failure(equipment.error()); }
-    result.physical_equipment_ = std::make_shared<OriginalPromotionTransaction>(std::move(equipment).value());
+    result.physical_equipment_ = std::make_shared<PromotionTransaction>(std::move(equipment).value());
     auto binResult = read_shared_resource(root / "SUPERSP.BIN"), kindsResult = read_shared_resource(root / "KINDSP.BIN");
     if (!binResult)
     {
@@ -448,7 +448,7 @@ auto Battle::try_load(const std::filesystem::path& root, unsigned map, OriginalD
     return Result<Battle>::success(std::move(result));
 }
 
-auto Battle::load(const std::filesystem::path& root, unsigned map, OriginalDisc disc) -> Battle
+auto Battle::load(const std::filesystem::path& root, unsigned map, Disc disc) -> Battle
 {
     auto result = try_load(root, map, disc);
     if (!result)
@@ -469,7 +469,7 @@ auto Battle::skill_area_cell(Point p) const -> bool
     return object <= 0 || size_t(object) > object_attributes_.size() || !(object_attributes_[size_t(object) - 1] & 0x8000);
 }
 
-auto Battle::spell_transfer_terrain(const OriginalEvents::Unit& unit, Point p) const -> bool
+auto Battle::spell_transfer_terrain(const Events::Unit& unit, Point p) const -> bool
 {
     if (!original_rules_ || !valid(p) || !unit.appearance || unit.appearance > kind_movement_types_.size() || cell(p).ground <= 0) { return false; }
     const auto target = cell(p);
@@ -511,7 +511,7 @@ auto Battle::spell_transfer_terrain(const OriginalEvents::Unit& unit, Point p) c
     return true;
 }
 
-auto Battle::spell_transfer_destinations(const OriginalEvents::Unit& caster, const OriginalEvents::Unit& transported, const std::vector<OriginalEvents::Unit>& units) const -> std::vector<Point>
+auto Battle::spell_transfer_destinations(const Events::Unit& caster, const Events::Unit& transported, const std::vector<Events::Unit>& units) const -> std::vector<Point>
 {
     std::vector<Point> result;
     const Point source{ transported.x, transported.y };
@@ -547,12 +547,12 @@ auto Battle::spell_transfer_destinations(const OriginalEvents::Unit& caster, con
     return result;
 }
 
-auto Battle::spell_summon_destination(const OriginalEvents::Unit& caster, unsigned appearance,
-    const std::vector<OriginalEvents::Unit>& units) const -> std::optional<Point>
+auto Battle::spell_summon_destination(const Events::Unit& caster, unsigned appearance,
+    const std::vector<Events::Unit>& units) const -> std::optional<Point>
 {
     const Point source{ caster.x, caster.y };
     if (!valid(source)) { return std::nullopt; }
-    OriginalEvents::Unit summoned;
+    Events::Unit summoned;
     summoned.appearance = appearance;
     int left = source.x;
     if (!(source.y & 1)) { --left; }
@@ -610,7 +610,7 @@ auto Battle::object_cells(unsigned category) const -> std::vector<Point>
     return result;
 }
 
-auto Battle::settle_object_flags(OriginalEvents& events) const -> void
+auto Battle::settle_object_flags(Events& events) const -> void
 {
     for (const auto& u : events.units)
     {
@@ -671,7 +671,7 @@ auto Battle::finish_teleport() -> void
     }
 }
 
-auto Battle::settle_teleport_pads(std::vector<OriginalEvents::Unit>& units, bool hostile) -> unsigned
+auto Battle::settle_teleport_pads(std::vector<Events::Unit>& units, bool hostile) -> unsigned
 {
     unsigned moved = 0;
     if (teleport_pending_)
@@ -733,7 +733,7 @@ auto Battle::target_surface(Point p) const -> bool
     return p.y - (elevation > 0 ? elevation - 1 : 0) >= 1 && std::find(sealed_cells_.begin(), sealed_cells_.end(), p) == sealed_cells_.end();
 }
 
-auto Battle::terrain_effect(const OriginalEvents& resources, const OriginalEvents::Unit& unit, Point p) const -> TerrainEffect
+auto Battle::terrain_effect(const Events& resources, const Events::Unit& unit, Point p) const -> TerrainEffect
 {
     TerrainEffect effect;
     if (!valid(p) || !unit.appearance || movement_.empty())
@@ -838,7 +838,7 @@ auto Battle::terrain_effect(const OriginalEvents& resources, const OriginalEvent
     return effect;
 }
 
-auto Battle::target_visible(const OriginalEvents::Unit& target, std::span<const OriginalEvents::Unit> opposing, unsigned opposing_mode) const -> bool
+auto Battle::target_visible(const Events::Unit& target, std::span<const Events::Unit> opposing, unsigned opposing_mode) const -> bool
 {
     if (!(target.abilities & 0x80) && !(target.status3c & 0x10))
     {
@@ -874,7 +874,7 @@ auto Battle::target_visible(const OriginalEvents::Unit& target, std::span<const 
     return false;
 }
 
-auto Battle::action_cells(Point origin, OriginalEvents::ActionRange range) const -> std::vector<Point>
+auto Battle::action_cells(Point origin, Events::ActionRange range) const -> std::vector<Point>
 {
     std::vector<Point> result;
     range.maximum = std::max(range.minimum, range.maximum);
@@ -1012,9 +1012,9 @@ auto Battle::attack_mode(Point attacker, Point defender, unsigned defender_direc
     }
 }
 
-auto Battle::action_targets(const OriginalEvents& resources, const OriginalEvents::Unit& actor,
-    const OriginalEvents::ActionRecord& action, std::span<const OriginalEvents::Unit> candidates,
-    std::span<const OriginalEvents::Unit> opposing, unsigned opposing_mode) const -> std::vector<ActionTarget>
+auto Battle::action_targets(const Events& resources, const Events::Unit& actor,
+    const Events::ActionRecord& action, std::span<const Events::Unit> candidates,
+    std::span<const Events::Unit> opposing, unsigned opposing_mode) const -> std::vector<ActionTarget>
 {
     std::vector<ActionTarget> result;
     if (!resources.action_equipment_allowed(actor, action))
@@ -1040,8 +1040,8 @@ auto Battle::action_targets(const OriginalEvents& resources, const OriginalEvent
     return result;
 }
 
-auto Battle::counter_actions(const OriginalEvents& resources, const OriginalEvents::Unit& defender,
-    Point attacker_position, std::span<const OriginalEvents::Unit> attackers, std::span<const OriginalEvents::Unit> defenders,
+auto Battle::counter_actions(const Events& resources, const Events::Unit& defender,
+    Point attacker_position, std::span<const Events::Unit> attackers, std::span<const Events::Unit> defenders,
     unsigned attacker_mode, uint8_t defender_39, uint32_t defender_status3c_dword) const -> std::vector<unsigned>
 {
     std::vector<unsigned> result;
@@ -1067,7 +1067,7 @@ auto Battle::counter_actions(const OriginalEvents& resources, const OriginalEven
     return result;
 }
 
-auto Battle::try_physical_target_group(const OriginalEvents& resources, const OriginalEvents::Unit& actor, const OriginalEvents::ActionRecord& action, const std::vector<OriginalEvents::Unit>& units, size_t primary) const -> Result<std::vector<size_t>>
+auto Battle::try_physical_target_group(const Events& resources, const Events::Unit& actor, const Events::ActionRecord& action, const std::vector<Events::Unit>& units, size_t primary) const -> Result<std::vector<size_t>>
 {
     if (primary >= units.size()) { return Result<std::vector<size_t>>::failure(make_error("Original physical target index")); }
     auto range = resources.action_range(actor, action);
@@ -1128,7 +1128,7 @@ auto Battle::try_physical_target_group(const OriginalEvents& resources, const Or
     return Result<std::vector<size_t>>::success(std::move(result));
 }
 
-auto Battle::physical_status(const OriginalEvents::Unit& unit, unsigned offset) -> uint8_t
+auto Battle::physical_status(const Events::Unit& unit, unsigned offset) -> uint8_t
 {
     if (unit.action_status_runtime) { return (*unit.action_status_runtime)[offset]; }
     switch (offset)
@@ -1142,19 +1142,19 @@ auto Battle::physical_status(const OriginalEvents::Unit& unit, unsigned offset) 
     }
 }
 
-auto Battle::physical_status_dword(const OriginalEvents::Unit& unit) -> uint32_t
+auto Battle::physical_status_dword(const Events::Unit& unit) -> uint32_t
 {
     uint32_t value = 0;
     for (unsigned i = 0; i < 4; ++i) { value |= uint32_t(physical_status(unit, 0x3C + i)) << (8 * i); }
     return value;
 }
 
-auto Battle::try_physical_contexts(const OriginalEvents& resources, const std::vector<OriginalEvents::Unit>& units, size_t actor, size_t primary, const OriginalEvents::ActionRecord& action, bool reuse_primary) -> Result<std::vector<PhysicalActionContext>>
+auto Battle::try_physical_contexts(const Events& resources, const std::vector<Events::Unit>& units, size_t actor, size_t primary, const Events::ActionRecord& action, bool reuse_primary) -> Result<std::vector<PhysicalActionContext>>
 {
     if (actor >= units.size() || actor == primary) { return Result<std::vector<PhysicalActionContext>>::failure(make_error("Original physical actor index")); }
     auto group = try_physical_target_group(resources, units[actor], action, units, primary);
     if (!group) { return Result<std::vector<PhysicalActionContext>>::failure(group.error()); }
-    std::vector<OriginalEvents::Unit> own, opponents;
+    std::vector<Events::Unit> own, opponents;
     for (const auto& unit : units) { (unit.hostile() == units[actor].hostile() ? own : opponents).push_back(unit); }
     std::vector<PhysicalActionContext> contexts;
     auto staged_random = random_;
@@ -1175,7 +1175,7 @@ auto Battle::try_physical_contexts(const OriginalEvents& resources, const std::v
         }
         auto records = resources.try_action_records(units[target]);
         if (!records) { return Result<std::vector<PhysicalActionContext>>::failure(records.error()); }
-        std::vector<OriginalEvents::ActionRecord> pool;
+        std::vector<Events::ActionRecord> pool;
         if (!(physical_status(units[target], 0x39) & 2) && !(physical_status_dword(units[target]) & 0x2B000))
         {
             for (const auto& candidate : records.value())
@@ -1201,8 +1201,8 @@ auto Battle::try_physical_contexts(const OriginalEvents& resources, const std::v
     return Result<std::vector<PhysicalActionContext>>::success(std::move(contexts));
 }
 
-auto Battle::attack_availability(const OriginalEvents& resources, const OriginalEvents::Unit& actor,
-    std::span<const OriginalEvents::Unit> candidates, std::span<const OriginalEvents::Unit> opposing, unsigned opposing_mode) const -> AttackAvailability
+auto Battle::attack_availability(const Events& resources, const Events::Unit& actor,
+    std::span<const Events::Unit> candidates, std::span<const Events::Unit> opposing, unsigned opposing_mode) const -> AttackAvailability
 {
     AttackAvailability result;
     if (actor.action_points < attack_menu_cost(actor))
@@ -1297,14 +1297,14 @@ auto Battle::pick(float x, float y, int camera_x, int camera_y) const -> Point
     return best;
 }
 
-auto Battle::orient_finish_threat(const OriginalEvents& resources, std::vector<OriginalEvents::Unit>& units) -> bool
+auto Battle::orient_finish_threat(const Events& resources, std::vector<Events::Unit>& units) -> bool
 {
     if (state_ != State::finish_confirm || selected_ < 0)
     {
         return false;
     }
     auto& actor = units.at(size_t(selected_));
-    std::vector<OriginalEvents::Unit> observers;
+    std::vector<Events::Unit> observers;
     for (const auto& unit : units)
     {
         if (unit.hostile() == actor.hostile() && unit.present(turn_))
@@ -1346,7 +1346,7 @@ auto Battle::orient_finish_threat(const OriginalEvents& resources, std::vector<O
     return true;
 }
 
-auto Battle::finish_action(std::vector<OriginalEvents::Unit>& units, bool confirmed) -> void
+auto Battle::finish_action(std::vector<Events::Unit>& units, bool confirmed) -> void
 {
     if (state_ != State::finish_confirm || selected_ < 0)
     {
@@ -1399,14 +1399,14 @@ auto Battle::restore_turn(unsigned value) -> void
 
 auto Battle::selected() const -> int { return selected_; }
 
-auto Battle::player_controlled(const OriginalEvents::Unit& unit, size_t index) const -> bool
+auto Battle::player_controlled(const Events::Unit& unit, size_t index) const -> bool
 {
     return unit.controllable() || (selected_ == int(index) && !hostile_side_ && !hostile_actions_active_ && unit.behavior == 1 && (selected_context_ & 0x20));
 }
 
 auto Battle::set_auto_selection(bool enabled) -> void { auto_selection_ = enabled; }
 
-auto Battle::player_selection_eligible(const OriginalEvents::Unit& unit, unsigned context_flags) const -> bool
+auto Battle::player_selection_eligible(const Events::Unit& unit, unsigned context_flags) const -> bool
 {
     const bool allied_control = unit.controllable() || (unit.behavior == 1 && (context_flags & 0x20));
     if (!unit.present(turn_) || !allied_control || !(unit.status_flags & 0x80) || (unit.status_flags & 0x20) || unit.action_state == 2)
@@ -1435,7 +1435,7 @@ auto Battle::player_selection_eligible(const OriginalEvents::Unit& unit, unsigne
     return valid({ unit.x, unit.y });
 }
 
-auto Battle::select_unit(std::vector<OriginalEvents::Unit>& units, size_t index, unsigned context_flags) -> bool
+auto Battle::select_unit(std::vector<Events::Unit>& units, size_t index, unsigned context_flags) -> bool
 {
     if (hostile_side_ || hostile_actions_active_ || animating_movement() || combat_feedback_active() || state_ != State::idle || index >= units.size())
     {
@@ -1464,7 +1464,7 @@ auto Battle::select_unit(std::vector<OriginalEvents::Unit>& units, size_t index,
     return true;
 }
 
-auto Battle::select_next_player_unit(std::vector<OriginalEvents::Unit>& units, bool restart, unsigned context_flags) -> bool
+auto Battle::select_next_player_unit(std::vector<Events::Unit>& units, bool restart, unsigned context_flags) -> bool
 {
     if (restart)
     {
@@ -1491,14 +1491,14 @@ auto Battle::select_next_player_unit(std::vector<OriginalEvents::Unit>& units, b
     return false;
 }
 
-auto Battle::select_or_inspect_unit(std::vector<OriginalEvents::Unit>& units, size_t index, unsigned context_flags) -> bool
+auto Battle::select_or_inspect_unit(std::vector<Events::Unit>& units, size_t index, unsigned context_flags) -> bool
 {
     if (hostile_side_ || hostile_actions_active_ || animating_movement() || combat_feedback_active() || state_ != State::idle || index >= units.size()) { return false; }
     const auto& unit = units[index];
     if (!unit.present(turn_) || !valid({ unit.x, unit.y }) || !(unit.status_flags & 0x80) || ((unit.status_flags & 0x20) && !(unit.status_flags & 2))) { return false; }
     if (unit.hostile())
     {
-        std::vector<OriginalEvents::Unit> observers;
+        std::vector<Events::Unit> observers;
         for (const auto& observer : units)
         {
             if (!observer.hostile() && observer.present(turn_)) { observers.push_back(observer); }
@@ -1519,7 +1519,7 @@ auto Battle::command_index() const -> int { return command_; }
 
 auto Battle::target() const -> int { return target_; }
 
-auto Battle::select_attack_target(const std::vector<OriginalEvents::Unit>& units, size_t index) -> bool
+auto Battle::select_attack_target(const std::vector<Events::Unit>& units, size_t index) -> bool
 {
     if (state_ != State::attack_target || selected_ < 0 || index >= units.size() || !can_attack(units, size_t(selected_), index, attack_index_))
     {
@@ -1529,7 +1529,7 @@ auto Battle::select_attack_target(const std::vector<OriginalEvents::Unit>& units
     return true;
 }
 
-auto Battle::command_availability(const std::vector<OriginalEvents::Unit>& units) const -> uint32_t
+auto Battle::command_availability(const std::vector<Events::Unit>& units) const -> uint32_t
 {
     if (selected_ < 0 || size_t(selected_) >= units.size())
     {
@@ -1580,14 +1580,14 @@ auto Battle::command_availability(const std::vector<OriginalEvents::Unit>& units
     return mask;
 }
 
-auto Battle::refresh_command_availability(const std::vector<OriginalEvents::Unit>& units) -> void { available_mask_ = command_availability(units); }
+auto Battle::refresh_command_availability(const std::vector<Events::Unit>& units) -> void { available_mask_ = command_availability(units); }
 
-auto Battle::command_available(const std::vector<OriginalEvents::Unit>& units, int index) const -> bool
+auto Battle::command_available(const std::vector<Events::Unit>& units, int index) const -> bool
 {
     return index >= 0 && index < 6 && (command_availability(units) & command_masks[size_t(index)]) != 0;
 }
 
-auto Battle::command_slot(const std::vector<OriginalEvents::Unit>& units, int command) const -> int
+auto Battle::command_slot(const std::vector<Events::Unit>& units, int command) const -> int
 {
     if (command < 0 || command >= 6 || !command_available(units, command))
     {
@@ -1604,7 +1604,7 @@ auto Battle::command_slot(const std::vector<OriginalEvents::Unit>& units, int co
     return slot;
 }
 
-auto Battle::command_from_slot(const std::vector<OriginalEvents::Unit>& units, int slot) const -> int
+auto Battle::command_from_slot(const std::vector<Events::Unit>& units, int slot) const -> int
 {
     if (slot < 0)
     {
@@ -1620,7 +1620,7 @@ auto Battle::command_from_slot(const std::vector<OriginalEvents::Unit>& units, i
     return -1;
 }
 
-auto Battle::command_count(const std::vector<OriginalEvents::Unit>& units) const -> int
+auto Battle::command_count(const std::vector<Events::Unit>& units) const -> int
 {
     int count = 0;
     for (int i = 0; i < 6; ++i)
@@ -1633,7 +1633,7 @@ auto Battle::command_count(const std::vector<OriginalEvents::Unit>& units) const
     return count;
 }
 
-auto Battle::prepare_commands(const std::vector<OriginalEvents::Unit>& units) -> void
+auto Battle::prepare_commands(const std::vector<Events::Unit>& units) -> void
 {
     available_mask_ = command_availability(units);
     if (command_ < 0 || command_ >= 6 || !command_available_for_cycle(command_))
@@ -1748,7 +1748,7 @@ auto Battle::begin_curse33_feedback(size_t actor, size_t target, int hp, bool hi
 }
 
 auto Battle::begin_status_area_feedback(size_t actor, std::vector<std::pair<size_t, bool>> targets,
-    const std::vector<OriginalEvents::Unit>& units, std::function<void()> commit, bool blessing3, std::vector<int> amounts, bool healing) -> bool
+    const std::vector<Events::Unit>& units, std::function<void()> commit, bool blessing3, std::vector<int> amounts, bool healing) -> bool
 {
     status_feedback_healing_ = healing;
     status_feedback_amounts_ = std::move(amounts);
@@ -1765,7 +1765,7 @@ auto Battle::begin_status_area_feedback(size_t actor, std::vector<std::pair<size
     return next_status_feedback(units);
 }
 
-auto Battle::next_status_feedback(const std::vector<OriginalEvents::Unit>& units) -> bool
+auto Battle::next_status_feedback(const std::vector<Events::Unit>& units) -> bool
 {
     auto [target, hit] = status_feedback_targets_[status_feedback_cursor_++];
     auto commit = [this, &units]
@@ -1795,15 +1795,15 @@ auto Battle::next_status_feedback(const std::vector<OriginalEvents::Unit>& units
     return begin_curse33_feedback(status_feedback_actor_, target, units[target].hp, hit, std::move(commit));
 }
 
-auto Battle::set_death_settlement(std::function<void(std::vector<OriginalEvents::Unit>&, size_t, size_t)> callback) -> void { death_settlement_ = std::move(callback); }
+auto Battle::set_death_settlement(std::function<void(std::vector<Events::Unit>&, size_t, size_t)> callback) -> void { death_settlement_ = std::move(callback); }
 
-auto Battle::set_physical_settlement(std::function<void(std::vector<OriginalEvents::Unit>&, const PhysicalSettlement&)> callback) -> void { physical_settlement_ = std::move(callback); }
+auto Battle::set_physical_settlement(std::function<void(std::vector<Events::Unit>&, const PhysicalSettlement&)> callback) -> void { physical_settlement_ = std::move(callback); }
 
 auto Battle::set_physical_growth(std::function<void(std::vector<PhysicalSettlement>, std::function<void(bool)>)> callback) -> void { physical_growth_ = std::move(callback); }
 
 auto Battle::set_physical_loot_finish(std::function<Result<bool>(bool)> callback) -> void { physical_loot_finish_ = std::move(callback); }
 
-auto Battle::set_physical_loot_commit(std::function<Result<bool>(const std::vector<OriginalEvents::Unit>&, const std::vector<PhysicalSettlement>&)> callback) -> void { physical_loot_commit_ = std::move(callback); }
+auto Battle::set_physical_loot_commit(std::function<Result<bool>(const std::vector<Events::Unit>&, const std::vector<PhysicalSettlement>&)> callback) -> void { physical_loot_commit_ = std::move(callback); }
 
 auto Battle::set_physical_death_presenter(std::function<Result<bool>(size_t, size_t)> callback, std::function<void(bool)> finish) -> void
 {
@@ -1820,7 +1820,7 @@ auto Battle::resume_physical_death() -> void
     }
 }
 
-auto Battle::apply_physical_action_status(std::vector<OriginalEvents::Unit>& units, size_t b, const OriginalEvents::ActionRecord& action, int result, std::optional<int> status_roll) -> int
+auto Battle::apply_physical_action_status(std::vector<Events::Unit>& units, size_t b, const Events::ActionRecord& action, int result, std::optional<int> status_roll) -> int
 {
     auto& target = units[b];
     s2ne::ActionStatusInput input{};
@@ -1875,13 +1875,13 @@ auto Battle::apply_physical_action_status(std::vector<OriginalEvents::Unit>& uni
     };
     refresh(0xB7, target.max_hp);
     refresh(0x124, target.hp);
-    auto output = OriginalEvents::apply_action_record_status(bytes, action, input);
+    auto output = Events::apply_action_record_status(bytes, action, input);
     target.attack = int(int16_t(unsigned(bytes[0x134]) | (unsigned(bytes[0x135]) << 8)));
     target.defense = int(int16_t(unsigned(bytes[0x136]) | (unsigned(bytes[0x137]) << 8)));
     return output.result;
 }
 
-auto Battle::apply_physical_status_tail(std::vector<OriginalEvents::Unit>& units, size_t actor, size_t target, const OriginalEvents::ActionRecord& action, int damage) -> int
+auto Battle::apply_physical_status_tail(std::vector<Events::Unit>& units, size_t actor, size_t target, const Events::ActionRecord& action, int damage) -> int
 {
     auto& victim = units[target];
     const auto& source = units[actor];
@@ -1929,7 +1929,7 @@ auto Battle::apply_physical_status_tail(std::vector<OriginalEvents::Unit>& units
     return apply_physical_action_status(units, target, action, damage, percent());
 }
 
-auto Battle::settle_physical(std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, int lost) -> void
+auto Battle::settle_physical(std::vector<Events::Unit>& units, size_t a, size_t b, int lost) -> void
 {
     auto damage_snapshot = units[b];
     damage_snapshot.hp += lost;
@@ -1943,7 +1943,7 @@ auto Battle::settle_physical(std::vector<OriginalEvents::Unit>& units, size_t a,
             if (consume)
             {
                 auto slot = physical_equipment_->first_consumable_special(target, 28);
-                OriginalPromotionTransaction::State state{ target, std::vector<uint8_t>(physical_equipment_->item_count()), OriginalRandom({ random_.seed_state(), random_.draw_count() }) };
+                PromotionTransaction::State state{ target, std::vector<uint8_t>(physical_equipment_->item_count()), RandomStream({ random_.seed_state(), random_.draw_count() }) };
                 physical_equipment_->remove_equipment(state, *slot, true);
                 target = std::move(state.unit);
             }
@@ -2015,7 +2015,7 @@ auto Battle::settle_physical(std::vector<OriginalEvents::Unit>& units, size_t a,
     physical_settlement_(units, award);
 }
 
-auto Battle::tick_combat_feedback(std::vector<OriginalEvents::Unit>& units, unsigned milliseconds) -> void
+auto Battle::tick_combat_feedback(std::vector<Events::Unit>& units, unsigned milliseconds) -> void
 {
     if (rest_feedback_)
     {
@@ -2087,7 +2087,7 @@ auto Battle::tick_combat_feedback(std::vector<OriginalEvents::Unit>& units, unsi
                 return;
             }
             projectile_elapsed_ = 0;
-            if (OriginalEvents::advance_effect_flight(*projectile_))
+            if (Events::advance_effect_flight(*projectile_))
             {
                 return;
             }
@@ -2151,7 +2151,7 @@ auto Battle::animating_movement() const -> bool { return moving_unit_ >= 0; }
 
 auto Battle::attack_animation_active() const -> bool { return attack_animation_ && animating_movement(); }
 
-auto Battle::tick_movement(std::vector<OriginalEvents::Unit>& units, unsigned milliseconds) -> void
+auto Battle::tick_movement(std::vector<Events::Unit>& units, unsigned milliseconds) -> void
 {
     if (!animating_movement())
     {
@@ -2203,7 +2203,7 @@ auto Battle::tick_movement(std::vector<OriginalEvents::Unit>& units, unsigned mi
     }
 }
 
-auto Battle::render_units(const std::vector<OriginalEvents::Unit>& units) const -> std::vector<OriginalEvents::Unit>
+auto Battle::render_units(const std::vector<Events::Unit>& units) const -> std::vector<Events::Unit>
 {
     auto result = units;
     if (animating_movement() && size_t(moving_unit_) < result.size())
@@ -2264,7 +2264,7 @@ auto Battle::cancel() -> void
     message_ = "Select a unit to open its original command bar";
 }
 
-auto Battle::cancel(std::vector<OriginalEvents::Unit>& units) -> void
+auto Battle::cancel(std::vector<Events::Unit>& units) -> void
 {
     if (animating_movement() || combat_feedback_active())
     {
@@ -2422,7 +2422,7 @@ auto Battle::pick_surface(float x, float y, int cx, int cy) const -> Point
     return best;
 }
 
-auto Battle::command_origin(const std::vector<OriginalEvents::Unit>& units, int cx, int cy) const -> Point
+auto Battle::command_origin(const std::vector<Events::Unit>& units, int cx, int cy) const -> Point
 {
     if (selected_ < 0)
     {
@@ -2445,13 +2445,13 @@ auto Battle::command_origin(const std::vector<OriginalEvents::Unit>& units, int 
     return { std::clamp(c.x - count * 16, 8, 639 - count * 32), y };
 }
 
-auto Battle::player_route_passable(const std::vector<OriginalEvents::Unit>& units, const OriginalEvents::Unit& actor, Point p) const -> bool
+auto Battle::player_route_passable(const std::vector<Events::Unit>& units, const Events::Unit& actor, Point p) const -> bool
 {
     int i = occupant(units, p);
     return i < 0 || (original_rules_ && units[size_t(i)].hostile() == actor.hostile());
 }
 
-auto Battle::build_routes(const std::vector<OriginalEvents::Unit>& units) -> void
+auto Battle::build_routes(const std::vector<Events::Unit>& units) -> void
 {
     distances_.assign(cells_.size(), std::numeric_limits<int>::max());
     previous_.assign(cells_.size(), -1);
@@ -2547,13 +2547,13 @@ auto Battle::preview(Point p) -> bool
     return true;
 }
 
-auto Battle::attack_menu_cost(const OriginalEvents::Unit& unit) const -> int
+auto Battle::attack_menu_cost(const Events::Unit& unit) const -> int
 {
     // 43B096 reads dwords at EB/F0 then SAR 24: the signed bytes are EE/F3.
     return attack_cost(unit);
 }
 
-auto Battle::attack_cost(const OriginalEvents::Unit& unit) const -> int
+auto Battle::attack_cost(const Events::Unit& unit) const -> int
 {
     const bool reduced_attack_cost = (unit.abilities & 0x20000000u) != 0;
     const bool already_attacked = (unit.status34 & 2) != 0;
@@ -2566,7 +2566,7 @@ auto Battle::attack_cost(const OriginalEvents::Unit& unit) const -> int
     return cost;
 }
 
-auto Battle::executable_attack_slot(const OriginalEvents::ActionRecord& action) -> int
+auto Battle::executable_attack_slot(const Events::ActionRecord& action) -> int
 {
     int type = action.fields[0];
     if (type == 5) { return 1; }
@@ -2578,7 +2578,7 @@ auto Battle::executable_attack_slot(const OriginalEvents::ActionRecord& action) 
     }
 }
 
-auto Battle::executable_action(const std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, int slot) const -> std::optional<OriginalEvents::ActionRecord>
+auto Battle::executable_action(const std::vector<Events::Unit>& units, size_t a, size_t b, int slot) const -> std::optional<Events::ActionRecord>
 {
     if (!hostile_resources_ || a >= units.size() || b >= units.size() || a == b)
     {
@@ -2590,7 +2590,7 @@ auto Battle::executable_action(const std::vector<OriginalEvents::Unit>& units, s
     {
         return std::nullopt;
     }
-    std::vector<OriginalEvents::Unit> own;
+    std::vector<Events::Unit> own;
     for (const auto& unit : units)
     {
         if (unit.present(turn_) && unit.hostile() == u.hostile())
@@ -2598,7 +2598,7 @@ auto Battle::executable_action(const std::vector<OriginalEvents::Unit>& units, s
             own.push_back(unit);
         }
     }
-    std::array<std::optional<OriginalEvents::ActionRecord>, 8> chosen;
+    std::array<std::optional<Events::ActionRecord>, 8> chosen;
     std::array<bool, 8> reaches{};
     for (const auto& action : hostile_resources_->action_records(u))
     {
@@ -2607,7 +2607,7 @@ auto Battle::executable_action(const std::vector<OriginalEvents::Unit>& units, s
         {
             continue;
         }
-        bool target_reachable = !action_targets(*hostile_resources_, u, action, std::span<const OriginalEvents::Unit>(&v, 1), own, 0).empty();
+        bool target_reachable = !action_targets(*hostile_resources_, u, action, std::span<const Events::Unit>(&v, 1), own, 0).empty();
         bool any_target = target_reachable;
         if (!any_target)
         {
@@ -2617,7 +2617,7 @@ auto Battle::executable_action(const std::vector<OriginalEvents::Unit>& units, s
                 {
                     continue;
                 }
-                if (!action_targets(*hostile_resources_, u, action, std::span<const OriginalEvents::Unit>(&candidate, 1), own, 0).empty())
+                if (!action_targets(*hostile_resources_, u, action, std::span<const Events::Unit>(&candidate, 1), own, 0).empty())
                 {
                     any_target = true;
                     break;
@@ -2640,7 +2640,7 @@ auto Battle::executable_action(const std::vector<OriginalEvents::Unit>& units, s
     return std::nullopt;
 }
 
-auto Battle::can_attack(const std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, int slot) const -> bool
+auto Battle::can_attack(const std::vector<Events::Unit>& units, size_t a, size_t b, int slot) const -> bool
 {
     if (hostile_resources_)
     {
@@ -2655,7 +2655,7 @@ auto Battle::can_attack(const std::vector<OriginalEvents::Unit>& units, size_t a
     return u.present(turn_) && v.present(turn_) && u.hostile() != v.hostile() && adjacent({ u.x, u.y }, { v.x, v.y }) && cell({ u.x, u.y }).elevation == cell({ v.x, v.y }).elevation && (!original_rules_ || u.action_points >= attack_cost(u));
 }
 
-auto Battle::attack_command_available(const std::vector<OriginalEvents::Unit>& units, int index) const -> bool
+auto Battle::attack_command_available(const std::vector<Events::Unit>& units, int index) const -> bool
 {
     if (index < 0 || index > 7 || selected_ < 0)
     {
@@ -2681,7 +2681,7 @@ auto Battle::attack_command_available(const std::vector<OriginalEvents::Unit>& u
 
 auto Battle::attack_index() const -> int { return attack_index_; }
 
-auto Battle::attack_count(const std::vector<OriginalEvents::Unit>& units) const -> int
+auto Battle::attack_count(const std::vector<Events::Unit>& units) const -> int
 {
     int count = 0;
     for (int i = 0; i < 8; ++i)
@@ -2691,7 +2691,7 @@ auto Battle::attack_count(const std::vector<OriginalEvents::Unit>& units) const 
     return count;
 }
 
-auto Battle::attack_from_slot(const std::vector<OriginalEvents::Unit>& units, int slot) const -> int
+auto Battle::attack_from_slot(const std::vector<Events::Unit>& units, int slot) const -> int
 {
     if (slot < 0)
     {
@@ -2751,7 +2751,7 @@ auto Battle::command_available_for_cycle(int index) const -> bool
 
 auto Battle::item_choice() const -> int { return item_choice_; }
 
-auto Battle::cycle_target(const std::vector<OriginalEvents::Unit>& units) -> void
+auto Battle::cycle_target(const std::vector<Events::Unit>& units) -> void
 {
     if (state_ != State::attack_target || units.empty())
     {
@@ -2768,7 +2768,7 @@ auto Battle::cycle_target(const std::vector<OriginalEvents::Unit>& units) -> voi
     }
 }
 
-auto Battle::activate(std::vector<OriginalEvents::Unit>& units) -> bool
+auto Battle::activate(std::vector<Events::Unit>& units) -> bool
 {
     if (animating_movement() || combat_feedback_active())
     {
@@ -2890,7 +2890,7 @@ auto Battle::activate(std::vector<OriginalEvents::Unit>& units) -> bool
     return false;
 }
 
-auto Battle::hover(const std::vector<OriginalEvents::Unit>& units, Point p) -> void
+auto Battle::hover(const std::vector<Events::Unit>& units, Point p) -> void
 {
     hovered_cell_ = p;
     hovered_ = valid(p) && occupant(units, p) >= 0 ? p : Point{ -1, -1 };
@@ -2908,7 +2908,7 @@ auto Battle::hover(const std::vector<OriginalEvents::Unit>& units, Point p) -> v
     }
 }
 
-auto Battle::attack_target_at(const std::vector<OriginalEvents::Unit>& units, Point p) const -> int
+auto Battle::attack_target_at(const std::vector<Events::Unit>& units, Point p) const -> int
 {
     // 407400 searches the action's target records by cell, not the first occupant.
     for (size_t i = 0; i < units.size(); ++i)
@@ -2921,7 +2921,7 @@ auto Battle::attack_target_at(const std::vector<OriginalEvents::Unit>& units, Po
     return -1;
 }
 
-auto Battle::mouse(std::vector<OriginalEvents::Unit>& units, float x, float y, bool pressed, int cx, int cy, unsigned context_flags) -> bool
+auto Battle::mouse(std::vector<Events::Unit>& units, float x, float y, bool pressed, int cx, int cy, unsigned context_flags) -> bool
 {
     mouse_position_ = { int(x), int(y) };
     if (animating_movement() || combat_feedback_active())
@@ -2974,7 +2974,7 @@ auto Battle::mouse(std::vector<OriginalEvents::Unit>& units, float x, float y, b
     return click(units, p);
 }
 
-auto Battle::occupant(const std::vector<OriginalEvents::Unit>& units, Point p) const -> int
+auto Battle::occupant(const std::vector<Events::Unit>& units, Point p) const -> int
 {
     // 446E53 mode0: inactive roles never occupy a tile; settled dead
     // roles only remain spatially represented when status33 bit2 is set.
@@ -2988,7 +2988,7 @@ auto Battle::occupant(const std::vector<OriginalEvents::Unit>& units, Point p) c
     return -1;
 }
 
-auto Battle::observed_movement_edges(const std::vector<OriginalEvents::Unit>& units, size_t actor, bool occupied) const -> std::vector<std::array<int, 5>>
+auto Battle::observed_movement_edges(const std::vector<Events::Unit>& units, size_t actor, bool occupied) const -> std::vector<std::array<int, 5>>
 {
     std::vector<std::array<int, 5>> edges;
     if (actor >= units.size()) { return edges; }
@@ -3013,7 +3013,7 @@ auto Battle::observed_movement_edges(const std::vector<OriginalEvents::Unit>& un
     return edges;
 }
 
-auto Battle::step_cost(const OriginalEvents::Unit& u, Point from, Point to) const -> int
+auto Battle::step_cost(const Events::Unit& u, Point from, Point to) const -> int
 {
     if (!valid(to) || !adjacent(from, to))
     {
@@ -3093,7 +3093,7 @@ auto Battle::step_cost(const OriginalEvents::Unit& u, Point from, Point to) cons
     return cost + config_[3] * std::max(0, climb);
 }
 
-auto Battle::can_step(const std::vector<OriginalEvents::Unit>& units, size_t index, Point to) const -> bool
+auto Battle::can_step(const std::vector<Events::Unit>& units, size_t index, Point to) const -> bool
 {
     if (index >= units.size() || !units[index].present(turn_) || !player_controlled(units[index], index) || (original_rules_ && (!(units[index].status_flags & 0x80) || (units[index].status_flags & 0x20))))
     {
@@ -3104,7 +3104,7 @@ auto Battle::can_step(const std::vector<OriginalEvents::Unit>& units, size_t ind
     return cost >= 0 && occupant(units, to) < 0 && (!original_rules_ || cost <= std::min(110, u.action_points - config_[0]));
 }
 
-auto Battle::scripted_route(const OriginalEvents::Unit& unit, Point destination) const -> std::optional<std::vector<Point>>
+auto Battle::scripted_route(const Events::Unit& unit, Point destination) const -> std::optional<std::vector<Point>>
 {
     if (!original_rules_ || !valid(destination) || unit.movement_type < 1 || unit.movement_type > 10)
     {
@@ -3194,7 +3194,7 @@ auto Battle::scripted_route(const OriginalEvents::Unit& unit, Point destination)
     return std::nullopt;
 }
 
-auto Battle::scripted_frame_count(const OriginalEvents::Unit& unit, unsigned facing) const -> unsigned
+auto Battle::scripted_frame_count(const Events::Unit& unit, unsigned facing) const -> unsigned
 {
     if (!unit.appearance || unit.appearance > action_sequences_.size())
     {
@@ -3203,7 +3203,7 @@ auto Battle::scripted_frame_count(const OriginalEvents::Unit& unit, unsigned fac
     return unsigned(action_sequences_[unit.appearance - 1][4 + (facing & 3)].size());
 }
 
-auto Battle::hovered_unit(const std::vector<OriginalEvents::Unit>& units) const -> int { return valid(hovered_) ? occupant(units, hovered_) : -1; }
+auto Battle::hovered_unit(const std::vector<Events::Unit>& units) const -> int { return valid(hovered_) ? occupant(units, hovered_) : -1; }
 
 auto Battle::hovered_cell() const -> Point { return valid(hovered_cell_) ? hovered_cell_ : Point{ -1, -1 }; }
 
@@ -3229,7 +3229,7 @@ auto Battle::facing(Point from, Point to, unsigned current) -> unsigned
     }
 }
 
-auto Battle::step(std::vector<OriginalEvents::Unit>& units, size_t index, Point to, bool allied_transit) -> bool
+auto Battle::step(std::vector<Events::Unit>& units, size_t index, Point to, bool allied_transit) -> bool
 {
     if (!can_step(units, index, to))
     {
@@ -3280,7 +3280,7 @@ auto Battle::mutate_combat_random(const std::function<bool(s2ne::Random&, uint32
     return true;
 }
 
-auto Battle::present_skill32_preparation(std::vector<OriginalEvents::Unit>& units, size_t index, size_t target, bool second) -> bool
+auto Battle::present_skill32_preparation(std::vector<Events::Unit>& units, size_t index, size_t target, bool second) -> bool
 {
     if (!movement_animation_enabled_ || index >= units.size() || target >= units.size())
     {
@@ -3355,9 +3355,9 @@ auto Battle::present_skill32_preparation(std::vector<OriginalEvents::Unit>& unit
     return true;
 }
 
-auto Battle::mutate_random(const std::function<bool(OriginalRandom&, uint32_t)>& transaction) -> bool
+auto Battle::mutate_random(const std::function<bool(RandomStream&, uint32_t)>& transaction) -> bool
 {
-    OriginalRandom staged({ random_.seed_state(), random_.draw_count() });
+    RandomStream staged({ random_.seed_state(), random_.draw_count() });
     if (!transaction(staged, random_seconds()))
     {
         return false;
@@ -3367,8 +3367,8 @@ auto Battle::mutate_random(const std::function<bool(OriginalRandom&, uint32_t)>&
     return true;
 }
 
-auto Battle::preview_action_weight(const OriginalEvents& resources, const OriginalEvents::Unit& actor,
-    const OriginalEvents::Unit& target, const OriginalEvents::ActionRecord& action) -> bool
+auto Battle::preview_action_weight(const Events& resources, const Events::Unit& actor,
+    const Events::Unit& target, const Events::ActionRecord& action) -> bool
 {
     // 原40883D是附加效果价值，不是4096F3实击连击概率；预估也保留原抽签顺序。
     if ((physical_status(target, 0x3E) & 0x10) || (target.abilities & 0x4000)) { return false; }
@@ -3409,7 +3409,7 @@ auto Battle::preview_action_weight(const OriginalEvents& resources, const Origin
     }
 }
 
-auto Battle::original_42c88f_bytes(const OriginalEvents& resources, const OriginalEvents::Unit& unit) const -> std::array<uint8_t, 3> { return terrain_effect(resources, unit, { unit.x, unit.y }).bytes; }
+auto Battle::original_42c88f_bytes(const Events& resources, const Events::Unit& unit) const -> std::array<uint8_t, 3> { return terrain_effect(resources, unit, { unit.x, unit.y }).bytes; }
 
 auto Battle::turn() const -> unsigned { return turn_; }
 
@@ -3421,9 +3421,9 @@ auto Battle::moving_unit() const -> int { return moving_unit_; }
 
 auto Battle::moving_actor() const -> int { return moving_unit_; }
 
-auto Battle::set_hostile_resources(const OriginalEvents& resources) -> void { hostile_resources_ = std::make_shared<OriginalEvents>(resources); }
+auto Battle::set_hostile_resources(const Events& resources) -> void { hostile_resources_ = std::make_shared<Events>(resources); }
 
-auto Battle::physical_action_preview(const OriginalEvents& resources, const OriginalEvents::Unit& actor, const OriginalEvents::Unit& defender, const OriginalEvents::ActionRecord& action, bool counter, int counter_mode) const -> int
+auto Battle::physical_action_preview(const Events& resources, const Events::Unit& actor, const Events::Unit& defender, const Events::ActionRecord& action, bool counter, int counter_mode) const -> int
 {
     s2ne::PhysicalPreviewInput in{};
     in.attack = actor.attack;
@@ -3483,7 +3483,7 @@ auto Battle::ai_plan_diagnostic() const -> const std::optional<AiPlanDiagnostic>
 
 auto Battle::automatic_actions_completed() const -> bool { return automatic_actions_completed_; }
 
-auto Battle::begin_npc_actions(std::vector<OriginalEvents::Unit>&) -> void
+auto Battle::begin_npc_actions(std::vector<Events::Unit>&) -> void
 {
     if (hostile_side_ || hostile_actions_active_)
     {
@@ -3497,9 +3497,9 @@ auto Battle::begin_npc_actions(std::vector<OriginalEvents::Unit>&) -> void
     target_ = -1;
 }
 
-auto Battle::tick_npc_actions(std::vector<OriginalEvents::Unit>& units, unsigned milliseconds) -> bool { return tick_hostile_actions(units, milliseconds); }
+auto Battle::tick_npc_actions(std::vector<Events::Unit>& units, unsigned milliseconds) -> bool { return tick_hostile_actions(units, milliseconds); }
 
-auto Battle::begin_automatic_actions(std::vector<OriginalEvents::Unit>& units) -> void
+auto Battle::begin_automatic_actions(std::vector<Events::Unit>& units) -> void
 {
     if (hostile_side_ || hostile_actions_active_)
     {
@@ -3512,7 +3512,7 @@ auto Battle::begin_automatic_actions(std::vector<OriginalEvents::Unit>& units) -
     target_ = -1;
 }
 
-auto Battle::tick_automatic_actions(std::vector<OriginalEvents::Unit>& units, unsigned milliseconds) -> bool
+auto Battle::tick_automatic_actions(std::vector<Events::Unit>& units, unsigned milliseconds) -> bool
 {
     if (controller_hostile_)
     {
@@ -3521,7 +3521,7 @@ auto Battle::tick_automatic_actions(std::vector<OriginalEvents::Unit>& units, un
     return tick_hostile_actions(units, milliseconds);
 }
 
-auto Battle::begin_hostile_actions(std::vector<OriginalEvents::Unit>& units) -> void
+auto Battle::begin_hostile_actions(std::vector<Events::Unit>& units) -> void
 {
     if (!hostile_side_)
     {
@@ -3543,14 +3543,14 @@ auto Battle::begin_controller_actions(bool hostile) -> void
     hostile_wait_ = 0;
 }
 
-auto Battle::idle_pose(OriginalEvents::Unit& unit) -> void
+auto Battle::idle_pose(Events::Unit& unit) -> void
 {
     unit.animation_action = 0;
     unit.movement_frame = 0;
     unit.movement_pose = false;
 }
 
-auto Battle::tick_hostile_actions(std::vector<OriginalEvents::Unit>& units, unsigned milliseconds) -> bool
+auto Battle::tick_hostile_actions(std::vector<Events::Unit>& units, unsigned milliseconds) -> bool
 {
     if (ai_skill_failed_)
     {
@@ -3730,7 +3730,7 @@ auto Battle::tick_hostile_actions(std::vector<OriginalEvents::Unit>& units, unsi
     return true;
 }
 
-auto Battle::tick_hostile(const OriginalEvents& resources, std::vector<OriginalEvents::Unit>& units, unsigned milliseconds) -> bool
+auto Battle::tick_hostile(const Events& resources, std::vector<Events::Unit>& units, unsigned milliseconds) -> bool
 {
     if (!hostile_actions_active_)
     {
@@ -3740,13 +3740,13 @@ auto Battle::tick_hostile(const OriginalEvents& resources, std::vector<OriginalE
     return tick_hostile_actions(units, milliseconds);
 }
 
-auto Battle::hostile_contact_target(const std::vector<OriginalEvents::Unit>& units, size_t actor) const -> int
+auto Battle::hostile_contact_target(const std::vector<Events::Unit>& units, size_t actor) const -> int
 {
     if (!hostile_resources_)
     {
         return -1;
     }
-    std::vector<OriginalEvents::Unit> own, opponents;
+    std::vector<Events::Unit> own, opponents;
     std::vector<size_t> tokens;
     for (size_t i = 0; i < units.size(); ++i)
     {
@@ -3780,7 +3780,7 @@ auto Battle::hostile_contact_target(const std::vector<OriginalEvents::Unit>& uni
     return -1;
 }
 
-auto Battle::advance_hostile(std::vector<OriginalEvents::Unit>& units, size_t index, Point to) -> bool
+auto Battle::advance_hostile(std::vector<Events::Unit>& units, size_t index, Point to) -> bool
 {
     auto& actor = units[index];
     int cost = step_cost(actor, { actor.x, actor.y }, to);
@@ -3825,7 +3825,7 @@ auto Battle::advance_hostile(std::vector<OriginalEvents::Unit>& units, size_t in
     return true;
 }
 
-auto Battle::plan_hostile(const std::vector<OriginalEvents::Unit>& units, size_t index) -> void
+auto Battle::plan_hostile(const std::vector<Events::Unit>& units, size_t index) -> void
 {
     if (!hostile_resources_)
     {
@@ -3865,7 +3865,7 @@ auto Battle::plan_hostile(const std::vector<OriginalEvents::Unit>& units, size_t
         {
             return movement_category(remaining, 1, config_[7], attack_cost(actor));
         });
-    std::vector<OriginalEvents::Unit> observers;
+    std::vector<Events::Unit> observers;
     for (const auto& u : units)
     {
         if (u.present(turn_) && u.hostile() == actor.hostile())
@@ -3974,7 +3974,7 @@ auto Battle::plan_hostile(const std::vector<OriginalEvents::Unit>& units, size_t
             }
             for (bool second : { false, true })
             {
-                OriginalSkills::Context context{};
+                Skills::Context context{};
                 context.second = second;
                 context.computer = true;
                 context.army_da_nonzero = hostile_resources_->army_modes && (*hostile_resources_->army_modes)[controller_hostile_ ? 1 : 0] != 0;
@@ -3987,7 +3987,7 @@ auto Battle::plan_hostile(const std::vector<OriginalEvents::Unit>& units, size_t
                 {
                     for (const auto& skill : group.records)
                     {
-                        if (!probe.select_record(skill.id) || probe.resource_failure(caster, skill) != OriginalSkills::Failure::none) { continue; }
+                        if (!probe.select_record(skill.id) || probe.resource_failure(caster, skill) != Skills::Failure::none) { continue; }
                         if (probe.ai_original_unselected()) { continue; }
                         // 原406695恢复族；合作方沿464679/46AC80复核，不借恢复评分放行其它族。
                         const bool damageFamily = (probe.damage_supported() || probe.drain_supported() || probe.fissure29_supported()) && ai_damage_;
@@ -4007,14 +4007,14 @@ auto Battle::plan_hostile(const std::vector<OriginalEvents::Unit>& units, size_t
                         }
                         auto proposedUnits = units;
                         proposedUnits[index] = caster;
-                        const OriginalEvents::Unit* partner = nullptr;
+                        const Events::Unit* partner = nullptr;
                         if (skill.raw[32] & 7)
                         {
                             auto p = probe.cooperative_partner(caster, proposedUnits, turn_, [&](int x, int y)
                                 {
                                     return cell({ x, y }).elevation;
                                 });
-                            if (!p || probe.resource_failure(proposedUnits[*p], skill) != OriginalSkills::Failure::none) { continue; }
+                            if (!p || probe.resource_failure(proposedUnits[*p], skill) != Skills::Failure::none) { continue; }
                             partner = &proposedUnits[*p];
                         }
                         probe.set_area_camera(ai_skill_camera_);
@@ -4057,7 +4057,7 @@ auto Battle::plan_hostile(const std::vector<OriginalEvents::Unit>& units, size_t
                                     if (damageFamily)
                                     {
                                         const auto& victim = proposedUnits[target];
-                                        OriginalSkill94Transaction::Context preview;
+                                        Skill94Transaction::Context preview;
                                         preview.partner = partner;
                                         auto actorTerrain = original_42c88f_bytes(*hostile_resources_, caster);
                                         auto targetTerrain = original_42c88f_bytes(*hostile_resources_, victim);
@@ -4160,7 +4160,7 @@ auto Battle::plan_hostile(const std::vector<OriginalEvents::Unit>& units, size_t
         if (skillSelection && !s2ne::skill_route_allowed(skillSelection->score, mode)) { skillSelection.reset(); }
         if (skillSelection) { attack_selection.score = skillSelection->score; }
     }
-    auto scan = [&](const OriginalEvents::ActionRecord& action, Position position, int record)
+    auto scan = [&](const Events::ActionRecord& action, Position position, int record)
     {
         auto moved_actor = actor;
         moved_actor.x = position.x;
@@ -4175,7 +4175,7 @@ auto Battle::plan_hostile(const std::vector<OriginalEvents::Unit>& units, size_t
                 break;
             }
         }
-        std::vector<OriginalEvents::Unit> opponents;
+        std::vector<Events::Unit> opponents;
         std::vector<size_t> tokens;
         for (const auto& t : targets)
         {
@@ -4231,7 +4231,7 @@ auto Battle::plan_hostile(const std::vector<OriginalEvents::Unit>& units, size_t
             preview.attacker_status38_02 = (physical_status(actor, 0x38) & 2) != 0;
             int counterAction = -1;
             auto counters = counter_actions(*hostile_resources_, defender, { position.x, position.y },
-                std::span<const OriginalEvents::Unit>(&moved_actor, 1), opponents, 0,
+                std::span<const Events::Unit>(&moved_actor, 1), opponents, 0,
                 physical_status(defender, 0x39), physical_status_dword(defender));
             if (!counters.empty())
             {
@@ -4644,7 +4644,7 @@ auto Battle::plan_hostile(const std::vector<OriginalEvents::Unit>& units, size_t
     std::reverse(hostile_path_.begin(), hostile_path_.end());
 }
 
-auto Battle::begin_hostile_side(std::vector<OriginalEvents::Unit>& units) -> void
+auto Battle::begin_hostile_side(std::vector<Events::Unit>& units) -> void
 {
     for (auto& unit : units)
     {
@@ -4661,7 +4661,7 @@ auto Battle::begin_hostile_side(std::vector<OriginalEvents::Unit>& units) -> voi
     target_ = -1;
 }
 
-auto Battle::tick_action_statuses(std::vector<OriginalEvents::Unit>& units) -> void
+auto Battle::tick_action_statuses(std::vector<Events::Unit>& units) -> void
 {
     for (auto& unit : units)
     {
@@ -4680,7 +4680,7 @@ auto Battle::tick_action_statuses(std::vector<OriginalEvents::Unit>& units) -> v
     }
 }
 
-auto Battle::reset_side(std::vector<OriginalEvents::Unit>& units, bool hostile) -> void
+auto Battle::reset_side(std::vector<Events::Unit>& units, bool hostile) -> void
 {
     for (auto& u : units)
     {
@@ -4699,7 +4699,7 @@ auto Battle::reset_side(std::vector<OriginalEvents::Unit>& units, bool hostile) 
     }
 }
 
-auto Battle::end_turn(std::vector<OriginalEvents::Unit>& units) -> void
+auto Battle::end_turn(std::vector<Events::Unit>& units) -> void
 {
     if (!hostile_side_)
     {
@@ -4736,7 +4736,7 @@ auto Battle::end_turn(std::vector<OriginalEvents::Unit>& units) -> void
     message_ = "Turn " + std::to_string(turn_) + "; enemy contact attacks " + std::to_string(responses) + "; Enter: finish side";
 }
 
-auto Battle::present_attack(const std::vector<OriginalEvents::Unit>& units, size_t index, const OriginalEvents::ActionRecord* chosen) -> void
+auto Battle::present_attack(const std::vector<Events::Unit>& units, size_t index, const Events::ActionRecord* chosen) -> void
 {
     if (!movement_animation_enabled_ || !hostile_resources_)
     {
@@ -4747,7 +4747,7 @@ auto Battle::present_attack(const std::vector<OriginalEvents::Unit>& units, size
     {
         return;
     }
-    std::vector<OriginalEvents::Unit> own;
+    std::vector<Events::Unit> own;
     for (const auto& unit : units)
     {
         if (unit.present(turn_) && unit.hostile() == actor.hostile())
@@ -4766,7 +4766,7 @@ auto Battle::present_attack(const std::vector<OriginalEvents::Unit>& units, size
         {
             if (can_attack(units, index, target))
             {
-                if (!action_targets(*hostile_resources_, actor, action, std::span<const OriginalEvents::Unit>(&units[target], 1), own, 0).empty())
+                if (!action_targets(*hostile_resources_, actor, action, std::span<const Events::Unit>(&units[target], 1), own, 0).empty())
                 {
                     supported = true;
                     break;
@@ -4810,7 +4810,7 @@ auto Battle::present_attack(const std::vector<OriginalEvents::Unit>& units, size
     }
 }
 
-auto Battle::attack(std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, int slot) -> bool
+auto Battle::attack(std::vector<Events::Unit>& units, size_t a, size_t b, int slot) -> bool
 {
     if (a >= units.size() || !player_controlled(units[a], a) || !can_attack(units, a, b, slot) || animating_movement())
     {
@@ -4819,7 +4819,7 @@ auto Battle::attack(std::vector<OriginalEvents::Unit>& units, size_t a, size_t b
     return strike(units, a, b, slot);
 }
 
-auto Battle::physical_feedback(std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, int damage, bool miss) -> void
+auto Battle::physical_feedback(std::vector<Events::Unit>& units, size_t a, size_t b, int damage, bool miss) -> void
 {
     reaction_pose_.reset();
     units[b].ending_combat_value = units[b].hp;
@@ -4843,7 +4843,7 @@ auto Battle::physical_feedback(std::vector<OriginalEvents::Unit>& units, size_t 
     settle_physical(units, a, b, lost);
 }
 
-auto Battle::draw_forward_damage(const std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, const OriginalEvents::ActionRecord& action, int attack_style, int* reverse_tactics) -> int
+auto Battle::draw_forward_damage(const std::vector<Events::Unit>& units, size_t a, size_t b, const Events::ActionRecord& action, int attack_style, int* reverse_tactics) -> int
 {
     const auto& attacker = units[a];
     const auto& defender = units[b];
@@ -4969,7 +4969,7 @@ auto Battle::draw_physical_instant(const PhysicalActionContext& context) -> bool
     return percent() < threshold;
 }
 
-auto Battle::try_forward_exchange(const OriginalEvents& resources, const std::vector<OriginalEvents::Unit>& units, size_t actor, size_t primary, const OriginalEvents::ActionRecord& action) -> Result<std::vector<PhysicalExchangeStep>>
+auto Battle::try_forward_exchange(const Events& resources, const std::vector<Events::Unit>& units, size_t actor, size_t primary, const Events::ActionRecord& action) -> Result<std::vector<PhysicalExchangeStep>>
 {
     for (const auto& unit : units)
     {
@@ -5083,7 +5083,7 @@ auto Battle::draw_reverse_damage(const PhysicalActionContext& context) -> int
     return value;
 }
 
-auto Battle::try_counter_exchange(const std::vector<OriginalEvents::Unit>& units, const PhysicalActionContext& original) -> Result<std::vector<PhysicalExchangeStep>>
+auto Battle::try_counter_exchange(const std::vector<Events::Unit>& units, const PhysicalActionContext& original) -> Result<std::vector<PhysicalExchangeStep>>
 {
     std::vector<PhysicalExchangeStep> steps;
     if (!original.counter || !units[original.actor].hp || !units[original.target].hp || (physical_status(units[original.target], 0x39) & 2) || (physical_status_dword(units[original.target]) & 0x2B000))
@@ -5119,7 +5119,7 @@ auto Battle::try_counter_exchange(const std::vector<OriginalEvents::Unit>& units
     return Result<std::vector<PhysicalExchangeStep>>::success(std::move(steps));
 }
 
-auto Battle::advance_physical_proficiency(OriginalEvents::Unit& unit, const OriginalEvents::ActionRecord& action) -> void
+auto Battle::advance_physical_proficiency(Events::Unit& unit, const Events::ActionRecord& action) -> void
 {
     int type = action.fields[0];
     unsigned* value = nullptr;
@@ -5128,7 +5128,7 @@ auto Battle::advance_physical_proficiency(OriginalEvents::Unit& unit, const Orig
     if (value && *value < 1500) { ++*value; }
 }
 
-auto Battle::advance_physical_exchange(std::vector<OriginalEvents::Unit>& units) -> void
+auto Battle::advance_physical_exchange(std::vector<Events::Unit>& units) -> void
 {
     if (physical_exchange_ && physical_exchange_->growth_pending) { return; }
     while (physical_exchange_ && !combat_feedback_.active() && !animating_movement())
@@ -5177,7 +5177,7 @@ auto Battle::advance_physical_exchange(std::vector<OriginalEvents::Unit>& units)
             if (present_group && movement_animation_enabled_ && action.index == 160)
             {
                 auto source = screen_center({ units[actor].x, units[actor].y }, 0, 0), destination = screen_center({ units[target].x, units[target].y }, 0, 0);
-                projectile_ = OriginalEvents::effect_flight(source.x - 32, source.y - 16, destination.x - 32, destination.y - 16, 1);
+                projectile_ = Events::effect_flight(source.x - 32, source.y - 16, destination.x - 32, destination.y - 16, 1);
                 projectile_elapsed_ = 0;
             }
             if (present_group && movement_animation_enabled_ && animating_movement()) { return; }
@@ -5366,7 +5366,7 @@ auto Battle::advance_physical_exchange(std::vector<OriginalEvents::Unit>& units)
     }
 }
 
-auto Battle::rollback_physical_exchange(std::vector<OriginalEvents::Unit>& units) -> void
+auto Battle::rollback_physical_exchange(std::vector<Events::Unit>& units) -> void
 {
     if (!physical_exchange_) { return; }
     if (physical_loot_finish_) { physical_loot_finish_(false); }
@@ -5384,7 +5384,7 @@ auto Battle::rollback_physical_exchange(std::vector<OriginalEvents::Unit>& units
     if (physical_transaction_finish_) { physical_transaction_finish_(false); }
 }
 
-auto Battle::strike(std::vector<OriginalEvents::Unit>& units, size_t a, size_t b, int slot) -> bool
+auto Battle::strike(std::vector<Events::Unit>& units, size_t a, size_t b, int slot) -> bool
 {
     if (a >= units.size() || b >= units.size() || a == b || animating_movement() || combat_feedback_active())
     {
@@ -5429,7 +5429,7 @@ auto Battle::strike(std::vector<OriginalEvents::Unit>& units, size_t a, size_t b
     if (movement_animation_enabled_ && action && action->index == 160)
     {
         auto source = screen_center({ attacker.x, attacker.y }, 0, 0), target = screen_center({ defender.x, defender.y }, 0, 0);
-        projectile_ = OriginalEvents::effect_flight(source.x - 32, source.y - 16, target.x - 32, target.y - 16, 1);
+        projectile_ = Events::effect_flight(source.x - 32, source.y - 16, target.x - 32, target.y - 16, 1);
         projectile_elapsed_ = 0;
     }
     if (original_rules_)
@@ -5503,7 +5503,7 @@ auto Battle::strike(std::vector<OriginalEvents::Unit>& units, size_t a, size_t b
     return true;
 }
 
-auto Battle::click(std::vector<OriginalEvents::Unit>& units, Point p) -> bool
+auto Battle::click(std::vector<Events::Unit>& units, Point p) -> bool
 {
     if (teleport_pending_ || animating_movement() || combat_feedback_active())
     {
@@ -5754,7 +5754,7 @@ auto Battle::draw_skill_cells(std::vector<uint8_t>& image, int cx, int cy, unsig
     }
 }
 
-auto Battle::draw_selection(std::vector<uint8_t>& image, const std::vector<OriginalEvents::Unit>& units, int cx, int cy, int layer, const std::function<void(std::vector<uint8_t>&, Point)>& mask) const -> void
+auto Battle::draw_selection(std::vector<uint8_t>& image, const std::vector<Events::Unit>& units, int cx, int cy, int layer, const std::function<void(std::vector<uint8_t>&, Point)>& mask) const -> void
 {
     if (image.size() < 640 * 480 * 4 || effect_palette_.size() < 768)
     {

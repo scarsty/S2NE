@@ -1,8 +1,8 @@
 #pragma once
-#include "original_effect_audio.h"
-#include "original_music.h"
-#include "original_xmi.h"
+#include "effect_audio.h"
+#include "music.h"
 #include "runtime_error.h"
+#include "xmi.h"
 #include <SDL3_mixer/SDL_mixer.h>
 #include <atomic>
 #include <cmath>
@@ -27,7 +27,7 @@ class OpeningAudio
     bool music_midi_{};
     std::vector<std::vector<uint8_t>> xmi_resources_;
     int midi_volume_{ 100 }, cd_volume_{ 100 };
-    std::unique_ptr<OriginalEffectAudio> effects_;
+    std::unique_ptr<EffectAudio> effects_;
     std::atomic<unsigned long long> signal_samples{ 0 };
     static void fluid_log(int level, const char* message, void*);
     static void SDLCALL monitor(void* userdata, MIX_Mixer*, const SDL_AudioSpec*, float* pcm, int samples);
@@ -43,7 +43,7 @@ public:
     Result<bool> play_music(const std::filesystem::path& root, unsigned id, ResourceDomain domain, bool force_midi = false);
     MIX_Mixer* mixer_handle() const;
     Result<bool> start_effects(const std::filesystem::path& root);
-    OriginalEffectAudio* effects() const;
+    EffectAudio* effects() const;
     OpeningAudio();
     OpeningAudio(const OpeningAudio&) = delete;
     void set_diagnostics(bool enabled);

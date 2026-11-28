@@ -1,6 +1,6 @@
 #pragma once
-#include "original_disc.h"
-#include "original_presentation.h"
+#include "disc.h"
+#include "presentation.h"
 #include "resource_result.h"
 #include "texture_resources.h"
 #include <SDL3/SDL.h>

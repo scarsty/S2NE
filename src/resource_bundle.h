@@ -48,7 +48,7 @@ enum class ResourceDomain : unsigned
     one = primary,
     two = secondary
 };
-using OriginalDisc = ResourceDomain;
+using Disc = ResourceDomain;
 uint64_t resource_hash(std::span<const uint8_t> bytes);
 Result<std::vector<uint8_t>> read_bundle(const std::filesystem::path& root, unsigned kind, ResourceDomain domain, unsigned id = 0);
 class ResourceBundle
@@ -62,5 +62,5 @@ public:
     Result<std::vector<uint8_t>> try_prg_image(ResourceDomain domain = ResourceDomain::primary) const;
     Result<std::vector<uint8_t>> try_prg_entry(ResourceDomain domain, unsigned id) const;
 };
-using OriginalDiscResources = ResourceBundle;
+using DiscResources = ResourceBundle;
 }    //namespace s2ne

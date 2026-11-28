@@ -2,7 +2,7 @@
 
 namespace s2ne
 {
-auto Prologue::damage_area_poses() const -> std::vector<OriginalEvents::Unit>
+auto Prologue::damage_area_poses() const -> std::vector<Events::Unit>
 {
     auto units = events.units;
     for (unsigned target : damage_area_hidden_) { units.at(target).status_flags &= ~0x80u; }
@@ -11,8 +11,8 @@ auto Prologue::damage_area_poses() const -> std::vector<OriginalEvents::Unit>
 
 auto Prologue::advance_growth() -> void
 {
-    OriginalProgression progression(root_);
-    OriginalPromotion promotion(root_);
+    Progression progression(root_);
+    Promotion promotion(root_);
     while (growth_finish_)
     {
         if (growth_ && growth_->experience_notice() > 0)
@@ -49,7 +49,7 @@ auto Prologue::advance_growth() -> void
             if (growth_award_cursor_ == growth_awards_.size())
             {
                 events.units = std::move(growth_units_);
-                battle_->mutate_random([&](OriginalRandom& random, uint32_t)
+                battle_->mutate_random([&](RandomStream& random, uint32_t)
                     {
                         random.restore(growth_random_);
                         return true;
@@ -60,7 +60,7 @@ auto Prologue::advance_growth() -> void
                 return;
             }
             const auto& award = growth_awards_[growth_award_cursor_];
-            growth_.emplace(progression.stage(growth_units_.at(award.actor), OriginalRandom(growth_random_), award.raw_xp, false, events.difficulty, true));
+            growth_.emplace(progression.stage(growth_units_.at(award.actor), RandomStream(growth_random_), award.raw_xp, false, events.difficulty, true));
             if (growth_->experience_notice() > 0) { continue; }
         }
         if (!growth_->prepare(promotion, [this]
@@ -130,7 +130,7 @@ auto Prologue::connect_combat_progression() -> void
             }
             growth_units_ = events.units;
             growth_award_cursor_ = 0;
-            battle_->mutate_random([&](OriginalRandom& random, uint32_t seconds)
+            battle_->mutate_random([&](RandomStream& random, uint32_t seconds)
                 {
                     growth_random_ = random.state();
                     growth_seconds_ = seconds;
@@ -241,14 +241,14 @@ auto Prologue::connect_combat_progression() -> void
         });
     battle_->set_physical_settlement([this](auto& units, const Battle::PhysicalSettlement& result)
         {
-            OriginalProgression progression(root_);
-            OriginalPromotion promotion(root_);
+            Progression progression(root_);
+            Promotion promotion(root_);
             if (result.actor >= units.size())
             {
                 report_error(make_error("Combat XP actor out of range"));
                 return;
             }
-            bool applied = battle_->mutate_random([&](OriginalRandom& random, uint32_t seconds)
+            bool applied = battle_->mutate_random([&](RandomStream& random, uint32_t seconds)
                 {
                     return progression.award_native(units[result.actor], random, result.raw_xp, promotion, [seconds]
                                           {
@@ -265,7 +265,7 @@ auto Prologue::connect_combat_progression() -> void
         });
 }
 
-auto Prologue::campaign() const -> OriginalCampaign&
+auto Prologue::campaign() const -> Campaign&
 {
     if (!campaign_)
     {
@@ -395,7 +395,7 @@ auto Prologue::begin_story_animation(size_t event) -> bool
     {
         campaign_.emplace(root_);
     }
-    auto group_result = OriginalCampaign::try_story_animation_group(events, event);
+    auto group_result = Campaign::try_story_animation_group(events, event);
     if (!group_result)
     {
         report_error(group_result.error());
@@ -518,7 +518,7 @@ auto Prologue::dispatch_story(bool starting_battle_script) -> void
         }
         if (events.type(i) == 16 && (events.condition(i) == 0 || events.condition(i) == 4))
         {
-            auto decoded_result = OriginalCampaign::try_story_movement_group(events, i);
+            auto decoded_result = Campaign::try_story_movement_group(events, i);
             if (!decoded_result)
             {
                 report_error(decoded_result.error());
@@ -683,7 +683,7 @@ auto Prologue::dispatch_story(bool starting_battle_script) -> void
             }
             // 461149 returns success for condition>=10 on dead/inactive roles,
             // before mutation. 41BA1E still presents lines, then 41BA56 consumes it.
-            if (!OriginalCampaign::living(*role))
+            if (!Campaign::living(*role))
             {
                 event_ = i;
                 line_ = 0;
@@ -895,7 +895,7 @@ auto Prologue::dispatch_story(bool starting_battle_script) -> void
         campaign_blocker_ = "Original story event " + std::to_string(i) + " opcode " + std::to_string(events.type(i)) + " condition " + std::to_string(events.condition(i)) + " requires native executor";
         if (events.type(i) == 15 && (events.condition(i) == 0 || events.condition(i) == 3))
         {
-            auto group_result = OriginalCampaign::try_story_animation_group(events, i);
+            auto group_result = Campaign::try_story_animation_group(events, i);
             if (!group_result)
             {
                 report_error(group_result.error());
@@ -909,9 +909,9 @@ auto Prologue::dispatch_story(bool starting_battle_script) -> void
         phase_ = Phase::campaign_blocked;
         return;
     }
-    OriginalEvents source = events;
+    Events source = events;
     source.load_stage(events.stage);
-    story_route_ = OriginalCampaign::completed_story_route(source, events, campaign().stage(events.stage).next);
+    story_route_ = Campaign::completed_story_route(source, events, campaign().stage(events.stage).next);
     if (story_route_)
     {
         phase_ = Phase::story_ready;
@@ -937,7 +937,7 @@ auto Prologue::sprite_offset(unsigned archive, unsigned index) const -> size_t {
 
 auto Prologue::sprite_validated(std::vector<uint8_t>& image, size_t p, bool typed, int left, int top, bool opaque_zero) const -> Result<bool>
 {
-    return draw_original_sprite(image, cel_, pal_, p, typed, left, top, opaque_zero ? OriginalZeroRun::opaque : OriginalZeroRun::transparent);
+    return draw_original_sprite(image, cel_, pal_, p, typed, left, top, opaque_zero ? ZeroRun::opaque : ZeroRun::transparent);
 }
 
 auto Prologue::try_sprite(std::vector<uint8_t>& image, size_t p, bool typed, int left, int top, bool opaque_zero) const -> Result<bool>
@@ -1157,7 +1157,7 @@ auto Prologue::rollback_synchronous_death() -> void
         *battle_ = std::move(*death_battle_baseline_);
         death_battle_baseline_.reset();
     }
-    evacuation_ = OriginalEvacuation{};
+    evacuation_ = Evacuation{};
     death_location_.reset();
     if (death_camera_baseline_)
     {
@@ -1240,7 +1240,7 @@ auto Prologue::enter_stage_battle() -> void
             }
         }
     }
-    if (auto request = OriginalCampaign::save_request(OriginalCampaign::SavePoint::before_battle, 0, 1))
+    if (auto request = Campaign::save_request(Campaign::SavePoint::before_battle, 0, 1))
     {
         autosave_requests_.push_back(*request);
     }
@@ -1450,7 +1450,7 @@ auto Prologue::dispatch_original_flag_operations() -> bool
         }
         auto found = std::find_if(events.units.begin(), events.units.end(), [&](const auto& u)
             {
-                return int(u.id) == subject && OriginalCampaign::living(u);
+                return int(u.id) == subject && Campaign::living(u);
             });
         if (type == 10 && condition == 0)
         {
@@ -1612,9 +1612,9 @@ auto Prologue::begin_scripted_party_experience(size_t event, size_t cursor) -> b
         if (unit.hostile() || unit.persistent_role6 != 0 || !(unit.status_flags & 0x80)) { continue; }
         auto candidate = unit;
         candidate.experience = uint16_t(candidate.experience + events.event_word(event, 5));
-        std::optional<OriginalProgression::PendingGrowth> pending;
+        std::optional<Progression::PendingGrowth> pending;
         uint32_t seconds{};
-        battle_->mutate_random([&](OriginalRandom& random, uint32_t now)
+        battle_->mutate_random([&](RandomStream& random, uint32_t now)
             {
                 pending.emplace(candidate, random);
                 seconds = now;
@@ -1628,7 +1628,7 @@ auto Prologue::begin_scripted_party_experience(size_t event, size_t cursor) -> b
                     return;
                 }
                 events.units[cursor] = reward_growth().unit();
-                battle_->mutate_random([&](OriginalRandom& random, uint32_t)
+                battle_->mutate_random([&](RandomStream& random, uint32_t)
                     {
                         random.restore(reward_growth().random().state());
                         return true;
@@ -1811,7 +1811,7 @@ auto Prologue::dispatch_campaign() -> bool
         campaign_.emplace(root_);
     }
     const auto current_stage = campaign_->stage(events.stage);
-    std::vector<OriginalEvents::Unit> allies, enemies;
+    std::vector<Events::Unit> allies, enemies;
     for (const auto& u : events.units)
     {
         if (u.first_turn > int(battle_->turn()))
@@ -1820,7 +1820,7 @@ auto Prologue::dispatch_campaign() -> bool
         }
         (u.hostile() ? enemies : allies).push_back(u);
     }
-    OriginalCampaign::Runtime runtime;
+    Campaign::Runtime runtime;
     // 4384FE检查4F7CD0游戏模式，不是关卡头的战斗／剧情类型。
     runtime.mode = 0;
     runtime.turn = battle_->turn();
@@ -1830,8 +1830,8 @@ auto Prologue::dispatch_campaign() -> bool
     {
         return condition == 31 && events.flags[0] && campaign_->protagonist_at_exit(events);
     };
-    auto decision = OriginalCampaign::evaluate(current_stage, allies, enemies, runtime);
-    if (decision.outcome == OriginalCampaign::Outcome::pending)
+    auto decision = Campaign::evaluate(current_stage, allies, enemies, runtime);
+    if (decision.outcome == Campaign::Outcome::pending)
     {
         return false;
     }
@@ -1846,7 +1846,7 @@ auto Prologue::dispatch_campaign() -> bool
     // 41BC44 dispatches only type2 records matching the victory group;
     // unselected choices and dormant flag operations remain unconsumed.
     campaign_decision_ = decision;
-    if (decision.outcome == OriginalCampaign::Outcome::defeat)
+    if (decision.outcome == Campaign::Outcome::defeat)
     {
         auto pal = read_resource(root_ / "SUPERSP.PAL");
         auto bin = read_shared_resource(root_ / "SUPERSP.BIN");
@@ -1875,7 +1875,7 @@ auto Prologue::dispatch_campaign() -> bool
             report_error(make_error("Unsupported defeat animation layout"));
             return false;
         }
-        std::vector<OriginalSkill32Visual::Frame> frames;
+        std::vector<Skill32Visual::Frame> frames;
         size_t data = entry + 16 + count * 8;
         for (unsigned i = 0; i < count; ++i)
         {
@@ -1885,7 +1885,7 @@ auto Prologue::dispatch_campaign() -> bool
                 report_error(c.error());
                 return false;
             }
-            auto decoded = OriginalSkill32Visual::try_decode({ cel.value().begin() + offset, cel.value().begin() + offset + length }, width, height);
+            auto decoded = Skill32Visual::try_decode({ cel.value().begin() + offset, cel.value().begin() + offset + length }, width, height);
             if (!decoded)
             {
                 report_error(decoded.error());
@@ -1900,7 +1900,7 @@ auto Prologue::dispatch_campaign() -> bool
         phase_ = Phase::campaign_defeat;
         return true;
     }
-    for (size_t i : OriginalCampaign::victory_events(events, decision.group))
+    for (size_t i : Campaign::victory_events(events, decision.group))
     {
         script_queue_.push_back(i);
     }
@@ -1924,7 +1924,7 @@ auto Prologue::dispatch_campaign() -> bool
     return true;
 }
 
-auto Prologue::interbattle_random(const std::function<bool(OriginalRandom&, uint32_t)>& transaction) -> bool { return battle_ && battle_->mutate_random(transaction); }
+auto Prologue::interbattle_random(const std::function<bool(RandomStream&, uint32_t)>& transaction) -> bool { return battle_ && battle_->mutate_random(transaction); }
 
 auto Prologue::battle() -> Battle&
 {
@@ -1946,7 +1946,7 @@ auto Prologue::battle() const -> const Battle&
 
 auto Prologue::reconnect_battle_callbacks() -> void { connect_combat_progression(); }
 
-auto Prologue::queue_original_death(std::vector<OriginalEvents::Unit>& units, size_t actor, size_t target) -> void
+auto Prologue::queue_original_death(std::vector<Events::Unit>& units, size_t actor, size_t target) -> void
 {
     if (target >= units.size() || units[target].hp > 0)
     {
@@ -1987,7 +1987,7 @@ auto Prologue::ending_active() const -> bool { return ending_.has_value(); }
 auto Prologue::begin_temporary_text(unsigned background, unsigned text, unsigned music, size_t event) -> Result<bool>
 {
     if (temporary_text_ || !music_audio_) { return Result<bool>::failure(make_error("Original temporary text is busy or has no music adapter")); }
-    OriginalScrollText candidate(root_, background, text, disc_);
+    ScrollText candidate(root_, background, text, disc_);
     auto played = music_audio_(0);
     if (played) { played = music_audio_(music); }
     if (!played)
@@ -2038,13 +2038,13 @@ auto Prologue::dispatch_sound_event(size_t i) -> bool
     return true;
 }
 
-auto Prologue::set_script_effect_audio(OriginalAniAudio::Play play, OriginalAniAudio::Stop stop) -> void
+auto Prologue::set_script_effect_audio(AniAudio::Play play, AniAudio::Stop stop) -> void
 {
     script_effect_audio_ = std::move(play);
     stop_effect_audio_ = std::move(stop);
 }
 
-auto Prologue::set_music_audio(OriginalAniAudio::Music play, OriginalAniAudio::Music midi) -> void
+auto Prologue::set_music_audio(AniAudio::Music play, AniAudio::Music midi) -> void
 {
     bool initial = !music_audio_;
     music_audio_ = std::move(play);
@@ -2107,7 +2107,7 @@ auto Prologue::set_skill_effect_audio(std::function<void(unsigned)> play) -> voi
     skill_effect_audio_ = std::move(play);
 }
 
-auto Prologue::set_ending_effect_audio(OriginalAniAudio::Play play, OriginalAniAudio::Stop stop) -> void
+auto Prologue::set_ending_effect_audio(AniAudio::Play play, AniAudio::Stop stop) -> void
 {
     if (ending_)
     {
@@ -2170,13 +2170,13 @@ auto Prologue::set_campaign_blocker(std::string message) -> void
     phase_ = Phase::campaign_blocked;
 }
 
-auto Prologue::autosave_requests() const -> const std::vector<s2ne::OriginalCampaign::SaveRequest>& { return autosave_requests_; }
+auto Prologue::autosave_requests() const -> const std::vector<s2ne::Campaign::SaveRequest>& { return autosave_requests_; }
 
 auto Prologue::campaign_travel_pending() const -> bool { return travel_map_.has_value(); }
 
 auto Prologue::campaign_travel_active() const -> bool { return travel_map_ && !travel_map_->travel_done(); }
 
-auto Prologue::begin_campaign_travel(OriginalWorldmap map) -> void
+auto Prologue::begin_campaign_travel(Worldmap map) -> void
 {
     map.begin_travel();
     travel_map_ = std::move(map);
@@ -2184,7 +2184,7 @@ auto Prologue::begin_campaign_travel(OriginalWorldmap map) -> void
 
 auto Prologue::clear_autosave_requests() -> void { autosave_requests_.clear(); }
 
-auto Prologue::set_campaign_reward_adapter(std::function<bool(OriginalEvents&, const OriginalCampaign::Settlement&)> callback) -> void { campaign_reward_adapter_ = std::move(callback); }
+auto Prologue::set_campaign_reward_adapter(std::function<bool(Events&, const Campaign::Settlement&)> callback) -> void { campaign_reward_adapter_ = std::move(callback); }
 
 auto Prologue::set_physical_loot_finish(std::function<Result<bool>(bool)> callback) -> void
 {
@@ -2194,7 +2194,7 @@ auto Prologue::set_physical_loot_finish(std::function<Result<bool>(bool)> callba
 
 auto Prologue::growth_active() const -> bool { return bool(growth_finish_); }
 
-auto Prologue::begin_reward_growth(OriginalProgression::PendingGrowth pending, uint32_t seconds, std::function<void(bool)> finish) -> bool
+auto Prologue::begin_reward_growth(Progression::PendingGrowth pending, uint32_t seconds, std::function<void(bool)> finish) -> bool
 {
     if (growth_active()) { return false; }
     reward_growth_external_ = true;
@@ -2205,11 +2205,11 @@ auto Prologue::begin_reward_growth(OriginalProgression::PendingGrowth pending, u
     return true;
 }
 
-auto Prologue::reward_growth() const -> const OriginalProgression::PendingGrowth& { return *growth_; }
+auto Prologue::reward_growth() const -> const Progression::PendingGrowth& { return *growth_; }
 
 auto Prologue::experience_notice() const -> int { return growth_active() && growth_ ? growth_->experience_notice() : 0; }
 
-auto Prologue::draw_experience_notice(const OriginalMenu& font, std::vector<uint8_t>& image) const -> Result<bool>
+auto Prologue::draw_experience_notice(const Menu& font, std::vector<uint8_t>& image) const -> Result<bool>
 {
     const auto& unit = growth_->unit();
     auto text = font.text_bytes(2);
@@ -2237,7 +2237,7 @@ auto Prologue::draw_experience_notice(const OriginalMenu& font, std::vector<uint
     return font.try_draw_original_large(image, text, left + width / 2 - (int(text.size()) - 3) * 6 - 24, top + height / 2 - 12, 42);
 }
 
-auto Prologue::draw_pickup_notice(const OriginalMenu& font, std::vector<uint8_t>& image, size_t unit_index, unsigned item_id) const -> Result<bool>
+auto Prologue::draw_pickup_notice(const Menu& font, std::vector<uint8_t>& image, size_t unit_index, unsigned item_id) const -> Result<bool>
 {
     const auto& unit = events.units.at(unit_index);
     const size_t panel = sprite_offset(2, 209 - 142);
@@ -2281,7 +2281,7 @@ auto Prologue::reject_growth() -> void
     growth_.reset();
 }
 
-auto Prologue::growth_step() const -> const OriginalProgression::GrowthStep*
+auto Prologue::growth_step() const -> const Progression::GrowthStep*
 {
     if (!growth_ || !growth_->step()) { return nullptr; }
     return &*growth_->step();
@@ -2304,13 +2304,13 @@ auto Prologue::confirm_growth() -> void
     advance_growth();
 }
 
-auto Prologue::set_physical_loot_commit(std::function<Result<bool>(const std::vector<OriginalEvents::Unit>&, const std::vector<Battle::PhysicalSettlement>&)> callback) -> void
+auto Prologue::set_physical_loot_commit(std::function<Result<bool>(const std::vector<Events::Unit>&, const std::vector<Battle::PhysicalSettlement>&)> callback) -> void
 {
     physical_loot_commit_ = std::move(callback);
     if (battle_) { battle_->set_physical_loot_commit(physical_loot_commit_); }
 }
 
-auto Prologue::set_campaign_arrival_adapter(std::function<std::optional<ArrivalTransaction>(const OriginalEvents&, unsigned)> callback, unsigned already_inserted_turn) -> void
+auto Prologue::set_campaign_arrival_adapter(std::function<std::optional<ArrivalTransaction>(const Events&, unsigned)> callback, unsigned already_inserted_turn) -> void
 {
     campaign_arrival_adapter_ = std::move(callback);
     arrivals_turn_ = already_inserted_turn;
@@ -2318,7 +2318,7 @@ auto Prologue::set_campaign_arrival_adapter(std::function<std::optional<ArrivalT
 
 auto Prologue::mark_campaign_arrivals_inserted(unsigned turn) -> void { arrivals_turn_ = turn; }
 
-auto Prologue::try_normalize_campaign_roster(OriginalEvents restored, unsigned already_inserted_turn) -> Result<bool>
+auto Prologue::try_normalize_campaign_roster(Events restored, unsigned already_inserted_turn) -> Result<bool>
 {
     if (restored.stage != events.stage || restored.difficulty != events.difficulty || (battle_ && (battle_->animating_movement() || battle_->combat_feedback_active())) || !script_queue_.empty())
     {
@@ -2336,7 +2336,7 @@ auto Prologue::try_normalize_campaign_roster(OriginalEvents restored, unsigned a
     return Result<bool>::success(true);
 }
 
-auto Prologue::normalize_campaign_roster(OriginalEvents restored, unsigned already_inserted_turn) -> void
+auto Prologue::normalize_campaign_roster(Events restored, unsigned already_inserted_turn) -> void
 {
     auto result = try_normalize_campaign_roster(std::move(restored), already_inserted_turn);
     if (!result)
@@ -2345,15 +2345,15 @@ auto Prologue::normalize_campaign_roster(OriginalEvents restored, unsigned alrea
     }
 }
 
-auto Prologue::set_campaign_scripted_roles_adapter(std::function<std::optional<ArrivalTransaction>(const OriginalEvents&, size_t)> callback) -> void { campaign_scripted_roles_adapter_ = std::move(callback); }
+auto Prologue::set_campaign_scripted_roles_adapter(std::function<std::optional<ArrivalTransaction>(const Events&, size_t)> callback) -> void { campaign_scripted_roles_adapter_ = std::move(callback); }
 
-auto Prologue::set_resource_domain(OriginalDisc disc) -> void
+auto Prologue::set_resource_domain(Disc disc) -> void
 {
     map_.set_resource_domain(disc);
     disc_ = disc;
 }
 
-auto Prologue::set_interbattle_adapter(std::function<OriginalInterbattle::Result(OriginalInterbattle::Request)> callback) -> void { interbattle_adapter_ = std::move(callback); }
+auto Prologue::set_interbattle_adapter(std::function<Interbattle::Result(Interbattle::Request)> callback) -> void { interbattle_adapter_ = std::move(callback); }
 
 auto Prologue::select_interbattle_option(unsigned index) -> bool
 {
@@ -2376,7 +2376,7 @@ auto Prologue::campaign_scan(unsigned scan) -> void
     }
 }
 
-auto Prologue::interbattle_request() const -> std::optional<OriginalInterbattle::Request> { return interbattle_ ? interbattle_->request() : std::nullopt; }
+auto Prologue::interbattle_request() const -> std::optional<Interbattle::Request> { return interbattle_ ? interbattle_->request() : std::nullopt; }
 
 auto Prologue::pending_story_route() const -> unsigned { return phase_ == Phase::story_ready ? story_route_ : 0; }
 
@@ -2390,7 +2390,7 @@ auto Prologue::campaign_next_stage() const -> unsigned
     }
 }
 
-auto Prologue::restore_campaign_entry(OriginalEvents restored) -> void
+auto Prologue::restore_campaign_entry(Events restored) -> void
 {
     restore_battle(std::move(restored), 1);
     restored_story_pending_ = false;
@@ -2399,7 +2399,7 @@ auto Prologue::restore_campaign_entry(OriginalEvents restored) -> void
     prepare_briefing();
 }
 
-auto Prologue::try_restore_campaign_story(OriginalEvents restored) -> Result<bool>
+auto Prologue::try_restore_campaign_story(Events restored) -> Result<bool>
 {
     if (campaign().stage(restored.stage).mode != 3)
     {
@@ -2409,7 +2409,7 @@ auto Prologue::try_restore_campaign_story(OriginalEvents restored) -> Result<boo
     return Result<bool>::success(true);
 }
 
-auto Prologue::restore_campaign_story(OriginalEvents restored) -> void
+auto Prologue::restore_campaign_story(Events restored) -> void
 {
     auto result = try_restore_campaign_story(std::move(restored));
     if (!result)
@@ -2418,7 +2418,7 @@ auto Prologue::restore_campaign_story(OriginalEvents restored) -> void
     }
 }
 
-auto Prologue::try_resume_campaign_story_route(OriginalEvents restored) -> Result<bool>
+auto Prologue::try_resume_campaign_story_route(Events restored) -> Result<bool>
 {
     if (!pending_story_route() || restored.stage != pending_story_route())
     {
@@ -2429,14 +2429,14 @@ auto Prologue::try_resume_campaign_story_route(OriginalEvents restored) -> Resul
     phase_ = Phase::briefing;
     briefing_offset_ = 0;
     prepare_briefing();
-    if (auto request = OriginalCampaign::save_request(OriginalCampaign::SavePoint::before_stage_story, 0, 1))
+    if (auto request = Campaign::save_request(Campaign::SavePoint::before_stage_story, 0, 1))
     {
         autosave_requests_.push_back(*request);
     }
     return Result<bool>::success(true);
 }
 
-auto Prologue::resume_campaign_story_route(OriginalEvents restored) -> void
+auto Prologue::resume_campaign_story_route(Events restored) -> void
 {
     auto result = try_resume_campaign_story_route(std::move(restored));
     if (!result)
@@ -2445,7 +2445,7 @@ auto Prologue::resume_campaign_story_route(OriginalEvents restored) -> void
     }
 }
 
-auto Prologue::try_resume_campaign_stage(OriginalEvents restored) -> Result<bool>
+auto Prologue::try_resume_campaign_stage(Events restored) -> Result<bool>
 {
     // Caller must merge persistent original role/global state before publication.
     // Reloading fresh stage units alone would silently discard level/equipment.
@@ -2460,14 +2460,14 @@ auto Prologue::try_resume_campaign_stage(OriginalEvents restored) -> Result<bool
     phase_ = Phase::briefing;
     briefing_offset_ = 0;
     prepare_briefing();
-    if (auto request = OriginalCampaign::save_request(OriginalCampaign::SavePoint::before_stage_story, 0, 1))
+    if (auto request = Campaign::save_request(Campaign::SavePoint::before_stage_story, 0, 1))
     {
         autosave_requests_.push_back(*request);
     }
     return Result<bool>::success(true);
 }
 
-auto Prologue::resume_campaign_stage(OriginalEvents restored) -> void
+auto Prologue::resume_campaign_stage(Events restored) -> void
 {
     auto result = try_resume_campaign_stage(std::move(restored));
     if (!result)
@@ -2605,7 +2605,7 @@ auto Prologue::inject_spell_summon_failure_for_test() -> bool
     return true;
 }
 
-auto Prologue::begin_spell_summon(std::vector<OriginalEvents::Unit> roster, unsigned target, std::function<void()> publish) -> Result<bool>
+auto Prologue::begin_spell_summon(std::vector<Events::Unit> roster, unsigned target, std::function<void()> publish) -> Result<bool>
 {
     if (!battle_ || teleport_ || summon_publish_ || !publish || target >= roster.size())
     {
@@ -2699,11 +2699,11 @@ auto Prologue::configure_teleport() -> void
 
 auto Prologue::evacuation_active() const -> bool { return evacuation_.active(); }
 
-auto Prologue::begin_death_presentation(OriginalEvents& source, size_t event, bool dryRun) -> Result<bool>
+auto Prologue::begin_death_presentation(Events& source, size_t event, bool dryRun) -> Result<bool>
 {
     const unsigned type = source.type(event), condition = source.condition(event);
     if (!dryRun) { death_presentation_presented_ = true; }
-    if (!OriginalDeathDispatch::Stack::presentation_supported(type, condition))
+    if (!DeathDispatch::Stack::presentation_supported(type, condition))
     {
         return Result<bool>::failure(make_error("Unsupported synchronous presentation"));
     }
@@ -2742,9 +2742,9 @@ auto Prologue::begin_death_presentation(OriginalEvents& source, size_t event, bo
         auto candidate = *role;
         // 421416 -> 462D2E直接ADD WORD，不走战斗经验倍率及999钳位。
         candidate.experience = uint16_t(candidate.experience + source.event_word(event, 7));
-        std::optional<OriginalProgression::PendingGrowth> pending;
+        std::optional<Progression::PendingGrowth> pending;
         uint32_t seconds = 0;
-        battle_->mutate_random([&](OriginalRandom& random, uint32_t now)
+        battle_->mutate_random([&](RandomStream& random, uint32_t now)
             {
                 pending.emplace(candidate, random);
                 seconds = now;
@@ -2761,7 +2761,7 @@ auto Prologue::begin_death_presentation(OriginalEvents& source, size_t event, bo
                         return;
                     }
                     events.units.at(index) = reward_growth().unit();
-                    battle_->mutate_random([&](OriginalRandom& random, uint32_t)
+                    battle_->mutate_random([&](RandomStream& random, uint32_t)
                         {
                             random.restore(reward_growth().random().state());
                             return true;
@@ -2863,7 +2863,7 @@ auto Prologue::begin_death_presentation(OriginalEvents& source, size_t event, bo
         }
         return Result<bool>::success(true);
     }
-    if (!OriginalCampaign::living(*role)) { return Result<bool>::success(true); }
+    if (!Campaign::living(*role)) { return Result<bool>::success(true); }
     unsigned facing = unsigned(source.event_word(event, 7)) & 3;
     if (condition == 16)
     {
@@ -2960,7 +2960,7 @@ auto Prologue::continue_synchronous_death() -> void
         }
         death_location_ = location.value();
         while (!map_.evacuation_camera_step(location.value().first, location.value().second)) {}
-        OriginalMenu font(root_);
+        Menu font(root_);
         auto image = map_.draw();
         auto drawn = map_.draw_completion_location(font, image, location.value().first, location.value().second);
         if (!drawn)
@@ -3040,7 +3040,7 @@ auto Prologue::cancel_temporary_text() -> void
 
 auto Prologue::deployment_requested() const -> bool { return deployment_requested_; }
 
-auto Prologue::commit_deployment(OriginalEvents events) -> void
+auto Prologue::commit_deployment(Events events) -> void
 {
     this->events = std::move(events);
     deployment_requested_ = false;
@@ -3051,20 +3051,20 @@ auto Prologue::commit_deployment(OriginalEvents events) -> void
 auto Prologue::synchronous_death_supported(unsigned role) -> bool
 {
     auto staged = events;
-    return OriginalDeathDispatch::continuation(staged, role, [this](const OriginalEvents& e, size_t i) -> Result<bool>
+    return DeathDispatch::continuation(staged, role, [this](const Events& e, size_t i) -> Result<bool>
         {
             if (e.condition(i) == 1 && (!script_effect_audio_ || !stop_effect_audio_)) { return Result<bool>::failure(make_error("Original death script effect adapter unavailable")); }
             if (e.condition(i) == 2 && !music_audio_) { return Result<bool>::failure(make_error("Original death script music adapter unavailable")); }
             return Result<bool>::success(true);
         },
-        [this](OriginalEvents& e, size_t i)
+        [this](Events& e, size_t i)
         {
             return begin_death_presentation(e, i, true);
         })
         .supported;
 }
 
-auto Prologue::begin_synchronous_death(unsigned role, std::function<void()> resume, const OriginalEvents::Unit* dying) -> bool
+auto Prologue::begin_synchronous_death(unsigned role, std::function<void()> resume, const Events::Unit* dying) -> bool
 {
     if (synchronous_death_active() || !resume)
     {
@@ -3080,13 +3080,13 @@ auto Prologue::begin_synchronous_death(unsigned role, std::function<void()> resu
         if (unit == staged.units.end() || dying->id != role) { return false; }
         *unit = *dying;
     }
-    auto plan = OriginalDeathDispatch::continuation(staged, role, [this](const OriginalEvents& e, size_t i) -> Result<bool>
+    auto plan = DeathDispatch::continuation(staged, role, [this](const Events& e, size_t i) -> Result<bool>
         {
             if (e.condition(i) == 1 && (!script_effect_audio_ || !stop_effect_audio_)) { return Result<bool>::failure(make_error("Original death script effect adapter unavailable")); }
             if (e.condition(i) == 2 && !music_audio_) { return Result<bool>::failure(make_error("Original death script music adapter unavailable")); }
             return Result<bool>::success(true);
         },
-        [this](OriginalEvents& e, size_t i)
+        [this](Events& e, size_t i)
         {
             return begin_death_presentation(e, i, true);
         });
@@ -3105,12 +3105,12 @@ auto Prologue::begin_synchronous_death(unsigned role, std::function<void()> resu
     synchronous_death_baseline_ = events;
     events = std::move(staged);
     synchronous_death_return_ = std::move(resume);
-    synchronous_death_stack_.emplace(events, plan.dialogue.front(), [this](const OriginalEvents& e, size_t i) -> Result<bool>
+    synchronous_death_stack_.emplace(events, plan.dialogue.front(), [this](const Events& e, size_t i) -> Result<bool>
         {
             if (e.condition(i) == 1) { return original_script_sound(e.event_word(i, 5), script_effect_audio_, stop_effect_audio_); }
             return music_audio_(unsigned(e.event_word(i, 5)));
         },
-        [this](OriginalEvents& e, size_t i)
+        [this](Events& e, size_t i)
         {
             return begin_death_presentation(e, i, false);
         });
@@ -3319,16 +3319,16 @@ auto Prologue::prepare_skill_camera(int x, int y) -> bool
     return true;
 }
 
-auto Prologue::prepare_invisibility_scratch(const std::vector<OriginalEvents::Unit>& staged, const std::vector<size_t>& targets) -> Result<OriginalMap>
+auto Prologue::prepare_invisibility_scratch(const std::vector<Events::Unit>& staged, const std::vector<size_t>& targets) -> Result<Map>
 {
     auto prepared = map_;
     prepared.set_army_modes(events.army_modes);
     auto buffers = prepared.prepare_invisibility_buffers(events.units, staged, targets, battle_->turn(), animation_elapsed_);
-    if (!buffers) { return Result<OriginalMap>::failure(buffers.error()); }
-    return Result<OriginalMap>::success(std::move(prepared));
+    if (!buffers) { return Result<Map>::failure(buffers.error()); }
+    return Result<Map>::success(std::move(prepared));
 }
 
-auto Prologue::commit_invisibility_scratch(OriginalMap prepared) -> void { map_ = std::move(prepared); }
+auto Prologue::commit_invisibility_scratch(Map prepared) -> void { map_ = std::move(prepared); }
 
 auto Prologue::prepare_spirit_sight_background() const -> Result<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>>
 {
@@ -3337,7 +3337,7 @@ auto Prologue::prepare_spirit_sight_background() const -> Result<std::pair<std::
     return prepared.sight_background(events.units, battle_->turn(), animation_elapsed_);
 }
 
-auto Prologue::prepare_army_reveal_world(bool caster_hostile, bool reject_bitmap_for_test) -> Result<OriginalMap>
+auto Prologue::prepare_army_reveal_world(bool caster_hostile, bool reject_bitmap_for_test) -> Result<Map>
 {
     auto prepared = map_;
     auto modes = events.army_modes.value_or(std::array<uint32_t, 2>{});
@@ -3350,12 +3350,12 @@ auto Prologue::prepare_army_reveal_world(bool caster_hostile, bool reject_bitmap
             {
                 return unit.hostile() != caster_hostile && (unit.status_flags & 0x80) && !(unit.status_flags & 0x20);
             });
-        if (target == roster.end()) { return Result<OriginalMap>::failure(make_error("4466FC controlled failure target unavailable")); }
+        if (target == roster.end()) { return Result<Map>::failure(make_error("4466FC controlled failure target unavailable")); }
         target->animation_action = 8;
     }
     auto refreshed = prepared.refresh_army_world(roster, !caster_hostile, battle_->turn(), animation_elapsed_);
-    if (!refreshed) { return Result<OriginalMap>::failure(refreshed.error()); }
-    return Result<OriginalMap>::success(std::move(prepared));
+    if (!refreshed) { return Result<Map>::failure(refreshed.error()); }
+    return Result<Map>::success(std::move(prepared));
 }
 
 auto Prologue::begin_skill88_visual(unsigned caster, bool healing1, bool sleep2, std::optional<Battle::Point> center, bool blessing3, unsigned statusSkill, std::optional<unsigned> performer, std::optional<unsigned> partner, std::vector<unsigned> targets, std::string* call_error) -> bool
@@ -3368,9 +3368,9 @@ auto Prologue::begin_skill88_visual(unsigned caster, bool healing1, bool sleep2,
         return false;
     };
     if (statusSkill != 51) { spell_transfer_visual_source_.reset(); }
-    auto prepared = Result<OriginalSkill88Visual>::success(OriginalSkill88Visual{});
+    auto prepared = Result<Skill88Visual>::success(Skill88Visual{});
     unsigned resource_direction = 0;
-    const auto* record = NativeDamageRecords::find(statusSkill);
+    const auto* record = DamageRecords::find(statusSkill);
     if (record && record->dispatch == 4)
     {
         if (caster >= events.units.size() || performer.value_or(caster) >= events.units.size()) { return reject("Directional visual actor or target out of range"); }
@@ -3379,11 +3379,11 @@ auto Prologue::begin_skill88_visual(unsigned caster, bool healing1, bool sleep2,
         resource_direction = Battle::facing({ actor.x, actor.y }, { target.x, target.y }, actor.direction);
         if (battle_->ai_skill_request() && battle_->ai_skill_request()->direction) { resource_direction = *battle_->ai_skill_request()->direction; }
     }
-    if (statusSkill) { prepared = OriginalSkill88Visual::create_strengthening_status(root_, statusSkill, resource_direction); }
-    else if (sleep2) { prepared = OriginalSkill88Visual::create_sleep2(root_); }
+    if (statusSkill) { prepared = Skill88Visual::create_strengthening_status(root_, statusSkill, resource_direction); }
+    else if (sleep2) { prepared = Skill88Visual::create_sleep2(root_); }
     else
     {
-        prepared = OriginalSkill88Visual::create(root_, healing1, blessing3);
+        prepared = Skill88Visual::create(root_, healing1, blessing3);
     }
 
     if (!prepared)
@@ -3396,13 +3396,13 @@ auto Prologue::begin_skill88_visual(unsigned caster, bool healing1, bool sleep2,
         spell_cells_.clear();
         spell_followup_.reset();
         spell_dispatch_ = 0;
-        const auto* damage = NativeDamageRecords::find(statusSkill);
+        const auto* damage = DamageRecords::find(statusSkill);
         if (damage) { spell_dispatch_ = damage->dispatch; }
         if (statusSkill == 29) { spell_dispatch_ = 7; }
         spell_primary_frames_ = visual.frames().size();
         if (statusSkill == 51)
         {
-            auto followup = OriginalSkill88Visual::create_strengthening_status(root_, statusSkill, 1);
+            auto followup = Skill88Visual::create_strengthening_status(root_, statusSkill, 1);
             if (!followup)
             {
                 return reject(followup.error().message);
@@ -3420,8 +3420,8 @@ auto Prologue::begin_skill88_visual(unsigned caster, bool healing1, bool sleep2,
                 origin.x = center->x;
                 origin.y = center->y;
             }
-            OriginalSkills menu(root_);
-            OriginalSkills::Context context{};
+            Skills menu(root_);
+            Skills::Context context{};
             context.second = damage->raw[0] >= 9;
             context.computer = battle_->ai_skill_pending();
             context.army_da_nonzero = events.army_modes && (*events.army_modes)[actor.hostile() ? 1 : 0] != 0;
@@ -3450,7 +3450,7 @@ auto Prologue::begin_skill88_visual(unsigned caster, bool healing1, bool sleep2,
             {
                 spell_cells_.push_back({ actor, 0 });
                 if (partner) { spell_cells_.push_back({ events.units.at(*partner), 0 }); }
-                auto followup = OriginalSkill88Visual::create_strengthening_status(root_, statusSkill, 1);
+                auto followup = Skill88Visual::create_strengthening_status(root_, statusSkill, 1);
                 if (!followup)
                 {
                     return reject(followup.error().message);
@@ -3513,7 +3513,7 @@ auto Prologue::begin_skill88_visual(unsigned caster, bool healing1, bool sleep2,
             }
         }
         if (damage && damage->dispatch == 8) { visual.extend_timeline(14); }
-        if (statusSkill == 78 || (NativeDamageRecords::find(statusSkill) && NativeDamageRecords::find(statusSkill)->dispatch == 9))
+        if (statusSkill == 78 || (DamageRecords::find(statusSkill) && DamageRecords::find(statusSkill)->dispatch == 9))
         {
             if (targets.empty()) { return reject("Damage visual targets empty: skill=" + std::to_string(statusSkill)); }
             for (size_t i = 0; i < targets.size(); ++i)
@@ -3533,7 +3533,7 @@ auto Prologue::begin_skill88_visual(unsigned caster, bool healing1, bool sleep2,
             spell_shake_source_ = map_.draw();
             map_.draw_units(spell_shake_source_, events.units, battle_->turn());
         }
-        auto background = prepare_visual_background([&](OriginalMap& map)
+        auto background = prepare_visual_background([&](Map& map)
             {
                 return map.skill88_background(events.units, battle_->turn(), performer.value_or(caster), visual.tint_amount(), visual.tint_source(), partner);
             },
@@ -3546,10 +3546,10 @@ auto Prologue::begin_skill88_visual(unsigned caster, bool healing1, bool sleep2,
         spell_shake_frame_ = spell_shake_source_;
         spell_shake_cursor_ = -1;
         skill32_target_ = record && record->dispatch == 4 ? performer.value_or(caster) : caster;
-        skill_area_center_ = (sleep2 || blessing3 || statusSkill == 29 || statusSkill == 18 || statusSkill == 40 || NativeDamageRecords::find(statusSkill) || NativeAbilityBuffs::find(statusSkill) || NativeTimedBuffs::find(statusSkill) || statusSkill == 8 || statusSkill == 12 || statusSkill == 35 || statusSkill == 39 || statusSkill == 48 || statusSkill == 56 || statusSkill == 60 || statusSkill == 4 || statusSkill == 6 || statusSkill == 9 || statusSkill == 13 || statusSkill == 15 || statusSkill == 53 || statusSkill == 34 || statusSkill == 38 || statusSkill == 54 || statusSkill == 96) ? center : std::nullopt;
+        skill_area_center_ = (sleep2 || blessing3 || statusSkill == 29 || statusSkill == 18 || statusSkill == 40 || DamageRecords::find(statusSkill) || AbilityBuffs::find(statusSkill) || TimedBuffs::find(statusSkill) || statusSkill == 8 || statusSkill == 12 || statusSkill == 35 || statusSkill == 39 || statusSkill == 48 || statusSkill == 56 || statusSkill == 60 || statusSkill == 4 || statusSkill == 6 || statusSkill == 9 || statusSkill == 13 || statusSkill == 15 || statusSkill == 53 || statusSkill == 34 || statusSkill == 38 || statusSkill == 54 || statusSkill == 96) ? center : std::nullopt;
         skill88_visual_ = std::move(visual);
         if (record && record->dispatch == 4) { skill_area_center_.reset(); }
-        std::vector<OriginalActionAudioCues::Cue> cues;
+        std::vector<ActionAudioCues::Cue> cues;
         if (damage && statusSkill <= skill_effect_sounds_.size())
         {
             const auto sound = skill_effect_sounds_[statusSkill - 1];
@@ -3628,7 +3628,7 @@ auto Prologue::skill94_visual_frame() const -> int { return skill94_visual_ ? in
 
 auto Prologue::begin_skill94_visual(unsigned caster, unsigned target) -> bool
 {
-    auto prepared = OriginalSkill94Visual::create(root_);
+    auto prepared = Skill94Visual::create(root_);
     if (!prepared)
     {
         report_error(prepared.error());
@@ -3636,7 +3636,7 @@ auto Prologue::begin_skill94_visual(unsigned caster, unsigned target) -> bool
     }
     {
         auto visual = std::move(prepared).value();
-        auto background = prepare_visual_background([&](OriginalMap& map)
+        auto background = prepare_visual_background([&](Map& map)
             {
                 return map.skill32_background(events.units, battle_->turn(), caster, target, 233, 35);
             });
@@ -3673,7 +3673,7 @@ auto Prologue::begin_skill32_visual(unsigned caster, unsigned target, bool curse
     }
     const std::string context = "visual_family=32 caster_index=" + std::to_string(caster) + " caster_id=" + std::to_string(events.units.at(caster).id)
         + " target_index=" + std::to_string(target) + " target_id=" + std::to_string(events.units.at(target).id);
-    auto prepared = curse33 ? OriginalSkill32Visual::create_curse33(root_) : OriginalSkill32Visual::create(root_);
+    auto prepared = curse33 ? Skill32Visual::create_curse33(root_) : Skill32Visual::create(root_);
     if (!prepared)
     {
         error = context + " stage=resource " + prepared.error().message;
@@ -3684,7 +3684,7 @@ auto Prologue::begin_skill32_visual(unsigned caster, unsigned target, bool curse
     }
     {
         auto visual = std::move(prepared).value();
-        auto background = prepare_visual_background([&](OriginalMap& map)
+        auto background = prepare_visual_background([&](Map& map)
             {
                 return curse33 ? map.skill32_background(events.units, battle_->turn(), caster, target, 0, 0) : map.skill32_background(events.units, battle_->turn(), caster, target);
             });
@@ -4496,7 +4496,7 @@ auto Prologue::try_tick(unsigned milliseconds) -> Result<bool>
     }
     else
     {
-        if (auto request = OriginalCampaign::save_request(OriginalCampaign::SavePoint::before_battle, 0, battle_->turn()))
+        if (auto request = Campaign::save_request(Campaign::SavePoint::before_battle, 0, battle_->turn()))
         {
             autosave_requests_.push_back(*request);
         }
@@ -4604,7 +4604,7 @@ auto Prologue::sync_movement_contexts() -> void
     battle_->set_movement_contexts(movement_contexts(events, map_));
 }
 
-auto Prologue::movement_contexts(const OriginalEvents& events, const OriginalMap& map) -> std::vector<Battle::MovementContext>
+auto Prologue::movement_contexts(const Events& events, const Map& map) -> std::vector<Battle::MovementContext>
 {
     std::vector<Battle::MovementContext> contexts(events.units.size());
     for (size_t i = 0; i < contexts.size(); ++i)
@@ -4752,7 +4752,7 @@ auto Prologue::begin_finish_confirmation() -> void
     // 45369A saves direction BEFORE 454159; cancel restores that baseline.
     finish_direction_ = unit.direction;
     battle_->orient_finish_threat(events, events.units);
-    finish_confirmation_.emplace(root_, OriginalMenu(root_), 6, left, top, true);
+    finish_confirmation_.emplace(root_, Menu(root_), 6, left, top, true);
 }
 
 auto Prologue::resolve_finish() -> void
@@ -4856,7 +4856,7 @@ auto Prologue::battle_state() const -> Battle::State { return battle_ ? battle_-
 
 auto Prologue::camera() const -> std::pair<int, int> { return { map_.camera_x, map_.camera_y }; }
 
-auto Prologue::restore_battle(OriginalEvents restored, unsigned turn, bool resume_story, bool interbattle) -> void
+auto Prologue::restore_battle(Events restored, unsigned turn, bool resume_story, bool interbattle) -> void
 {
     travel_map_.reset();
     deployment_requested_ = false;
@@ -4997,7 +4997,7 @@ auto Prologue::secret_item_at(int x, int y) const -> bool
 
 auto Prologue::draw_secret_markers(std::vector<uint8_t>& image) const -> void
 {
-    if (!OriginalSettings::highlight_secrets || !battle_) { return; }
+    if (!Settings::highlight_secrets || !battle_) { return; }
     for (unsigned y = 0; y < map_.height * 2; ++y)
     {
         for (unsigned x = 0; x < map_.width - (y & 1); ++x)
@@ -5079,7 +5079,7 @@ auto Prologue::battle_turn() const -> unsigned { return battle_ ? battle_->turn(
 
 auto Prologue::screen_cell(Battle::Point p) const -> Battle::Point { return battle_->screen_center(p, map_.camera_x, map_.camera_y); }
 
-auto Prologue::dialogue_layout() const -> std::optional<OriginalDialogueLayout>
+auto Prologue::dialogue_layout() const -> std::optional<DialogueLayout>
 {
     if ((phase_ != Phase::dialogue && phase_ != Phase::branch && phase_ != Phase::flag_dialogue && phase_ != Phase::campaign_dialogue) || dialogue_scrolling()) { return std::nullopt; }
     const auto line = events.line(event_, std::min(line_, size_t(events.line_count(event_) - 1)));
@@ -5089,7 +5089,7 @@ auto Prologue::dialogue_layout() const -> std::optional<OriginalDialogueLayout>
         });
     if (speaker == events.units.end() || (speaker->status_flags & 0x20) || !(speaker->status_flags & 0x80)) { return std::nullopt; }
     auto [x, y] = map_.screen_position(speaker->x, speaker->y);
-    return OriginalDialogueLayout::locate(x, y, 226);
+    return DialogueLayout::locate(x, y, 226);
 }
 
 auto Prologue::line_index() const -> size_t { return line_; }
@@ -5141,12 +5141,12 @@ auto Prologue::try_advance() -> Result<bool>
         {
             ++count;
         }
-        auto settlement = OriginalCampaign::plan(stage, *campaign_decision_, std::span<const OriginalEvents::Unit>(events.units.data(), count));
+        auto settlement = Campaign::plan(stage, *campaign_decision_, std::span<const Events::Unit>(events.units.data(), count));
         settlement.next = campaign_->selected_route(events);
         auto staged = events;
         bool terminal = settlement.next == 0;
         bool next_story = !terminal && campaign_->stage(settlement.next).mode == 3;
-        std::optional<OriginalInterbattle> staged_hub;
+        std::optional<Interbattle> staged_hub;
         if (!terminal && !next_story)
         {
             staged_hub.emplace(root_, disc_);
@@ -5205,7 +5205,7 @@ auto Prologue::try_advance() -> Result<bool>
     {
         if (!choice_confirmation_)
         {
-            choice_confirmation_.emplace(root_, OriginalMenu(root_), 6, 149, 232 + selection_ * 26, true);
+            choice_confirmation_.emplace(root_, Menu(root_), 6, 149, 232 + selection_ * 26, true);
             return Result<bool>::success(true);
         }
         if (!choice_confirmation_->result()) { choice_confirmation_->confirm(); }
@@ -5217,7 +5217,7 @@ auto Prologue::try_advance() -> Result<bool>
         {
             events.clear_stage_flags();
             events.load_stage(events.fantasy_stage);
-            if (auto request = OriginalCampaign::save_request(OriginalCampaign::SavePoint::before_stage_story, 0, 1))
+            if (auto request = Campaign::save_request(Campaign::SavePoint::before_stage_story, 0, 1))
             {
                 autosave_requests_.push_back(*request);
             }
@@ -5468,7 +5468,7 @@ auto Prologue::try_advance() -> Result<bool>
         {
             events.load_stage(next_stage);
         }
-        if (auto request = OriginalCampaign::save_request(OriginalCampaign::SavePoint::before_stage_story, 0, 1))
+        if (auto request = Campaign::save_request(Campaign::SavePoint::before_stage_story, 0, 1))
         {
             autosave_requests_.push_back(*request);
         }
@@ -5488,7 +5488,7 @@ auto Prologue::try_advance() -> Result<bool>
     return Result<bool>::success(true);
 }
 
-auto Prologue::draw_status_terrain(const OriginalMenu& font, std::vector<uint8_t>& image, const OriginalEvents::Unit& unit, int panel_y) const -> void
+auto Prologue::draw_status_terrain(const Menu& font, std::vector<uint8_t>& image, const Events::Unit& unit, int panel_y) const -> void
 {
     map_.draw_terrain(font, image, unit.x, unit.y, panel_y);
     if (battle_->cell({ unit.x, unit.y }).ground == 1) { return; }
@@ -5507,7 +5507,7 @@ auto Prologue::draw_status_terrain(const OriginalMenu& font, std::vector<uint8_t
     }
 }
 
-auto Prologue::draw_terrain_panel(const OriginalMenu& font, std::vector<uint8_t>& image, int x, int y, int panel_y) const -> void
+auto Prologue::draw_terrain_panel(const Menu& font, std::vector<uint8_t>& image, int x, int y, int panel_y) const -> void
 {
     const auto before = image;
     sprite(image, sprite_offset(2, 143 - 142), false, 0, panel_y);
@@ -5519,7 +5519,7 @@ auto Prologue::draw_terrain_panel(const OriginalMenu& font, std::vector<uint8_t>
     map_.draw_terrain(font, image, x, y, panel_y);
 }
 
-auto Prologue::draw_battle_edge_hud(const OriginalMenu& font, std::vector<uint8_t>& image) const -> void
+auto Prologue::draw_battle_edge_hud(const Menu& font, std::vector<uint8_t>& image) const -> void
 {
     if (!in_battle() || battle_menu_overlay_ || battle_->animating_movement() || skill_visual_active() || battle_->combat_feedback_active() || temporary_text_ || (battle_->state() != Battle::State::idle && battle_->state() != Battle::State::movement)) { return; }
     const int stride = framebuffer_width(image), height = framebuffer_height(image);
@@ -5566,7 +5566,7 @@ auto Prologue::draw_battle_edge_hud(const OriginalMenu& font, std::vector<uint8_
 
 auto Prologue::mask_ground_selection(std::vector<uint8_t>& pixels, Battle::Point cell) const -> void { map_.mask_selection(pixels, cell.x, cell.y); }
 
-auto Prologue::draw(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay, bool commandOverlay) const -> std::vector<uint8_t>
+auto Prologue::draw(const Menu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay, bool commandOverlay) const -> std::vector<uint8_t>
 {
     if (texture_resources.active()) { texture_resources.set_elapsed(animation_elapsed_); }
     auto image = draw_uncycled(font, groundOverlay, commandOverlay);
@@ -5579,7 +5579,7 @@ auto Prologue::cycle_frame(std::vector<uint8_t>& image) const -> void
     if (palette_effects_ && phase_ != Phase::briefing && !interbattle_active() && !ending_active()) { palette_effects_->cycle(image, animation_elapsed_); }
 }
 
-auto Prologue::prepare_visual_background(const std::function<Result<std::vector<uint8_t>>(OriginalMap&)>& prepare, bool shake) -> Result<std::vector<uint8_t>>
+auto Prologue::prepare_visual_background(const std::function<Result<std::vector<uint8_t>>(Map&)>& prepare, bool shake) -> Result<std::vector<uint8_t>>
 {
     std::vector<VisualSlice> slices;
     for (int y = 0; y < screen_height; y += 480)
@@ -5609,7 +5609,7 @@ auto Prologue::prepare_visual_background(const std::function<Result<std::vector<
     return center;
 }
 
-auto Prologue::wide_frame(const OriginalMenu& font, const std::vector<uint8_t>& center, bool cycle, const std::function<void(std::vector<uint8_t>&)>& groundOverlay) const -> std::vector<uint8_t>
+auto Prologue::wide_frame(const Menu& font, const std::vector<uint8_t>& center, bool cycle, const std::function<void(std::vector<uint8_t>&)>& groundOverlay) const -> std::vector<uint8_t>
 {
     if (campaign_travel_active() || phase_ == Phase::briefing || interbattle_active() || ending_active() || temporary_text_ || campaign_defeated())
     {
@@ -5690,8 +5690,8 @@ auto Prologue::wide_frame(const OriginalMenu& font, const std::vector<uint8_t>& 
         auto saved = map_;
         struct Restore
         {
-            OriginalMap& map;
-            OriginalMap saved;
+            Map& map;
+            Map saved;
             ~Restore() { map = std::move(saved); }
         } restore{ map_, std::move(saved) };
         map_.camera_x += offset;
@@ -5732,7 +5732,7 @@ auto Prologue::wide_frame(const OriginalMenu& font, const std::vector<uint8_t>& 
     return image;
 }
 
-auto Prologue::draw_visual(const OriginalMap& map_, const std::vector<uint8_t>& skill32_background_, const std::vector<uint8_t>& spell_shake_source_, std::vector<uint8_t>& spell_shake_frame_, int& spell_shake_cursor_) const -> std::vector<uint8_t>
+auto Prologue::draw_visual(const Map& map_, const std::vector<uint8_t>& skill32_background_, const std::vector<uint8_t>& spell_shake_source_, std::vector<uint8_t>& spell_shake_frame_, int& spell_shake_cursor_) const -> std::vector<uint8_t>
 {
     if (skill94_visual_)
     {
@@ -5771,7 +5771,7 @@ auto Prologue::draw_visual(const OriginalMap& map_, const std::vector<uint8_t>& 
             // 46C34D moves 0x4AFFE indexed bytes, crossing scanline boundaries.
             if (spell_shake_cursor_ != int(skill88_visual_->frame()))
             {
-                spell_shake_frame_ = OriginalSkill88Visual::shake_frame(spell_shake_source_, spell_shake_frame_, 7 - unsigned(skill88_visual_->frame()));
+                spell_shake_frame_ = Skill88Visual::shake_frame(spell_shake_source_, spell_shake_frame_, 7 - unsigned(skill88_visual_->frame()));
                 spell_shake_cursor_ = int(skill88_visual_->frame());
             }
             return spell_shake_frame_;
@@ -5812,7 +5812,7 @@ auto Prologue::draw_visual(const OriginalMap& map_, const std::vector<uint8_t>& 
     return {};
 }
 
-auto Prologue::draw_uncycled(const OriginalMenu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay, bool commandOverlay, bool worldOnly, FullWidthCanvas* canvas) const -> std::vector<uint8_t>
+auto Prologue::draw_uncycled(const Menu& font, const std::function<void(std::vector<uint8_t>&)>& groundOverlay, bool commandOverlay, bool worldOnly, FullWidthCanvas* canvas) const -> std::vector<uint8_t>
 {
     if (travel_map_ && !travel_map_->travel_done()) { return travel_map_->draw(font); }
     if (texture_resources.active()) { texture_resources.set_elapsed(animation_elapsed_); }
@@ -5892,7 +5892,7 @@ auto Prologue::draw_uncycled(const OriginalMenu& font, const std::function<void(
     }
     if (battle_intro() || showing_objectives())
     {
-        std::vector<OriginalEvents::Unit> visible;
+        std::vector<Events::Unit> visible;
         for (const auto& unit : events.units)
         {
             if (unit.present(battle_->turn()))
@@ -6012,7 +6012,7 @@ auto Prologue::draw_uncycled(const OriginalMenu& font, const std::function<void(
     }
     if (in_battle() || computer_actions())
     {
-        std::vector<OriginalEvents::Unit> visible;
+        std::vector<Events::Unit> visible;
         auto rendered_units = battle_->render_units(damage_area_poses());
         if (physical_departure_)
         {
@@ -6128,7 +6128,7 @@ auto Prologue::draw_uncycled(const OriginalMenu& font, const std::function<void(
                     const unsigned id = choice ? 186u : 184u;
                     const bool selected = choice == battle_->item_choice();
                     sprite(image, sprite_offset(2, id - 142 + unsigned(selected)), false, origin.x + choice * 32, origin.y, true);
-                    if (selected) { OriginalBattleCaptions::draw(font, image, font.text_bytes(68 + choice), origin.x + choice * 32, origin.y); }
+                    if (selected) { BattleCaptions::draw(font, image, font.text_bytes(68 + choice), origin.x + choice * 32, origin.y); }
                 }
             }
             else if (commandOverlay && submenu)
@@ -6150,12 +6150,12 @@ auto Prologue::draw_uncycled(const OriginalMenu& font, const std::function<void(
                         sprite(image, sprite_offset(2, id - 142), false, origin.x + slot * 32, origin.y, true);
                         if (attack == battle_->attack_index())
                         {
-                            std::optional<OriginalEvents::ActionRecord> action;
+                            std::optional<Events::ActionRecord> action;
                             for (size_t target = 0; target < events.units.size() && !action; ++target)
                             {
                                 action = battle_->executable_action(events.units, size_t(battle_->selected()), target, attack);
                             }
-                            OriginalBattleCaptions::draw(font, image, OriginalBattleCaptions::attack(font, attack, unit, action, caption_items_), origin.x + slot * 32, origin.y);
+                            BattleCaptions::draw(font, image, BattleCaptions::attack(font, attack, unit, action, caption_items_), origin.x + slot * 32, origin.y);
                         }
                         ++slot;
                     }
@@ -6175,7 +6175,7 @@ auto Prologue::draw_uncycled(const OriginalMenu& font, const std::function<void(
                         sprite(image, sprite_offset(2, id - 142 + variant), false, origin.x + slot * 32, origin.y, true);
                         if (variant)
                         {
-                            OriginalBattleCaptions::draw(font, image, OriginalBattleCaptions::command(font, command, unit.action_points < events.battle_config[8]), origin.x + slot * 32, origin.y);
+                            BattleCaptions::draw(font, image, BattleCaptions::command(font, command, unit.action_points < events.battle_config[8]), origin.x + slot * 32, origin.y);
                         }
                         ++slot;
                     }
