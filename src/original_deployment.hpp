@@ -729,11 +729,8 @@ public:
         }
         else
         {
-            for (size_t offset : backgrounds_)
-            {
-                auto drawn = draw_original_sprite(image, cells_, palette_, offset, true, 0, 0, OriginalZeroRun::transparent);
-                if (!drawn) { fatal(drawn.error()); }
-            }
+            auto drawn = draw_original_sprite(image, cells_, palette_, backgrounds_[0], true, 0, 0, OriginalZeroRun::transparent);
+            if (!drawn) { fatal(drawn.error()); }
             for (size_t n = 0; n < 5 && first_ + n < roles_.size(); ++n)
             {
                 size_t role = roles_[first_ + n];

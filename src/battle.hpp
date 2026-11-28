@@ -124,6 +124,7 @@ private:
     size_t teleport_cursor_{};
     std::optional<Point> teleport_destination_;
     bool teleport_pending_{};
+    bool teleport_movement_{};
     std::vector<uint8_t> movement_;
     std::vector<Point> sealed_cells_;
     std::array<int, 12> config_{};
@@ -840,6 +841,7 @@ public:
         }
         teleport_random_baseline_.reset();
         teleport_pending_ = false;
+        teleport_movement_ = false;
         teleport_destination_.reset();
         teleport_cursor_ = 0;
     }
@@ -852,7 +854,8 @@ public:
         teleport_pending_ = false;
         teleport_destination_.reset();
         teleport_random_baseline_.reset();
-        ++teleport_cursor_;
+        if (!teleport_movement_) { ++teleport_cursor_; }
+        teleport_movement_ = false;
         return Result<bool>::success(true);
     }
     void finish_teleport()
@@ -3767,6 +3770,7 @@ public:
         {
             return true;
         }
+        if (teleport_pending_) { return false; }
         if (animating_movement())
         {
             tick_movement(units, milliseconds);
@@ -3794,6 +3798,35 @@ public:
             }
             if (actor.present(turn_) && hostile_path_cursor_ < hostile_path_.size())
             {
+                // 452AD5的class2走452772，只在起终点演出，路线仍决定可达与AP。
+                if (hostile_resources_ && hostile_resources_->movement_class(actor) == 2)
+                {
+                    const auto saved = actor;
+                    while (hostile_path_cursor_ < hostile_path_.size())
+                    {
+                        if (!advance_hostile(units, size_t(hostile_actor_), hostile_path_[hostile_path_cursor_++])) { break; }
+                    }
+                    const Point destination{ actor.x, actor.y };
+                    movement_poses_.clear();
+                    moving_unit_ = -1;
+                    actor.direction = saved.direction;
+                    actor.movement_frame = saved.movement_frame;
+                    actor.movement_pose = false;
+                    if (teleport_presenter_ && destination != Point{ saved.x, saved.y })
+                    {
+                        actor.x = saved.x;
+                        actor.y = saved.y;
+                        teleport_pending_ = teleport_movement_ = true;
+                        teleport_destination_ = destination;
+                        if (!teleport_presenter_(unsigned(hostile_actor_), destination))
+                        {
+                            rollback_teleport();
+                            actor = saved;
+                            report_error(make_error("452772 original presentation unavailable"));
+                        }
+                    }
+                    return false;
+                }
                 Point next = hostile_path_[hostile_path_cursor_++];
                 if (!advance_hostile(units, size_t(hostile_actor_), next))
                 {
@@ -5666,7 +5699,7 @@ public:
     }
     bool click(std::vector<OriginalEvents::Unit>& units, Point p)
     {
-        if (animating_movement() || combat_feedback_active())
+        if (teleport_pending_ || animating_movement() || combat_feedback_active())
         {
             return false;
         }
@@ -5690,7 +5723,9 @@ public:
             auto route = path_;
             auto saved = units[selected_];
             movement_poses_.clear();
-            const unsigned movement_class = size_t(selected_) < movement_contexts_.size() ? movement_contexts_[selected_].movement_class : 0;
+            unsigned movement_class = 0;
+            if (hostile_resources_) { movement_class = hostile_resources_->movement_class(saved); }
+            else if (size_t(selected_) < movement_contexts_.size()) { movement_class = movement_contexts_[selected_].movement_class; }
             // 452AD5 routes classes 3/4/5 through 452450's 12-centisecond wait.
             movement_interval_ = movement_class >= 3 && movement_class <= 5 ? 120 : 80;
             for (auto q : route)
@@ -5722,6 +5757,28 @@ public:
             if (!movement_poses_.empty())
             {
                 units[selected_].movement_frame = movement_poses_.back().movement_frame;
+            }
+            if (movement_class == 2)
+            {
+                auto& actor = units[selected_];
+                actor.direction = saved.direction;
+                actor.movement_frame = saved.movement_frame;
+                actor.movement_pose = false;
+                movement_poses_.clear();
+                if (teleport_presenter_)
+                {
+                    const Point destination{ actor.x, actor.y };
+                    actor.x = saved.x;
+                    actor.y = saved.y;
+                    teleport_pending_ = teleport_movement_ = true;
+                    teleport_destination_ = destination;
+                    if (!teleport_presenter_(unsigned(selected_), destination))
+                    {
+                        rollback_teleport();
+                        actor = saved;
+                        return false;
+                    }
+                }
             }
             // 452450+2D0 skips destination AP writeback for class5.
             if (movement_class == 5)

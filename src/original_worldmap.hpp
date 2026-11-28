@@ -1,5 +1,6 @@
 #pragma once
 #include "original_menu.hpp"
+#include "original_palette.hpp"
 #include "original_save.hpp"
 #include "original_stage_route.hpp"
 #include "title_image.hpp"
@@ -14,6 +15,8 @@ class OriginalWorldmap
         std::vector<uint8_t> pixels;
     };
     std::vector<uint8_t> pixels_, palette_, towns_;
+    std::array<uint8_t, 256> briefing_shades_{};
+    std::array<uint8_t, 3> briefing_target_{};
     SharedBytes external_rgba_;
     std::array<Icon, 2> icons_;
     unsigned width_{}, height_{}, current_{}, destination_{}, hovered_{};
@@ -175,6 +178,11 @@ public:
             return Result<OriginalWorldmap>::failure(make_error("41020B invalid original world PCX11"));
         }
         OriginalWorldmap result;
+        const auto shared_palette = read_shared_resource(root / "SUPERSP.PAL");
+        if (!shared_palette) { return Result<OriginalWorldmap>::failure(shared_palette.error()); }
+        OriginalPalette shades(shared_palette.value());
+        for (unsigned ink = 0; ink < 256; ++ink) { result.briefing_shades_[ink] = shades.map(6, ink); }
+        for (unsigned c = 0; c < 3; ++c) { result.briefing_target_[c] = uint8_t(unsigned(shared_palette.value().at(32 * 3 + c)) << 2); }
         result.width_ = word(pcx, 8) + 1;
         result.height_ = word(pcx, 10) + 1;
         unsigned stride = word(pcx, 66);
@@ -480,7 +488,7 @@ public:
             size_t p = (size_t(y) * 640 + x) * 4;
             for (unsigned k = 0; k < 3; ++k)
             {
-                image[p + k] = channel(ink, k);
+                image[p + k] = channel(markers ? ink : briefing_shades_[ink], k);
             }
             image[p + 3] = 255;
         };
@@ -495,6 +503,7 @@ public:
                     for (unsigned k = 0; k < 3; ++k)
                     {
                         unsigned value = external_rgba_[source + k];
+                        if (!markers) { value = (value + briefing_target_[k]) / 2; }
                         if (presentation_)
                         {
                             if (leaving_)

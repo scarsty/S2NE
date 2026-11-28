@@ -55,6 +55,8 @@ public:
     s2ne::Result<bool> try_draw(std::vector<uint8_t>& image, const OriginalMenu& font) const
     {
         // 431997 calls 475970 with fill=0: outline the embedded O/X artwork.
+        auto shadow = draw_original_cel_shadow(image, cel_, pal_, 197, x_, y_);
+        if (!shadow) { return shadow; }
         {
             auto rendered = draw_original_cel(image, cel_, pal_, 197, x_, y_, OriginalZeroRun::opaque);
             if (!rendered)

@@ -24,24 +24,8 @@ public:
         const size_t panel = group + dword(cel.value(), group + 2 + 97 * 8);
         const int width = int(word(cel.value(), panel)) + 1, height = int(word(cel.value(), panel + 2)) + 1;
         const int x = 320 - width / 2, y = 240 - height / 2;
-        OriginalPalette palette(pal.value());
-        for (int row = y + 8; row < y + height + 6; ++row)
-        {
-            int right = x;
-            if (row >= y + height - 2) { right = x - 8 + width; }
-            for (int col = x - 8; col < right; ++col)
-            {
-                if (col < 0 || col >= 640 || row < 0 || row >= 480) { continue; }
-                const size_t pixel = (size_t(row) * 640 + col) * 4;
-                for (unsigned c = 0; c < 256; ++c)
-                {
-                    if (image[pixel] != unsigned(pal.value()[c * 3]) * 255 / 63 || image[pixel + 1] != unsigned(pal.value()[c * 3 + 1]) * 255 / 63 || image[pixel + 2] != unsigned(pal.value()[c * 3 + 2]) * 255 / 63) { continue; }
-                    auto mapped = palette.map(6, c);
-                    for (unsigned k = 0; k < 3; ++k) { image[pixel + k] = uint8_t(unsigned(pal.value()[mapped * 3 + k]) * 255 / 63); }
-                    break;
-                }
-            }
-        }
+        auto shadow = draw_original_panel_shadow(image, pal.value(), width, height, x, y);
+        if (!shadow) { return Result<std::vector<uint8_t>>::failure(shadow.error()); }
         auto background = draw_original_cel(image, cel.value(), pal.value(), 239, x, y, OriginalZeroRun::transparent);
         if (!background) { return Result<std::vector<uint8_t>>::failure(background.error()); }
         OriginalMenu font(root);

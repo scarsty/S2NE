@@ -770,6 +770,7 @@ int s2ne::run_application(int argc, char** argv)
             {
                 const int x = 320 - itemNoticeGraphics.panel_width(208) / 2;
                 const int y = 240 - itemNoticeGraphics.panel_height(208) / 2;
+                itemNoticeGraphics.shadow(image, 208, x, y);
                 itemNoticeGraphics.panel(image, 208, x, y);
                 const auto& text = itemLearningNotices.front();
                 itemNoticeFont.draw_original_large(image, text, 320 - (int(text.size()) - 2) * 6 - 16, 228, 42);
@@ -836,7 +837,8 @@ int s2ne::run_application(int argc, char** argv)
                     }
                     return;
                 }
-                auto panel = s2ne::draw_original_cel(image, cel.value(), pal.value(), 208, 128, 180, s2ne::OriginalZeroRun::transparent);
+                auto panel = s2ne::draw_original_cel_shadow(image, cel.value(), pal.value(), 208, 128, 180);
+                if (panel) { panel = s2ne::draw_original_cel(image, cel.value(), pal.value(), 208, 128, 180, s2ne::OriginalZeroRun::transparent); }
                 if (panel) { panel = menu.try_draw_original_large(image, text, 144, 198, 42); }
                 if (!panel)
                 {
@@ -4951,6 +4953,12 @@ int s2ne::run_application(int argc, char** argv)
 
                         if (prologue->choosing() || prologue->in_battle())
                         {
+                            if (prologue->choice_confirmation_pending() && event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_RIGHT)
+                            {
+                                prologue->cancel_choice_confirmation();
+                                showPrologue();
+                                continue;
+                            }
                             prologue->mouse(x, y, click);
                         }
                         else if (click)
@@ -4993,7 +5001,13 @@ int s2ne::run_application(int argc, char** argv)
                                 prologue->pan(32, 0);
                             }
                             break;
-                        case SDLK_ESCAPE: prologue->cancel_battle_selection(); break;
+                        case SDLK_ESCAPE:
+                            if (prologue->choice_confirmation_pending()) { prologue->cancel_choice_confirmation(); }
+                            else
+                            {
+                                prologue->cancel_battle_selection();
+                            }
+                            break;
                         case SDLK_RETURN:
                             if (prologue->in_battle())
                             {

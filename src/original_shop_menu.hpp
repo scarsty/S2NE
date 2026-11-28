@@ -345,7 +345,16 @@ public:
         return int(word(cel_, p + 2)) + 1;
     }
     void panel(std::vector<uint8_t>& image, unsigned id, int x, int y) const { sprite(image, id, x, y, OriginalZeroRun::transparent); }
-    void shared_panel(std::vector<uint8_t>& image, unsigned address, int x, int y) const { sprite(image, shared_sprite(address), x, y, OriginalZeroRun::transparent); }
+    void shadow(std::vector<uint8_t>& image, unsigned id, int x, int y) const
+    {
+        auto result = draw_original_cel_shadow(image, cel_, pal_, id, x, y);
+        if (!result) { report_error(result.error()); }
+    }
+    void shared_panel(std::vector<uint8_t>& image, unsigned address, int x, int y) const
+    {
+        if (address == 0x4F72C8) { shadow(image, shared_sprite(address), x, y); }
+        sprite(image, shared_sprite(address), x, y, OriginalZeroRun::transparent);
+    }
     void outline(std::vector<uint8_t>& image, int left, int top, int right, int bottom, unsigned ink) const
     {
         for (int y = top; y <= bottom; ++y)
@@ -466,7 +475,7 @@ public:
             held_stamp_ = now;
         }
     }
-    static constexpr unsigned shared_sprite(unsigned address) { return (address - 0x4F7060u) / 4u - 1u; }
+    static constexpr unsigned shared_sprite(unsigned address) { return (address - 0x4F7060u) / 4u; }
     size_t recipient_first() const { return recipient_first_; }
     size_t recipient_index() const { return recipient_; }
     static uint32_t money(const OriginalSave::State& state)

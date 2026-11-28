@@ -1150,6 +1150,7 @@ private:
         phase_ = Phase::story_ready;
     }
     int selection_ = 0;
+    std::optional<OriginalConfirmation> choice_confirmation_;
     std::vector<uint8_t> briefing_page_;
     std::optional<OriginalWorldmap> travel_map_;
     size_t briefing_offset_ = 0;
@@ -2430,7 +2431,8 @@ public:
         if (top < 0) { top = sy + 32; }
         top = std::clamp(top, 0, 470 - height);
         const int left = std::clamp(sx + 32 - width / 2, 16, 634 - width);
-        auto drawn = try_sprite(image, panel, false, left, top);
+        auto drawn = draw_original_cel_shadow(image, cel_, pal_, 208, left, top);
+        if (drawn) { drawn = try_sprite(image, panel, false, left, top); }
         if (!drawn) { return drawn; }
         return font.try_draw_original_large(image, text, left + width / 2 - (int(text.size()) - 3) * 6 - 24, top + height / 2 - 12, 42);
     }
@@ -4611,6 +4613,8 @@ public:
         return Result<bool>::success(true);
     }
     int selection() const { return selection_; }
+    bool choice_confirmation_pending() const { return choice_confirmation_.has_value(); }
+    void cancel_choice_confirmation() { choice_confirmation_.reset(); }
     void move(int delta)
     {
         if (dialogue_scrolling() || (in_battle() && battle_->animating_movement()))
@@ -4619,6 +4623,11 @@ public:
         }
         if (choosing())
         {
+            if (choice_confirmation_)
+            {
+                choice_confirmation_->toggle();
+                return;
+            }
             selection_ = std::clamp(selection_ + delta, 0, int(events.line_count(event_)) - 2);
         }
         else if (in_battle())
@@ -4628,6 +4637,11 @@ public:
     }
     void pan(int dx, int dy)
     {
+        if (choice_confirmation_)
+        {
+            if (dx || dy) { choice_confirmation_->toggle(); }
+            return;
+        }
         if (in_battle() && !battle_->animating_movement())
         {
             map_.pan(dx, dy);
@@ -4786,6 +4800,12 @@ public:
                 const auto& unit = events.units.at(battle_->selected());
                 map_.movement_camera(unit.x, unit.y);
             }
+            return;
+        }
+        if (choosing() && choice_confirmation_)
+        {
+            choice_confirmation_->mouse(x, y, click);
+            if (choice_confirmation_->result()) { advance(); }
             return;
         }
         if (choosing() && x >= 149 && y >= 209 && y < 209 + (int(events.line_count(event_)) - 1) * 26)
@@ -5205,6 +5225,15 @@ public:
         }
         if (choosing())
         {
+            if (!choice_confirmation_)
+            {
+                choice_confirmation_.emplace(root_, OriginalMenu(root_), 6, 149, 232 + selection_ * 26, true);
+                return Result<bool>::success(true);
+            }
+            if (!choice_confirmation_->result()) { choice_confirmation_->confirm(); }
+            const bool accepted = *choice_confirmation_->result();
+            choice_confirmation_.reset();
+            if (!accepted) { return Result<bool>::success(true); }
             chosen_ = unsigned(selection_ + 1);
             if (events.stage == 140 && chosen_ == 3 && events.fantasy_stage)
             {
@@ -6067,6 +6096,28 @@ public:
                 draw_status_terrain(font, image, unit, panel_y);
                 auto origin = battle_command_origin();
                 bool submenu = battle_->state() == Battle::State::attack_menu;
+                int shadow_slot = 0;
+                int shadow_count = 6;
+                if (battle_->state() == Battle::State::item_menu) { shadow_count = 2; }
+                else if (submenu) { shadow_count = 8; }
+                for (int entry = 0; entry < shadow_count; ++entry)
+                {
+                    unsigned id;
+                    if (battle_->state() == Battle::State::item_menu) { id = (entry ? 186u : 184u) + unsigned(entry == battle_->item_choice()); }
+                    else if (submenu)
+                    {
+                        if (!battle_->attack_command_available(events.units, entry)) { continue; }
+                        id = Battle::attack_icons[entry] + unsigned(entry == battle_->attack_index());
+                    }
+                    else
+                    {
+                        if (!battle_->command_available(events.units, entry)) { continue; }
+                        id = Battle::command_icons[entry] + unsigned(entry == battle_->command_index());
+                    }
+                    auto shadow = draw_original_cel_shadow(image, cel_, pal_, id, origin.x + shadow_slot * 32, origin.y);
+                    if (!shadow) { fatal(shadow.error()); }
+                    ++shadow_slot;
+                }
                 if (battle_->state() == Battle::State::item_menu)
                 {
                     for (int choice = 0; choice < 2; ++choice)
@@ -6288,6 +6339,7 @@ public:
             {
                 font.draw_original_large(image, events.line(event_, i).text, 149, 209 + int(i - 1) * 26, int(i - 1) == selection_ ? 60 : 42);
             }
+            if (choice_confirmation_) { choice_confirmation_->draw(image, font); }
         }
         else
         {

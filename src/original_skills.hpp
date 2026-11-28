@@ -425,7 +425,9 @@ public:
             OriginalPalette palette(pal_);
             auto dimmed = palette.try_transform_rect(output, 0, 0, 640, 480, 8, canvas);
             if (!dimmed) { return dimmed; }
-            auto help = draw_original_cel(output, cel_, pal_, 239, 260, 36, OriginalZeroRun::opaque);
+            auto help = draw_original_cel_shadow(output, cel_, pal_, 239, 260, 36);
+            if (!help) { return help; }
+            help = draw_original_cel(output, cel_, pal_, 239, 260, 36, OriginalZeroRun::opaque);
             if (!help) { return help; }
             const auto& record = selected();
             unsigned category = 2;

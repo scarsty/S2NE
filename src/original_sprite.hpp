@@ -1,4 +1,5 @@
 #pragma once
+#include "original_palette.hpp"
 #include "resource_result.hpp"
 #include "texture_resources.hpp"
 #include <algorithm>
@@ -116,6 +117,63 @@ inline Result<bool> draw_original_cel_legacy(std::vector<uint8_t>& image, std::s
         return Result<bool>::failure(make_error("Invalid original CEL extent"));
     }
     return draw_original_sprite(image, cel.subspan(group + offset, length), palette, 0, false, left, top, zero, indexed);
+}
+inline Result<bool> draw_original_panel_shadow(std::vector<uint8_t>& image, const std::vector<uint8_t>& palette,
+    int width, int height, int x, int y, std::vector<uint8_t>* indexed = nullptr)
+{
+    if (image.size() != 640u * 480 * 4 || palette.size() < 768 || (indexed && indexed->size() != 640u * 480))
+    {
+        return Result<bool>::failure(make_error("424D47 invalid framebuffer or palette"));
+    }
+    const int side_height = height - 10;
+    if (side_height <= 0 || side_height > 468 || width <= 0 || width > 630) { return Result<bool>::success(false); }
+    if (x < 8 && y + side_height + 18 >= 479) { return Result<bool>::success(false); }
+    OriginalPalette shades(palette);
+    for (int row = y + 8; row < y + side_height + 16; ++row)
+    {
+        const int left = x < 8 ? 0 : x - 8;
+        int right = left + 8;
+        if (row >= y + side_height + 8) { right = left + width; }
+        else if (x < 8) { continue; }
+        for (int column = left; column < right; ++column)
+        {
+            if (column < 0 || column >= 640 || row < 0 || row >= 480) { continue; }
+            const size_t pixel = size_t(row) * 640 + column, p = pixel * 4;
+            if (indexed)
+            {
+                const unsigned mapped = shades.map(6, indexed->at(pixel));
+                indexed->at(pixel) = uint8_t(mapped);
+                for (unsigned k = 0; k < 3; ++k) { image[p + k] = uint8_t(unsigned(palette[mapped * 3 + k]) * 255 / 63); }
+                continue;
+            }
+            bool matched = false;
+            for (unsigned ink = 0; ink < 256; ++ink)
+            {
+                if (image[p] != unsigned(palette[ink * 3]) * 255 / 63 || image[p + 1] != unsigned(palette[ink * 3 + 1]) * 255 / 63
+                    || image[p + 2] != unsigned(palette[ink * 3 + 2]) * 255 / 63) { continue; }
+                const unsigned mapped = shades.map(6, ink);
+                for (unsigned k = 0; k < 3; ++k) { image[p + k] = uint8_t(unsigned(palette[mapped * 3 + k]) * 255 / 63); }
+                matched = true;
+                break;
+            }
+            if (!matched)
+            {
+                for (unsigned k = 0; k < 3; ++k) { image[p + k] = uint8_t((unsigned(image[p + k]) + unsigned(palette[32 * 3 + k]) * 255 / 63) / 2); }
+            }
+        }
+    }
+    return Result<bool>::success(true);
+}
+inline Result<bool> draw_original_cel_shadow(std::vector<uint8_t>& image, std::span<const uint8_t> cel,
+    const std::vector<uint8_t>& palette, unsigned id, int x, int y, std::vector<uint8_t>* indexed = nullptr)
+{
+    if (palette.size() < 820 || id < 142) { return Result<bool>::failure(make_error("424D47 invalid CEL directory")); }
+    ResourceReader pal(palette), data(cel);
+    const size_t group = pal.number(816, 4) - 57;
+    if (!data.extent(group, 2) || id - 142 >= data.number(group)) { return Result<bool>::failure(make_error("424D47 invalid CEL ID")); }
+    const size_t panel = group + data.number(group + 2 + size_t(id - 142) * 8, 4);
+    if (!data.extent(panel, 4)) { return Result<bool>::failure(make_error("424D47 invalid CEL extent")); }
+    return draw_original_panel_shadow(image, palette, int(data.number(panel)) + 1, int(data.number(panel + 2)) + 1, x, y, indexed);
 }
 inline Result<bool> draw_original_cel(std::vector<uint8_t>& image, std::span<const uint8_t> cel,
     std::span<const uint8_t> palette, unsigned id, int left, int top, OriginalZeroRun zero, std::vector<uint8_t>* indexed = nullptr)

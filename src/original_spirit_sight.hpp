@@ -129,37 +129,8 @@ public:
         if (x < 10) { x = 10; }
         else if (x + width > 639) { x = 630 - width; }
         const int y = 240 - height / 2;
-        // 424D47 shades an eight-pixel left/bottom border before474E3E.
-        OriginalPalette palette(pal_);
-        for (int row = y + 8; row < y + height + 6; ++row)
-        {
-            const int left = x - 8;
-            int right = x;
-            if (row >= y + height - 2) { right = left + width; }
-            for (int column = left; column < right; ++column)
-            {
-                if (column < 0 || column >= 640 || row < 0 || row >= 480) { continue; }
-                const size_t pixel = (size_t(row) * 640 + column) * 4;
-                std::optional<unsigned> shaded;
-                if (indexed) { shaded = palette.map(6, indices.at(pixel / 4)); }
-                for (unsigned color = 0; !indexed && color < 256; ++color)
-                {
-                    if (image.at(pixel) != unsigned(pal_.at(color * 3)) * 255 / 63 || image.at(pixel + 1) != unsigned(pal_.at(color * 3 + 1)) * 255 / 63 || image.at(pixel + 2) != unsigned(pal_.at(color * 3 + 2)) * 255 / 63) { continue; }
-                    const unsigned mapped = palette.map(6, color);
-                    if (shaded)
-                    {
-                        for (unsigned component = 0; component < 3; ++component)
-                        {
-                            if (pal_.at(mapped * 3 + component) != pal_.at(*shaded * 3 + component)) { return Result<std::vector<uint8_t>>::failure(make_error("424D47 ambiguous original palette index")); }
-                        }
-                    }
-                    shaded = mapped;
-                }
-                if (!shaded) { return Result<std::vector<uint8_t>>::failure(make_error("424D47 information panel requires original palette pixels")); }
-                if (indexed) { indices.at(pixel / 4) = uint8_t(*shaded); }
-                for (unsigned component = 0; component < 3; ++component) { image[pixel + component] = uint8_t(unsigned(pal_.at(*shaded * 3 + component)) * 255 / 63); }
-            }
-        }
+        auto shadow = draw_original_panel_shadow(image, pal_, width, height, x, y, indexed ? &indices : nullptr);
+        if (!shadow) { return Result<std::vector<uint8_t>>::failure(shadow.error()); }
         auto background = draw_original_cel(image, cel_, pal_, 239, x, y, OriginalZeroRun::transparent, indexed ? &indices : nullptr);
         if (!background) { return Result<std::vector<uint8_t>>::failure(background.error()); }
         const size_t kind = dword(kinds_, 18) + size_t(target.appearance - 1) * 37;
